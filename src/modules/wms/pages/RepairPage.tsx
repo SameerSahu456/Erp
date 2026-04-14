@@ -269,4 +269,4 @@ function RepairPage() {
   )
 }
 
-export { RepairPage }
+export default RepairPage

@@ -324,4 +324,4 @@ function OutwardQCPage() {
   )
 }
 
-export { OutwardQCPage }
+export default OutwardQCPage

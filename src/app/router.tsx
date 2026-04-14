@@ -30,6 +30,28 @@ const MaterialInquiriesPage = lazy(() => import('@/modules/crm/pages/MaterialInq
 const MaterialInquiryDetailPage = lazy(() => import('@/modules/crm/pages/MaterialInquiryDetailPage'))
 const MaterialInquiryFormPage = lazy(() => import('@/modules/crm/pages/MaterialInquiryFormPage'))
 
+// WMS pages
+const WmsDashboard = lazy(() => import('@/modules/wms/pages/WmsDashboard'))
+const InwardPage = lazy(() => import('@/modules/wms/pages/InwardPage'))
+const InwardFormPage = lazy(() => import('@/modules/wms/pages/InwardFormPage'))
+const BatchDevicesPage = lazy(() => import('@/modules/wms/pages/BatchDevicesPage'))
+const InspectionPage = lazy(() => import('@/modules/wms/pages/InspectionPage'))
+const RepairPage = lazy(() => import('@/modules/wms/pages/RepairPage'))
+const PaintPage = lazy(() => import('@/modules/wms/pages/PaintPage'))
+const QCPage = lazy(() => import('@/modules/wms/pages/QCPage'))
+const OutwardQCPage = lazy(() => import('@/modules/wms/pages/OutwardQCPage'))
+const InventoryPage = lazy(() => import('@/modules/wms/pages/InventoryPage'))
+const OutwardPage = lazy(() => import('@/modules/wms/pages/OutwardPage'))
+const OutwardFormPage = lazy(() => import('@/modules/wms/pages/OutwardFormPage'))
+const OutwardDetailPage = lazy(() => import('@/modules/wms/pages/OutwardDetailPage'))
+
+// IMS pages
+const ImsDashboard = lazy(() => import('@/modules/ims/pages/ImsDashboard'))
+const CategoriesPage = lazy(() => import('@/modules/ims/pages/CategoriesPage'))
+const StockItemsPage = lazy(() => import('@/modules/ims/pages/StockItemsPage'))
+const StockItemDetailPage = lazy(() => import('@/modules/ims/pages/StockItemDetailPage'))
+const ImsReportsPage = lazy(() => import('@/modules/ims/pages/ImsReportsPage'))
+
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return (
     <Suspense
@@ -84,6 +106,28 @@ export const router = createBrowserRouter([
       { path: '/crm/material-inquiries/:id', element: <LazyRoute><MaterialInquiryDetailPage /></LazyRoute> },
       { path: '/crm/material-inquiries/:id/edit', element: <LazyRoute><MaterialInquiryFormPage /></LazyRoute> },
       { path: '/crm/notifications', element: <LazyRoute><NotificationCenter /></LazyRoute> },
+
+      // WMS routes
+      { path: '/wms', element: <LazyRoute><WmsDashboard /></LazyRoute> },
+      { path: '/wms/inward', element: <LazyRoute><InwardPage /></LazyRoute> },
+      { path: '/wms/inward/new', element: <LazyRoute><InwardFormPage /></LazyRoute> },
+      { path: '/wms/inward/:id/devices', element: <LazyRoute><BatchDevicesPage /></LazyRoute> },
+      { path: '/wms/inspection', element: <LazyRoute><InspectionPage /></LazyRoute> },
+      { path: '/wms/repair', element: <LazyRoute><RepairPage /></LazyRoute> },
+      { path: '/wms/paint', element: <LazyRoute><PaintPage /></LazyRoute> },
+      { path: '/wms/qc', element: <LazyRoute><QCPage /></LazyRoute> },
+      { path: '/wms/outward-qc', element: <LazyRoute><OutwardQCPage /></LazyRoute> },
+      { path: '/wms/inventory', element: <LazyRoute><InventoryPage /></LazyRoute> },
+      { path: '/wms/outward', element: <LazyRoute><OutwardPage /></LazyRoute> },
+      { path: '/wms/outward/new', element: <LazyRoute><OutwardFormPage /></LazyRoute> },
+      { path: '/wms/outward/:id', element: <LazyRoute><OutwardDetailPage /></LazyRoute> },
+
+      // IMS routes
+      { path: '/ims', element: <LazyRoute><ImsDashboard /></LazyRoute> },
+      { path: '/ims/categories', element: <LazyRoute><CategoriesPage /></LazyRoute> },
+      { path: '/ims/stock-items', element: <LazyRoute><StockItemsPage /></LazyRoute> },
+      { path: '/ims/stock-items/:id', element: <LazyRoute><StockItemDetailPage /></LazyRoute> },
+      { path: '/ims/reports', element: <LazyRoute><ImsReportsPage /></LazyRoute> },
     ],
   },
 ])

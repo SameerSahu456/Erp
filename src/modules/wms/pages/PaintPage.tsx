@@ -226,4 +226,4 @@ function PaintPage() {
   )
 }
 
-export { PaintPage }
+export default PaintPage

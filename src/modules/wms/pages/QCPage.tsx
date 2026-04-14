@@ -342,4 +342,4 @@ function QCPage() {
   )
 }
 
-export { QCPage }
+export default QCPage

@@ -460,4 +460,4 @@ function InspectionPage() {
   )
 }
 
-export { InspectionPage }
+export default InspectionPage
