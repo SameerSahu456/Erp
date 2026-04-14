@@ -132,6 +132,7 @@ export const router = createBrowserRouter([
 
       // IMS routes
       { path: '/ims', element: <LazyRoute><ImsDashboard /></LazyRoute> },
+      { path: '/ims/inventory', element: <LazyRoute><StockItemsPage /></LazyRoute> },
       { path: '/ims/categories', element: <LazyRoute><CategoriesPage /></LazyRoute> },
       { path: '/ims/stock-items', element: <LazyRoute><StockItemsPage /></LazyRoute> },
       { path: '/ims/stock-items/:id', element: <LazyRoute><StockItemDetailPage /></LazyRoute> },
