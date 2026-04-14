@@ -293,3 +293,5 @@ function ContactDetailPage() {
 }
 
 export { ContactDetailPage }
+
+export default ContactDetailPage

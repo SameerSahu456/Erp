@@ -154,3 +154,5 @@ function ContactFormPage() {
 }
 
 export { ContactFormPage }
+
+export default ContactFormPage

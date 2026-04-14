@@ -460,3 +460,5 @@ function LeadDetailPage() {
 }
 
 export { LeadDetailPage }
+
+export default LeadDetailPage

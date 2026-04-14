@@ -213,3 +213,5 @@ function AccountFormPage() {
 }
 
 export { AccountFormPage }
+
+export default AccountFormPage

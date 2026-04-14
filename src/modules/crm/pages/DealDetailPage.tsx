@@ -541,3 +541,5 @@ function DealDetailPage() {
 }
 
 export { DealDetailPage }
+
+export default DealDetailPage

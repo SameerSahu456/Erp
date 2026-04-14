@@ -210,3 +210,5 @@ function LeadFormPage() {
 }
 
 export { LeadFormPage }
+
+export default LeadFormPage

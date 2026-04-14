@@ -190,3 +190,5 @@ function SalesOrderFormPage() {
 }
 
 export { SalesOrderFormPage }
+
+export default SalesOrderFormPage

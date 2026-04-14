@@ -204,3 +204,5 @@ function DealFormPage() {
 }
 
 export { DealFormPage }
+
+export default DealFormPage

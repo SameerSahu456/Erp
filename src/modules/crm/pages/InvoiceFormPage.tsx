@@ -233,3 +233,5 @@ function InvoiceFormPage() {
 }
 
 export { InvoiceFormPage }
+
+export default InvoiceFormPage

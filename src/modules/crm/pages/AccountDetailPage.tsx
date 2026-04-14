@@ -641,3 +641,5 @@ function AccountDetailPage() {
 }
 
 export { AccountDetailPage }
+
+export default AccountDetailPage

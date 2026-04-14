@@ -199,3 +199,5 @@ function QuoteFormPage() {
 }
 
 export { QuoteFormPage }
+
+export default QuoteFormPage
