@@ -149,6 +149,11 @@
   --input: hsl(210 18% 87%);
   --ring: hsl(180 51% 36%);
   --radius: 0.625rem;
+  --chart-1: hsl(180 51% 36%);
+  --chart-2: hsl(215 28% 45%);
+  --chart-3: hsl(210 18% 60%);
+  --chart-4: hsl(200 30% 50%);
+  --chart-5: hsl(180 30% 55%);
   --sidebar: hsl(210 11% 95%);
   --sidebar-foreground: hsl(215 28% 17%);
   --sidebar-primary: hsl(180 51% 36%);
