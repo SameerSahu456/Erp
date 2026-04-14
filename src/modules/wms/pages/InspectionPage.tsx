@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { toast } from 'sonner'
+import { ChevronDown, ChevronRight, Check, X, Minus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,11 +16,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress'
 import {
   BusinessMetricsTable,
   type TabConfig,
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@/components/ui/collapsible'
 
 import { mockDevices } from '../data/devices'
 import { mockInspections } from '../data/inspections'
@@ -66,6 +73,7 @@ function InspectionPage() {
   const [spareParts, setSpareParts] = useState('')
   const [overallNotes, setOverallNotes] = useState('')
   const [assignments, setAssignments] = useState<Record<string, string>>({})
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
   const handleAssignEngineer = (deviceId: string, engineer: string) => {
     setAssignments((prev) => ({ ...prev, [deviceId]: engineer }))
@@ -75,6 +83,26 @@ function InspectionPage() {
 
   const hasFailures = useMemo(
     () => Object.values(checklist).some((item) => item.result === 'FAIL'),
+    [checklist],
+  )
+
+  const checkedCount = useMemo(
+    () => Object.keys(checklist).length,
+    [checklist],
+  )
+
+  const passCount = useMemo(
+    () => Object.values(checklist).filter((i) => i.result === 'PASS').length,
+    [checklist],
+  )
+
+  const failCount = useMemo(
+    () => Object.values(checklist).filter((i) => i.result === 'FAIL').length,
+    [checklist],
+  )
+
+  const naCount = useMemo(
+    () => Object.values(checklist).filter((i) => i.result === 'NOT_APPLICABLE').length,
     [checklist],
   )
 
@@ -238,6 +266,7 @@ function InspectionPage() {
     setPaintPanels([])
     setSpareParts('')
     setOverallNotes('')
+    setCollapsedGroups({})
   }
 
   const handleChecklistChange = (itemId: string, result: InspectionResult) => {
@@ -264,6 +293,10 @@ function InspectionPage() {
     setPaintPanels((prev) =>
       prev.includes(panel) ? prev.filter((p) => p !== panel) : [...prev, panel],
     )
+  }
+
+  const toggleGroup = (group: string) => {
+    setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }))
   }
 
   const handleSubmit = () => {
@@ -318,66 +351,144 @@ function InspectionPage() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Checklist grouped by category */}
+            {/* Progress indicator */}
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">
+                  {checkedCount}/{INSPECTION_CHECKLIST_ITEMS.length} items checked
+                </span>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block size-2.5 rounded-full bg-emerald-500" />
+                    Pass: {passCount}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block size-2.5 rounded-full bg-destructive" />
+                    Fail: {failCount}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block size-2.5 rounded-full bg-muted-foreground" />
+                    N/A: {naCount}
+                  </span>
+                </div>
+              </div>
+              <Progress
+                value={
+                  INSPECTION_CHECKLIST_ITEMS.length > 0
+                    ? Math.round(
+                        (checkedCount / INSPECTION_CHECKLIST_ITEMS.length) * 100,
+                      )
+                    : 0
+                }
+              >
+                <ProgressLabel className="sr-only">Progress</ProgressLabel>
+                <ProgressValue className="sr-only" />
+              </Progress>
+            </div>
+
+            {/* Checklist grouped by category - collapsible sections */}
             {GROUP_ORDER.map((group) => {
               const items = CHECKLIST_GROUPS[group]
               if (!items) return null
+              const isCollapsed = collapsedGroups[group] ?? false
+              const groupChecked = items.filter((i) => checklist[i.id]).length
               return (
-                <div key={group} className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground">{group}</h3>
-                  <div className="space-y-2">
-                    {items.map((item) => {
-                      const state = checklist[item.id]
-                      return (
-                        <div key={item.id} className="space-y-1">
-                          <div className="flex items-center gap-4">
-                            <span className="min-w-[200px] text-sm">{item.label}</span>
-                            <div className="flex gap-1">
-                              {(['PASS', 'FAIL', 'NOT_APPLICABLE'] as InspectionResult[]).map(
-                                (result) => {
-                                  const label =
-                                    result === 'PASS'
-                                      ? 'Pass'
-                                      : result === 'FAIL'
-                                        ? 'Fail'
-                                        : 'N/A'
-                                  const isActive = state?.result === result
-                                  return (
-                                    <Button
-                                      key={result}
-                                      size="xs"
-                                      variant={isActive ? 'default' : 'outline'}
-                                      className={
-                                        isActive && result === 'FAIL'
-                                          ? 'bg-destructive text-white hover:bg-destructive/90'
-                                          : isActive && result === 'PASS'
-                                            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                            : ''
-                                      }
-                                      onClick={() => handleChecklistChange(item.id, result)}
-                                    >
-                                      {label}
-                                    </Button>
-                                  )
-                                },
-                              )}
+                <Collapsible key={group} open={!isCollapsed}>
+                  <CollapsibleTrigger
+                    className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                    onClick={() => toggleGroup(group)}
+                  >
+                    <div className="flex items-center gap-2">
+                      {isCollapsed ? (
+                        <ChevronRight className="size-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="size-4 text-muted-foreground" />
+                      )}
+                      <span className="text-sm font-semibold">{group}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {groupChecked}/{items.length} checked
+                    </span>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-2 pt-2">
+                      {items.map((item) => {
+                        const state = checklist[item.id]
+                        return (
+                          <div
+                            key={item.id}
+                            className="rounded-lg border bg-card transition-colors"
+                          >
+                            <div className="flex items-center justify-between gap-4 px-4 py-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium">{item.label}</p>
+                              </div>
+                              <div className="flex shrink-0 gap-1.5">
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className={
+                                    state?.result === 'PASS'
+                                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-700'
+                                      : 'border-emerald-200 text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-500'
+                                  }
+                                  onClick={() =>
+                                    handleChecklistChange(item.id, 'PASS')
+                                  }
+                                >
+                                  <Check className="size-3.5" />
+                                  Pass
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className={
+                                    state?.result === 'FAIL'
+                                      ? 'border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20'
+                                      : 'border-red-200 text-red-500 hover:border-red-400 hover:bg-red-50 dark:border-red-800 dark:text-red-400'
+                                  }
+                                  onClick={() =>
+                                    handleChecklistChange(item.id, 'FAIL')
+                                  }
+                                >
+                                  <X className="size-3.5" />
+                                  Fail
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className={
+                                    state?.result === 'NOT_APPLICABLE'
+                                      ? 'border-muted-foreground/50 bg-muted text-muted-foreground'
+                                      : 'text-muted-foreground hover:bg-muted'
+                                  }
+                                  onClick={() =>
+                                    handleChecklistChange(item.id, 'NOT_APPLICABLE')
+                                  }
+                                >
+                                  <Minus className="size-3.5" />
+                                  N/A
+                                </Button>
+                              </div>
                             </div>
+                            {state?.result === 'FAIL' && (
+                              <div className="border-t px-4 py-2.5">
+                                <Input
+                                  placeholder="Describe the issue..."
+                                  value={state.notes}
+                                  onChange={(e) =>
+                                    handleChecklistNotes(item.id, e.target.value)
+                                  }
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                            )}
                           </div>
-                          {state?.result === 'FAIL' && (
-                            <Input
-                              placeholder="Notes for this failure..."
-                              value={state.notes}
-                              onChange={(e) =>
-                                handleChecklistNotes(item.id, e.target.value)
-                              }
-                              className="ml-[200px] max-w-md"
-                            />
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
+                        )
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               )
             })}
 
@@ -473,6 +584,32 @@ function InspectionPage() {
                     />
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Summary before submit */}
+            {checkedCount > 0 && (
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <h3 className="text-sm font-semibold mb-2">Summary</h3>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-lg font-bold text-emerald-600">{passCount}</p>
+                    <p className="text-xs text-muted-foreground">Passed</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-destructive">{failCount}</p>
+                    <p className="text-xs text-muted-foreground">Failed</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-muted-foreground">{naCount}</p>
+                    <p className="text-xs text-muted-foreground">N/A</p>
+                  </div>
+                </div>
+                {failCount > 0 && (
+                  <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400">
+                    {failCount} item{failCount > 1 ? 's' : ''} failed - review inspection flags below
+                  </div>
+                )}
               </div>
             )}
 

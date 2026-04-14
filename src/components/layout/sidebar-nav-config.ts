@@ -71,6 +71,8 @@ export const SIDEBAR_NAV: NavGroup[] = [
       { label: 'QC', href: '/wms/qc', icon: CheckCircle2, module: 'wms' },
       { label: 'Outward', href: '/wms/outward', icon: Truck, module: 'wms' },
       { label: 'Dispatch', href: '/wms/dispatch', icon: Package, module: 'wms' },
+      { label: 'Checklists', href: '/wms/checklists', icon: ClipboardList, module: 'wms' },
+      { label: 'Locations', href: '/wms/locations', icon: MapPin, module: 'wms' },
     ],
   },
   {

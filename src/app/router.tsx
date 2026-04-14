@@ -45,6 +45,10 @@ const OutwardPage = lazy(() => import('@/modules/wms/pages/OutwardPage'))
 const OutwardFormPage = lazy(() => import('@/modules/wms/pages/OutwardFormPage'))
 const OutwardDetailPage = lazy(() => import('@/modules/wms/pages/OutwardDetailPage'))
 
+const ChecklistTemplatesPage = lazy(() => import('@/modules/wms/pages/ChecklistTemplatesPage'))
+const ChecklistTemplateFormPage = lazy(() => import('@/modules/wms/pages/ChecklistTemplateFormPage'))
+const WarehouseLocationsPage = lazy(() => import('@/modules/wms/pages/WarehouseLocationsPage'))
+
 // IMS pages
 const ImsDashboard = lazy(() => import('@/modules/ims/pages/ImsDashboard'))
 const CategoriesPage = lazy(() => import('@/modules/ims/pages/CategoriesPage'))
@@ -121,6 +125,10 @@ export const router = createBrowserRouter([
       { path: '/wms/outward', element: <LazyRoute><OutwardPage /></LazyRoute> },
       { path: '/wms/outward/new', element: <LazyRoute><OutwardFormPage /></LazyRoute> },
       { path: '/wms/outward/:id', element: <LazyRoute><OutwardDetailPage /></LazyRoute> },
+      { path: '/wms/checklists', element: <LazyRoute><ChecklistTemplatesPage /></LazyRoute> },
+      { path: '/wms/checklists/new', element: <LazyRoute><ChecklistTemplateFormPage /></LazyRoute> },
+      { path: '/wms/checklists/:id/edit', element: <LazyRoute><ChecklistTemplateFormPage /></LazyRoute> },
+      { path: '/wms/locations', element: <LazyRoute><WarehouseLocationsPage /></LazyRoute> },
 
       // IMS routes
       { path: '/ims', element: <LazyRoute><ImsDashboard /></LazyRoute> },

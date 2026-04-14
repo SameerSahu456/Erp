@@ -23,22 +23,28 @@ import {
   DEVICE_STATUS_LABELS,
   DEVICE_STATUS_VARIANT,
   type DeviceStatus,
-  type BatchOwnershipType,
+  type InwardType,
   type Device,
 } from '../types'
 import { mockBatches } from '../data/batches'
 import { mockDevices } from '../data/devices'
 
-const OWNERSHIP_TYPE_LABELS: Record<BatchOwnershipType, string> = {
-  REFURB_PURCHASE: 'Refurb Purchase',
+const INWARD_TYPE_LABELS: Record<InwardType, string> = {
+  PURCHASE_ORDER: 'Purchase Order',
   RENTAL_RETURN: 'Rental Return',
+  DEMO_RETURN: 'Demo Return',
+  INTERNAL_TRANSFER: 'Internal Transfer',
   ADVANCE_RETURN: 'Advance Return',
+  REFURB_PURCHASE: 'Refurb Purchase',
 }
 
-const OWNERSHIP_TYPE_VARIANT: Record<BatchOwnershipType, 'success' | 'warning' | 'info'> = {
-  REFURB_PURCHASE: 'info',
+const INWARD_TYPE_VARIANT: Record<InwardType, 'success' | 'warning' | 'info' | 'neutral'> = {
+  PURCHASE_ORDER: 'info',
   RENTAL_RETURN: 'warning',
+  DEMO_RETURN: 'neutral',
+  INTERNAL_TRANSFER: 'success',
   ADVANCE_RETURN: 'success',
+  REFURB_PURCHASE: 'info',
 }
 
 const MOCK_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta', 'Meera Joshi', 'Arjun Patel']
@@ -201,7 +207,7 @@ function BatchDevicesPage() {
     {
       icon: CalendarDays,
       label: 'Received Date',
-      value: formatDate(batch.receivedDate),
+      value: formatDate(batch.createdAt),
     },
     { icon: Package, label: 'Device Count', value: String(batch.deviceCount) },
   ]
@@ -219,13 +225,13 @@ function BatchDevicesPage() {
               <h1 className="font-display text-2xl font-semibold tracking-tight">
                 {batch.batchNumber}
               </h1>
-              <StatusBadge variant={batch.status === 'Open' ? 'success' : 'neutral'}>
+              <StatusBadge variant={batch.status === 'Open' ? 'success' : batch.status === 'In Inspection' ? 'warning' : 'neutral'}>
                 {batch.status}
               </StatusBadge>
             </div>
             <p className="text-sm text-muted-foreground">
-              <StatusBadge variant={OWNERSHIP_TYPE_VARIANT[batch.ownershipType]}>
-                {OWNERSHIP_TYPE_LABELS[batch.ownershipType]}
+              <StatusBadge variant={INWARD_TYPE_VARIANT[batch.inwardType]}>
+                {INWARD_TYPE_LABELS[batch.inwardType]}
               </StatusBadge>
               <span className="ml-2">{batch.brand}</span>
             </p>

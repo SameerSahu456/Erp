@@ -131,6 +131,12 @@ export interface Device {
   dispatchedAt?: string
   // Location
   location: string
+  warehouseId?: string
+  warehouseName?: string
+  rackLocation?: string  // 'Row1-RackA-Bin3'
+  aliases?: string[]
+  inwardType?: InwardType
+  poNumber?: string
 }
 
 // ── Inspection ──
@@ -276,6 +282,7 @@ export interface StockItem {
   variants: StockVariant[]
   reorderLevel: number
   location: string
+  aliases?: string[]
 }
 
 export interface StockVariant {
@@ -283,4 +290,105 @@ export interface StockVariant {
   quantity: number
   unitPrice: number
   lastUpdated: string
+}
+
+// ── Checklist Templates ──
+export type ChecklistType = 'INWARD' | 'OUTWARD' | 'INSPECTION' | 'QC'
+
+export interface ChecklistTemplateItem {
+  id: string
+  label: string
+  group: string
+  description?: string
+  required: boolean
+}
+
+export interface ChecklistTemplate {
+  id: string
+  name: string
+  type: ChecklistType
+  assignedTo: {
+    level: 'category' | 'subcategory' | 'part'
+    id: string
+    name: string
+  }
+  items: ChecklistTemplateItem[]
+  createdBy: string
+  createdAt: string
+  isActive: boolean
+}
+
+// ── Warehouse Locations ──
+export interface Warehouse {
+  id: string
+  name: string
+  code: string  // e.g., 'MUM-WH1'
+  address: string
+  city: string
+  manager: string
+  storeTeam: string[]
+  rows: WarehouseRow[]
+}
+
+export interface WarehouseRow {
+  id: string
+  name: string  // 'Row 1', 'Row 2'
+  racks: WarehouseRack[]
+}
+
+export interface WarehouseRack {
+  id: string
+  name: string  // 'Rack A', 'Rack B'
+  bins: WarehouseBin[]
+  dimensions?: { width: number; height: number; depth: number }  // cm
+  capacityUsed: number  // percentage 0-100
+}
+
+export interface WarehouseBin {
+  id: string
+  name: string  // 'Bin 1', 'Bin 2'
+  itemCount: number
+  maxItems: number
+  status: 'Empty' | 'Partial' | 'Full'
+}
+
+// ── Enhanced Inward ──
+export type InwardType = 'PURCHASE_ORDER' | 'RENTAL_RETURN' | 'DEMO_RETURN' | 'INTERNAL_TRANSFER' | 'ADVANCE_RETURN' | 'REFURB_PURCHASE'
+
+export interface InwardBatchEnhanced {
+  id: string
+  batchNumber: string
+  inwardType: InwardType
+  // PO linkage
+  poNumber?: string
+  poId?: string
+  vendorName?: string
+  // Source details
+  sourceType: string  // 'Vendor', 'Customer', 'Internal', 'Demo'
+  sourceName: string
+  sourceRef?: string  // customer name, internal dept, demo ID
+  // Stock variant this maps to
+  stockVariant: 'New' | 'Refurbished' | 'New Pool'
+  // Device details
+  category: string
+  subcategory?: string
+  brand: string
+  deviceCount: number
+  // Location assignment
+  warehouseId: string
+  warehouseName: string
+  assignedLocation?: string  // 'Row1-RackA-Bin3'
+  // People
+  receivedBy: string
+  inspectionAssignedTo?: string
+  // Status
+  status: 'Open' | 'In Inspection' | 'Closed'
+  notes?: string
+  createdAt: string
+}
+
+// ── Part Aliases ──
+export interface PartAlias {
+  partId: string
+  aliases: string[]  // alternate names for search
 }

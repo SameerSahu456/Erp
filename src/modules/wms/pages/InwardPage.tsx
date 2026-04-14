@@ -10,18 +10,24 @@ import {
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
 import { mockBatches } from '../data/batches'
-import type { BatchOwnershipType } from '../types'
+import type { InwardType } from '../types'
 
-const OWNERSHIP_TYPE_LABELS: Record<BatchOwnershipType, string> = {
-  REFURB_PURCHASE: 'Refurb Purchase',
+const INWARD_TYPE_LABELS: Record<InwardType, string> = {
+  PURCHASE_ORDER: 'Purchase Order',
   RENTAL_RETURN: 'Rental Return',
+  DEMO_RETURN: 'Demo Return',
+  INTERNAL_TRANSFER: 'Internal Transfer',
   ADVANCE_RETURN: 'Advance Return',
+  REFURB_PURCHASE: 'Refurb Purchase',
 }
 
-const OWNERSHIP_TYPE_VARIANT: Record<BatchOwnershipType, 'success' | 'warning' | 'info'> = {
-  REFURB_PURCHASE: 'info',
+const INWARD_TYPE_VARIANT: Record<InwardType, 'success' | 'warning' | 'info' | 'neutral'> = {
+  PURCHASE_ORDER: 'info',
   RENTAL_RETURN: 'warning',
+  DEMO_RETURN: 'neutral',
+  INTERNAL_TRANSFER: 'success',
   ADVANCE_RETURN: 'success',
+  REFURB_PURCHASE: 'info',
 }
 
 function formatDate(dateStr: string) {
@@ -34,10 +40,11 @@ function formatDate(dateStr: string) {
 
 const columns = [
   { key: 'batchNumber', label: 'Batch #', sortable: true },
-  { key: 'ownershipType', label: 'Ownership Type' },
+  { key: 'inwardType', label: 'Inward Type' },
   { key: 'category', label: 'Category' },
   { key: 'brand', label: 'Brand', sortable: true },
   { key: 'deviceCount', label: 'Devices', sortable: true, align: 'right' as const },
+  { key: 'warehouse', label: 'Warehouse' },
   { key: 'receivedBy', label: 'Received By' },
   { key: 'receivedDate', label: 'Date', sortable: true },
   { key: 'status', label: 'Status' },
@@ -52,13 +59,13 @@ function InwardPage() {
       mockBatches.map((b) => ({
         id: b.id,
         batchNumber: b.batchNumber,
-        ownershipType: b.ownershipType,
-        ownershipLabel: OWNERSHIP_TYPE_LABELS[b.ownershipType],
+        inwardType: b.inwardType,
         category: b.category,
         brand: b.brand,
         deviceCount: b.deviceCount,
+        warehouse: b.warehouseName,
         receivedBy: b.receivedBy,
-        receivedDate: formatDate(b.receivedDate),
+        receivedDate: formatDate(b.createdAt),
         status: b.status,
       })),
     []
@@ -97,20 +104,21 @@ function InwardPage() {
         ),
       }
     }
-    if (key === 'ownershipType') {
-      const ownershipType = value as BatchOwnershipType
+    if (key === 'inwardType') {
+      const inwardType = value as InwardType
       return {
         display: (
-          <StatusBadge variant={OWNERSHIP_TYPE_VARIANT[ownershipType]}>
-            {OWNERSHIP_TYPE_LABELS[ownershipType]}
+          <StatusBadge variant={INWARD_TYPE_VARIANT[inwardType]}>
+            {INWARD_TYPE_LABELS[inwardType]}
           </StatusBadge>
         ),
       }
     }
     if (key === 'status') {
+      const variant = value === 'Open' ? 'success' : value === 'In Inspection' ? 'warning' : 'neutral'
       return {
         display: (
-          <StatusBadge variant={value === 'Open' ? 'success' : 'neutral'}>
+          <StatusBadge variant={variant}>
             {value as string}
           </StatusBadge>
         ),

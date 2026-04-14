@@ -15,6 +15,7 @@ export const mockStockItems: StockItem[] = [
     ],
     reorderLevel: 10,
     location: 'Mumbai-WH1',
+    aliases: ['Lat 5540', 'DL5540', 'Latitude 14'],
   },
   {
     id: 'item-002',
@@ -31,6 +32,7 @@ export const mockStockItems: StockItem[] = [
     ],
     reorderLevel: 8,
     location: 'Mumbai-WH1',
+    aliases: ['EB840', 'EliteBook 14', 'HP840G8'],
   },
   {
     id: 'item-003',
@@ -46,6 +48,7 @@ export const mockStockItems: StockItem[] = [
     ],
     reorderLevel: 5,
     location: 'Bangalore-WH2',
+    aliases: ['TP T14', 'ThinkPad 14 G4', 'LEN-T14G4'],
   },
   {
     id: 'item-004',
@@ -61,6 +64,7 @@ export const mockStockItems: StockItem[] = [
     ],
     reorderLevel: 3,
     location: 'Mumbai-WH1',
+    aliases: ['MBP14 M3', 'MacBook M3', 'APP-MBP14'],
   },
   {
     id: 'item-005',
@@ -76,6 +80,7 @@ export const mockStockItems: StockItem[] = [
     ],
     reorderLevel: 6,
     location: 'Delhi-WH3',
+    aliases: ['Lat 7440', 'DL7440', 'Latitude 14 7440'],
   },
   {
     id: 'item-006',
@@ -90,6 +95,7 @@ export const mockStockItems: StockItem[] = [
     ],
     reorderLevel: 10,
     location: 'Mumbai-WH1',
+    aliases: ['PB450', 'ProBook 15', 'HP450G9'],
   },
   {
     id: 'item-007',
@@ -106,6 +112,7 @@ export const mockStockItems: StockItem[] = [
     ],
     reorderLevel: 15,
     location: 'Mumbai-WH1',
+    aliases: ['OptiPlex 7010', 'DEL-7010T', 'OPX7010'],
   },
   {
     id: 'item-008',

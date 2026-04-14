@@ -19,7 +19,8 @@ export default function StockItemsPage() {
       (item) =>
         item.name.toLowerCase().includes(q) ||
         item.sku.toLowerCase().includes(q) ||
-        item.brand.toLowerCase().includes(q)
+        item.brand.toLowerCase().includes(q) ||
+        (item.aliases && item.aliases.some((a) => a.toLowerCase().includes(q)))
     )
   }, [search])
 

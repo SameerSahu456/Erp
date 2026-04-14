@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
@@ -16,14 +16,45 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-const OWNERSHIP_TYPES = [
-  { value: 'REFURB_PURCHASE', label: 'Refurb Purchase' },
+import { mockWarehouses } from '../data/warehouses'
+import { mockCategories } from '@/modules/ims/data/categories'
+import type { InwardType } from '../types'
+
+const INWARD_TYPES: { value: InwardType; label: string }[] = [
+  { value: 'PURCHASE_ORDER', label: 'Purchase Order' },
   { value: 'RENTAL_RETURN', label: 'Rental Return' },
+  { value: 'DEMO_RETURN', label: 'Demo Return' },
+  { value: 'INTERNAL_TRANSFER', label: 'Internal Transfer' },
   { value: 'ADVANCE_RETURN', label: 'Advance Return' },
+  { value: 'REFURB_PURCHASE', label: 'Refurb Purchase' },
+]
+
+const STOCK_VARIANTS = [
+  { value: 'New', label: 'New' },
+  { value: 'Refurbished', label: 'Refurbished' },
+  { value: 'New Pool', label: 'New Pool' },
 ] as const
 
-const CATEGORIES = ['Laptop', 'Desktop'] as const
-const BRANDS = ['Dell', 'HP', 'Lenovo', 'Apple'] as const
+const CATEGORIES = mockCategories.map((c) => c.name)
+const BRANDS = ['Dell', 'HP', 'Lenovo', 'Apple', 'Cisco', 'Synology', 'Fortinet', 'APC'] as const
+
+function suggestStockVariant(inwardType: InwardType): string {
+  switch (inwardType) {
+    case 'PURCHASE_ORDER':
+      return 'New'
+    case 'REFURB_PURCHASE':
+      return 'Refurbished'
+    case 'RENTAL_RETURN':
+    case 'ADVANCE_RETURN':
+      return 'Refurbished'
+    case 'DEMO_RETURN':
+      return 'New Pool'
+    case 'INTERNAL_TRANSFER':
+      return 'Refurbished'
+    default:
+      return 'New'
+  }
+}
 
 function generateBatchNumber() {
   const num = Math.floor(1000 + Math.random() * 9000)
@@ -34,11 +65,82 @@ function InwardFormPage() {
   const navigate = useNavigate()
 
   const [batchNumber] = useState(generateBatchNumber)
-  const [ownershipType, setOwnershipType] = useState<string>(OWNERSHIP_TYPES[0].value)
-  const [category, setCategory] = useState<string>(CATEGORIES[0])
+  const [inwardType, setInwardType] = useState<InwardType>('PURCHASE_ORDER')
+  const [category, setCategory] = useState<string>(CATEGORIES[0] ?? 'Laptops')
+  const [subcategory, setSubcategory] = useState<string>('')
   const [brand, setBrand] = useState<string>(BRANDS[0])
   const [deviceCount, setDeviceCount] = useState('')
   const [notes, setNotes] = useState('')
+  const [stockVariant, setStockVariant] = useState<string>('New')
+
+  // Conditional fields
+  const [poNumber, setPoNumber] = useState('')
+  const [vendorName, setVendorName] = useState('')
+  const [sourceName, setSourceName] = useState('')
+  const [sourceRef, setSourceRef] = useState('')
+  const [sourceDept, setSourceDept] = useState('')
+
+  // Warehouse & location
+  const [warehouseId, setWarehouseId] = useState(mockWarehouses[0]?.id ?? 'wh-001')
+  const [rowId, setRowId] = useState('')
+  const [rackId, setRackId] = useState('')
+  const [binId, setBinId] = useState('')
+
+  const selectedWarehouse = useMemo(
+    () => mockWarehouses.find((w) => w.id === warehouseId),
+    [warehouseId],
+  )
+
+  const selectedRow = useMemo(
+    () => selectedWarehouse?.rows.find((r) => r.id === rowId),
+    [selectedWarehouse, rowId],
+  )
+
+  const selectedRack = useMemo(
+    () => selectedRow?.racks.find((r) => r.id === rackId),
+    [selectedRow, rackId],
+  )
+
+  // Subcategories based on selected category
+  const subcategories = useMemo(() => {
+    const cat = mockCategories.find((c) => c.name === category)
+    if (!cat?.subcategories) return []
+    return cat.subcategories.map((s) => s.name)
+  }, [category])
+
+  const handleInwardTypeChange = (val: string | null) => {
+    if (!val) return
+    const newType = val as InwardType
+    setInwardType(newType)
+    setStockVariant(suggestStockVariant(newType))
+    // Reset conditional fields
+    setPoNumber('')
+    setVendorName('')
+    setSourceName('')
+    setSourceRef('')
+    setSourceDept('')
+  }
+
+  const handleWarehouseChange = (val: string | null) => {
+    if (!val) return
+    setWarehouseId(val)
+    setRowId('')
+    setRackId('')
+    setBinId('')
+  }
+
+  const handleRowChange = (val: string | null) => {
+    if (!val) return
+    setRowId(val)
+    setRackId('')
+    setBinId('')
+  }
+
+  const handleRackChange = (val: string | null) => {
+    if (!val) return
+    setRackId(val)
+    setBinId('')
+  }
 
   function handleCreate() {
     if (!deviceCount || Number(deviceCount) <= 0) return
@@ -46,7 +148,6 @@ function InwardFormPage() {
     toast.success('Batch created successfully', {
       description: `${batchNumber} with ${deviceCount} devices`,
     })
-    // Navigate to the batch devices page (using a mock ID)
     navigate(`/wms/inward/batch-new/devices`)
   }
 
@@ -93,19 +194,17 @@ function InwardFormPage() {
 
               <div className="space-y-1.5">
                 <Label className="font-ui">
-                  Ownership Type <span className="text-destructive">*</span>
+                  Inward Type <span className="text-destructive">*</span>
                 </Label>
                 <Select
-                  value={ownershipType}
-                  onValueChange={(val) => {
-                    if (val) setOwnershipType(val as string)
-                  }}
+                  value={inwardType}
+                  onValueChange={handleInwardTypeChange}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {OWNERSHIP_TYPES.map((t) => (
+                    {INWARD_TYPES.map((t) => (
                       <SelectItem key={t.value} value={t.value}>
                         {t.label}
                       </SelectItem>
@@ -121,7 +220,10 @@ function InwardFormPage() {
                 <Select
                   value={category}
                   onValueChange={(val) => {
-                    if (val) setCategory(val as string)
+                    if (val) {
+                      setCategory(val)
+                      setSubcategory('')
+                    }
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -131,6 +233,48 @@ function InwardFormPage() {
                     {CATEGORIES.map((c) => (
                       <SelectItem key={c} value={c}>
                         {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {subcategories.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="font-ui">Subcategory</Label>
+                  <Select
+                    value={subcategory}
+                    onValueChange={(val) => { if (val) setSubcategory(val) }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select subcategory..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subcategories.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label className="font-ui">
+                  Stock Variant <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={stockVariant}
+                  onValueChange={(val) => { if (val) setStockVariant(val) }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STOCK_VARIANTS.map((v) => (
+                      <SelectItem key={v.value} value={v.value}>
+                        {v.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -147,7 +291,7 @@ function InwardFormPage() {
                 <Select
                   value={brand}
                   onValueChange={(val) => {
-                    if (val) setBrand(val as string)
+                    if (val) setBrand(val)
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -175,6 +319,174 @@ function InwardFormPage() {
                   value={deviceCount}
                   onChange={(e) => setDeviceCount(e.target.value)}
                 />
+              </div>
+
+              {/* Conditional fields based on inward type */}
+              {inwardType === 'PURCHASE_ORDER' && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="font-ui">PO Number</Label>
+                    <Input
+                      placeholder="e.g., PO-2026-1001"
+                      value={poNumber}
+                      onChange={(e) => setPoNumber(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="font-ui">Vendor Name</Label>
+                    <Input
+                      placeholder="e.g., Dell India Pvt Ltd"
+                      value={vendorName}
+                      onChange={(e) => setVendorName(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {(inwardType === 'RENTAL_RETURN' || inwardType === 'DEMO_RETURN') && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="font-ui">
+                      {inwardType === 'RENTAL_RETURN' ? 'Customer Name' : 'Source Name'}
+                    </Label>
+                    <Input
+                      placeholder={
+                        inwardType === 'RENTAL_RETURN'
+                          ? 'e.g., TCS Pune Office'
+                          : 'e.g., Infosys Demo'
+                      }
+                      value={sourceName}
+                      onChange={(e) => setSourceName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="font-ui">Reference #</Label>
+                    <Input
+                      placeholder={
+                        inwardType === 'RENTAL_RETURN'
+                          ? 'e.g., Rental contract ID'
+                          : 'e.g., DEMO-2026-042'
+                      }
+                      value={sourceRef}
+                      onChange={(e) => setSourceRef(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {inwardType === 'INTERNAL_TRANSFER' && (
+                <div className="space-y-1.5">
+                  <Label className="font-ui">Source Department</Label>
+                  <Input
+                    placeholder="e.g., IT Department"
+                    value={sourceDept}
+                    onChange={(e) => setSourceDept(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {inwardType === 'ADVANCE_RETURN' && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="font-ui">Customer Name</Label>
+                    <Input
+                      placeholder="e.g., Wipro Ltd"
+                      value={sourceName}
+                      onChange={(e) => setSourceName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="font-ui">Reference #</Label>
+                    <Input
+                      placeholder="e.g., ADV-2026-087"
+                      value={sourceRef}
+                      onChange={(e) => setSourceRef(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {inwardType === 'REFURB_PURCHASE' && (
+                <div className="space-y-1.5">
+                  <Label className="font-ui">Vendor Name</Label>
+                  <Input
+                    placeholder="e.g., GreenIT Recyclers"
+                    value={vendorName}
+                    onChange={(e) => setVendorName(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Warehouse & Location */}
+          <div className="mt-6 space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">Warehouse & Location</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-1.5">
+                <Label className="font-ui">
+                  Warehouse <span className="text-destructive">*</span>
+                </Label>
+                <Select value={warehouseId} onValueChange={handleWarehouseChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockWarehouses.map((w) => (
+                      <SelectItem key={w.id} value={w.id}>
+                        {w.name} ({w.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="font-ui">Row</Label>
+                <Select value={rowId} onValueChange={handleRowChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select row..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedWarehouse?.rows.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="font-ui">Rack</Label>
+                <Select value={rackId} onValueChange={handleRackChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select rack..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedRow?.racks.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name} ({r.capacityUsed}% full)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="font-ui">Bin</Label>
+                <Select value={binId} onValueChange={(val) => { if (val) setBinId(val) }}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select bin..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedRack?.bins.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name} ({b.status} - {b.itemCount}/{b.maxItems})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
