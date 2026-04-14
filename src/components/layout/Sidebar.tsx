@@ -27,7 +27,7 @@ function NavItemLink({
       to={item.href}
       className={cn(
         'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-ui transition-colors',
-        'text-muted-foreground hover:bg-accent hover:text-foreground',
+        'text-foreground/70 hover:bg-accent hover:text-foreground',
         isActive && 'bg-primary/10 text-primary font-medium',
         isCollapsed && 'justify-center px-2 py-2'
       )}
@@ -75,7 +75,7 @@ function NavGroupSection({
               to={firstItem.href}
               className={cn(
                 'flex w-full items-center justify-center rounded-md px-2 py-2 transition-colors',
-                'text-muted-foreground hover:bg-accent hover:text-foreground',
+                'text-foreground/70 hover:bg-accent hover:text-foreground',
                 isGroupActive && 'bg-primary/10 text-primary'
               )}
             />
@@ -110,8 +110,8 @@ function NavGroupSection({
         onClick={() => setIsOpen((prev) => !prev)}
         className={cn(
           'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-ui font-semibold uppercase tracking-widest transition-colors',
-          'text-muted-foreground/70 hover:text-muted-foreground',
-          isGroupActive && 'text-foreground'
+          'text-foreground/60 hover:text-foreground/80',
+          isGroupActive && 'text-foreground/90'
         )}
       >
         <GroupIcon className="h-3.5 w-3.5 shrink-0" />
