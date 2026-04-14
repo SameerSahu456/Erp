@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -26,25 +27,29 @@ export function DevRoleSwitcher() {
         <span className="sr-only">Switch role (dev)</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel className="text-orange-500">
-          Dev: Switch User / Role
-        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-orange-500">
+            Dev: Switch User / Role
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        {allUsers.map((u) => (
-          <DropdownMenuItem
-            key={u.id}
-            onClick={() => switchUser(u.id)}
-            className={cn(user.id === u.id && 'bg-accent')}
-          >
-            <div className="flex-1">
-              <p className="text-sm font-medium">{u.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {ROLE_HIERARCHY[u.role]?.label ?? u.role}
-              </p>
-            </div>
-            {user.id === u.id && <span className="text-primary">&#10003;</span>}
-          </DropdownMenuItem>
-        ))}
+        <DropdownMenuGroup>
+          {allUsers.map((u) => (
+            <DropdownMenuItem
+              key={u.id}
+              onClick={() => switchUser(u.id)}
+              className={cn(user.id === u.id && 'bg-accent')}
+            >
+              <div className="flex-1">
+                <p className="text-sm font-medium">{u.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {ROLE_HIERARCHY[u.role]?.label ?? u.role}
+                </p>
+              </div>
+              {user.id === u.id && <span className="text-primary">&#10003;</span>}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )
