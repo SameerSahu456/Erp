@@ -19,7 +19,7 @@ import { contacts } from '../data/contacts'
 import { accounts } from '../data/accounts'
 
 function ContactFormPage() {
-  const { contactId } = useParams<{ contactId: string }>()
+  const { id: contactId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const existingContact = contactId ? contacts.find((c) => c.id === contactId) : undefined

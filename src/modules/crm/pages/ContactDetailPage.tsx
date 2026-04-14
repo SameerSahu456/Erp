@@ -34,7 +34,7 @@ const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 
 function ContactDetailPage() {
-  const { contactId } = useParams<{ contactId: string }>()
+  const { id: contactId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 

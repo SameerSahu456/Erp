@@ -26,7 +26,7 @@ const QUOTE_STATUSES: Quote['status'][] = ['Draft', 'Sent', 'Accepted', 'Rejecte
 const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
 
 function QuoteFormPage() {
-  const { quoteId } = useParams<{ quoteId: string }>()
+  const { id: quoteId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const existingQuote = quoteId ? quotes.find((q) => q.id === quoteId) : undefined

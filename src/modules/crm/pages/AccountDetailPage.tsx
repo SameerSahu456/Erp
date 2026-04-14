@@ -126,7 +126,7 @@ const MOCK_MANAGERS: Record<string, { email: string; phone: string; role: string
 }
 
 function AccountDetailPage() {
-  const { accountId } = useParams<{ accountId: string }>()
+  const { id: accountId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 

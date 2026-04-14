@@ -26,7 +26,7 @@ const SO_STATUSES: SalesOrder['status'][] = ['Draft', 'Confirmed', 'Shipped', 'D
 const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
 
 function SalesOrderFormPage() {
-  const { orderId } = useParams<{ orderId: string }>()
+  const { id: orderId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const existingOrder = orderId ? salesOrders.find((o) => o.id === orderId) : undefined

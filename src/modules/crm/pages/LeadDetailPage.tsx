@@ -95,7 +95,7 @@ const MOCK_MANAGERS: Record<string, { email: string; phone: string }> = {
 }
 
 function LeadDetailPage() {
-  const { leadId } = useParams<{ leadId: string }>()
+  const { id: leadId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 

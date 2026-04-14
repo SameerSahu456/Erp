@@ -24,7 +24,7 @@ const ACCOUNT_STATUSES = ['Active', 'Inactive', 'Prospect'] as const
 const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
 
 function AccountFormPage() {
-  const { accountId } = useParams<{ accountId: string }>()
+  const { id: accountId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const existingAccount = accountId ? accounts.find((a) => a.id === accountId) : undefined

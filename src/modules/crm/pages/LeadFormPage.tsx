@@ -23,7 +23,7 @@ const LEAD_SOURCES = ['Website', 'Referral', 'LinkedIn', 'Trade Show', 'Cold Cal
 const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
 
 function LeadFormPage() {
-  const { leadId } = useParams<{ leadId: string }>()
+  const { id: leadId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const existingLead = leadId ? leads.find((l) => l.id === leadId) : undefined

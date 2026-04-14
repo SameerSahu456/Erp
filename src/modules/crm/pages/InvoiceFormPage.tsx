@@ -36,7 +36,7 @@ function getDatePlusDays(days: number): string {
 }
 
 function InvoiceFormPage() {
-  const { invoiceId } = useParams<{ invoiceId: string }>()
+  const { id: invoiceId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const existingInvoice = invoiceId ? invoices.find((inv) => inv.id === invoiceId) : undefined

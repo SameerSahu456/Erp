@@ -23,7 +23,7 @@ import type { Deal } from '../types'
 const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
 
 function DealFormPage() {
-  const { dealId } = useParams<{ dealId: string }>()
+  const { id: dealId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const existingDeal = dealId ? deals.find((d) => d.id === dealId) : undefined
