@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, Eye } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -41,6 +41,7 @@ const columns = [
   { key: 'receivedBy', label: 'Received By' },
   { key: 'receivedDate', label: 'Date', sortable: true },
   { key: 'status', label: 'Status' },
+  { key: 'actions', label: 'Actions' },
 ]
 
 function InwardPage() {
@@ -112,6 +113,20 @@ function InwardPage() {
           <StatusBadge variant={value === 'Open' ? 'success' : 'neutral'}>
             {value as string}
           </StatusBadge>
+        ),
+      }
+    }
+    if (key === 'actions') {
+      const batchId = row.id as string
+      return {
+        display: (
+          <Link
+            to={`/wms/inward/${batchId}/devices`}
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            <Eye className="size-3.5" />
+            View
+          </Link>
         ),
       }
     }

@@ -95,24 +95,49 @@ export default function CategoriesPage() {
 
   const filteredItems = useMemo(() => {
     if (!selectedCategoryId) return mockStockItems
-    // Match on categoryId or subcategory names
-    const selectedCat = mockCategories.find((c) => c.id === selectedCategoryId)
-    const subCat = mockCategories
-      .flatMap((c) => c.subcategories ?? [])
-      .find((s) => s.id === selectedCategoryId)
 
-    if (subCat) {
-      // Filter by subcategory name
-      return mockStockItems.filter(
-        (item) => item.subcategory === subCat.name
-      )
+    // Collect all IDs in a category subtree
+    function collectIds(cat: IMSCategory): string[] {
+      const ids = [cat.id]
+      if (cat.subcategories) {
+        for (const sub of cat.subcategories) {
+          ids.push(...collectIds(sub))
+        }
+      }
+      return ids
     }
-    if (selectedCat) {
-      return mockStockItems.filter(
-        (item) => item.categoryId === selectedCat.id
-      )
+
+    // Find category anywhere in the tree
+    function findCategory(cats: IMSCategory[], id: string): IMSCategory | undefined {
+      for (const cat of cats) {
+        if (cat.id === id) return cat
+        if (cat.subcategories) {
+          const found = findCategory(cat.subcategories, id)
+          if (found) return found
+        }
+      }
+      return undefined
     }
-    return mockStockItems
+
+    const selected = findCategory(mockCategories, selectedCategoryId)
+    if (!selected) return mockStockItems
+
+    const allIds = collectIds(selected)
+
+    // Filter by categoryId match or subcategory name match
+    const allNames = (function collectNames(cat: IMSCategory): string[] {
+      const names = [cat.name]
+      if (cat.subcategories) {
+        for (const sub of cat.subcategories) {
+          names.push(...collectNames(sub))
+        }
+      }
+      return names
+    })(selected)
+
+    return mockStockItems.filter(
+      (item) => allIds.includes(item.categoryId) || allNames.includes(item.subcategory ?? '')
+    )
   }, [selectedCategoryId])
 
   const tab: TabConfig = {

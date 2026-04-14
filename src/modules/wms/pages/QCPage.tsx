@@ -26,6 +26,8 @@ import { mockDevices } from '../data/devices'
 import { mockQCRecords } from '../data/qc-records'
 import type { Device, QCRecord } from '../types'
 
+const QC_ENGINEERS = ['Deepak Verma', 'Anita Sharma']
+
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-IN', {
     day: 'numeric',
@@ -47,6 +49,13 @@ function QCPage() {
   const [grade, setGrade] = useState<'A' | 'B' | ''>('')
   const [failureReasons, setFailureReasons] = useState<string[]>([])
   const [notes, setNotes] = useState('')
+  const [qcAssignments, setQcAssignments] = useState<Record<string, string>>({})
+
+  const handleAssignQCEngineer = (deviceId: string, engineer: string) => {
+    setQcAssignments((prev) => ({ ...prev, [deviceId]: engineer }))
+    const device = mockDevices.find((d) => d.id === deviceId)
+    toast.success(`${device?.barcode ?? deviceId} assigned to ${engineer}`)
+  }
 
   const pendingDevices = useMemo(
     () => mockDevices.filter((d) => d.status === 'AWAITING_QC'),
@@ -66,9 +75,9 @@ function QCPage() {
         model: d.model,
         brand: d.brand,
         qcFailCount: d.qcFailCount,
-        assignedTo: d.assignedTo ?? '-',
+        assignedTo: qcAssignments[d.id] ?? d.assignedTo ?? '',
       })),
-    [pendingDevices],
+    [pendingDevices, qcAssignments],
   )
 
   const completedRows = useMemo(
@@ -131,6 +140,29 @@ function QCPage() {
             >
               {String(value)}
             </button>
+          ),
+        }
+      }
+      if (key === 'assignedTo' && row.model !== undefined) {
+        const deviceId = row.id as string
+        const currentValue = value as string
+        return {
+          display: (
+            <Select
+              value={currentValue || ''}
+              onValueChange={(val) => { if (val) handleAssignQCEngineer(deviceId, val) }}
+            >
+              <SelectTrigger className="h-8 w-36 text-xs">
+                <SelectValue placeholder="Assign..." />
+              </SelectTrigger>
+              <SelectContent>
+                {QC_ENGINEERS.map((eng) => (
+                  <SelectItem key={eng} value={eng}>
+                    {eng}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ),
         }
       }

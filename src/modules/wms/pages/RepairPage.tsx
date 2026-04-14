@@ -3,6 +3,14 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import {
   BusinessMetricsTable,
@@ -12,6 +20,8 @@ import {
 
 import type { RepairJob, RepairType } from '../types'
 import { mockRepairJobs } from '../data/repairs'
+
+const REPAIR_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta', 'Meera Joshi', 'Arjun Patel']
 
 const REPAIR_TYPE_LABELS: Record<RepairType, string> = {
   L2: 'L2 Repair',
@@ -45,6 +55,9 @@ function formatDate(dateStr?: string) {
 
 function RepairPage() {
   const [jobs, setJobs] = useState<RepairJob[]>(mockRepairJobs)
+  const [showAssignForm, setShowAssignForm] = useState(false)
+  const [assignDeviceId, setAssignDeviceId] = useState('')
+  const [assignEngineer, setAssignEngineer] = useState('')
 
   const handleAction = (jobId: string, action: 'start' | 'complete' | 'fail') => {
     setJobs((prev) =>
@@ -86,6 +99,40 @@ function RepairPage() {
     const reworkCount = jobs.filter((j) => j.isRework).length
     return { total, inProgress, completedToday, reworkCount }
   }, [jobs])
+
+  const unassignedJobs = useMemo(
+    () => jobs.filter((j) => !j.assignedTo || j.assignedTo === 'Unassigned'),
+    [jobs]
+  )
+
+  const handleAssignJob = () => {
+    if (!assignDeviceId || !assignEngineer) {
+      toast.error('Please select both a device and an engineer.')
+      return
+    }
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === assignDeviceId
+          ? { ...job, assignedTo: assignEngineer, status: 'Assigned' as const }
+          : job
+      )
+    )
+    const job = jobs.find((j) => j.id === assignDeviceId)
+    toast.success(`${job?.deviceBarcode ?? 'Device'} assigned to ${assignEngineer}`)
+    setAssignDeviceId('')
+    setAssignEngineer('')
+    setShowAssignForm(false)
+  }
+
+  const handleAssignEngineerInline = (jobId: string, engineer: string) => {
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === jobId ? { ...job, assignedTo: engineer } : job
+      )
+    )
+    const job = jobs.find((j) => j.id === jobId)
+    toast.success(`${job?.deviceBarcode ?? 'Device'} assigned to ${engineer}`)
+  }
 
   const buildRows = useCallback(
     (filtered: RepairJob[]) =>
@@ -170,6 +217,29 @@ function RepairPage() {
             <StatusBadge variant={STATUS_VARIANT[status]}>{status}</StatusBadge>
           ),
         }
+      }
+      if (key === 'assignedTo') {
+        const jobId = row.id as string
+        const current = value as string
+        if (!current || current === 'Unassigned') {
+          return {
+            display: (
+              <Select value="" onValueChange={(val) => { if (val) handleAssignEngineerInline(jobId, val) }}>
+                <SelectTrigger className="h-8 w-36 text-xs">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REPAIR_ENGINEERS.map((eng) => (
+                    <SelectItem key={eng} value={eng}>
+                      {eng}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ),
+          }
+        }
+        return null
       }
       if (key === 'rework' && value === 'Yes') {
         return {
@@ -262,6 +332,59 @@ function RepairPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Assign Job */}
+      <div className="flex items-center gap-2">
+        <Button variant="outline" onClick={() => setShowAssignForm(!showAssignForm)}>
+          Assign Job
+        </Button>
+      </div>
+
+      {showAssignForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Assign Repair Job</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Device</Label>
+              <Select value={assignDeviceId} onValueChange={(val) => setAssignDeviceId(val ?? '')}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select unassigned device..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {unassignedJobs.map((job) => (
+                    <SelectItem key={job.id} value={job.id}>
+                      {job.deviceBarcode} - {REPAIR_TYPE_LABELS[job.repairType]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Select Engineer</Label>
+              <Select value={assignEngineer} onValueChange={(val) => setAssignEngineer(val ?? '')}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select engineer..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {REPAIR_ENGINEERS.map((eng) => (
+                    <SelectItem key={eng} value={eng}>
+                      {eng}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleAssignJob}>Assign</Button>
+              <Button variant="outline" onClick={() => setShowAssignForm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Repair Jobs Table */}
       <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />

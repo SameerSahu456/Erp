@@ -7,6 +7,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import {
   BusinessMetricsTable,
@@ -44,6 +51,8 @@ const CHECKLIST_GROUPS = INSPECTION_CHECKLIST_ITEMS.reduce<
 
 const GROUP_ORDER = ['Panels', 'Display', 'Input', 'Audio', 'Power', 'Hardware', 'Ports']
 
+const INSPECTION_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta']
+
 type ChecklistState = Record<string, { result: InspectionResult; notes: string }>
 
 function InspectionPage() {
@@ -56,6 +65,13 @@ function InspectionPage() {
   const [paintPanels, setPaintPanels] = useState<PaintPanelType[]>([])
   const [spareParts, setSpareParts] = useState('')
   const [overallNotes, setOverallNotes] = useState('')
+  const [assignments, setAssignments] = useState<Record<string, string>>({})
+
+  const handleAssignEngineer = (deviceId: string, engineer: string) => {
+    setAssignments((prev) => ({ ...prev, [deviceId]: engineer }))
+    const device = mockDevices.find((d) => d.id === deviceId)
+    toast.success(`${device?.barcode ?? deviceId} assigned to ${engineer}`)
+  }
 
   const hasFailures = useMemo(
     () => Object.values(checklist).some((item) => item.result === 'FAIL'),
@@ -99,8 +115,9 @@ function InspectionPage() {
         brand: d.brand,
         batch: d.batchNumber,
         receivedDate: formatDate(d.receivedAt),
+        assignedTo: assignments[d.id] ?? '',
       })),
-    [pendingDevices],
+    [pendingDevices, assignments],
   )
 
   const completedRows = useMemo(
@@ -136,6 +153,7 @@ function InspectionPage() {
           { key: 'brand', label: 'Brand', sortable: true },
           { key: 'batch', label: 'Batch' },
           { key: 'receivedDate', label: 'Received Date', sortable: true },
+          { key: 'assignedTo', label: 'Assign' },
         ],
         data: pendingRows,
       },
@@ -171,6 +189,29 @@ function InspectionPage() {
             >
               {String(value)}
             </button>
+          ),
+        }
+      }
+      if (key === 'assignedTo' && row.model !== undefined) {
+        const deviceId = row.id as string
+        const currentValue = value as string
+        return {
+          display: (
+            <Select
+              value={currentValue || ''}
+              onValueChange={(val) => { if (val) handleAssignEngineer(deviceId, val) }}
+            >
+              <SelectTrigger className="h-8 w-36 text-xs">
+                <SelectValue placeholder="Assign..." />
+              </SelectTrigger>
+              <SelectContent>
+                {INSPECTION_ENGINEERS.map((eng) => (
+                  <SelectItem key={eng} value={eng}>
+                    {eng}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ),
         }
       }

@@ -1,10 +1,18 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, Package, Tag, Layers } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Package, Tag, Layers, Send } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -16,6 +24,7 @@ import {
   DEVICE_STATUS_VARIANT,
   type DeviceStatus,
   type BatchOwnershipType,
+  type Device,
 } from '../types'
 import { mockBatches } from '../data/batches'
 import { mockDevices } from '../data/devices'
@@ -32,6 +41,8 @@ const OWNERSHIP_TYPE_VARIANT: Record<BatchOwnershipType, 'success' | 'warning' |
   ADVANCE_RETURN: 'success',
 }
 
+const MOCK_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta', 'Meera Joshi', 'Arjun Patel']
+
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-IN', {
     day: 'numeric',
@@ -44,10 +55,12 @@ function BatchDevicesPage() {
   const { id } = useParams<{ id: string }>()
 
   const batch = mockBatches.find((b) => b.id === id)
-  const batchDevices = useMemo(
+  const initialDevices = useMemo(
     () => mockDevices.filter((d) => d.batchId === id),
     [id]
   )
+
+  const [devices, setDevices] = useState<Device[]>(initialDevices)
 
   if (!batch) {
     return (
@@ -59,6 +72,44 @@ function BatchDevicesPage() {
     )
   }
 
+  const handleMoveToInspection = (deviceId: string) => {
+    setDevices((prev) =>
+      prev.map((d) => {
+        if (d.id !== deviceId) return d
+        toast.success(`${d.barcode} moved to Pending Inspection`)
+        return { ...d, status: 'PENDING_INSPECTION' as DeviceStatus }
+      })
+    )
+  }
+
+  const handleSendAllToInspection = () => {
+    const receivedCount = devices.filter((d) => d.status === 'RECEIVED').length
+    if (receivedCount === 0) {
+      toast.info('No RECEIVED devices to move.')
+      return
+    }
+    setDevices((prev) =>
+      prev.map((d) =>
+        d.status === 'RECEIVED'
+          ? { ...d, status: 'PENDING_INSPECTION' as DeviceStatus }
+          : d
+      )
+    )
+    toast.success(`${receivedCount} device(s) moved to Pending Inspection`)
+  }
+
+  const handleAssignEngineer = (deviceId: string, engineer: string) => {
+    setDevices((prev) =>
+      prev.map((d) => {
+        if (d.id !== deviceId) return d
+        toast.success(`${d.barcode} assigned to ${engineer}`)
+        return { ...d, assignedTo: engineer }
+      })
+    )
+  }
+
+  const hasReceivedDevices = devices.some((d) => d.status === 'RECEIVED')
+
   const deviceColumns = [
     { key: 'barcode', label: 'Barcode', sortable: true },
     { key: 'model', label: 'Model', sortable: true },
@@ -66,27 +117,30 @@ function BatchDevicesPage() {
     { key: 'status', label: 'Status' },
     { key: 'grade', label: 'Grade', align: 'center' as const },
     { key: 'assignedTo', label: 'Assigned To' },
+    { key: 'actions', label: 'Actions' },
   ]
 
-  const deviceRows = batchDevices.map((d) => ({
+  const deviceRows = devices.map((d) => ({
+    id: d.id,
     barcode: d.barcode,
     model: d.model,
     serialNumber: d.serialNumber,
     status: d.status,
     grade: d.grade ?? '-',
     assignedTo: d.assignedTo ?? '-',
+    _status: d.status,
   }))
 
   const tabs: TabConfig[] = [
     {
       id: 'devices',
-      label: `Devices (${batchDevices.length})`,
+      label: `Devices (${devices.length})`,
       columns: deviceColumns,
       data: deviceRows,
     },
   ]
 
-  const cellFormatter: CellFormatter = (value, key) => {
+  const cellFormatter: CellFormatter = (value, key, row) => {
     if (key === 'status') {
       const status = value as DeviceStatus
       return {
@@ -96,6 +150,47 @@ function BatchDevicesPage() {
           </StatusBadge>
         ),
       }
+    }
+    if (key === 'assignedTo') {
+      const deviceId = row.id as string
+      const currentValue = value as string
+      return {
+        display: (
+          <Select
+            value={currentValue === '-' ? '' : currentValue}
+            onValueChange={(val) => { if (val) handleAssignEngineer(deviceId, val) }}
+          >
+            <SelectTrigger className="h-8 w-36 text-xs">
+              <SelectValue placeholder="Assign..." />
+            </SelectTrigger>
+            <SelectContent>
+              {MOCK_ENGINEERS.map((eng) => (
+                <SelectItem key={eng} value={eng}>
+                  {eng}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ),
+      }
+    }
+    if (key === 'actions') {
+      const status = row._status as DeviceStatus
+      const deviceId = row.id as string
+      if (status === 'RECEIVED') {
+        return {
+          display: (
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => handleMoveToInspection(deviceId)}
+            >
+              Move to Inspection
+            </Button>
+          ),
+        }
+      }
+      return { display: <span className="text-muted-foreground text-xs">--</span> }
     }
     return null
   }
@@ -136,6 +231,12 @@ function BatchDevicesPage() {
             </p>
           </div>
         </div>
+        {hasReceivedDevices && (
+          <Button onClick={handleSendAllToInspection}>
+            <Send className="size-4" data-icon="inline-start" />
+            Send All to Inspection
+          </Button>
+        )}
       </div>
 
       {/* Batch Info Card */}
@@ -159,7 +260,7 @@ function BatchDevicesPage() {
       </Card>
 
       {/* Device List */}
-      {batchDevices.length > 0 ? (
+      {devices.length > 0 ? (
         <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
       ) : (
         <EmptyState
