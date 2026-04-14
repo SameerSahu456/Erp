@@ -106,5 +106,27 @@ export interface CrmNotification {
   module: string
 }
 
+export interface Activity {
+  id: string
+  type: 'call' | 'email' | 'meeting' | 'task' | 'note' | 'stage_change'
+  title: string
+  description?: string
+  user: string
+  timestamp: string
+  entityType: 'lead' | 'deal' | 'account' | 'contact'
+  entityId: string
+  metadata?: Record<string, string>
+}
+
+export interface Note {
+  id: string
+  content: string
+  user: string
+  createdAt: string
+  updatedAt?: string
+  entityType: 'lead' | 'deal' | 'account' | 'contact'
+  entityId: string
+}
+
 export const LEAD_STAGES = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'] as const
 export const DEAL_STAGES = ['Discovery', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const
