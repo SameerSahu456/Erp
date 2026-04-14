@@ -1,5 +1,7 @@
-import { useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { Pencil, DollarSign } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -9,8 +11,8 @@ import { Timeline, type TimelineEntry } from '@/components/common/Timeline'
 import { PermissionGate } from '@/components/common/PermissionGate'
 import { cn } from '@/lib/utils'
 import { mockStockItems } from '../data/stock-items'
-import { mockStockMovements } from '@/modules/wms/data/stock-movements'
-import { DEVICE_STATUS_LABELS } from '@/modules/wms/types'
+import { mockSkuHistory } from '../data/sku-history'
+import type { StockItem, StockVariant, StockSku } from '@/modules/wms/types'
 
 const currencyFmt = new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -32,21 +34,69 @@ const VARIANT_BADGE_MAP: Record<string, 'success' | 'info' | 'warning'> = {
   'New Pool': 'warning',
 }
 
+const SKU_STATUS_BADGE_MAP: Record<StockSku['status'], 'success' | 'info' | 'warning' | 'error'> = {
+  'In Stock': 'success',
+  Reserved: 'warning',
+  Dispatched: 'info',
+  'In Repair': 'error',
+}
+
 export default function StockItemDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const item = mockStockItems.find((i) => i.id === id)
+  const [item, setItem] = useState<StockItem | undefined>(() =>
+    mockStockItems.find((i) => i.id === id)
+  )
 
-  const movementEntries: TimelineEntry[] = useMemo(() => {
+  const [editingVariant, setEditingVariant] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const startEditing = useCallback((variantType: string, currentPrice: number) => {
+    setEditingVariant(variantType)
+    setEditValue(String(currentPrice))
+    setTimeout(() => inputRef.current?.focus(), 0)
+  }, [])
+
+  const savePrice = useCallback(() => {
+    if (!editingVariant || !item) return
+    const newPrice = parseFloat(editValue)
+    if (isNaN(newPrice) || newPrice <= 0) {
+      setEditingVariant(null)
+      return
+    }
+    setItem({
+      ...item,
+      variants: item.variants.map((v) =>
+        v.type === editingVariant
+          ? { ...v, unitPrice: newPrice, lastUpdated: new Date().toISOString() }
+          : v
+      ),
+    })
+    toast.success('Price updated')
+    setEditingVariant(null)
+  }, [editingVariant, editValue, item])
+
+  const cancelEditing = useCallback(() => {
+    setEditingVariant(null)
+  }, [])
+
+  // Price change log from SKU history
+  const priceChangeEntries: TimelineEntry[] = useMemo(() => {
     if (!item) return []
-    return mockStockMovements
-      .slice(0, 10)
-      .map((mv) => ({
-        id: mv.id,
-        title: `${mv.deviceBarcode}: ${DEVICE_STATUS_LABELS[mv.fromStatus]} -> ${DEVICE_STATUS_LABELS[mv.toStatus]}`,
-        description: mv.notes,
-        user: mv.changedBy,
-        timestamp: formatDate(mv.changedAt),
-        variant: 'default' as const,
+    const allSkus = item.variants.flatMap((v) => v.skus.map((s) => s.sku))
+    return mockSkuHistory
+      .filter((h) => h.event === 'PRICE_CHANGED' && allSkus.includes(h.sku))
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .map((h) => ({
+        id: h.id,
+        icon: DollarSign,
+        title: h.description,
+        description: h.fromValue && h.toValue
+          ? `${currencyFmt.format(Number(h.fromValue))} \u2192 ${currencyFmt.format(Number(h.toValue))}`
+          : undefined,
+        user: h.user,
+        timestamp: formatDate(h.timestamp),
+        variant: 'warning' as const,
       }))
   }, [item])
 
@@ -63,7 +113,7 @@ export default function StockItemDetailPage() {
     <div className="space-y-6">
       <EntityHeader
         title={item.name}
-        subtitle={`${item.categoryName}${item.subcategory ? ` / ${item.subcategory}` : ''} - ${item.brand}`}
+        subtitle={`${item.sku} \u00B7 ${item.categoryName}${item.subcategory ? ` / ${item.subcategory}` : ''} \u00B7 ${item.brand}`}
         backHref="/ims/stock-items"
       />
 
@@ -100,74 +150,195 @@ export default function StockItemDetailPage() {
               <dt className="text-sm text-muted-foreground">Reorder Level</dt>
               <dd className="mt-1 text-sm font-medium">{item.reorderLevel}</dd>
             </div>
+            {item.aliases && item.aliases.length > 0 && (
+              <div className="sm:col-span-2 lg:col-span-3">
+                <dt className="text-sm text-muted-foreground">Aliases</dt>
+                <dd className="mt-1 flex flex-wrap gap-1">
+                  {item.aliases.map((alias) => (
+                    <StatusBadge key={alias} variant="neutral">
+                      {alias}
+                    </StatusBadge>
+                  ))}
+                </dd>
+              </div>
+            )}
           </dl>
         </CardContent>
       </Card>
 
-      {/* Variants */}
-      <div>
-        <h2 className="mb-4 text-lg font-semibold">Variants</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {item.variants.map((v) => {
-            const isLow = v.quantity < item.reorderLevel
-            const variantCard = (
-              <Card key={v.type}>
-                <CardContent className="space-y-3 pt-4">
-                  <StatusBadge variant={VARIANT_BADGE_MAP[v.type] ?? 'neutral'}>
-                    {v.type}
-                  </StatusBadge>
-                  <div className="space-y-2">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-sm text-muted-foreground">Quantity</span>
-                      <span
-                        className={cn(
-                          'text-lg font-bold',
-                          isLow && 'rounded bg-destructive/10 px-2 text-destructive'
-                        )}
-                      >
-                        {v.quantity}
-                      </span>
-                    </div>
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-sm text-muted-foreground">Unit Price</span>
-                      <span className="text-sm font-medium">
-                        {currencyFmt.format(v.unitPrice)}
-                      </span>
-                    </div>
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-sm text-muted-foreground">Last Updated</span>
-                      <span className="text-sm">{formatDate(v.lastUpdated)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
+      {/* Variant Sections */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Variants &amp; Inventory</h2>
+        {item.variants.map((v) => {
+          const variantCard = (
+            <VariantCard
+              key={v.type}
+              variant={v}
+              itemId={item.id}
+              reorderLevel={item.reorderLevel}
+              isEditing={editingVariant === v.type}
+              editValue={editValue}
+              inputRef={inputRef}
+              onStartEditing={() => startEditing(v.type, v.unitPrice)}
+              onEditValueChange={setEditValue}
+              onSave={savePrice}
+              onCancel={cancelEditing}
+            />
+          )
 
-            if (v.type === 'Refurbished') {
-              return (
-                <PermissionGate key={v.type} role="TECHNICAL_TEAM">
-                  {variantCard}
-                </PermissionGate>
-              )
-            }
-            return variantCard
-          })}
-        </div>
+          if (v.type === 'Refurbished') {
+            return (
+              <PermissionGate key={v.type} role="TECHNICAL_TEAM">
+                {variantCard}
+              </PermissionGate>
+            )
+          }
+          return variantCard
+        })}
       </div>
 
-      {/* Stock Movement History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Stock Movement History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {movementEntries.length > 0 ? (
-            <Timeline entries={movementEntries} />
-          ) : (
-            <p className="text-sm text-muted-foreground">No movements recorded.</p>
-          )}
-        </CardContent>
-      </Card>
+      {/* Price Change Log */}
+      {priceChangeEntries.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Price Change Log</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Timeline entries={priceChangeEntries} />
+          </CardContent>
+        </Card>
+      )}
     </div>
+  )
+}
+
+// ── Variant Card component ──
+
+interface VariantCardProps {
+  variant: StockVariant
+  itemId: string
+  reorderLevel: number
+  isEditing: boolean
+  editValue: string
+  inputRef: React.RefObject<HTMLInputElement | null>
+  onStartEditing: () => void
+  onEditValueChange: (v: string) => void
+  onSave: () => void
+  onCancel: () => void
+}
+
+function VariantCard({
+  variant,
+  itemId,
+  reorderLevel,
+  isEditing,
+  editValue,
+  inputRef,
+  onStartEditing,
+  onEditValueChange,
+  onSave,
+  onCancel,
+}: VariantCardProps) {
+  const isLow = variant.quantity < reorderLevel
+  const totalValue = variant.quantity * variant.unitPrice
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-center gap-4">
+          <StatusBadge variant={VARIANT_BADGE_MAP[variant.type] ?? 'neutral'}>
+            {variant.type}
+          </StatusBadge>
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm text-muted-foreground">Qty:</span>
+            <span
+              className={cn(
+                'text-lg font-bold',
+                isLow && 'rounded bg-destructive/10 px-2 text-destructive'
+              )}
+            >
+              {variant.quantity}
+            </span>
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm text-muted-foreground">Unit Price:</span>
+            {isEditing ? (
+              <input
+                ref={inputRef}
+                type="number"
+                value={editValue}
+                onChange={(e) => onEditValueChange(e.target.value)}
+                onBlur={onSave}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onSave()
+                  if (e.key === 'Escape') onCancel()
+                }}
+                className="h-7 w-28 rounded border border-input bg-background px-2 text-sm font-medium"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={onStartEditing}
+                className="group inline-flex items-center gap-1"
+              >
+                <span className="text-sm font-medium">
+                  {currencyFmt.format(variant.unitPrice)}
+                </span>
+                <Pencil className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm text-muted-foreground">Total:</span>
+            <span className="text-sm font-medium">{currencyFmt.format(totalValue)}</span>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {variant.skus.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">SKU Code</th>
+                  <th className="pb-2 pr-4 font-medium">Serial #</th>
+                  <th className="pb-2 pr-4 font-medium">Barcode</th>
+                  <th className="pb-2 pr-4 font-medium">Status</th>
+                  <th className="pb-2 pr-4 font-medium">Grade</th>
+                  <th className="pb-2 pr-4 font-medium">Location</th>
+                  <th className="pb-2 font-medium">Received</th>
+                </tr>
+              </thead>
+              <tbody>
+                {variant.skus.map((s) => (
+                  <tr key={s.sku} className="border-b last:border-0">
+                    <td className="py-2 pr-4">
+                      <Link
+                        to={`/ims/stock-items/${itemId}/sku/${s.sku}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {s.sku}
+                      </Link>
+                    </td>
+                    <td className="py-2 pr-4 font-mono text-xs">{s.serialNumber}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">{s.barcode}</td>
+                    <td className="py-2 pr-4">
+                      <StatusBadge variant={SKU_STATUS_BADGE_MAP[s.status]}>
+                        {s.status}
+                      </StatusBadge>
+                    </td>
+                    <td className="py-2 pr-4">{s.grade ?? '-'}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">{s.location}</td>
+                    <td className="py-2">{formatDate(s.receivedDate)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No individual SKUs tracked.</p>
+        )}
+      </CardContent>
+    </Card>
   )
 }

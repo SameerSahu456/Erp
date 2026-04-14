@@ -290,6 +290,33 @@ export interface StockVariant {
   quantity: number
   unitPrice: number
   lastUpdated: string
+  skus: StockSku[]
+}
+
+export interface StockSku {
+  sku: string
+  serialNumber: string
+  barcode: string
+  status: 'In Stock' | 'Reserved' | 'Dispatched' | 'In Repair'
+  grade?: 'A' | 'B'
+  location: string
+  poNumber?: string
+  batchNumber?: string
+  receivedDate: string
+  lastMovement: string
+}
+
+// ── SKU History / Traceability ──
+export interface SkuHistoryEntry {
+  id: string
+  sku: string
+  event: 'PO_CREATED' | 'PO_RECEIVED' | 'GRN_INWARD' | 'INSPECTION' | 'REPAIR' | 'QC_PASSED' | 'QC_FAILED' | 'STOCKED' | 'DISPATCHED' | 'PRICE_CHANGED' | 'LOCATION_CHANGED'
+  description: string
+  fromValue?: string
+  toValue?: string
+  user: string
+  timestamp: string
+  reference?: string
 }
 
 // ── Checklist Templates ──

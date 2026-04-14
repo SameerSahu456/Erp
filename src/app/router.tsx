@@ -55,6 +55,7 @@ const CategoriesPage = lazy(() => import('@/modules/ims/pages/CategoriesPage'))
 const StockItemsPage = lazy(() => import('@/modules/ims/pages/StockItemsPage'))
 const StockItemDetailPage = lazy(() => import('@/modules/ims/pages/StockItemDetailPage'))
 const ImsReportsPage = lazy(() => import('@/modules/ims/pages/ImsReportsPage'))
+const SkuHistoryPage = lazy(() => import('@/modules/ims/pages/SkuHistoryPage'))
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return (
@@ -136,6 +137,7 @@ export const router = createBrowserRouter([
       { path: '/ims/categories', element: <LazyRoute><CategoriesPage /></LazyRoute> },
       { path: '/ims/stock-items', element: <LazyRoute><StockItemsPage /></LazyRoute> },
       { path: '/ims/stock-items/:id', element: <LazyRoute><StockItemDetailPage /></LazyRoute> },
+      { path: '/ims/stock-items/:id/sku/:sku', element: <LazyRoute><SkuHistoryPage /></LazyRoute> },
       { path: '/ims/reports', element: <LazyRoute><ImsReportsPage /></LazyRoute> },
     ],
   },
