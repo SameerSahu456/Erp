@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import './themes.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -122,9 +123,91 @@
     @apply border-border outline-ring/50;
     }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
     }
   html {
     @apply font-sans;
     }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+
+  h1 { @apply text-4xl font-bold; }
+  h2 { @apply text-3xl font-semibold; }
+  h3 { @apply text-2xl font-semibold; }
+  h4 { @apply text-xl font-semibold; }
+  h5 { @apply text-lg font-medium; }
+  h6 { @apply text-base font-medium; }
+}
+
+/* ── Custom theme tokens for Tailwind ── */
+@theme {
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Primary Teal Scale */
+  --color-primary-50: #f0fafa;
+  --color-primary-100: #d1eded;
+  --color-primary-200: #a3dbdb;
+  --color-primary-300: #75c9c9;
+  --color-primary-400: #47b7b7;
+  --color-primary-500: #2b8a8a;
+  --color-primary-600: #236e6e;
+  --color-primary-700: #1b5353;
+  --color-primary-800: #133737;
+  --color-primary-900: #0b1c1c;
+  --color-primary-950: #060e0e;
+
+  /* Status Colors */
+  --color-status-error-text: #b91c1c;
+  --color-status-error-bg: #fee2e2;
+  --color-status-success-text: #15803d;
+  --color-status-success-bg: #dcfce7;
+  --color-status-warning-text: #a16207;
+  --color-status-warning-bg: #fef9c3;
+  --color-status-info-text: #1d4ed8;
+  --color-status-info-bg: #dbeafe;
+}
+
+/* ── Status Cell Utilities ── */
+@layer utilities {
+  .red-cell {
+    @apply text-status-error-text bg-status-error-bg;
+  }
+
+  .success-cell {
+    @apply text-status-success-text bg-status-success-bg;
+  }
+
+  .warning-cell {
+    @apply text-status-warning-text bg-status-warning-bg;
+  }
+
+  .info-cell {
+    @apply text-status-info-text bg-status-info-bg;
+  }
+}
+
+/* ── Custom Scrollbar ── */
+@layer base {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
 }

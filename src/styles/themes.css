@@ -1,0 +1,495 @@
+/* ══════════════════════════════════════════════════════════════════
+   Theme System — 8 themes × light/dark = 16 combinations
+   Uses oklch() values to match Shadcn's convention in this project.
+   Applied via data-theme attribute on <body> or <html>.
+   Dark mode toggled via .dark class on <html>.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Shadcn Default ── */
+/* Light: standard zinc-based Shadcn look */
+[data-theme='shadcn-default'] {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark [data-theme='shadcn-default'],
+[data-theme='shadcn-default'].dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.205 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* ── 2. Comprint CRM — Indigo + Gold ── */
+[data-theme='comprint-crm'] {
+  --background: hsl(228 33% 97%);
+  --foreground: hsl(226 57% 12%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(226 57% 12%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(226 57% 12%);
+  --primary: hsl(239 58% 50%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(226 20% 93%);
+  --secondary-foreground: hsl(226 57% 18%);
+  --muted: hsl(226 20% 93%);
+  --muted-foreground: hsl(226 10% 45%);
+  --accent: hsl(38 92% 50%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 84% 60%);
+  --border: hsl(226 20% 88%);
+  --input: hsl(226 20% 88%);
+  --ring: hsl(239 58% 50%);
+  --radius: 0.625rem;
+  --sidebar: hsl(228 33% 95%);
+  --sidebar-foreground: hsl(226 57% 12%);
+  --sidebar-primary: hsl(239 58% 50%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(226 20% 90%);
+  --sidebar-accent-foreground: hsl(226 57% 18%);
+  --sidebar-border: hsl(226 20% 88%);
+  --sidebar-ring: hsl(239 58% 50%);
+}
+
+.dark [data-theme='comprint-crm'],
+[data-theme='comprint-crm'].dark {
+  --background: hsl(228 33% 7%);
+  --foreground: hsl(226 60% 95%);
+  --card: hsl(228 25% 12%);
+  --card-foreground: hsl(226 60% 95%);
+  --popover: hsl(228 25% 12%);
+  --popover-foreground: hsl(226 60% 95%);
+  --primary: hsl(239 58% 65%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(228 20% 18%);
+  --secondary-foreground: hsl(226 60% 90%);
+  --muted: hsl(228 20% 18%);
+  --muted-foreground: hsl(226 10% 55%);
+  --accent: hsl(38 92% 60%);
+  --accent-foreground: hsl(228 33% 7%);
+  --destructive: hsl(0 62% 50%);
+  --border: hsl(228 15% 20%);
+  --input: hsl(228 15% 22%);
+  --ring: hsl(239 58% 65%);
+  --sidebar: hsl(228 25% 10%);
+  --sidebar-foreground: hsl(226 60% 95%);
+  --sidebar-primary: hsl(239 58% 65%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(228 20% 16%);
+  --sidebar-accent-foreground: hsl(226 60% 90%);
+  --sidebar-border: hsl(228 15% 20%);
+  --sidebar-ring: hsl(239 58% 65%);
+}
+
+/* ── 3. Corporate Slate (DEFAULT) — Teal + Slate ── */
+[data-theme='corporate-slate'] {
+  --background: hsl(210 11% 97%);
+  --foreground: hsl(215 28% 17%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(215 28% 17%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(215 28% 17%);
+  --primary: hsl(180 51% 36%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210 18% 93%);
+  --secondary-foreground: hsl(215 28% 20%);
+  --muted: hsl(210 18% 93%);
+  --muted-foreground: hsl(215 10% 45%);
+  --accent: hsl(210 18% 90%);
+  --accent-foreground: hsl(215 28% 20%);
+  --destructive: hsl(0 84% 60%);
+  --border: hsl(210 18% 87%);
+  --input: hsl(210 18% 87%);
+  --ring: hsl(180 51% 36%);
+  --radius: 0.625rem;
+  --sidebar: hsl(210 11% 95%);
+  --sidebar-foreground: hsl(215 28% 17%);
+  --sidebar-primary: hsl(180 51% 36%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(210 18% 90%);
+  --sidebar-accent-foreground: hsl(215 28% 20%);
+  --sidebar-border: hsl(210 18% 87%);
+  --sidebar-ring: hsl(180 51% 36%);
+}
+
+.dark [data-theme='corporate-slate'],
+[data-theme='corporate-slate'].dark {
+  --background: hsl(215 28% 13%);
+  --foreground: hsl(210 20% 93%);
+  --card: hsl(215 25% 17%);
+  --card-foreground: hsl(210 20% 93%);
+  --popover: hsl(215 25% 17%);
+  --popover-foreground: hsl(210 20% 93%);
+  --primary: hsl(180 51% 36%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(215 20% 20%);
+  --secondary-foreground: hsl(210 20% 90%);
+  --muted: hsl(215 20% 20%);
+  --muted-foreground: hsl(215 10% 55%);
+  --accent: hsl(215 20% 22%);
+  --accent-foreground: hsl(210 20% 90%);
+  --destructive: hsl(0 62% 50%);
+  --border: hsl(215 15% 22%);
+  --input: hsl(215 15% 25%);
+  --ring: hsl(180 51% 36%);
+  --sidebar: hsl(215 28% 11%);
+  --sidebar-foreground: hsl(210 20% 93%);
+  --sidebar-primary: hsl(180 51% 36%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(215 20% 18%);
+  --sidebar-accent-foreground: hsl(210 20% 90%);
+  --sidebar-border: hsl(215 15% 22%);
+  --sidebar-ring: hsl(180 51% 36%);
+}
+
+/* ── 4. Modern Minimalist — Teal + Indigo accent + Zinc ── */
+[data-theme='modern-minimalist'] {
+  --background: hsl(240 5% 96%);
+  --foreground: hsl(240 6% 31%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(240 6% 31%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(240 6% 31%);
+  --primary: hsl(180 51% 36%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(240 5% 92%);
+  --secondary-foreground: hsl(240 6% 25%);
+  --muted: hsl(240 5% 92%);
+  --muted-foreground: hsl(240 4% 46%);
+  --accent: hsl(239 84% 67%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 84% 60%);
+  --border: hsl(240 6% 87%);
+  --input: hsl(240 6% 87%);
+  --ring: hsl(180 51% 36%);
+  --radius: 0.625rem;
+  --sidebar: hsl(240 5% 94%);
+  --sidebar-foreground: hsl(240 6% 31%);
+  --sidebar-primary: hsl(180 51% 36%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 5% 90%);
+  --sidebar-accent-foreground: hsl(240 6% 25%);
+  --sidebar-border: hsl(240 6% 87%);
+  --sidebar-ring: hsl(180 51% 36%);
+}
+
+.dark [data-theme='modern-minimalist'],
+[data-theme='modern-minimalist'].dark {
+  --background: hsl(240 6% 10%);
+  --foreground: hsl(240 5% 93%);
+  --card: hsl(240 5% 15%);
+  --card-foreground: hsl(240 5% 93%);
+  --popover: hsl(240 5% 15%);
+  --popover-foreground: hsl(240 5% 93%);
+  --primary: hsl(180 51% 36%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(240 5% 18%);
+  --secondary-foreground: hsl(240 5% 90%);
+  --muted: hsl(240 5% 18%);
+  --muted-foreground: hsl(240 4% 55%);
+  --accent: hsl(239 84% 60%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 62% 50%);
+  --border: hsl(240 5% 20%);
+  --input: hsl(240 5% 22%);
+  --ring: hsl(180 51% 36%);
+  --sidebar: hsl(240 6% 8%);
+  --sidebar-foreground: hsl(240 5% 93%);
+  --sidebar-primary: hsl(180 51% 36%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 5% 16%);
+  --sidebar-accent-foreground: hsl(240 5% 90%);
+  --sidebar-border: hsl(240 5% 20%);
+  --sidebar-ring: hsl(180 51% 36%);
+}
+
+/* ── 5. High-Contrast Professional — Teal + Navy ── */
+[data-theme='high-contrast'] {
+  --background: hsl(210 11% 97%);
+  --foreground: hsl(240 22% 14%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(240 22% 14%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(240 22% 14%);
+  --primary: hsl(180 51% 36%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210 18% 92%);
+  --secondary-foreground: hsl(240 22% 18%);
+  --muted: hsl(210 18% 92%);
+  --muted-foreground: hsl(240 10% 40%);
+  --accent: hsl(152 76% 36%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 84% 60%);
+  --border: hsl(210 18% 85%);
+  --input: hsl(210 18% 85%);
+  --ring: hsl(180 51% 36%);
+  --radius: 0.625rem;
+  --sidebar: hsl(210 11% 95%);
+  --sidebar-foreground: hsl(240 22% 14%);
+  --sidebar-primary: hsl(180 51% 36%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(210 18% 89%);
+  --sidebar-accent-foreground: hsl(240 22% 18%);
+  --sidebar-border: hsl(210 18% 85%);
+  --sidebar-ring: hsl(180 51% 36%);
+}
+
+.dark [data-theme='high-contrast'],
+[data-theme='high-contrast'].dark {
+  --background: hsl(240 22% 14%);
+  --foreground: hsl(210 20% 93%);
+  --card: hsl(240 20% 18%);
+  --card-foreground: hsl(210 20% 93%);
+  --popover: hsl(240 20% 18%);
+  --popover-foreground: hsl(210 20% 93%);
+  --primary: hsl(180 51% 36%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(240 18% 22%);
+  --secondary-foreground: hsl(210 20% 90%);
+  --muted: hsl(240 18% 22%);
+  --muted-foreground: hsl(240 10% 55%);
+  --accent: hsl(152 76% 50%);
+  --accent-foreground: hsl(240 22% 14%);
+  --destructive: hsl(0 62% 50%);
+  --border: hsl(240 15% 24%);
+  --input: hsl(240 15% 26%);
+  --ring: hsl(180 51% 36%);
+  --sidebar: hsl(240 22% 12%);
+  --sidebar-foreground: hsl(210 20% 93%);
+  --sidebar-primary: hsl(180 51% 36%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 18% 20%);
+  --sidebar-accent-foreground: hsl(210 20% 90%);
+  --sidebar-border: hsl(240 15% 24%);
+  --sidebar-ring: hsl(180 51% 36%);
+}
+
+/* ── 6. Ocean Blue — Blue for enterprise SaaS ── */
+[data-theme='ocean-blue'] {
+  --background: hsl(210 33% 96%);
+  --foreground: hsl(220 42% 20%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(220 42% 20%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(220 42% 20%);
+  --primary: hsl(214 100% 42%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210 25% 91%);
+  --secondary-foreground: hsl(220 42% 22%);
+  --muted: hsl(210 25% 91%);
+  --muted-foreground: hsl(210 12% 45%);
+  --accent: hsl(187 71% 55%);
+  --accent-foreground: hsl(220 42% 15%);
+  --destructive: hsl(0 84% 60%);
+  --border: hsl(210 25% 86%);
+  --input: hsl(210 25% 86%);
+  --ring: hsl(214 100% 42%);
+  --radius: 0.625rem;
+  --sidebar: hsl(210 33% 94%);
+  --sidebar-foreground: hsl(220 42% 20%);
+  --sidebar-primary: hsl(214 100% 42%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(210 25% 88%);
+  --sidebar-accent-foreground: hsl(220 42% 22%);
+  --sidebar-border: hsl(210 25% 86%);
+  --sidebar-ring: hsl(214 100% 42%);
+}
+
+.dark [data-theme='ocean-blue'],
+[data-theme='ocean-blue'].dark {
+  --background: hsl(213 54% 11%);
+  --foreground: hsl(210 33% 91%);
+  --card: hsl(213 45% 16%);
+  --card-foreground: hsl(210 33% 91%);
+  --popover: hsl(213 45% 16%);
+  --popover-foreground: hsl(210 33% 91%);
+  --primary: hsl(214 100% 65%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(213 35% 20%);
+  --secondary-foreground: hsl(210 33% 88%);
+  --muted: hsl(213 35% 20%);
+  --muted-foreground: hsl(210 15% 55%);
+  --accent: hsl(190 75% 56%);
+  --accent-foreground: hsl(213 54% 11%);
+  --destructive: hsl(0 62% 50%);
+  --border: hsl(213 30% 22%);
+  --input: hsl(213 30% 24%);
+  --ring: hsl(214 100% 65%);
+  --sidebar: hsl(213 54% 9%);
+  --sidebar-foreground: hsl(210 33% 91%);
+  --sidebar-primary: hsl(214 100% 65%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(213 35% 18%);
+  --sidebar-accent-foreground: hsl(210 33% 88%);
+  --sidebar-border: hsl(213 30% 22%);
+  --sidebar-ring: hsl(214 100% 65%);
+}
+
+/* ── 7. Forest Green — Green for fintech ── */
+[data-theme='forest-green'] {
+  --background: hsl(120 10% 97%);
+  --foreground: hsl(120 25% 14%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(120 25% 14%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(120 25% 14%);
+  --primary: hsl(150 82% 27%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(120 12% 91%);
+  --secondary-foreground: hsl(120 25% 18%);
+  --muted: hsl(120 12% 91%);
+  --muted-foreground: hsl(120 8% 45%);
+  --accent: hsl(264 67% 60%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 84% 60%);
+  --border: hsl(120 12% 86%);
+  --input: hsl(120 12% 86%);
+  --ring: hsl(150 82% 27%);
+  --radius: 0.625rem;
+  --sidebar: hsl(120 10% 95%);
+  --sidebar-foreground: hsl(120 25% 14%);
+  --sidebar-primary: hsl(150 82% 27%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(120 12% 88%);
+  --sidebar-accent-foreground: hsl(120 25% 18%);
+  --sidebar-border: hsl(120 12% 86%);
+  --sidebar-ring: hsl(150 82% 27%);
+}
+
+.dark [data-theme='forest-green'],
+[data-theme='forest-green'].dark {
+  --background: hsl(150 25% 7%);
+  --foreground: hsl(120 15% 91%);
+  --card: hsl(150 20% 12%);
+  --card-foreground: hsl(120 15% 91%);
+  --popover: hsl(150 20% 12%);
+  --popover-foreground: hsl(120 15% 91%);
+  --primary: hsl(147 73% 50%);
+  --primary-foreground: hsl(150 25% 7%);
+  --secondary: hsl(150 15% 18%);
+  --secondary-foreground: hsl(120 15% 88%);
+  --muted: hsl(150 15% 18%);
+  --muted-foreground: hsl(120 8% 50%);
+  --accent: hsl(260 68% 62%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 62% 50%);
+  --border: hsl(150 12% 20%);
+  --input: hsl(150 12% 22%);
+  --ring: hsl(147 73% 50%);
+  --sidebar: hsl(150 25% 5%);
+  --sidebar-foreground: hsl(120 15% 91%);
+  --sidebar-primary: hsl(147 73% 50%);
+  --sidebar-primary-foreground: hsl(150 25% 7%);
+  --sidebar-accent: hsl(150 15% 15%);
+  --sidebar-accent-foreground: hsl(120 15% 88%);
+  --sidebar-border: hsl(150 12% 20%);
+  --sidebar-ring: hsl(147 73% 50%);
+}
+
+/* ── 8. Amber Warm — Amber for manufacturing ── */
+[data-theme='amber-warm'] {
+  --background: hsl(36 33% 97%);
+  --foreground: hsl(25 10% 31%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(25 10% 31%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(25 10% 31%);
+  --primary: hsl(38 92% 50%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(30 15% 91%);
+  --secondary-foreground: hsl(25 10% 25%);
+  --muted: hsl(30 15% 91%);
+  --muted-foreground: hsl(25 8% 48%);
+  --accent: hsl(0 72% 51%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 84% 60%);
+  --border: hsl(30 15% 86%);
+  --input: hsl(30 15% 86%);
+  --ring: hsl(38 92% 50%);
+  --radius: 0.625rem;
+  --sidebar: hsl(36 33% 95%);
+  --sidebar-foreground: hsl(25 10% 31%);
+  --sidebar-primary: hsl(38 92% 50%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(30 15% 88%);
+  --sidebar-accent-foreground: hsl(25 10% 25%);
+  --sidebar-border: hsl(30 15% 86%);
+  --sidebar-ring: hsl(38 92% 50%);
+}
+
+.dark [data-theme='amber-warm'],
+[data-theme='amber-warm'].dark {
+  --background: hsl(25 12% 10%);
+  --foreground: hsl(30 22% 93%);
+  --card: hsl(25 10% 15%);
+  --card-foreground: hsl(30 22% 93%);
+  --popover: hsl(25 10% 15%);
+  --popover-foreground: hsl(30 22% 93%);
+  --primary: hsl(43 96% 58%);
+  --primary-foreground: hsl(25 12% 10%);
+  --secondary: hsl(25 10% 20%);
+  --secondary-foreground: hsl(30 22% 90%);
+  --muted: hsl(25 10% 20%);
+  --muted-foreground: hsl(25 8% 52%);
+  --accent: hsl(0 72% 60%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 62% 50%);
+  --border: hsl(25 10% 22%);
+  --input: hsl(25 10% 24%);
+  --ring: hsl(43 96% 58%);
+  --sidebar: hsl(25 12% 8%);
+  --sidebar-foreground: hsl(30 22% 93%);
+  --sidebar-primary: hsl(43 96% 58%);
+  --sidebar-primary-foreground: hsl(25 12% 10%);
+  --sidebar-accent: hsl(25 10% 18%);
+  --sidebar-accent-foreground: hsl(30 22% 90%);
+  --sidebar-border: hsl(25 10% 22%);
+  --sidebar-ring: hsl(43 96% 58%);
+}
