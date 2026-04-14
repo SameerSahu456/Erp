@@ -202,7 +202,7 @@ export default function DashboardPage() {
 
       {/* Section 1: KPI Stats */}
       <section className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+        <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
           Key Performance Indicators
         </h3>
         <StatsRow stats={kpiStats} />
@@ -210,7 +210,7 @@ export default function DashboardPage() {
 
       {/* Section 2: Workflow Stepper */}
       <section className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+        <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
           WMS Device Lifecycle
         </h3>
         <div className="rounded-lg border bg-card p-6">
@@ -220,7 +220,7 @@ export default function DashboardPage() {
 
       {/* Section 3: Business Metrics Table */}
       <section className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+        <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
           Business Metrics
         </h3>
         <BusinessMetricsTable
@@ -234,7 +234,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Left: Timeline */}
         <section className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
             Recent Activity
           </h3>
           <div className="rounded-lg border bg-card p-6">
@@ -246,7 +246,7 @@ export default function DashboardPage() {
         <section className="space-y-6">
           {/* Avatar Group */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
               Team Members
             </h3>
             <div className="rounded-lg border bg-card p-6">
@@ -256,7 +256,7 @@ export default function DashboardPage() {
 
           {/* Status Badge Examples */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
               Status Badges
             </h3>
             <div className="rounded-lg border bg-card p-6">
@@ -273,7 +273,7 @@ export default function DashboardPage() {
 
           {/* Additional info cards for height */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
               Quick Stats
             </h3>
             <div className="rounded-lg border bg-card p-6 space-y-4">
