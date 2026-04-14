@@ -10,6 +10,7 @@ import {
   Phone,
   TrendingUp,
   Target,
+  Plus,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -45,7 +46,10 @@ import { quotes } from '../data/quotes'
 import { invoices } from '../data/invoices'
 import { mockActivities } from '../data/activities'
 import { mockNotes } from '../data/notes'
+import { materialInquiries } from '../data/material-inquiries'
+import { mockComments } from '../data/comments'
 import { DEAL_STAGES } from '../types'
+import { CommentSection } from '../components/CommentSection'
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
@@ -102,6 +106,17 @@ function getInvoiceStatusVariant(status: string): StatusBadgeVariant {
   }
 }
 
+function getMIStatusVariant(status: string): StatusBadgeVariant {
+  switch (status) {
+    case 'Draft': return 'neutral'
+    case 'Submitted': return 'info'
+    case 'Partially Responded': return 'warning'
+    case 'Fully Responded': return 'success'
+    case 'Closed': return 'neutral'
+    default: return 'neutral'
+  }
+}
+
 const MOCK_MANAGERS: Record<string, { email: string; phone: string; role: string }> = {
   'Amit Patel': { email: 'amit.patel@comprint.in', phone: '+91 98200 11111', role: 'Senior Account Manager' },
   'Sneha Desai': { email: 'sneha.desai@comprint.in', phone: '+91 98200 22222', role: 'Account Manager' },
@@ -143,6 +158,13 @@ function DealDetailPage() {
   // Related quotes and invoices by account
   const relatedQuotes = quotes.filter((q) => q.accountId === deal.accountId)
   const relatedInvoices = invoices.filter((i) => i.accountId === deal.accountId)
+
+  // Material inquiries linked to this deal
+  const relatedMIs = materialInquiries.filter((mi) => mi.dealId === deal.id)
+
+  const commentCount = mockComments.filter(
+    (c) => c.entityType === 'deal' && c.entityId === deal.id
+  ).length
 
   const managerInfo = MOCK_MANAGERS[deal.owner]
 
@@ -407,6 +429,70 @@ function DealDetailPage() {
     </div>
   )
 
+  const materialInquiriesContent = (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link to={`/crm/material-inquiries/new?dealId=${deal.id}`} />}
+        >
+          <Plus className="size-3.5" data-icon="inline-start" />
+          Create Material Inquiry
+        </Button>
+      </div>
+      {relatedMIs.length > 0 ? (
+        <div className="space-y-3">
+          {relatedMIs.map((mi) => {
+            const totalItems = mi.items.length
+            const totalQty = mi.items.reduce((sum, item) => sum + item.qtyRequested, 0)
+            const respondedItems = mi.items.filter((item) =>
+              mi.responses.some((r) => r.inquiryItemId === item.id)
+            ).length
+            return (
+              <div
+                key={mi.id}
+                className="flex items-center justify-between rounded-lg border bg-card p-4"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to={`/crm/material-inquiries/${mi.id}`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      {mi.inquiryNumber}
+                    </Link>
+                    <StatusBadge variant={getMIStatusVariant(mi.status)}>
+                      {mi.status}
+                    </StatusBadge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {totalItems} item{totalItems !== 1 ? 's' : ''}, {totalQty} units total
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium">
+                    {respondedItems}/{totalItems} responded
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {mi.categories.join(', ')}
+                  </p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed p-8 text-center">
+          <p className="text-sm text-muted-foreground">No material inquiries linked to this deal</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Create an inquiry to check material availability and pricing.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+
   const tabs = [
     { id: 'overview', label: 'Overview', content: overviewContent },
     {
@@ -426,6 +512,18 @@ function DealDetailPage() {
       label: 'Related',
       count: relatedQuotes.length + relatedInvoices.length,
       content: relatedContent,
+    },
+    {
+      id: 'material-inquiries',
+      label: 'Material Inquiries',
+      count: relatedMIs.length,
+      content: materialInquiriesContent,
+    },
+    {
+      id: 'comments',
+      label: 'Comments',
+      count: commentCount,
+      content: <CommentSection entityType="deal" entityId={deal.id} />,
     },
   ]
 

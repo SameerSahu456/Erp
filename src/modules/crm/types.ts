@@ -196,3 +196,79 @@ export const IMS_CATEGORIES = [
 
 export const LEAD_STAGES = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'] as const
 export const DEAL_STAGES = ['Discovery', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const
+
+// ── Material Inquiry ──
+
+export type MaterialInquiryStatus =
+  | 'Draft'
+  | 'Submitted'
+  | 'Partially Responded'
+  | 'Fully Responded'
+  | 'Closed'
+
+export interface MaterialInquiryItem {
+  id: string
+  item: string
+  category: string
+  description: string
+  qtyRequested: number
+  clientBudgetPerUnit?: number
+  clientTimeline?: string  // e.g., "2 weeks", "30 days"
+}
+
+export interface MaterialInquiryResponse {
+  id: string
+  inquiryItemId: string  // links to MaterialInquiryItem
+  qtyAvailable: number
+  pricePerUnit: number
+  availableDate: string  // ISO date
+  notes?: string
+  respondedBy: string
+  respondedAt: string
+}
+
+export interface MaterialInquiry {
+  id: string
+  inquiryNumber: string  // MI-2026-001
+  leadId?: string
+  leadName?: string
+  dealId?: string
+  dealName?: string
+  categories: string[]
+  status: MaterialInquiryStatus
+  items: MaterialInquiryItem[]
+  responses: MaterialInquiryResponse[]  // procurement fills this — can be multi-part
+  requestedBy: string
+  assignedTo?: string  // procurement team member
+  productManagerNotified?: string  // PM name if they want to intervene
+  clientBudget?: number  // overall budget from client
+  clientTimeline?: string
+  notes?: string
+  createdAt: string
+  updatedAt?: string
+}
+
+// ── Comments/Tagging ──
+
+export interface Comment {
+  id: string
+  content: string
+  user: string
+  mentions: string[]  // @mentioned user names
+  entityType: 'lead' | 'deal' | 'account' | 'contact' | 'quote' | 'sales_order' | 'material_inquiry'
+  entityId: string
+  createdAt: string
+}
+
+export const MOCK_USERS = [
+  'Amit Patel',
+  'Sneha Desai',
+  'Rahul Verma',
+  'Rahul Mehta',
+  'Sneha Patel',
+  'Amar Daxini',
+  'Priya Sharma',
+  'Vikram Singh',
+  'Deepak Gupta',
+  'Anjali Nair',
+] as const

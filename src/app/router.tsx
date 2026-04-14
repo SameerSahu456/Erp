@@ -26,6 +26,9 @@ const SalesOrderFormPage = lazy(() => import('@/modules/crm/pages/SalesOrderForm
 const InvoiceFormPage = lazy(() => import('@/modules/crm/pages/InvoiceFormPage'))
 const PurchaseRequestsPage = lazy(() => import('@/modules/crm/pages/PurchaseRequestsPage'))
 const PurchaseRequestFormPage = lazy(() => import('@/modules/crm/pages/PurchaseRequestFormPage'))
+const MaterialInquiriesPage = lazy(() => import('@/modules/crm/pages/MaterialInquiriesPage'))
+const MaterialInquiryDetailPage = lazy(() => import('@/modules/crm/pages/MaterialInquiryDetailPage'))
+const MaterialInquiryFormPage = lazy(() => import('@/modules/crm/pages/MaterialInquiryFormPage'))
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return (
@@ -76,6 +79,10 @@ export const router = createBrowserRouter([
       { path: '/crm/purchase-requests', element: <LazyRoute><PurchaseRequestsPage /></LazyRoute> },
       { path: '/crm/purchase-requests/new', element: <LazyRoute><PurchaseRequestFormPage /></LazyRoute> },
       { path: '/crm/purchase-requests/:id/edit', element: <LazyRoute><PurchaseRequestFormPage /></LazyRoute> },
+      { path: '/crm/material-inquiries', element: <LazyRoute><MaterialInquiriesPage /></LazyRoute> },
+      { path: '/crm/material-inquiries/new', element: <LazyRoute><MaterialInquiryFormPage /></LazyRoute> },
+      { path: '/crm/material-inquiries/:id', element: <LazyRoute><MaterialInquiryDetailPage /></LazyRoute> },
+      { path: '/crm/material-inquiries/:id/edit', element: <LazyRoute><MaterialInquiryFormPage /></LazyRoute> },
       { path: '/crm/notifications', element: <LazyRoute><NotificationCenter /></LazyRoute> },
     ],
   },
