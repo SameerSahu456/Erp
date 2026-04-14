@@ -14,9 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { EntityHeader } from '../components/EntityHeader'
 import { leads } from '../data/leads'
-import { LEAD_STAGES } from '../types'
+import { LEAD_STAGES, IMS_CATEGORIES } from '../types'
 import type { Lead } from '../types'
 
 const LEAD_SOURCES = ['Website', 'Referral', 'LinkedIn', 'Trade Show', 'Cold Call'] as const
@@ -38,11 +39,19 @@ function LeadFormPage() {
   const [source, setSource] = useState(existingLead?.source ?? 'Website')
   const [owner, setOwner] = useState(existingLead?.owner ?? MOCK_OWNERS[0])
   const [notes, setNotes] = useState(existingLead?.notes ?? '')
+  const [description, setDescription] = useState(existingLead?.description ?? '')
+  const [categories, setCategories] = useState<string[]>(existingLead?.categories ?? [])
 
   const backHref = isEdit ? `/crm/leads/${leadId}` : '/crm/leads'
 
+  function toggleCategory(cat: string) {
+    setCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    )
+  }
+
   function handleSave() {
-    if (!name.trim() || !company.trim()) return
+    if (!name.trim() || !company.trim() || !description.trim()) return
 
     toast.success('Lead saved successfully')
     navigate(backHref)
@@ -184,6 +193,40 @@ function LeadFormPage() {
             </div>
           </div>
 
+          {/* Full width description */}
+          <div className="mt-6 space-y-1.5">
+            <Label htmlFor="lead-description" className="font-ui">
+              Description <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="lead-description"
+              placeholder="Describe what the customer needs..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              required
+            />
+          </div>
+
+          {/* Categories */}
+          <div className="mt-6 space-y-1.5">
+            <Label className="font-ui">Categories</Label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+              {IMS_CATEGORIES.map((cat) => (
+                <label
+                  key={cat}
+                  className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer hover:bg-accent"
+                >
+                  <Checkbox
+                    checked={categories.includes(cat)}
+                    onCheckedChange={() => toggleCategory(cat)}
+                  />
+                  {cat}
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* Full width notes */}
           <div className="mt-6 space-y-1.5">
             <Label htmlFor="lead-notes" className="font-ui">Notes</Label>
@@ -200,7 +243,7 @@ function LeadFormPage() {
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!name.trim() || !company.trim()}>
+          <Button onClick={handleSave} disabled={!name.trim() || !company.trim() || !description.trim()}>
             {isEdit ? 'Save Changes' : 'Create Lead'}
           </Button>
         </CardFooter>

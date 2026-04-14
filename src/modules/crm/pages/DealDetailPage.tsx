@@ -33,11 +33,13 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { Badge } from '@/components/ui/badge'
 import { EntityHeader } from '../components/EntityHeader'
 import { DetailTabs } from '../components/DetailTabs'
 import { ActivityFeed } from '../components/ActivityFeed'
 import { NotesSection } from '../components/NotesSection'
 import { deals } from '../data/deals'
+import { leads } from '../data/leads'
 import { accounts } from '../data/accounts'
 import { quotes } from '../data/quotes'
 import { invoices } from '../data/invoices'
@@ -128,6 +130,7 @@ function DealDetailPage() {
   }
 
   const account = accounts.find((a) => a.id === deal.accountId)
+  const parentLead = deal.leadId ? leads.find((l) => l.id === deal.leadId) : undefined
 
   const activityCount = mockActivities.filter(
     (a) => a.entityType === 'deal' && a.entityId === deal.id
@@ -162,6 +165,43 @@ function DealDetailPage() {
 
   const overviewContent = (
     <div className="space-y-6">
+      {/* Categories */}
+      {deal.categories.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-ui text-muted-foreground">Categories:</span>
+          {deal.categories.map((cat) => (
+            <Badge key={cat} variant="secondary">{cat}</Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Description Card */}
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>Description</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{deal.description}</p>
+        </CardContent>
+      </Card>
+
+      {/* Parent Lead Link */}
+      {parentLead && (
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Linked Lead</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Link
+              to={`/crm/leads/${parentLead.id}`}
+              className="text-sm text-primary underline-offset-4 hover:underline"
+            >
+              {parentLead.name} ({parentLead.company})
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Deal Info Card */}
       <Card size="sm">
         <CardHeader>

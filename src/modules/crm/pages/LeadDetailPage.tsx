@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Pencil, Trash2, Mail, Phone, Building2, Globe, IndianRupee, CalendarDays } from 'lucide-react'
+import { Pencil, Trash2, Mail, Phone, Building2, Globe, IndianRupee, CalendarDays, Plus } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { Badge } from '@/components/ui/badge'
 import { EntityHeader } from '../components/EntityHeader'
 import { DetailTabs } from '../components/DetailTabs'
 import { ActivityFeed } from '../components/ActivityFeed'
@@ -123,10 +124,9 @@ function LeadDetailPage() {
     (n) => n.entityType === 'lead' && n.entityId === lead.id
   ).length
 
-  // Match quotes by company name (since leads don't have accountId)
+  // Match quotes by leadId
   const relatedQuotes = quotes.filter(
-    (q) => q.accountName.toLowerCase().includes(lead.company.toLowerCase()) ||
-           lead.company.toLowerCase().includes(q.accountName.toLowerCase())
+    (q) => q.leadId === lead.id
   )
 
   // Match deals by company name
@@ -149,6 +149,26 @@ function LeadDetailPage() {
 
   const overviewContent = (
     <div className="space-y-6">
+      {/* Categories */}
+      {lead.categories.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-ui text-muted-foreground">Categories:</span>
+          {lead.categories.map((cat) => (
+            <Badge key={cat} variant="secondary">{cat}</Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Description Card */}
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>Description</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{lead.description}</p>
+        </CardContent>
+      </Card>
+
       {/* Lead Info Card */}
       <Card size="sm">
         <CardHeader>
@@ -260,6 +280,16 @@ function LeadDetailPage() {
 
   const quotesContent = (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link to={`/crm/quotes/new?leadId=${lead.id}`} />}
+        >
+          <Plus className="size-3.5" data-icon="inline-start" />
+          Create Quote
+        </Button>
+      </div>
       {relatedQuotes.length > 0 ? (
         <div className="space-y-3">
           {relatedQuotes.map((quote) => (
@@ -269,8 +299,11 @@ function LeadDetailPage() {
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{quote.quoteNumber}</span>
+                  <Link to={`/crm/quotes/${quote.id}/edit`} className="text-sm font-medium text-primary hover:underline">
+                    {quote.quoteNumber}
+                  </Link>
                   <StatusBadge variant={getQuoteStatusVariant(quote.status)}>{quote.status}</StatusBadge>
+                  <Badge variant="outline">v{quote.version}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">{quote.accountName}</p>
               </div>
@@ -287,9 +320,6 @@ function LeadDetailPage() {
           <p className="mt-1 text-xs text-muted-foreground">
             Create a quote to start building a proposal.
           </p>
-          <Button variant="outline" size="sm" className="mt-4">
-            Create Quote
-          </Button>
         </div>
       )}
     </div>

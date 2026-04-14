@@ -24,6 +24,8 @@ const ContactFormPage = lazy(() => import('@/modules/crm/pages/ContactFormPage')
 const QuoteFormPage = lazy(() => import('@/modules/crm/pages/QuoteFormPage'))
 const SalesOrderFormPage = lazy(() => import('@/modules/crm/pages/SalesOrderFormPage'))
 const InvoiceFormPage = lazy(() => import('@/modules/crm/pages/InvoiceFormPage'))
+const PurchaseRequestsPage = lazy(() => import('@/modules/crm/pages/PurchaseRequestsPage'))
+const PurchaseRequestFormPage = lazy(() => import('@/modules/crm/pages/PurchaseRequestFormPage'))
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return (
@@ -71,6 +73,9 @@ export const router = createBrowserRouter([
       { path: '/crm/invoices', element: <LazyRoute><InvoicesPage /></LazyRoute> },
       { path: '/crm/invoices/new', element: <LazyRoute><InvoiceFormPage /></LazyRoute> },
       { path: '/crm/invoices/:id/edit', element: <LazyRoute><InvoiceFormPage /></LazyRoute> },
+      { path: '/crm/purchase-requests', element: <LazyRoute><PurchaseRequestsPage /></LazyRoute> },
+      { path: '/crm/purchase-requests/new', element: <LazyRoute><PurchaseRequestFormPage /></LazyRoute> },
+      { path: '/crm/purchase-requests/:id/edit', element: <LazyRoute><PurchaseRequestFormPage /></LazyRoute> },
       { path: '/crm/notifications', element: <LazyRoute><NotificationCenter /></LazyRoute> },
     ],
   },

@@ -12,6 +12,9 @@ export const deals: Deal[] = [
     closeDate: '2026-05-15',
     owner: 'Amit Patel',
     createdAt: '2026-02-10',
+    description: 'Complete data center infrastructure upgrade including 50 rack servers, storage arrays, and network switches for the Pune campus.',
+    categories: ['Servers', 'Storage', 'Networking'],
+    leadId: 'LEAD-001',
   },
   {
     id: 'DEAL-002',
@@ -24,6 +27,9 @@ export const deals: Deal[] = [
     closeDate: '2026-06-01',
     owner: 'Sneha Desai',
     createdAt: '2026-03-05',
+    description: 'Networking overhaul across 5 branch offices with managed switches, firewalls, and structured cabling.',
+    categories: ['Networking', 'Cables & Accessories'],
+    leadId: 'LEAD-002',
   },
   {
     id: 'DEAL-003',
@@ -36,6 +42,9 @@ export const deals: Deal[] = [
     closeDate: '2026-07-30',
     owner: 'Amit Patel',
     createdAt: '2026-04-01',
+    description: 'Bulk laptop procurement for 200 new campus hires with docking stations and peripherals.',
+    categories: ['Laptops', 'Monitors'],
+    leadId: 'LEAD-003',
   },
   {
     id: 'DEAL-004',
@@ -48,6 +57,9 @@ export const deals: Deal[] = [
     closeDate: '2026-03-20',
     owner: 'Rahul Verma',
     createdAt: '2026-01-15',
+    description: 'Desktop workstations and monitors for the new design team at Wipro Bangalore campus.',
+    categories: ['Desktops', 'Monitors'],
+    leadId: 'LEAD-004',
   },
   {
     id: 'DEAL-005',
@@ -60,6 +72,9 @@ export const deals: Deal[] = [
     closeDate: '2026-05-30',
     owner: 'Sneha Desai',
     createdAt: '2026-02-20',
+    description: 'Server and storage procurement for new cloud POP locations with HPE ProLiant servers and NetApp storage.',
+    categories: ['Servers', 'Storage'],
+    leadId: 'LEAD-011',
   },
   {
     id: 'DEAL-006',
@@ -72,6 +87,9 @@ export const deals: Deal[] = [
     closeDate: '2026-03-10',
     owner: 'Rahul Verma',
     createdAt: '2025-12-01',
+    description: 'Branch IT refresh covering desktops, monitors, and printers for 50 branches in Western India.',
+    categories: ['Desktops', 'Monitors', 'Printers'],
+    leadId: 'LEAD-013',
   },
   {
     id: 'DEAL-007',
@@ -84,6 +102,8 @@ export const deals: Deal[] = [
     closeDate: '2026-05-20',
     owner: 'Amit Patel',
     createdAt: '2026-03-15',
+    description: 'Setting up HIPAA-compliant server infrastructure for electronic health records system with redundant storage.',
+    categories: ['Servers', 'Storage'],
   },
   {
     id: 'DEAL-008',
@@ -96,6 +116,8 @@ export const deals: Deal[] = [
     closeDate: '2026-08-15',
     owner: 'Sneha Desai',
     createdAt: '2026-04-05',
+    description: 'Industrial-grade networking and server infrastructure for factory automation and IoT deployment.',
+    categories: ['Networking', 'Servers', 'UPS & Power'],
   },
   {
     id: 'DEAL-009',
@@ -108,6 +130,8 @@ export const deals: Deal[] = [
     closeDate: '2026-03-01',
     owner: 'Rahul Verma',
     createdAt: '2026-01-10',
+    description: 'Software license procurement for cloud migration project. Lost to competitor on pricing.',
+    categories: ['Software Licenses'],
   },
   {
     id: 'DEAL-010',
@@ -120,6 +144,9 @@ export const deals: Deal[] = [
     closeDate: '2026-06-15',
     owner: 'Amit Patel',
     createdAt: '2026-03-25',
+    description: 'Enterprise security infrastructure upgrade including next-gen firewalls and network access control systems.',
+    categories: ['Networking'],
+    leadId: 'LEAD-001',
   },
   {
     id: 'DEAL-011',
@@ -132,6 +159,8 @@ export const deals: Deal[] = [
     closeDate: '2026-02-28',
     owner: 'Sneha Desai',
     createdAt: '2026-01-05',
+    description: 'Online UPS deployment across 10 telecom exchange sites for power backup and surge protection.',
+    categories: ['UPS & Power'],
   },
   {
     id: 'DEAL-012',
@@ -144,5 +173,8 @@ export const deals: Deal[] = [
     closeDate: '2026-02-15',
     owner: 'Amit Patel',
     createdAt: '2025-11-20',
+    description: 'Annual IT infrastructure maintenance and hardware refresh contract renewal. Lost due to budget cuts.',
+    categories: ['Networking', 'Desktops'],
+    leadId: 'LEAD-010',
   },
 ]

@@ -14,10 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { EntityHeader } from '../components/EntityHeader'
 import { deals } from '../data/deals'
 import { accounts } from '../data/accounts'
-import { DEAL_STAGES } from '../types'
+import { leads } from '../data/leads'
+import { DEAL_STAGES, IMS_CATEGORIES } from '../types'
 import type { Deal } from '../types'
 
 const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
@@ -36,9 +38,17 @@ function DealFormPage() {
   const [value, setValue] = useState(existingDeal?.value?.toString() ?? '')
   const [probability, setProbability] = useState(existingDeal?.probability?.toString() ?? '')
   const [owner, setOwner] = useState(existingDeal?.owner ?? MOCK_OWNERS[0])
-  const [description, setDescription] = useState('')
+  const [description, setDescription] = useState(existingDeal?.description ?? '')
+  const [categories, setCategories] = useState<string[]>(existingDeal?.categories ?? [])
+  const [leadId, setLeadId] = useState(existingDeal?.leadId ?? '')
 
   const backHref = isEdit ? `/crm/deals/${dealId}` : '/crm/deals'
+
+  function toggleCategory(cat: string) {
+    setCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    )
+  }
 
   function handleSave() {
     if (!name.trim()) return
@@ -175,6 +185,23 @@ function DealFormPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-1.5">
+                <Label className="font-ui">Linked Lead</Label>
+                <Select value={leadId} onValueChange={(val) => setLeadId(val ?? '')}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select lead (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {leads.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name} ({l.company})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -188,6 +215,25 @@ function DealFormPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
             />
+          </div>
+
+          {/* Categories */}
+          <div className="mt-6 space-y-1.5">
+            <Label className="font-ui">Categories</Label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+              {IMS_CATEGORIES.map((cat) => (
+                <label
+                  key={cat}
+                  className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer hover:bg-accent"
+                >
+                  <Checkbox
+                    checked={categories.includes(cat)}
+                    onCheckedChange={() => toggleCategory(cat)}
+                  />
+                  {cat}
+                </label>
+              ))}
+            </div>
           </div>
         </CardContent>
         <CardFooter className="justify-end gap-2">

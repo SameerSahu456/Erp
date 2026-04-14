@@ -14,6 +14,8 @@ export const leads: Lead[] = [
     lastContact: '2026-04-14',
     createdAt: '2026-04-12',
     notes: 'Interested in server infrastructure upgrade',
+    description: 'Looking for 50 rack servers for new data center expansion. Need Dell PowerEdge R750 or equivalent. Budget approved by CTO.',
+    categories: ['Servers'],
   },
   {
     id: 'LEAD-002',
@@ -27,6 +29,8 @@ export const leads: Lead[] = [
     owner: 'Sneha Desai',
     lastContact: '2026-04-13',
     createdAt: '2026-04-01',
+    description: 'Requirement for complete networking overhaul across 5 branch offices. Need managed switches and firewalls.',
+    categories: ['Networking'],
   },
   {
     id: 'LEAD-003',
@@ -41,6 +45,8 @@ export const leads: Lead[] = [
     lastContact: '2026-04-10',
     createdAt: '2026-03-15',
     notes: 'Needs bulk laptop procurement for new hires',
+    description: 'Procuring 200 business laptops for new campus hires. Prefer HP EliteBook or Lenovo ThinkPad T-series with 16GB RAM.',
+    categories: ['Laptops'],
   },
   {
     id: 'LEAD-004',
@@ -54,6 +60,8 @@ export const leads: Lead[] = [
     owner: 'Rahul Verma',
     lastContact: '2026-04-11',
     createdAt: '2026-03-01',
+    description: 'Need 100 desktop workstations and 27-inch monitors for new design team. Looking for Dell OptiPlex or equivalent.',
+    categories: ['Desktops', 'Monitors'],
   },
   {
     id: 'LEAD-005',
@@ -68,6 +76,8 @@ export const leads: Lead[] = [
     lastContact: '2026-04-14',
     createdAt: '2026-02-20',
     notes: 'Finalizing pricing on network equipment',
+    description: 'Network infrastructure refresh for 3 data centers. Need Cisco Catalyst 9300 switches and Palo Alto firewalls.',
+    categories: ['Networking'],
   },
   {
     id: 'LEAD-006',
@@ -81,6 +91,8 @@ export const leads: Lead[] = [
     owner: 'Amit Patel',
     lastContact: '2026-04-08',
     createdAt: '2026-01-15',
+    description: 'Enterprise storage solution for SAP HANA deployment. Need high-performance NVMe storage arrays with 100TB capacity.',
+    categories: ['Storage', 'Servers'],
   },
   {
     id: 'LEAD-007',
@@ -95,6 +107,8 @@ export const leads: Lead[] = [
     lastContact: '2026-03-25',
     createdAt: '2026-02-10',
     notes: 'Went with competitor due to pricing',
+    description: 'Small order for 10 UPS units and cable management accessories for server room renovation.',
+    categories: ['UPS & Power', 'Cables & Accessories'],
   },
   {
     id: 'LEAD-008',
@@ -108,6 +122,8 @@ export const leads: Lead[] = [
     owner: 'Sneha Desai',
     lastContact: '2026-04-15',
     createdAt: '2026-04-14',
+    description: 'Looking for enterprise printers and multifunction devices for 15 offices across India. Need managed print services.',
+    categories: ['Printers'],
   },
   {
     id: 'LEAD-009',
@@ -121,6 +137,8 @@ export const leads: Lead[] = [
     owner: 'Amit Patel',
     lastContact: '2026-04-12',
     createdAt: '2026-04-05',
+    description: 'Require Microsoft 365 E5 licenses for 500 employees and Windows Server licenses for on-premise infrastructure.',
+    categories: ['Software Licenses'],
   },
   {
     id: 'LEAD-010',
@@ -135,6 +153,8 @@ export const leads: Lead[] = [
     lastContact: '2026-04-09',
     createdAt: '2026-03-20',
     notes: 'Looking for firewall and security solutions',
+    description: 'Need next-gen firewalls and managed switches for branch office network security upgrade across 8 locations.',
+    categories: ['Networking'],
   },
   {
     id: 'LEAD-011',
@@ -148,6 +168,8 @@ export const leads: Lead[] = [
     owner: 'Sneha Desai',
     lastContact: '2026-04-13',
     createdAt: '2026-02-28',
+    description: 'Large-scale server and storage procurement for new cloud POP locations. Need HPE ProLiant DL380 servers and NetApp storage.',
+    categories: ['Servers', 'Storage'],
   },
   {
     id: 'LEAD-012',
@@ -161,6 +183,8 @@ export const leads: Lead[] = [
     owner: 'Amit Patel',
     lastContact: '2026-04-14',
     createdAt: '2026-03-05',
+    description: 'IT infrastructure for new port terminal. Need ruggedized laptops, networking gear, and UPS systems for harsh environments.',
+    categories: ['Laptops', 'Networking', 'UPS & Power'],
   },
   {
     id: 'LEAD-013',
@@ -174,6 +198,8 @@ export const leads: Lead[] = [
     owner: 'Rahul Verma',
     lastContact: '2026-04-07',
     createdAt: '2026-01-25',
+    description: 'Branch IT refresh program covering desktops, monitors, and printers for 50 branches in Western India.',
+    categories: ['Desktops', 'Monitors', 'Printers'],
   },
   {
     id: 'LEAD-014',
@@ -187,6 +213,8 @@ export const leads: Lead[] = [
     owner: 'Sneha Desai',
     lastContact: '2026-04-11',
     createdAt: '2026-04-03',
+    description: 'Upgrading trading floor infrastructure. Need high-performance desktops with multi-monitor setups and low-latency networking.',
+    categories: ['Desktops', 'Monitors', 'Networking'],
   },
   {
     id: 'LEAD-015',
@@ -200,5 +228,7 @@ export const leads: Lead[] = [
     owner: 'Rahul Verma',
     lastContact: '2026-04-15',
     createdAt: '2026-04-15',
+    description: 'Small office setup requiring 20 laptops, a network switch, and a small NAS storage for file sharing.',
+    categories: ['Laptops', 'Networking', 'Storage'],
   },
 ]

@@ -11,6 +11,11 @@ export const salesOrders: SalesOrder[] = [
     date: '2026-02-15',
     items: 5,
     createdAt: '2026-02-10',
+    quoteId: 'QT-001',
+    quoteName: 'QT-2026-001',
+    approvalStatus: 'Approved',
+    approvedBy: 'Amit Patel',
+    purchaseRequestId: 'PR-001',
   },
   {
     id: 'SO-002',
@@ -22,6 +27,8 @@ export const salesOrders: SalesOrder[] = [
     date: '2026-03-20',
     items: 3,
     createdAt: '2026-03-18',
+    approvalStatus: 'Approved',
+    approvedBy: 'Rahul Verma',
   },
   {
     id: 'SO-003',
@@ -33,6 +40,8 @@ export const salesOrders: SalesOrder[] = [
     date: '2026-03-10',
     items: 8,
     createdAt: '2026-03-05',
+    approvalStatus: 'Approved',
+    approvedBy: 'Sneha Desai',
   },
   {
     id: 'SO-004',
@@ -44,6 +53,10 @@ export const salesOrders: SalesOrder[] = [
     date: '2026-04-10',
     items: 2,
     createdAt: '2026-04-08',
+    quoteId: 'QT-004',
+    quoteName: 'QT-2026-004',
+    approvalStatus: 'Approved',
+    approvedBy: 'Sneha Desai',
   },
   {
     id: 'SO-005',
@@ -55,6 +68,9 @@ export const salesOrders: SalesOrder[] = [
     date: '2026-04-15',
     items: 4,
     createdAt: '2026-04-14',
+    quoteId: 'QT-002',
+    quoteName: 'QT-2026-002',
+    approvalStatus: 'Pending',
   },
   {
     id: 'SO-006',
@@ -66,6 +82,9 @@ export const salesOrders: SalesOrder[] = [
     date: '2026-04-12',
     items: 6,
     createdAt: '2026-04-10',
+    quoteId: 'QT-003',
+    quoteName: 'QT-2026-003',
+    approvalStatus: 'Pending',
   },
   {
     id: 'SO-007',
@@ -77,6 +96,11 @@ export const salesOrders: SalesOrder[] = [
     date: '2026-04-05',
     items: 3,
     createdAt: '2026-04-02',
+    quoteId: 'QT-006',
+    quoteName: 'QT-2026-006',
+    approvalStatus: 'Approved',
+    approvedBy: 'Amit Patel',
+    purchaseRequestId: 'PR-003',
   },
   {
     id: 'SO-008',
@@ -88,6 +112,7 @@ export const salesOrders: SalesOrder[] = [
     date: '2026-03-25',
     items: 1,
     createdAt: '2026-03-22',
+    approvalStatus: 'Rejected',
   },
   {
     id: 'SO-009',
@@ -99,6 +124,8 @@ export const salesOrders: SalesOrder[] = [
     date: '2026-02-28',
     items: 2,
     createdAt: '2026-02-25',
+    approvalStatus: 'Approved',
+    approvedBy: 'Rahul Verma',
   },
   {
     id: 'SO-010',
@@ -110,5 +137,8 @@ export const salesOrders: SalesOrder[] = [
     date: '2026-04-15',
     items: 4,
     createdAt: '2026-04-15',
+    quoteId: 'QT-008',
+    quoteName: 'QT-2026-008',
+    approvalStatus: 'Pending',
   },
 ]

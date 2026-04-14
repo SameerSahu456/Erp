@@ -11,6 +11,8 @@ export interface Lead {
   lastContact: string
   createdAt: string
   notes?: string
+  description: string
+  categories: string[]
 }
 
 export interface Deal {
@@ -24,6 +26,9 @@ export interface Deal {
   closeDate: string
   owner: string
   createdAt: string
+  description: string
+  categories: string[]
+  leadId?: string
 }
 
 export interface Account {
@@ -61,6 +66,21 @@ export interface SalesOrder {
   date: string
   items: number
   createdAt: string
+  quoteId?: string
+  quoteName?: string
+  approvalStatus: 'Pending' | 'Approved' | 'Rejected'
+  approvedBy?: string
+  purchaseRequestId?: string
+}
+
+export interface QuoteLineItem {
+  id: string
+  item: string
+  description: string
+  category: string
+  qty: number
+  rate: number
+  amount: number
 }
 
 export interface Quote {
@@ -72,6 +92,11 @@ export interface Quote {
   status: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Expired'
   validUntil: string
   createdAt: string
+  leadId: string
+  leadName: string
+  version: number
+  parentQuoteId?: string
+  lineItems: QuoteLineItem[]
 }
 
 export interface Invoice {
@@ -127,6 +152,47 @@ export interface Note {
   entityType: 'lead' | 'deal' | 'account' | 'contact'
   entityId: string
 }
+
+export interface PurchaseRequest {
+  id: string
+  prNumber: string
+  salesOrderId?: string
+  salesOrderNumber?: string
+  leadId?: string
+  leadName?: string
+  status: 'Draft' | 'Submitted' | 'Under Review' | 'Pricing Confirmed' | 'Approved' | 'Rejected'
+  items: PurchaseRequestItem[]
+  requestedBy: string
+  assignedTo?: string
+  notes?: string
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface PurchaseRequestItem {
+  id: string
+  item: string
+  description: string
+  category: string
+  qty: number
+  estimatedRate?: number
+  confirmedRate?: number
+  availableDate?: string
+  vendorNotes?: string
+}
+
+export const IMS_CATEGORIES = [
+  'Servers',
+  'Storage',
+  'Networking',
+  'Laptops',
+  'Desktops',
+  'Monitors',
+  'Printers',
+  'UPS & Power',
+  'Cables & Accessories',
+  'Software Licenses',
+] as const
 
 export const LEAD_STAGES = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'] as const
 export const DEAL_STAGES = ['Discovery', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const

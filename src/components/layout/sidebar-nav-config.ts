@@ -54,6 +54,7 @@ export const SIDEBAR_NAV: NavGroup[] = [
       { label: 'Contacts', href: '/crm/contacts', icon: Contact, module: 'crm' },
       { label: 'Sales Orders', href: '/crm/sales-orders', icon: ShoppingCart, module: 'crm' },
       { label: 'Quotes', href: '/crm/quotes', icon: FileText, module: 'crm' },
+      { label: 'Purchase Requests', href: '/crm/purchase-requests', icon: FilePlus, module: 'crm' },
     ],
   },
   {

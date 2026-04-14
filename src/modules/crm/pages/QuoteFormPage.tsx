@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -14,13 +14,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/common/StatusBadge'
 import { EntityHeader } from '../components/EntityHeader'
-import { LineItemsEditor, createEmptyItem } from '../components/LineItemsEditor'
 import { TotalsSection } from '../components/TotalsSection'
 import { quotes } from '../data/quotes'
+import { leads } from '../data/leads'
 import { accounts } from '../data/accounts'
-import type { LineItem } from '../components/LineItemsEditor'
+import { IMS_CATEGORIES } from '../types'
 import type { Quote } from '../types'
+
+interface QuoteFormLineItem {
+  id: string
+  item: string
+  description: string
+  category: string
+  qty: number
+  rate: number
+}
+
+function generateId(): string {
+  return `qli-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+function createEmptyItem(): QuoteFormLineItem {
+  return { id: generateId(), item: '', description: '', category: '', qty: 1, rate: 0 }
+}
+
+function formatCurrencyValue(value: number): string {
+  return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
 
 const QUOTE_STATUSES: Quote['status'][] = ['Draft', 'Sent', 'Accepted', 'Rejected', 'Expired']
 const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
@@ -28,9 +51,29 @@ const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
 function QuoteFormPage() {
   const { id: quoteId } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const existingQuote = quoteId ? quotes.find((q) => q.id === quoteId) : undefined
   const isEdit = !!existingQuote
+
+  // Read search params for pre-fill
+  const paramLeadId = searchParams.get('leadId') ?? ''
+  const paramParentQuoteId = searchParams.get('parentQuoteId') ?? ''
+  const paramVersion = searchParams.get('version') ?? ''
+
+  const prefilledLead = paramLeadId
+    ? leads.find((l) => l.id === paramLeadId)
+    : existingQuote?.leadId
+      ? leads.find((l) => l.id === existingQuote.leadId)
+      : undefined
+
+  const parentQuote = paramParentQuoteId
+    ? quotes.find((q) => q.id === paramParentQuoteId)
+    : undefined
+
+  const version = paramVersion
+    ? Number(paramVersion)
+    : existingQuote?.version ?? 1
 
   const [quoteNumber] = useState(
     existingQuote?.quoteNumber ?? `Q-2026-${String(quotes.length + 1).padStart(4, '0')}`
@@ -39,7 +82,25 @@ function QuoteFormPage() {
   const [validUntil, setValidUntil] = useState(existingQuote?.validUntil ?? '')
   const [status, setStatus] = useState<Quote['status']>(existingQuote?.status ?? 'Draft')
   const [owner, setOwner] = useState(MOCK_OWNERS[0])
-  const [lineItems, setLineItems] = useState<LineItem[]>([createEmptyItem()])
+  const [lineItems, setLineItems] = useState<QuoteFormLineItem[]>(
+    existingQuote?.lineItems?.map((li) => ({
+      id: li.id,
+      item: li.item,
+      description: li.description,
+      category: li.category,
+      qty: li.qty,
+      rate: li.rate,
+    })) ??
+    parentQuote?.lineItems?.map((li) => ({
+      id: generateId(),
+      item: li.item,
+      description: li.description,
+      category: li.category,
+      qty: li.qty,
+      rate: li.rate,
+    })) ??
+    [createEmptyItem()]
+  )
   const [discount, setDiscount] = useState(0)
   const [terms, setTerms] = useState('')
   const [notes, setNotes] = useState('')
@@ -50,6 +111,21 @@ function QuoteFormPage() {
   )
 
   const backHref = '/crm/quotes'
+
+  function updateItem(id: string, field: keyof Omit<QuoteFormLineItem, 'id'>, value: string | number) {
+    setLineItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    )
+  }
+
+  function addItem() {
+    setLineItems((prev) => [...prev, createEmptyItem()])
+  }
+
+  function removeItem(id: string) {
+    if (lineItems.length <= 1) return
+    setLineItems((prev) => prev.filter((item) => item.id !== id))
+  }
 
   function handleSaveDraft() {
     if (!accountId) return
@@ -67,12 +143,54 @@ function QuoteFormPage() {
     navigate(backHref)
   }
 
+  function handleAmendQuote() {
+    const leadIdParam = existingQuote?.leadId ?? prefilledLead?.id ?? ''
+    const nextVersion = (existingQuote?.version ?? 1) + 1
+    navigate(`/crm/quotes/new?leadId=${leadIdParam}&parentQuoteId=${existingQuote?.id}&version=${nextVersion}`)
+  }
+
+  function handleConvertToSO() {
+    navigate(`/crm/sales-orders/new?quoteId=${existingQuote?.id}`)
+  }
+
   return (
     <div className="space-y-6">
       <EntityHeader
         title={isEdit ? `Edit Quote: ${existingQuote.quoteNumber}` : 'Create Quote'}
         backHref={backHref}
+        actions={
+          isEdit ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleAmendQuote}>
+                Amend Quote
+              </Button>
+              {existingQuote.status === 'Accepted' && (
+                <Button size="sm" onClick={handleConvertToSO}>
+                  Convert to Sales Order
+                </Button>
+              )}
+            </>
+          ) : undefined
+        }
       />
+
+      {/* Lead & Version Info */}
+      {(prefilledLead || version > 1) && (
+        <div className="flex flex-wrap items-center gap-3">
+          {prefilledLead && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-ui text-muted-foreground">Lead:</span>
+              <StatusBadge variant="info">{prefilledLead.name} ({prefilledLead.company})</StatusBadge>
+            </div>
+          )}
+          <Badge variant="outline">Version {version}</Badge>
+          {parentQuote && (
+            <span className="text-xs text-muted-foreground">
+              (amended from {parentQuote.quoteNumber})
+            </span>
+          )}
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -147,8 +265,103 @@ function QuoteFormPage() {
             </div>
           </div>
 
-          {/* Line Items */}
-          <LineItemsEditor items={lineItems} onChange={setLineItems} />
+          {/* Line Items with Category */}
+          <div>
+            <h3 className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+              Line Items
+            </h3>
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="w-10 px-3 py-2 text-left font-medium text-muted-foreground">#</th>
+                    <th className="min-w-[140px] px-3 py-2 text-left font-medium text-muted-foreground">Item</th>
+                    <th className="min-w-[160px] px-3 py-2 text-left font-medium text-muted-foreground">Description</th>
+                    <th className="min-w-[130px] px-3 py-2 text-left font-medium text-muted-foreground">Category</th>
+                    <th className="w-20 px-3 py-2 text-right font-medium text-muted-foreground">Qty</th>
+                    <th className="w-28 px-3 py-2 text-right font-medium text-muted-foreground">Rate (&#8377;)</th>
+                    <th className="w-32 px-3 py-2 text-right font-medium text-muted-foreground">Amount (&#8377;)</th>
+                    <th className="w-14 px-3 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {lineItems.map((lineItem, index) => {
+                    const amount = lineItem.qty * lineItem.rate
+                    return (
+                      <tr key={lineItem.id} className="border-b last:border-b-0">
+                        <td className="px-3 py-2 text-muted-foreground">{index + 1}</td>
+                        <td className="px-2 py-1.5">
+                          <Input
+                            placeholder="Item name"
+                            value={lineItem.item}
+                            onChange={(e) => updateItem(lineItem.id, 'item', e.target.value)}
+                          />
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <Input
+                            placeholder="Description"
+                            value={lineItem.description}
+                            onChange={(e) => updateItem(lineItem.id, 'description', e.target.value)}
+                          />
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <Select
+                            value={lineItem.category}
+                            onValueChange={(val) => updateItem(lineItem.id, 'category', val ?? '')}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {IMS_CATEGORIES.map((cat) => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <Input
+                            type="number"
+                            min={1}
+                            className="text-right"
+                            value={lineItem.qty}
+                            onChange={(e) => updateItem(lineItem.id, 'qty', Number(e.target.value) || 0)}
+                          />
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <Input
+                            type="number"
+                            min={0}
+                            className="text-right"
+                            value={lineItem.rate}
+                            onChange={(e) => updateItem(lineItem.id, 'rate', Number(e.target.value) || 0)}
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-right font-medium tabular-nums">
+                          &#8377;{formatCurrencyValue(amount)}
+                        </td>
+                        <td className="px-2 py-1.5 text-center">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => removeItem(lineItem.id)}
+                            disabled={lineItems.length <= 1}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <span className="sr-only">Remove</span>
+                            &times;
+                          </Button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <Button variant="outline" size="sm" className="mt-3" onClick={addItem}>
+              + Add Line Item
+            </Button>
+          </div>
 
           {/* Totals */}
           <TotalsSection

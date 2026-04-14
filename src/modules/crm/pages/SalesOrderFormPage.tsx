@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -14,10 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { StatusBadge } from '@/components/common/StatusBadge'
+import { Badge } from '@/components/ui/badge'
 import { EntityHeader } from '../components/EntityHeader'
 import { LineItemsEditor, createEmptyItem } from '../components/LineItemsEditor'
 import { TotalsSection } from '../components/TotalsSection'
 import { salesOrders } from '../data/sales-orders'
+import { quotes } from '../data/quotes'
+import { leads } from '../data/leads'
 import { accounts } from '../data/accounts'
 import type { LineItem } from '../components/LineItemsEditor'
 import type { SalesOrder } from '../types'
@@ -28,21 +32,49 @@ const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
 function SalesOrderFormPage() {
   const { id: orderId } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const existingOrder = orderId ? salesOrders.find((o) => o.id === orderId) : undefined
   const isEdit = !!existingOrder
 
+  // Pre-fill from quote
+  const paramQuoteId = searchParams.get('quoteId') ?? ''
+  const linkedQuote = paramQuoteId
+    ? quotes.find((q) => q.id === paramQuoteId)
+    : existingOrder?.quoteId
+      ? quotes.find((q) => q.id === existingOrder.quoteId)
+      : undefined
+
+  const linkedLead = linkedQuote?.leadId
+    ? leads.find((l) => l.id === linkedQuote.leadId)
+    : undefined
+
   const [orderNumber] = useState(
     existingOrder?.orderNumber ?? `SO-2026-${String(salesOrders.length + 1).padStart(4, '0')}`
   )
-  const [accountId, setAccountId] = useState(existingOrder?.accountId ?? '')
+  const [accountId, setAccountId] = useState(
+    existingOrder?.accountId ?? linkedQuote?.accountId ?? ''
+  )
   const [orderDate, setOrderDate] = useState(existingOrder?.date ?? new Date().toISOString().split('T')[0])
   const [status, setStatus] = useState<SalesOrder['status']>(existingOrder?.status ?? 'Draft')
   const [owner, setOwner] = useState(MOCK_OWNERS[0])
-  const [lineItems, setLineItems] = useState<LineItem[]>([createEmptyItem()])
+  const [lineItems, setLineItems] = useState<LineItem[]>(
+    linkedQuote?.lineItems?.map((li) => ({
+      id: li.id,
+      item: li.item,
+      description: li.description,
+      qty: li.qty,
+      rate: li.rate,
+    })) ?? [createEmptyItem()]
+  )
   const [discount, setDiscount] = useState(0)
   const [shippingAddress, setShippingAddress] = useState('')
   const [notes, setNotes] = useState('')
+
+  // Approval state (local)
+  const [approvalStatus, setApprovalStatus] = useState<'Pending' | 'Approved' | 'Rejected'>(
+    existingOrder?.approvalStatus ?? 'Pending'
+  )
 
   const subtotal = useMemo(
     () => lineItems.reduce((sum, li) => sum + li.qty * li.rate, 0),
@@ -61,12 +93,86 @@ function SalesOrderFormPage() {
     navigate(backHref)
   }
 
+  function handleApprove() {
+    setApprovalStatus('Approved')
+    toast.success('Sales order approved')
+  }
+
+  function handleReject() {
+    setApprovalStatus('Rejected')
+    toast.info('Sales order rejected')
+  }
+
+  function handleGeneratePR() {
+    const soId = existingOrder?.id ?? ''
+    navigate(`/crm/purchase-requests/new?salesOrderId=${soId}`)
+  }
+
   return (
     <div className="space-y-6">
       <EntityHeader
         title={isEdit ? `Edit Sales Order: ${existingOrder.orderNumber}` : 'Create Sales Order'}
         backHref={backHref}
+        actions={
+          isEdit && approvalStatus === 'Approved' ? (
+            <Button size="sm" onClick={handleGeneratePR}>
+              Generate Purchase Request
+            </Button>
+          ) : undefined
+        }
       />
+
+      {/* Linked info & Approval */}
+      <div className="flex flex-wrap items-center gap-3">
+        {linkedQuote && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-ui text-muted-foreground">Quote:</span>
+            <Link to={`/crm/quotes/${linkedQuote.id}/edit`} className="text-sm text-primary hover:underline">
+              {linkedQuote.quoteNumber}
+            </Link>
+          </div>
+        )}
+        {linkedLead && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-ui text-muted-foreground">Lead:</span>
+            <Link to={`/crm/leads/${linkedLead.id}`} className="text-sm text-primary hover:underline">
+              {linkedLead.name}
+            </Link>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-ui text-muted-foreground">Approval:</span>
+          <StatusBadge
+            variant={
+              approvalStatus === 'Approved'
+                ? 'success'
+                : approvalStatus === 'Rejected'
+                  ? 'error'
+                  : 'warning'
+            }
+          >
+            {approvalStatus}
+          </StatusBadge>
+        </div>
+      </div>
+
+      {/* Approval Actions */}
+      {approvalStatus === 'Pending' && (
+        <Card size="sm">
+          <CardContent className="flex items-center gap-4 py-4">
+            <Badge variant="outline">Pending Approval</Badge>
+            <span className="text-sm text-muted-foreground">This order requires approval before processing.</span>
+            <div className="ml-auto flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleReject}>
+                Reject
+              </Button>
+              <Button size="sm" onClick={handleApprove}>
+                Approve
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
