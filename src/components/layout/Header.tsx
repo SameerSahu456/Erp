@@ -1,5 +1,5 @@
 import { Menu } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { GlobalSearch } from './GlobalSearch'
@@ -7,59 +7,71 @@ import { NotificationPopover } from './NotificationPopover'
 import { ThemeSwitcher } from './ThemeSwitcher'
 import { DevRoleSwitcher } from './DevRoleSwitcher'
 import { UserMenu } from './UserMenu'
+import { cn } from '@/lib/utils'
+
+const NAV_LINKS = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Reports', href: '/reports' },
+  { label: 'Calendar', href: '/calendar' },
+]
 
 export function Header() {
   const { setMobileOpen } = useSidebar()
+  const location = useLocation()
 
   return (
-    <header className="sticky top-0 z-50 h-16 bg-card border-b border-border">
-      <div className="flex items-center justify-between h-full px-4">
-        {/* Left: mobile hamburger + logo */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden h-9 w-9"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Open menu</span>
-          </Button>
-          <Link to="/" className="flex items-center">
-            <span className="text-primary font-sans font-bold text-xl">comprint</span>
-            <span className="font-serif font-bold text-xl text-foreground">tech</span>
-          </Link>
-        </div>
+    <header className="sticky top-0 z-50 h-14 bg-card/95 backdrop-blur-sm border-b border-border">
+      <div className="flex items-center h-full px-4 gap-4">
+        {/* Mobile hamburger */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden h-8 w-8 shrink-0"
+          onClick={() => setMobileOpen(true)}
+        >
+          <Menu className="h-4 w-4" />
+          <span className="sr-only">Open menu</span>
+        </Button>
 
-        {/* Center: nav links (desktop only) */}
-        <nav className="hidden lg:flex items-center gap-1">
-          <Link
-            to="/dashboard"
-            className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/reports"
-            className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
-          >
-            Reports
-          </Link>
-          <Link
-            to="/calendar"
-            className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
-          >
-            Calendar
-          </Link>
+        {/* Logo */}
+        <Link to="/" className="flex items-baseline gap-0 shrink-0">
+          <span className="text-primary font-ui font-semibold text-lg tracking-tight">comprint</span>
+          <span className="font-display font-semibold text-lg text-foreground">tech</span>
+        </Link>
+
+        {/* Center nav links */}
+        <nav className="hidden lg:flex items-center gap-0.5 ml-6 font-ui">
+          {NAV_LINKS.map((link) => {
+            const isActive = location.pathname === link.href
+            return (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={cn(
+                  'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                  isActive
+                    ? 'text-primary bg-primary/8'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                )}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
         </nav>
 
-        {/* Right: actions */}
-        <div className="flex items-center gap-1">
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Right actions */}
+        <div className="flex items-center gap-0.5">
           <GlobalSearch />
           <NotificationPopover />
           <ThemeSwitcher />
           <DevRoleSwitcher />
-          <UserMenu />
+          <div className="ml-1">
+            <UserMenu />
+          </div>
         </div>
       </div>
     </header>
