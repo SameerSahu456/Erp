@@ -77,6 +77,7 @@ function MaterialInquiryFormPage() {
   const [clientTimeline, setClientTimeline] = useState(existingMI?.clientTimeline ?? '')
   const [assignedTo, setAssignedTo] = useState(existingMI?.assignedTo ?? '')
   const [pmNotified, setPmNotified] = useState(existingMI?.productManagerNotified ?? '')
+  const [description, setDescription] = useState(existingMI?.description ?? '')
   const [notes, setNotes] = useState(existingMI?.notes ?? '')
   const [items, setItems] = useState<MaterialInquiryItem[]>(
     existingMI?.items ?? [createEmptyMIItem()]
@@ -213,6 +214,18 @@ function MaterialInquiryFormPage() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label className="font-ui">Request Description *</Label>
+            <p className="text-xs text-muted-foreground">Describe what the client needs, context, and any special requirements. This can be used instead of or alongside structured items below.</p>
+            <Textarea
+              placeholder="e.g., Client needs 50 servers for new data center. Budget is &#8377;60L. Prefer Dell PowerEdge series. Delivery needed within 4 weeks..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+            />
           </div>
 
           {/* Items Table */}

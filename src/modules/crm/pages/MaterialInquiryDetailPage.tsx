@@ -35,9 +35,10 @@ import { Badge } from '@/components/ui/badge'
 import { EntityHeader } from '../components/EntityHeader'
 import { DetailTabs } from '../components/DetailTabs'
 import { CommentSection } from '../components/CommentSection'
+import { MessageThread } from '../components/MessageThread'
 import { materialInquiries } from '../data/material-inquiries'
 import { mockComments } from '../data/comments'
-import type { MaterialInquiryResponse } from '../types'
+import type { MaterialInquiryResponse, MaterialInquiryMessage } from '../types'
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
@@ -61,6 +62,7 @@ function MaterialInquiryDetailPage() {
 
   const mi = materialInquiries.find((m) => m.id === miId)
   const [responses, setResponses] = useState<MaterialInquiryResponse[]>(mi?.responses ?? [])
+  const [messages, setMessages] = useState<MaterialInquiryMessage[]>(mi?.messages ?? [])
   const [responseDialogOpen, setResponseDialogOpen] = useState(false)
   const [responseItemId, setResponseItemId] = useState('')
   const [responseQty, setResponseQty] = useState('')
@@ -116,9 +118,32 @@ function MaterialInquiryDetailPage() {
     setResponseNotes('')
   }
 
+  function handleSendMessage(content: string) {
+    const newMsg: MaterialInquiryMessage = {
+      id: `MSG-${Date.now()}`,
+      content,
+      user: 'Amit Patel',
+      role: 'sales',
+      createdAt: new Date().toISOString(),
+    }
+    setMessages((prev) => [...prev, newMsg])
+  }
+
   // Request tab
   const requestContent = (
     <div className="space-y-6">
+      {/* Request Description */}
+      {mi.description && (
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Request Description</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-relaxed">{mi.description}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Linked Lead/Deal */}
       {(mi.leadId || mi.dealId) && (
         <Card size="sm">
@@ -407,6 +432,16 @@ function MaterialInquiryDetailPage() {
     </div>
   )
 
+  // Messages tab
+  const messagesContent = (
+    <MessageThread
+      messages={messages}
+      onSendMessage={handleSendMessage}
+      currentUser="Amit Patel"
+      currentRole="sales"
+    />
+  )
+
   // Comments tab
   const commentsContent = (
     <CommentSection entityType="material_inquiry" entityId={mi.id} />
@@ -419,6 +454,12 @@ function MaterialInquiryDetailPage() {
       label: 'Responses',
       count: responses.length,
       content: responsesContent,
+    },
+    {
+      id: 'messages',
+      label: 'Messages',
+      count: messages.length,
+      content: messagesContent,
     },
     {
       id: 'comments',

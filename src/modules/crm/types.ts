@@ -234,6 +234,7 @@ export interface MaterialInquiry {
   leadName?: string
   dealId?: string
   dealName?: string
+  description: string  // free-form request description — can be used instead of or alongside structured items
   categories: string[]
   status: MaterialInquiryStatus
   items: MaterialInquiryItem[]
@@ -244,8 +245,18 @@ export interface MaterialInquiry {
   clientBudget?: number  // overall budget from client
   clientTimeline?: string
   notes?: string
+  messages: MaterialInquiryMessage[]  // conversation thread between sales and procurement
   createdAt: string
   updatedAt?: string
+}
+
+export interface MaterialInquiryMessage {
+  id: string
+  content: string
+  user: string
+  role: 'sales' | 'procurement' | 'product_manager'
+  createdAt: string
+  attachmentNote?: string  // e.g., "See updated pricing sheet"
 }
 
 // ── Comments/Tagging ──
