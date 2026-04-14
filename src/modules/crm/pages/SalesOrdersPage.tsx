@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react"
+import { useNavigate, Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
@@ -31,6 +32,7 @@ const ordersTab: TabConfig = {
     { key: "date", label: "Date", sortable: true },
   ],
   data: salesOrders.map((o) => ({
+    id: o.id,
     orderNumber: o.orderNumber,
     accountName: o.accountName,
     items: o.items,
@@ -41,6 +43,11 @@ const ordersTab: TabConfig = {
 }
 
 const cellFormatter: CellFormatter = (value, key, row) => {
+  if (key === "orderNumber" && typeof value === "string") {
+    return {
+      display: <Link to={`/crm/sales-orders/${row["id"]}/edit`} className="text-primary hover:underline font-medium">{value}</Link>,
+    }
+  }
   if (key === "total" && typeof value === "number") {
     return { display: formatCurrency(value) }
   }
@@ -65,11 +72,12 @@ const cellFormatter: CellFormatter = (value, key, row) => {
 }
 
 function SalesOrdersPage() {
+  const navigate = useNavigate()
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-display font-semibold">Sales Orders</h2>
-        <Button>
+        <Button onClick={() => navigate("/crm/sales-orders/new")}>
           <Plus className="mr-1 size-4" />
           Create Order
         </Button>

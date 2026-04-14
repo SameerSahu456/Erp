@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
@@ -229,6 +230,7 @@ function InvoiceDetailDialog({
 }
 
 function InvoicesPage() {
+  const navigate = useNavigate()
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -262,7 +264,7 @@ function InvoicesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-display font-semibold">Invoices</h2>
-        <Button>
+        <Button onClick={() => navigate("/crm/invoices/new")}>
           <Plus className="mr-1 size-4" />
           Create Invoice
         </Button>

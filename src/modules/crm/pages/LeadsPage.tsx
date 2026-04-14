@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
 import { Plus, LayoutGrid, List } from "lucide-react"
+import { useNavigate, Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -68,6 +69,7 @@ const listTab: TabConfig = {
     { key: "lastContact", label: "Last Contact", sortable: true },
   ],
   data: leads.map((l) => ({
+    id: l.id,
     name: l.name,
     company: l.company,
     stage: l.stage,
@@ -79,6 +81,11 @@ const listTab: TabConfig = {
 }
 
 const listCellFormatter: CellFormatter = (value, key, row) => {
+  if (key === "name" && typeof value === "string") {
+    return {
+      display: <Link to={`/crm/leads/${row["id"]}`} className="text-primary hover:underline font-medium">{value}</Link>,
+    }
+  }
   if (key === "value" && typeof value === "number") {
     return { display: formatCurrency(value) }
   }
@@ -100,6 +107,7 @@ const listCellFormatter: CellFormatter = (value, key, row) => {
 }
 
 function LeadsPage() {
+  const navigate = useNavigate()
   const [view, setView] = useState<"kanban" | "list">("kanban")
   const [kanbanItems, setKanbanItems] = useState(() =>
     groupLeadsByStage(leads)
@@ -124,6 +132,7 @@ function LeadsPage() {
   )
 
   const renderLeadCard = (lead: Lead) => (
+    <div className="cursor-pointer" onClick={() => navigate(`/crm/leads/${lead.id}`)}>
     <Card size="sm">
       <CardContent className="space-y-2">
         <div>
@@ -141,6 +150,7 @@ function LeadsPage() {
         <p className="text-xs text-muted-foreground">{lead.owner}</p>
       </CardContent>
     </Card>
+    </div>
   )
 
   return (
@@ -167,7 +177,7 @@ function LeadsPage() {
               <List className="size-4" />
             </Button>
           </div>
-          <Button>
+          <Button onClick={() => navigate("/crm/leads/new")}>
             <Plus className="mr-1 size-4" />
             Add Lead
           </Button>

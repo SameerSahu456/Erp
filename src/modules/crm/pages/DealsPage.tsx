@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
 import { Plus, LayoutGrid, List } from "lucide-react"
+import { useNavigate, Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -68,6 +69,7 @@ const listTab: TabConfig = {
     { key: "owner", label: "Owner", sortable: true },
   ],
   data: deals.map((d) => ({
+    id: d.id,
     deal: d.name,
     account: d.accountName,
     stage: d.stage,
@@ -79,6 +81,11 @@ const listTab: TabConfig = {
 }
 
 const listCellFormatter: CellFormatter = (value, key, row) => {
+  if (key === "deal" && typeof value === "string") {
+    return {
+      display: <Link to={`/crm/deals/${row["id"]}`} className="text-primary hover:underline font-medium">{value}</Link>,
+    }
+  }
   if (key === "value" && typeof value === "number") {
     return { display: formatCurrency(value) }
   }
@@ -103,6 +110,7 @@ const listCellFormatter: CellFormatter = (value, key, row) => {
 }
 
 function DealsPage() {
+  const navigate = useNavigate()
   const [view, setView] = useState<"kanban" | "list">("kanban")
   const [kanbanItems, setKanbanItems] = useState(() =>
     groupDealsByStage(deals)
@@ -127,6 +135,7 @@ function DealsPage() {
   )
 
   const renderDealCard = (deal: Deal) => (
+    <div className="cursor-pointer" onClick={() => navigate(`/crm/deals/${deal.id}`)}>
     <Card size="sm">
       <CardContent className="space-y-2">
         <div>
@@ -147,6 +156,7 @@ function DealsPage() {
         </div>
       </CardContent>
     </Card>
+    </div>
   )
 
   return (
@@ -173,7 +183,7 @@ function DealsPage() {
               <List className="size-4" />
             </Button>
           </div>
-          <Button>
+          <Button onClick={() => navigate("/crm/deals/new")}>
             <Plus className="mr-1 size-4" />
             Add Deal
           </Button>

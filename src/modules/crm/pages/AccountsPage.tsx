@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react"
+import { useNavigate, Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
@@ -30,6 +31,7 @@ const accountsTab: TabConfig = {
     { key: "city", label: "City", sortable: true },
   ],
   data: accounts.map((a) => ({
+    id: a.id,
     name: a.name,
     industry: a.industry,
     type: a.type,
@@ -40,7 +42,12 @@ const accountsTab: TabConfig = {
   })),
 }
 
-const cellFormatter: CellFormatter = (value, key) => {
+const cellFormatter: CellFormatter = (value, key, row) => {
+  if (key === "name" && typeof value === "string") {
+    return {
+      display: <Link to={`/crm/accounts/${row["id"]}`} className="text-primary hover:underline font-medium">{value}</Link>,
+    }
+  }
   if (key === "revenue" && typeof value === "number") {
     return { display: formatCurrency(value) }
   }
@@ -54,11 +61,12 @@ const cellFormatter: CellFormatter = (value, key) => {
 }
 
 function AccountsPage() {
+  const navigate = useNavigate()
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-display font-semibold">Accounts</h2>
-        <Button>
+        <Button onClick={() => navigate("/crm/accounts/new")}>
           <Plus className="mr-1 size-4" />
           Add Account
         </Button>

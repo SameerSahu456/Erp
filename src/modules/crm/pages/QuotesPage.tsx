@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react"
+import { useNavigate, Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
@@ -30,6 +31,7 @@ const quotesTab: TabConfig = {
     { key: "validUntil", label: "Valid Until", sortable: true },
   ],
   data: quotes.map((q) => ({
+    id: q.id,
     quoteNumber: q.quoteNumber,
     accountName: q.accountName,
     total: q.total,
@@ -39,6 +41,11 @@ const quotesTab: TabConfig = {
 }
 
 const cellFormatter: CellFormatter = (value, key, row) => {
+  if (key === "quoteNumber" && typeof value === "string") {
+    return {
+      display: <Link to={`/crm/quotes/${row["id"]}/edit`} className="text-primary hover:underline font-medium">{value}</Link>,
+    }
+  }
   if (key === "total" && typeof value === "number") {
     return { display: formatCurrency(value) }
   }
@@ -60,11 +67,12 @@ const cellFormatter: CellFormatter = (value, key, row) => {
 }
 
 function QuotesPage() {
+  const navigate = useNavigate()
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-display font-semibold">Quotes</h2>
-        <Button>
+        <Button onClick={() => navigate("/crm/quotes/new")}>
           <Plus className="mr-1 size-4" />
           Create Quote
         </Button>
