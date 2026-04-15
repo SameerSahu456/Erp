@@ -235,19 +235,103 @@ export interface QCRecord {
 }
 
 // ── Outward ──
-export type OutwardType = 'SALES' | 'RENTAL' | 'RETURN_REPLACEMENT'
+export type OutwardType = 'SALES' | 'RENTAL' | 'DEMO' | 'INTERNAL_TRANSFER' | 'RETURN_REPLACEMENT'
 
 export interface OutwardRecord {
   id: string
-  outwardNumber: string // OUT-2026-001
+  outwardNumber: string  // OUT-2026-001
   type: OutwardType
-  devices: string[] // device IDs
+  // Source reference
+  salesOrderId?: string
+  salesOrderNumber?: string
+  rentalContractId?: string
+  demoRequestId?: string
+  // Customer/destination
   customerName: string
+  contactPerson: string
+  contactPhone: string
   shippingAddress: string
-  status: 'Pending QC' | 'QC Passed' | 'Dispatched'
-  createdBy: string
+  // Devices
+  devices: OutwardDevice[]
+  // Logistics
+  logistics: OutwardLogistics
+  // QC
+  qcStatus: 'Pending' | 'In Progress' | 'Passed' | 'Failed' | 'Partial'
+  qcCompletedDevices: number
+  qcFailedDevices: number
+  // Status workflow
+  status: 'Draft' | 'Pending Approval' | 'Approved' | 'Picking' | 'Packed' | 'Pending QC' | 'QC Passed' | 'Ready for Dispatch' | 'Dispatched' | 'Delivered' | 'Partially Returned'
+  // People
+  preparedBy: string
+  approvedBy?: string
+  dispatchedBy?: string
+  storeManager: string
+  // Dates
+  requestedDate: string
+  expectedDispatchDate: string
+  actualDispatchDate?: string
+  deliveredDate?: string
   createdAt: string
-  dispatchedAt?: string
+  notes?: string
+}
+
+export interface OutwardDevice {
+  deviceId: string
+  barcode: string
+  model: string
+  brand: string
+  serialNumber: string
+  grade?: 'A' | 'B'
+  qcResult?: 'Passed' | 'Failed' | 'Pending'
+  qcNotes?: string
+  packingStatus: 'Not Packed' | 'Packed' | 'Verified'
+}
+
+export interface OutwardLogistics {
+  vehicleNumber?: string
+  driverName?: string
+  driverPhone?: string
+  transporterName?: string
+  trackingNumber?: string
+  challanNumber?: string
+  estimatedDelivery?: string
+  packagingType?: string  // 'Box', 'Pallet', 'Crate'
+  totalWeight?: number  // kg
+  specialInstructions?: string
+}
+
+// Dispatch workflow stages for stepper
+export const DISPATCH_WORKFLOW_STAGES = [
+  { id: 'request', label: 'Request' },
+  { id: 'approval', label: 'Approval' },
+  { id: 'picking', label: 'Picking' },
+  { id: 'packing', label: 'Packing' },
+  { id: 'qc', label: 'Outward QC' },
+  { id: 'dispatch', label: 'Dispatch' },
+  { id: 'delivery', label: 'Delivery' },
+] as const
+
+// Return flow for QC-failed devices
+export interface ReturnRecord {
+  id: string
+  returnNumber: string  // RET-2026-001
+  outwardId: string
+  outwardNumber: string
+  reason: 'QC_FAILED' | 'CUSTOMER_RETURN' | 'DAMAGE_IN_TRANSIT' | 'WRONG_ITEM'
+  devices: ReturnDevice[]
+  status: 'Initiated' | 'Received' | 'Inspected' | 'Resolved'
+  returnedBy: string
+  receivedBy?: string
+  createdAt: string
+  notes?: string
+}
+
+export interface ReturnDevice {
+  deviceId: string
+  barcode: string
+  model: string
+  reason: string
+  action: 'Repair' | 'Restock' | 'Scrap' | 'Pending'
 }
 
 // ── Stock Movement (Audit) ──

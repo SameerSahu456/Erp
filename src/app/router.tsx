@@ -44,6 +44,7 @@ const InventoryPage = lazy(() => import('@/modules/wms/pages/InventoryPage'))
 const OutwardPage = lazy(() => import('@/modules/wms/pages/OutwardPage'))
 const OutwardFormPage = lazy(() => import('@/modules/wms/pages/OutwardFormPage'))
 const OutwardDetailPage = lazy(() => import('@/modules/wms/pages/OutwardDetailPage'))
+const DispatchPage = lazy(() => import('@/modules/wms/pages/DispatchPage'))
 
 const ChecklistTemplatesPage = lazy(() => import('@/modules/wms/pages/ChecklistTemplatesPage'))
 const ChecklistTemplateFormPage = lazy(() => import('@/modules/wms/pages/ChecklistTemplateFormPage'))
@@ -126,6 +127,7 @@ export const router = createBrowserRouter([
       { path: '/wms/outward', element: <LazyRoute><OutwardPage /></LazyRoute> },
       { path: '/wms/outward/new', element: <LazyRoute><OutwardFormPage /></LazyRoute> },
       { path: '/wms/outward/:id', element: <LazyRoute><OutwardDetailPage /></LazyRoute> },
+      { path: '/wms/dispatch', element: <LazyRoute><DispatchPage /></LazyRoute> },
       { path: '/wms/checklists', element: <LazyRoute><ChecklistTemplatesPage /></LazyRoute> },
       { path: '/wms/checklists/new', element: <LazyRoute><ChecklistTemplateFormPage /></LazyRoute> },
       { path: '/wms/checklists/:id/edit', element: <LazyRoute><ChecklistTemplateFormPage /></LazyRoute> },
