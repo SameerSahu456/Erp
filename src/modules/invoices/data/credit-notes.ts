@@ -1,0 +1,48 @@
+import type { CreditNote } from '../types'
+
+export const mockCreditNotes: CreditNote[] = [
+  {
+    id: 'CN-001',
+    creditNoteNumber: 'CN-2026-001',
+    invoiceId: 'SINV-005',
+    invoiceNumber: 'INV-2026-005',
+    customerName: 'Reliance Jio Infocomm',
+    amount: 44000,
+    reason: 'Two D-Link APs returned — DOA (Dead on Arrival). Replacement units shipped separately.',
+    status: 'Issued',
+    issueDate: '2026-03-10',
+  },
+  {
+    id: 'CN-002',
+    creditNoteNumber: 'CN-2026-002',
+    invoiceId: 'SINV-008',
+    invoiceNumber: 'INV-2026-008',
+    customerName: 'HCL Technologies',
+    amount: 195000,
+    reason: 'One Dell PowerEdge R650 had faulty RAID controller. Credit issued pending RMA replacement.',
+    status: 'Applied',
+    issueDate: '2026-03-15',
+  },
+  {
+    id: 'CN-003',
+    creditNoteNumber: 'CN-2026-003',
+    invoiceId: 'SINV-009',
+    invoiceNumber: 'INV-2026-009',
+    customerName: 'Bajaj Finance Ltd',
+    amount: 78000,
+    reason: 'One HP EliteBook 840 G10 returned — wrong keyboard layout shipped (US layout instead of India layout).',
+    status: 'Draft',
+    issueDate: '2026-04-05',
+  },
+  {
+    id: 'CN-004',
+    creditNoteNumber: 'CN-2026-004',
+    invoiceId: 'SINV-004',
+    invoiceNumber: 'INV-2026-004',
+    customerName: 'Infosys Ltd',
+    amount: 285000,
+    reason: 'One Cisco Catalyst 9300-48P downgraded to 24-port model per revised requirement. Price difference credited.',
+    status: 'Issued',
+    issueDate: '2026-04-08',
+  },
+]
