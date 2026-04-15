@@ -1,6 +1,17 @@
 import { useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Pencil, ImageOff, Mail } from 'lucide-react'
+import {
+  Pencil,
+  ImageOff,
+  Mail,
+  ArrowUpRight,
+  ArrowDownRight,
+  RefreshCw,
+  Plug,
+  Replace,
+  Plus,
+  X,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -20,7 +31,34 @@ import { cn } from '@/lib/utils'
 import { mockParts } from '../data/parts'
 import { mockStockItems } from '../data/stock-items'
 import { mockChecklistTemplates } from '@/modules/wms/data/checklist-templates'
-import type { Part } from '@/modules/wms/types'
+import { mockRelatedParts } from '@/modules/wms/data/related-parts'
+import { mockBOMs } from '@/modules/wms/data/boms'
+import { Input } from '@/components/ui/input'
+import type { Part, PartRelationType, RelatedPart, BillOfMaterials, BOMItem, BOMType, BOMStatus } from '@/modules/wms/types'
+
+const RELATION_LABELS: Record<PartRelationType, string> = {
+  REPLACEMENT: 'Replacement',
+  ALTERNATIVE: 'Alternative',
+  UPGRADE: 'Upgrade',
+  DOWNGRADE: 'Downgrade',
+  COMPATIBLE: 'Compatible',
+}
+
+const RELATION_VARIANT: Record<PartRelationType, 'success' | 'warning' | 'info' | 'neutral' | 'error'> = {
+  REPLACEMENT: 'warning',
+  ALTERNATIVE: 'info',
+  UPGRADE: 'success',
+  DOWNGRADE: 'neutral',
+  COMPATIBLE: 'info',
+}
+
+const RELATION_ICON: Record<PartRelationType, React.ReactNode> = {
+  REPLACEMENT: <Replace className="size-3.5" />,
+  ALTERNATIVE: <RefreshCw className="size-3.5" />,
+  UPGRADE: <ArrowUpRight className="size-3.5" />,
+  DOWNGRADE: <ArrowDownRight className="size-3.5" />,
+  COMPATIBLE: <Plug className="size-3.5" />,
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -371,6 +409,672 @@ export default function PartDetailPage() {
     ),
   }
 
+  // ── Related Parts tab ──
+  const relatedParts = useMemo(
+    () => mockRelatedParts.filter((rp) => rp.partId === part.id && rp.isActive),
+    [part.id]
+  )
+  const incomingRelations = useMemo(
+    () => mockRelatedParts.filter((rp) => rp.relatedPartId === part.id && rp.isActive),
+    [part.id]
+  )
+
+  const [addingRelated, setAddingRelated] = useState(false)
+  const [newRelationType, setNewRelationType] = useState<PartRelationType>('ALTERNATIVE')
+  const [newRelatedPartId, setNewRelatedPartId] = useState<string>('')
+  const [localRelatedParts, setLocalRelatedParts] = useState<RelatedPart[]>(relatedParts)
+
+  // Parts available to add (not already related and not self)
+  const availableParts = useMemo(
+    () =>
+      mockParts.filter(
+        (p) =>
+          p.id !== part.id &&
+          p.isActive &&
+          !localRelatedParts.some((rp) => rp.relatedPartId === p.id)
+      ),
+    [part.id, localRelatedParts]
+  )
+
+  const handleAddRelatedPart = () => {
+    if (!newRelatedPartId) return
+    const target = mockParts.find((p) => p.id === newRelatedPartId)
+    if (!target) return
+
+    const newRP: RelatedPart = {
+      id: `RP-NEW-${Date.now()}`,
+      partId: part.id,
+      relatedPartId: newRelatedPartId,
+      relationType: newRelationType,
+      priority: localRelatedParts.length + 1,
+      isActive: true,
+    }
+    setLocalRelatedParts((prev) => [...prev, newRP])
+    setAddingRelated(false)
+    setNewRelatedPartId('')
+    toast.success(`${target.name} added as ${RELATION_LABELS[newRelationType].toLowerCase()}`)
+  }
+
+  const handleRemoveRelatedPart = (rpId: string) => {
+    setLocalRelatedParts((prev) => prev.filter((rp) => rp.id !== rpId))
+    toast.success('Related part removed')
+  }
+
+  const relatedPartsTab = {
+    id: 'related',
+    label: 'Related Parts',
+    count: localRelatedParts.length,
+    content: (
+      <div className="space-y-6">
+        {/* Outgoing: This part → related parts */}
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-medium">
+              Replaceable / Related Parts
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                ({localRelatedParts.length})
+              </span>
+            </h3>
+            <Button size="sm" variant="outline" onClick={() => setAddingRelated(!addingRelated)}>
+              {addingRelated ? (
+                <>
+                  <X className="mr-1 size-3.5" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <Plus className="mr-1 size-3.5" />
+                  Add Related Part
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Add form */}
+          {addingRelated && (
+            <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border bg-muted/30 p-4">
+              <div className="flex-1 min-w-[200px]">
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Part
+                </label>
+                <Select onValueChange={(v: string | null) => setNewRelatedPartId(v ?? '')}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a part..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableParts.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} ({p.brand})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-48">
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Relation Type
+                </label>
+                <Select
+                  value={newRelationType}
+                  onValueChange={(v: string | null) =>
+                    setNewRelationType((v as PartRelationType) ?? 'ALTERNATIVE')
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(RELATION_LABELS) as PartRelationType[]).map((rel) => (
+                      <SelectItem key={rel} value={rel}>
+                        {RELATION_LABELS[rel]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button size="sm" onClick={handleAddRelatedPart} disabled={!newRelatedPartId}>
+                Add
+              </Button>
+            </div>
+          )}
+
+          {/* Related parts list */}
+          {localRelatedParts.length > 0 ? (
+            <div className="divide-y rounded-lg border">
+              {localRelatedParts.map((rp) => {
+                const target = mockParts.find((p) => p.id === rp.relatedPartId)
+                if (!target) return null
+                return (
+                  <div key={rp.id} className="flex items-center gap-4 px-4 py-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      {RELATION_ICON[rp.relationType]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/ims/parts/${target.id}`}
+                          className="font-medium text-primary hover:underline truncate"
+                        >
+                          {target.name}
+                        </Link>
+                        <StatusBadge variant={RELATION_VARIANT[rp.relationType]}>
+                          {RELATION_LABELS[rp.relationType]}
+                        </StatusBadge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {target.brand} · {target.sku}
+                        {rp.notes && ` · ${rp.notes}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="inline-flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                        {rp.priority}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveRelatedPart(rp.id)}
+                      >
+                        <X className="size-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed p-8 text-center">
+              <RefreshCw className="mx-auto mb-2 size-8 text-muted-foreground" />
+              <p className="text-sm font-medium">No related parts defined</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Add alternatives, replacements, or upgrades for this part
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Incoming: Other parts that reference this part */}
+        {incomingRelations.length > 0 && (
+          <div>
+            <h3 className="mb-3 text-sm font-medium">
+              Referenced By
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                ({incomingRelations.length} parts reference this as a related part)
+              </span>
+            </h3>
+            <div className="divide-y rounded-lg border bg-muted/20">
+              {incomingRelations.map((rp) => {
+                const source = mockParts.find((p) => p.id === rp.partId)
+                if (!source) return null
+                return (
+                  <div key={rp.id} className="flex items-center gap-4 px-4 py-3">
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        to={`/ims/parts/${source.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {source.name}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">
+                        {source.brand} · Uses this part as{' '}
+                        <StatusBadge variant={RELATION_VARIANT[rp.relationType]}>
+                          {RELATION_LABELS[rp.relationType]}
+                        </StatusBadge>
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    ),
+  }
+
+  // ── BOMs tab ──
+  const partBOMs = useMemo(
+    () => mockBOMs.filter((b) => b.parentPartId === part.id),
+    [part.id]
+  )
+  const usedInBOMs = useMemo(
+    () => mockBOMs.filter((b) => b.items.some((item) => item.partId === part.id)),
+    [part.id]
+  )
+
+  // Local BOMs state so newly created ones show immediately
+  const [localBOMs, setLocalBOMs] = useState<BillOfMaterials[]>(partBOMs)
+
+  // BOM creation form state
+  const [creatingBOM, setCreatingBOM] = useState(false)
+  const [newBOMName, setNewBOMName] = useState('')
+  const [newBOMType, setNewBOMType] = useState<BOMType>('ASSEMBLY')
+  const [newBOMItems, setNewBOMItems] = useState<BOMItem[]>([])
+  const [newBOMEstTime, setNewBOMEstTime] = useState('')
+  const [newBOMEstCost, setNewBOMEstCost] = useState('')
+  const [newBOMNotes, setNewBOMNotes] = useState('')
+
+  // For adding items to the BOM being created
+  const [addingBOMItem, setAddingBOMItem] = useState(false)
+  const [bomItemPartId, setBomItemPartId] = useState('')
+  const [bomItemQty, setBomItemQty] = useState('1')
+  const [bomItemPosition, setBomItemPosition] = useState('')
+  const [bomItemOptional, setBomItemOptional] = useState(false)
+  const [bomItemSubstitutable, setBomItemSubstitutable] = useState(false)
+
+  const handleAddBOMItem = () => {
+    const selectedPart = mockParts.find((p) => p.id === bomItemPartId)
+    if (!selectedPart) return
+
+    const item: BOMItem = {
+      id: `BOMI-NEW-${Date.now()}`,
+      partId: selectedPart.id,
+      partName: selectedPart.name,
+      partSku: selectedPart.sku,
+      quantity: parseInt(bomItemQty) || 1,
+      unitOfMeasure: selectedPart.unitOfMeasure,
+      isOptional: bomItemOptional,
+      allowSubstitution: bomItemSubstitutable,
+      position: bomItemPosition || undefined,
+    }
+
+    setNewBOMItems((prev) => [...prev, item])
+    setBomItemPartId('')
+    setBomItemQty('1')
+    setBomItemPosition('')
+    setBomItemOptional(false)
+    setBomItemSubstitutable(false)
+    setAddingBOMItem(false)
+  }
+
+  const handleRemoveBOMItem = (itemId: string) => {
+    setNewBOMItems((prev) => prev.filter((i) => i.id !== itemId))
+  }
+
+  const handleCreateBOM = () => {
+    if (!newBOMName.trim() || newBOMItems.length === 0) {
+      toast.error('BOM needs a name and at least one component')
+      return
+    }
+
+    const nextNum = localBOMs.length + partBOMs.length + 1
+    const newBOM: BillOfMaterials = {
+      id: `BOM-NEW-${Date.now()}`,
+      name: newBOMName,
+      bomNumber: `BOM-2026-${String(100 + nextNum).padStart(3, '0')}`,
+      type: newBOMType,
+      status: 'Draft' as BOMStatus,
+      version: 1,
+      parentPartId: part.id,
+      parentPartName: part.name,
+      parentPartSku: part.sku,
+      items: newBOMItems,
+      estimatedAssemblyTime: newBOMEstTime ? parseInt(newBOMEstTime) : undefined,
+      estimatedCost: newBOMEstCost ? parseInt(newBOMEstCost) : undefined,
+      createdBy: 'Current User',
+      createdAt: new Date().toISOString(),
+      notes: newBOMNotes || undefined,
+    }
+
+    setLocalBOMs((prev) => [...prev, newBOM])
+    setCreatingBOM(false)
+    setNewBOMName('')
+    setNewBOMType('ASSEMBLY')
+    setNewBOMItems([])
+    setNewBOMEstTime('')
+    setNewBOMEstCost('')
+    setNewBOMNotes('')
+    toast.success(`BOM "${newBOM.name}" created as Draft`)
+  }
+
+  const handleCancelBOM = () => {
+    setCreatingBOM(false)
+    setNewBOMName('')
+    setNewBOMType('ASSEMBLY')
+    setNewBOMItems([])
+    setNewBOMEstTime('')
+    setNewBOMEstCost('')
+    setNewBOMNotes('')
+    setAddingBOMItem(false)
+  }
+
+  const bomsTab = {
+    id: 'boms',
+    label: 'BOMs',
+    count: localBOMs.length + usedInBOMs.length,
+    content: (
+      <div className="space-y-6">
+        {/* Header with Create buttons */}
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium">
+            Bill of Materials for {part.name}
+          </h3>
+          {!creatingBOM && (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { setNewBOMType('ASSEMBLY'); setCreatingBOM(true) }}
+              >
+                <Plus className="mr-1 size-3.5" />
+                Assembly BOM
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { setNewBOMType('DISASSEMBLY'); setCreatingBOM(true) }}
+              >
+                <Plus className="mr-1 size-3.5" />
+                Disassembly BOM
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Create BOM Form ── */}
+        {creatingBOM && (
+          <div className="rounded-lg border bg-muted/20 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold flex items-center gap-2">
+                <Plus className="size-4" />
+                New {newBOMType === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'} BOM
+              </h4>
+              <StatusBadge variant={newBOMType === 'ASSEMBLY' ? 'info' : 'warning'}>
+                {newBOMType === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'}
+              </StatusBadge>
+            </div>
+
+            {/* BOM info fields */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  BOM Name *
+                </label>
+                <Input
+                  value={newBOMName}
+                  onChange={(e) => setNewBOMName(e.target.value)}
+                  placeholder={`e.g. ${part.name} Standard Build`}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Type
+                </label>
+                <Select
+                  value={newBOMType}
+                  onValueChange={(v: string | null) => setNewBOMType((v as BOMType) ?? 'ASSEMBLY')}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ASSEMBLY">Assembly</SelectItem>
+                    <SelectItem value="DISASSEMBLY">Disassembly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Est. Assembly Time (minutes)
+                </label>
+                <Input
+                  type="number"
+                  value={newBOMEstTime}
+                  onChange={(e) => setNewBOMEstTime(e.target.value)}
+                  placeholder="e.g. 120"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Est. Cost (INR)
+                </label>
+                <Input
+                  type="number"
+                  value={newBOMEstCost}
+                  onChange={(e) => setNewBOMEstCost(e.target.value)}
+                  placeholder="e.g. 285000"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                Notes
+              </label>
+              <Input
+                value={newBOMNotes}
+                onChange={(e) => setNewBOMNotes(e.target.value)}
+                placeholder="Optional notes about this BOM..."
+              />
+            </div>
+
+            {/* Parent product (read-only) */}
+            <div className="rounded-md bg-muted/50 px-4 py-3 text-sm">
+              <span className="text-muted-foreground">
+                {newBOMType === 'ASSEMBLY' ? 'Output Product:' : 'Source Product:'}
+              </span>{' '}
+              <span className="font-medium">{part.name}</span>
+              <span className="text-muted-foreground"> ({part.sku})</span>
+            </div>
+
+            {/* Component Items */}
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <h5 className="text-sm font-medium">
+                  Components ({newBOMItems.length})
+                </h5>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setAddingBOMItem(!addingBOMItem)}
+                >
+                  {addingBOMItem ? (
+                    <><X className="mr-1 size-3.5" /> Cancel</>
+                  ) : (
+                    <><Plus className="mr-1 size-3.5" /> Add Component</>
+                  )}
+                </Button>
+              </div>
+
+              {/* Add component form */}
+              {addingBOMItem && (
+                <div className="mb-3 rounded-md border bg-background p-3 space-y-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="sm:col-span-2">
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Part *</label>
+                      <Select onValueChange={(v: string | null) => setBomItemPartId(v ?? '')}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select component part..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {mockParts
+                            .filter((p) => p.isActive && p.id !== part.id)
+                            .map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name} ({p.brand} · {p.sku})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Quantity *</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={bomItemQty}
+                        onChange={(e) => setBomItemQty(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Position</label>
+                      <Input
+                        value={bomItemPosition}
+                        onChange={(e) => setBomItemPosition(e.target.value)}
+                        placeholder="e.g. Slot 1, Bay 2"
+                      />
+                    </div>
+                    <div className="flex items-end gap-4 sm:col-span-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={bomItemOptional}
+                          onChange={(e) => setBomItemOptional(e.target.checked)}
+                          className="rounded border-input"
+                        />
+                        Optional
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={bomItemSubstitutable}
+                          onChange={(e) => setBomItemSubstitutable(e.target.checked)}
+                          className="rounded border-input"
+                        />
+                        Allow Substitution
+                      </label>
+                      <Button size="sm" onClick={handleAddBOMItem} disabled={!bomItemPartId}>
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Component list */}
+              {newBOMItems.length > 0 ? (
+                <div className="divide-y rounded-md border">
+                  {newBOMItems.map((item, idx) => (
+                    <div key={item.id} className="flex items-center gap-3 px-4 py-2.5">
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                        {idx + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{item.partName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.partSku}
+                          {item.position && ` · ${item.position}`}
+                          {item.isOptional && ' · Optional'}
+                          {item.allowSubstitution && ' · Substitutable'}
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold">&times;{item.quantity}</span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveBOMItem(item.id)}
+                      >
+                        <X className="size-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  No components added yet. Click "Add Component" to start building the BOM.
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 border-t pt-4">
+              <Button variant="outline" onClick={handleCancelBOM}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateBOM} disabled={!newBOMName.trim() || newBOMItems.length === 0}>
+                Create BOM (Draft)
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Existing BOMs for this part ── */}
+        {localBOMs.length > 0 && (
+          <div>
+            <h3 className="mb-3 text-sm font-medium">
+              Assembly / Disassembly BOMs
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                (this part as output)
+              </span>
+            </h3>
+            <div className="divide-y rounded-lg border">
+              {localBOMs.map((bom) => (
+                <Link
+                  key={bom.id}
+                  to={`/wms/bom/${bom.id}`}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                >
+                  <div>
+                    <p className="font-medium">{bom.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {bom.bomNumber} · v{bom.version} · {bom.items.length} components
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge variant={bom.type === 'ASSEMBLY' ? 'info' : 'warning'}>
+                      {bom.type === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'}
+                    </StatusBadge>
+                    <StatusBadge variant={bom.status === 'Active' ? 'success' : bom.status === 'Draft' ? 'neutral' : 'neutral'}>
+                      {bom.status}
+                    </StatusBadge>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* BOMs where this part is used as a component */}
+        {usedInBOMs.length > 0 && (
+          <div>
+            <h3 className="mb-3 text-sm font-medium">
+              Used as Component In
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                ({usedInBOMs.length} BOMs)
+              </span>
+            </h3>
+            <div className="divide-y rounded-lg border">
+              {usedInBOMs.map((bom) => {
+                const item = bom.items.find((i) => i.partId === part.id)
+                return (
+                  <Link
+                    key={bom.id}
+                    to={`/wms/bom/${bom.id}`}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium">{bom.parentPartName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {bom.bomNumber} · Qty: {item?.quantity ?? '?'} {item?.unitOfMeasure ?? ''}
+                        {item?.position && ` · ${item.position}`}
+                      </p>
+                    </div>
+                    <StatusBadge variant={bom.type === 'ASSEMBLY' ? 'info' : 'warning'}>
+                      {bom.type === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'}
+                    </StatusBadge>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Empty state only if nothing at all */}
+        {localBOMs.length === 0 && usedInBOMs.length === 0 && !creatingBOM && (
+          <div className="rounded-lg border border-dashed p-8 text-center">
+            <p className="text-sm font-medium">No BOMs linked</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Create an Assembly or Disassembly BOM for this part using the buttons above
+            </p>
+          </div>
+        )}
+      </div>
+    ),
+  }
+
   return (
     <div className="space-y-6">
       <EntityHeader
@@ -388,7 +1092,7 @@ export default function PartDetailPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         {/* Left: Tabs */}
-        <DetailTabs tabs={[overviewTab, inventoryTab, checklistsTab, historyTab]} />
+        <DetailTabs tabs={[overviewTab, relatedPartsTab, bomsTab, inventoryTab, checklistsTab, historyTab]} />
 
         {/* Right: Sidebar cards */}
         <div className="space-y-4">

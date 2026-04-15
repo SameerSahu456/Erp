@@ -8,7 +8,7 @@ export const purchaseRequests: PurchaseRequest[] = [
     salesOrderNumber: 'SO-2026-001',
     leadId: 'LEAD-001',
     leadName: 'Rajesh Sharma',
-    status: 'Pricing Confirmed',
+    status: 'Final Approved',
     items: [
       {
         id: 'PRI-001',
@@ -33,6 +33,28 @@ export const purchaseRequests: PurchaseRequest[] = [
         vendorNotes: 'APC distributor offering 8% discount on bulk order.',
       },
     ],
+    categoryApprovals: [
+      {
+        id: 'PA-001-01',
+        category: 'Servers',
+        productManager: 'Vikram Singh',
+        productManagerEmail: 'vikram@comprinttech.com',
+        status: 'Approved',
+        approvedAt: '2026-03-18T10:00:00Z',
+        remarks: 'Approved. Recommend Dell R750xs for better value.',
+      },
+      {
+        id: 'PA-001-02',
+        category: 'UPS & Power',
+        productManager: 'Rahul Mehta',
+        productManagerEmail: 'rahul@comprinttech.com',
+        status: 'Approved',
+        approvedAt: '2026-03-18T14:00:00Z',
+        remarks: 'Approved. APC pricing is competitive.',
+      },
+    ],
+    finalApprovalBy: 'Amit Patel',
+    finalApprovalAt: '2026-03-19T09:00:00Z',
     requestedBy: 'Amit Patel',
     assignedTo: 'Procurement Team',
     notes: 'Urgent requirement for TCS data center. CTO has approved budget. Need delivery by end of May.',
@@ -46,7 +68,7 @@ export const purchaseRequests: PurchaseRequest[] = [
     salesOrderNumber: 'SO-2026-005',
     leadId: 'LEAD-002',
     leadName: 'Priya Nair',
-    status: 'Submitted',
+    status: 'Pending PM Approval',
     items: [
       {
         id: 'PRI-003',
@@ -73,6 +95,24 @@ export const purchaseRequests: PurchaseRequest[] = [
         estimatedRate: 105000,
       },
     ],
+    categoryApprovals: [
+      {
+        id: 'PA-002-01',
+        category: 'Networking',
+        productManager: 'Vikram Singh',
+        productManagerEmail: 'vikram@comprinttech.com',
+        status: 'Approved',
+        approvedAt: '2026-04-15T11:00:00Z',
+        remarks: 'Cisco and Palo Alto approved. Check latest pricing with distributor.',
+      },
+      {
+        id: 'PA-002-02',
+        category: 'Cables & Accessories',
+        productManager: 'Rahul Mehta',
+        productManagerEmail: 'rahul@comprinttech.com',
+        status: 'Pending',
+      },
+    ],
     requestedBy: 'Sneha Desai',
     notes: 'Reliance Digital networking overhaul. Need vendor quotes for Cisco and Palo Alto equipment.',
     createdAt: '2026-04-14',
@@ -82,7 +122,7 @@ export const purchaseRequests: PurchaseRequest[] = [
     prNumber: 'PR-2026-003',
     salesOrderId: 'SO-007',
     salesOrderNumber: 'SO-2026-007',
-    status: 'Approved',
+    status: 'Sent to Procurement',
     items: [
       {
         id: 'PRI-006',
@@ -107,6 +147,27 @@ export const purchaseRequests: PurchaseRequest[] = [
         vendorNotes: 'Lead time 2 weeks from order confirmation.',
       },
     ],
+    categoryApprovals: [
+      {
+        id: 'PA-003-01',
+        category: 'Servers',
+        productManager: 'Vikram Singh',
+        productManagerEmail: 'vikram@comprinttech.com',
+        status: 'Approved',
+        approvedAt: '2026-04-04T09:00:00Z',
+      },
+      {
+        id: 'PA-003-02',
+        category: 'Storage',
+        productManager: 'Priya Sharma',
+        productManagerEmail: 'priya@comprinttech.com',
+        status: 'Approved',
+        approvedAt: '2026-04-04T10:30:00Z',
+        remarks: 'Approved. Dell PowerVault is good fit for HIPAA workloads.',
+      },
+    ],
+    finalApprovalBy: 'Amit Patel',
+    finalApprovalAt: '2026-04-05T09:00:00Z',
     requestedBy: 'Amit Patel',
     assignedTo: 'Procurement Team',
     notes: 'MedLife Healthcare server setup. HIPAA compliance required - ensure vendor certifications.',
@@ -116,7 +177,7 @@ export const purchaseRequests: PurchaseRequest[] = [
   {
     id: 'PR-004',
     prNumber: 'PR-2026-004',
-    status: 'Under Review',
+    status: 'Partially Approved',
     items: [
       {
         id: 'PRI-008',
@@ -138,6 +199,24 @@ export const purchaseRequests: PurchaseRequest[] = [
         estimatedRate: 6000,
       },
     ],
+    categoryApprovals: [
+      {
+        id: 'PA-004-01',
+        category: 'Laptops',
+        productManager: 'Rahul Mehta',
+        productManagerEmail: 'rahul@comprinttech.com',
+        status: 'Approved',
+        approvedAt: '2026-04-13T14:00:00Z',
+        remarks: 'Approved. Recommend negotiating for 40K per unit at 200 qty.',
+      },
+      {
+        id: 'PA-004-02',
+        category: 'Cables & Accessories',
+        productManager: 'Priya Sharma',
+        productManagerEmail: 'priya@comprinttech.com',
+        status: 'Pending',
+      },
+    ],
     requestedBy: 'Rahul Verma',
     assignedTo: 'Procurement Team',
     notes: 'Infosys bulk laptop order for campus hires. Need to finalize docking station pricing with HP.',
@@ -147,7 +226,7 @@ export const purchaseRequests: PurchaseRequest[] = [
   {
     id: 'PR-005',
     prNumber: 'PR-2026-005',
-    status: 'Draft',
+    status: 'Pending PM Approval',
     items: [
       {
         id: 'PRI-010',
@@ -174,6 +253,29 @@ export const purchaseRequests: PurchaseRequest[] = [
         estimatedRate: 170000,
       },
     ],
+    categoryApprovals: [
+      {
+        id: 'PA-005-01',
+        category: 'Networking',
+        productManager: 'Vikram Singh',
+        productManagerEmail: 'vikram@comprinttech.com',
+        status: 'Pending',
+      },
+      {
+        id: 'PA-005-02',
+        category: 'Servers',
+        productManager: 'Vikram Singh',
+        productManagerEmail: 'vikram@comprinttech.com',
+        status: 'Pending',
+      },
+      {
+        id: 'PA-005-03',
+        category: 'UPS & Power',
+        productManager: 'Rahul Mehta',
+        productManagerEmail: 'rahul@comprinttech.com',
+        status: 'Pending',
+      },
+    ],
     requestedBy: 'Sneha Desai',
     notes: 'NexGen Manufacturing factory automation project. Need industrial-grade equipment quotes.',
     createdAt: '2026-04-15',
@@ -192,6 +294,17 @@ export const purchaseRequests: PurchaseRequest[] = [
         category: 'Cables & Accessories',
         qty: 10,
         estimatedRate: 15000,
+      },
+    ],
+    categoryApprovals: [
+      {
+        id: 'PA-006-01',
+        category: 'Cables & Accessories',
+        productManager: 'Rahul Mehta',
+        productManagerEmail: 'rahul@comprinttech.com',
+        status: 'Rejected',
+        rejectedAt: '2026-03-24T10:00:00Z',
+        remarks: 'Rejected — associated SO cancelled by TCS.',
       },
     ],
     requestedBy: 'Rahul Verma',

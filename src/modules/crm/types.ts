@@ -56,13 +56,32 @@ export interface Contact {
   createdAt: string
 }
 
+export interface SalesOrderLineItem {
+  id: string
+  partId: string
+  partName: string
+  partSku: string
+  category: string
+  brand: string
+  qty: number
+  rate: number
+  amount: number
+  bomId?: string           // linked BOM for assembly
+  bomName?: string
+  // Part add/remove config — visible on dispatch
+  configAction: 'STANDARD' | 'ADD' | 'REMOVE' | 'SWAP'
+  configNotes?: string     // e.g., "Customer requested 32GB instead of 16GB"
+  swapPartId?: string      // if SWAP, what it replaces
+  swapPartName?: string
+}
+
 export interface SalesOrder {
   id: string
   orderNumber: string
   accountId: string
   accountName: string
   total: number
-  status: 'Draft' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled'
+  status: 'Draft' | 'Confirmed' | 'Engineering' | 'In Assembly' | 'QC' | 'Ready for Dispatch' | 'Shipped' | 'Delivered' | 'Cancelled'
   date: string
   items: number
   createdAt: string
@@ -71,6 +90,14 @@ export interface SalesOrder {
   approvalStatus: 'Pending' | 'Approved' | 'Rejected'
   approvedBy?: string
   purchaseRequestId?: string
+  // Enhanced: line items with BOM linkage
+  lineItems: SalesOrderLineItem[]
+  // Work order linkage
+  workOrderId?: string
+  workOrderNumber?: string
+  // Dispatch visibility
+  dispatchNotes?: string
+  hasPartConfig: boolean  // true if any line has ADD/REMOVE/SWAP
 }
 
 export interface QuoteLineItem {
@@ -153,6 +180,20 @@ export interface Note {
   entityId: string
 }
 
+// ── Purchase Request with Multi-PM Approval ──
+export type PRApprovalStatus = 'Pending' | 'Approved' | 'Rejected'
+
+export interface PRCategoryApproval {
+  id: string
+  category: string
+  productManager: string
+  productManagerEmail: string
+  status: PRApprovalStatus
+  approvedAt?: string
+  rejectedAt?: string
+  remarks?: string
+}
+
 export interface PurchaseRequest {
   id: string
   prNumber: string
@@ -160,8 +201,12 @@ export interface PurchaseRequest {
   salesOrderNumber?: string
   leadId?: string
   leadName?: string
-  status: 'Draft' | 'Submitted' | 'Under Review' | 'Pricing Confirmed' | 'Approved' | 'Rejected'
+  status: 'Draft' | 'Submitted' | 'Pending PM Approval' | 'Partially Approved' | 'All PMs Approved' | 'Final Approved' | 'Rejected' | 'Sent to Procurement'
   items: PurchaseRequestItem[]
+  // Multi-PM approval — one per category
+  categoryApprovals: PRCategoryApproval[]
+  finalApprovalBy?: string
+  finalApprovalAt?: string
   requestedBy: string
   assignedTo?: string
   notes?: string
@@ -179,6 +224,72 @@ export interface PurchaseRequestItem {
   confirmedRate?: number
   availableDate?: string
   vendorNotes?: string
+}
+
+// ── Demo Request ──
+export type DemoRequestStatus =
+  | 'Draft'
+  | 'Submitted'
+  | 'Pending PM Approval'
+  | 'PM Approved'
+  | 'PM Rejected'
+  | 'Dispatch Created'
+  | 'Dispatched'
+  | 'With Customer'
+  | 'Return Overdue'
+  | 'Returned'
+  | 'Closed'
+
+export interface DemoRequestItem {
+  id: string
+  partId: string
+  partName: string
+  partSku: string
+  category: string
+  brand: string
+  qty: number
+  serialNumbers?: string[]  // assigned after dispatch
+}
+
+export interface DemoRequest {
+  id: string
+  demoNumber: string         // DEMO-2026-001
+  // Source
+  dealId?: string
+  dealName?: string
+  leadId?: string
+  leadName?: string
+  accountId: string
+  accountName: string
+  contactName: string
+  contactPhone: string
+  contactEmail: string
+  // Items
+  items: DemoRequestItem[]
+  // Approval
+  status: DemoRequestStatus
+  productManager: string
+  productManagerEmail: string
+  pmApprovalDate?: string
+  pmRemarks?: string
+  // Dispatch
+  dispatchRequestId?: string
+  dispatchDate?: string
+  shippingAddress: string
+  // Return tracking
+  expectedReturnDate: string
+  actualReturnDate?: string
+  returnCondition?: 'Good' | 'Damaged' | 'Missing Parts'
+  returnNotes?: string
+  isOverdue: boolean
+  overdueByDays?: number
+  // People
+  requestedBy: string
+  approvedBy?: string
+  // Dates
+  createdAt: string
+  updatedAt?: string
+  notes?: string
 }
 
 export const IMS_CATEGORIES = [

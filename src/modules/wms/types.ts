@@ -563,3 +563,174 @@ export const DISPATCH_STATUSES = [
 ] as const
 
 export type DispatchStatus = (typeof DISPATCH_STATUSES)[number]
+
+// ── Related / Replaceable Parts ──
+export type PartRelationType = 'REPLACEMENT' | 'ALTERNATIVE' | 'UPGRADE' | 'DOWNGRADE' | 'COMPATIBLE'
+
+export interface RelatedPart {
+  id: string
+  partId: string         // source part
+  relatedPartId: string  // target part
+  relationType: PartRelationType
+  notes?: string
+  priority: number       // lower = preferred replacement
+  isActive: boolean
+}
+
+// ── Assembly BOM (Bill of Materials) ──
+export type BOMType = 'ASSEMBLY' | 'DISASSEMBLY'
+export type BOMStatus = 'Draft' | 'Active' | 'Revision' | 'Obsolete'
+
+export interface BOMItem {
+  id: string
+  partId: string
+  partName: string
+  partSku: string
+  quantity: number
+  unitOfMeasure: string
+  isOptional: boolean
+  allowSubstitution: boolean  // can use related/replaceable parts
+  substitutePartIds?: string[]
+  position?: string   // e.g., 'Slot 1', 'Bay 2'
+  notes?: string
+}
+
+export interface BillOfMaterials {
+  id: string
+  name: string          // e.g., 'Dell R750xs Standard Build'
+  bomNumber: string     // BOM-2026-001
+  type: BOMType
+  status: BOMStatus
+  version: number
+  // Parent product
+  parentPartId: string
+  parentPartName: string
+  parentPartSku: string
+  // Components
+  items: BOMItem[]
+  // Metadata
+  estimatedAssemblyTime?: number  // minutes
+  estimatedCost?: number
+  createdBy: string
+  approvedBy?: string
+  createdAt: string
+  updatedAt?: string
+  notes?: string
+}
+
+// ── Engineering / Work Order ──
+export const WORK_ORDER_STATUSES = [
+  'Draft',
+  'Pending Approval',
+  'Approved',
+  'Component Picking',
+  'Components Picked',
+  'In Assembly',
+  'Assembly Complete',
+  'Packaging',
+  'Pending QC',
+  'QC Passed',
+  'QC Failed',
+  'Ready for Dispatch',
+  'Sent to Rental Warehouse',
+  'Dispatched',
+  'Invoiced',
+  'Closed',
+] as const
+
+export type WorkOrderStatus = (typeof WORK_ORDER_STATUSES)[number]
+
+export type WorkOrderType = 'SALES' | 'RENTAL' | 'INTERNAL' | 'DEMO'
+
+export interface WorkOrderComponent {
+  id: string
+  bomItemId: string
+  partId: string
+  partName: string
+  partSku: string
+  requiredQty: number
+  pickedQty: number
+  // Actual device/SKU picked
+  pickedSkus: {
+    sku: string
+    serialNumber: string
+    barcode: string
+    warehouseId: string
+    location: string
+  }[]
+  isSubstitute: boolean        // was a replacement part used?
+  originalPartId?: string      // if substituted, which part was originally in BOM
+  status: 'Pending' | 'Partially Picked' | 'Picked' | 'Issued' | 'Returned'
+}
+
+export interface WorkOrderQC {
+  id: string
+  performedBy: string
+  performedAt: string
+  result: 'PASSED' | 'FAILED'
+  checklist: { item: string; result: 'PASS' | 'FAIL'; notes?: string }[]
+  failureReasons?: string[]
+  notes?: string
+}
+
+export interface WorkOrder {
+  id: string
+  workOrderNumber: string    // WO-2026-001
+  type: WorkOrderType
+  status: WorkOrderStatus
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent'
+  // Source reference
+  salesOrderId?: string
+  salesOrderNumber?: string
+  rentalContractId?: string
+  rentalContractNumber?: string
+  // BOM
+  bomId: string
+  bomName: string
+  bomNumber: string
+  // Output product
+  outputPartId: string
+  outputPartName: string
+  outputQty: number
+  // Components
+  components: WorkOrderComponent[]
+  // Assembly
+  assemblyTeam?: string
+  assemblyStartedAt?: string
+  assemblyCompletedAt?: string
+  assemblyNotes?: string
+  // QC
+  qcRecords: WorkOrderQC[]
+  // Destination
+  destinationType: 'DISPATCH' | 'RENTAL_WAREHOUSE' | 'STOCK'
+  destinationWarehouseId?: string
+  destinationWarehouseName?: string
+  // Customer/billing
+  customerName?: string
+  customerId?: string
+  invoiceId?: string
+  invoiceNumber?: string
+  // People
+  createdBy: string
+  approvedBy?: string
+  assignedTo?: string
+  // Dates
+  requestedDate: string
+  dueDate: string
+  completedAt?: string
+  createdAt: string
+  updatedAt?: string
+  notes?: string
+}
+
+// Work Order workflow stages for stepper
+export const WORK_ORDER_WORKFLOW_STAGES = [
+  { id: 'create', label: 'Create' },
+  { id: 'approve', label: 'Approve' },
+  { id: 'picking', label: 'Component Picking' },
+  { id: 'assembly', label: 'Assembly' },
+  { id: 'packaging', label: 'Packaging' },
+  { id: 'qc', label: 'QC' },
+  { id: 'dispatch', label: 'Dispatch / Warehouse' },
+  { id: 'invoice', label: 'Invoice' },
+] as const

@@ -38,6 +38,9 @@ import {
   FileBox,
   RotateCcw,
   MapPin,
+  Hammer,
+  Monitor,
+  ShieldCheck,
 } from 'lucide-react'
 import type { NavGroup } from '@/types/navigation'
 
@@ -56,6 +59,8 @@ export const SIDEBAR_NAV: NavGroup[] = [
       { label: 'Quotes', href: '/crm/quotes', icon: FileText, module: 'crm' },
       { label: 'Purchase Requests', href: '/crm/purchase-requests', icon: FilePlus, module: 'crm' },
       { label: 'Material Inquiries', href: '/crm/material-inquiries', icon: PackageSearch, module: 'crm' },
+      { label: 'Demo Requests', href: '/crm/demo-requests', icon: Monitor, module: 'crm' },
+      { label: 'PM Approvals', href: '/crm/pm-approvals', icon: ShieldCheck, module: 'crm' },
     ],
   },
   {
@@ -71,6 +76,7 @@ export const SIDEBAR_NAV: NavGroup[] = [
       { label: 'QC', href: '/wms/qc', icon: CheckCircle2, module: 'wms' },
       { label: 'Outward', href: '/wms/outward', icon: Truck, module: 'wms' },
       { label: 'Dispatch', href: '/wms/dispatch', icon: Package, module: 'wms' },
+      { label: 'Work Orders', href: '/wms/work-orders', icon: Hammer, module: 'wms' },
       { label: 'Checklists', href: '/wms/checklists', icon: ClipboardList, module: 'wms' },
       { label: 'Locations', href: '/wms/locations', icon: MapPin, module: 'wms' },
     ],

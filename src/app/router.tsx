@@ -29,6 +29,10 @@ const PurchaseRequestFormPage = lazy(() => import('@/modules/crm/pages/PurchaseR
 const MaterialInquiriesPage = lazy(() => import('@/modules/crm/pages/MaterialInquiriesPage'))
 const MaterialInquiryDetailPage = lazy(() => import('@/modules/crm/pages/MaterialInquiryDetailPage'))
 const MaterialInquiryFormPage = lazy(() => import('@/modules/crm/pages/MaterialInquiryFormPage'))
+const DemoRequestsPage = lazy(() => import('@/modules/crm/pages/DemoRequestsPage'))
+const DemoRequestDetailPage = lazy(() => import('@/modules/crm/pages/DemoRequestDetailPage'))
+const SalesOrderDetailPage = lazy(() => import('@/modules/crm/pages/SalesOrderDetailPage'))
+const PMApprovalsPage = lazy(() => import('@/modules/crm/pages/PMApprovalsPage'))
 
 // WMS pages
 const WmsDashboard = lazy(() => import('@/modules/wms/pages/WmsDashboard'))
@@ -49,6 +53,11 @@ const DispatchPage = lazy(() => import('@/modules/wms/pages/DispatchPage'))
 const ChecklistTemplatesPage = lazy(() => import('@/modules/wms/pages/ChecklistTemplatesPage'))
 const ChecklistTemplateFormPage = lazy(() => import('@/modules/wms/pages/ChecklistTemplateFormPage'))
 const WarehouseLocationsPage = lazy(() => import('@/modules/wms/pages/WarehouseLocationsPage'))
+const BOMListPage = lazy(() => import('@/modules/wms/pages/BOMListPage'))
+const BOMDetailPage = lazy(() => import('@/modules/wms/pages/BOMDetailPage'))
+const RelatedPartsPage = lazy(() => import('@/modules/wms/pages/RelatedPartsPage'))
+const WorkOrderListPage = lazy(() => import('@/modules/wms/pages/WorkOrderListPage'))
+const WorkOrderDetailPage = lazy(() => import('@/modules/wms/pages/WorkOrderDetailPage'))
 
 // Procurement pages
 const ProcurementDashboard = lazy(() => import('@/modules/procurement/pages/ProcurementDashboard'))
@@ -110,6 +119,9 @@ const RentalContractFormPage = lazy(() => import('@/modules/rentals/pages/Rental
 const RentalContractDetailPage = lazy(() => import('@/modules/rentals/pages/RentalContractDetailPage'))
 const DeviceTrackingPage = lazy(() => import('@/modules/rentals/pages/DeviceTrackingPage'))
 const RentalReturnsPage = lazy(() => import('@/modules/rentals/pages/RentalReturnsPage'))
+
+// Design System page
+const DesignSystemPage = lazy(() => import('@/modules/design-system/DesignSystemPage'))
 
 // IMS pages
 const ImsDashboard = lazy(() => import('@/modules/ims/pages/ImsDashboard'))
@@ -176,6 +188,10 @@ export const router = createBrowserRouter([
       { path: '/crm/material-inquiries/new', element: <LazyRoute><MaterialInquiryFormPage /></LazyRoute> },
       { path: '/crm/material-inquiries/:id', element: <LazyRoute><MaterialInquiryDetailPage /></LazyRoute> },
       { path: '/crm/material-inquiries/:id/edit', element: <LazyRoute><MaterialInquiryFormPage /></LazyRoute> },
+      { path: '/crm/demo-requests', element: <LazyRoute><DemoRequestsPage /></LazyRoute> },
+      { path: '/crm/demo-requests/:id', element: <LazyRoute><DemoRequestDetailPage /></LazyRoute> },
+      { path: '/crm/sales-orders/:id', element: <LazyRoute><SalesOrderDetailPage /></LazyRoute> },
+      { path: '/crm/pm-approvals', element: <LazyRoute><PMApprovalsPage /></LazyRoute> },
       { path: '/crm/notifications', element: <LazyRoute><NotificationCenter /></LazyRoute> },
 
       // WMS routes
@@ -197,6 +213,11 @@ export const router = createBrowserRouter([
       { path: '/wms/checklists/new', element: <LazyRoute><ChecklistTemplateFormPage /></LazyRoute> },
       { path: '/wms/checklists/:id/edit', element: <LazyRoute><ChecklistTemplateFormPage /></LazyRoute> },
       { path: '/wms/locations', element: <LazyRoute><WarehouseLocationsPage /></LazyRoute> },
+      { path: '/wms/bom', element: <LazyRoute><BOMListPage /></LazyRoute> },
+      { path: '/wms/bom/:id', element: <LazyRoute><BOMDetailPage /></LazyRoute> },
+      { path: '/wms/related-parts', element: <LazyRoute><RelatedPartsPage /></LazyRoute> },
+      { path: '/wms/work-orders', element: <LazyRoute><WorkOrderListPage /></LazyRoute> },
+      { path: '/wms/work-orders/:id', element: <LazyRoute><WorkOrderDetailPage /></LazyRoute> },
 
       // IMS routes
       { path: '/ims', element: <LazyRoute><ImsDashboard /></LazyRoute> },
@@ -267,6 +288,9 @@ export const router = createBrowserRouter([
       { path: '/rentals/contracts/:id', element: <LazyRoute><RentalContractDetailPage /></LazyRoute> },
       { path: '/rentals/tracking', element: <LazyRoute><DeviceTrackingPage /></LazyRoute> },
       { path: '/rentals/returns', element: <LazyRoute><RentalReturnsPage /></LazyRoute> },
+
+      // Design System route
+      { path: '/design-system', element: <LazyRoute><DesignSystemPage /></LazyRoute> },
 
       // Reports routes
       { path: '/reports', element: <LazyRoute><ReportBuilderPage /></LazyRoute> },

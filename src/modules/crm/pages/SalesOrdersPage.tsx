@@ -15,6 +15,10 @@ const formatCurrency = (value: number) =>
 const statusVariant: Record<string, StatusBadgeVariant> = {
   Draft: "warning",
   Confirmed: "info",
+  Engineering: "warning",
+  "In Assembly": "warning",
+  QC: "info",
+  "Ready for Dispatch": "success",
   Shipped: "info",
   Delivered: "success",
   Cancelled: "red-cell",
@@ -45,7 +49,7 @@ const ordersTab: TabConfig = {
 const cellFormatter: CellFormatter = (value, key, row) => {
   if (key === "orderNumber" && typeof value === "string") {
     return {
-      display: <Link to={`/crm/sales-orders/${row["id"]}/edit`} className="text-primary hover:underline font-medium">{value}</Link>,
+      display: <Link to={`/crm/sales-orders/${row["id"]}`} className="text-primary hover:underline font-medium">{value}</Link>,
     }
   }
   if (key === "total" && typeof value === "number") {
