@@ -1,1 +1,1 @@
-export type { IMSCategory, StockItem, StockVariant } from '@/modules/wms/types'
+export type { IMSCategory, StockItem, StockVariant, Part } from '@/modules/wms/types'

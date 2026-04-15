@@ -53,10 +53,14 @@ const WarehouseLocationsPage = lazy(() => import('@/modules/wms/pages/WarehouseL
 // IMS pages
 const ImsDashboard = lazy(() => import('@/modules/ims/pages/ImsDashboard'))
 const CategoriesPage = lazy(() => import('@/modules/ims/pages/CategoriesPage'))
+const CategoryFormPage = lazy(() => import('@/modules/ims/pages/CategoryFormPage'))
 const StockItemsPage = lazy(() => import('@/modules/ims/pages/StockItemsPage'))
 const StockItemDetailPage = lazy(() => import('@/modules/ims/pages/StockItemDetailPage'))
 const ImsReportsPage = lazy(() => import('@/modules/ims/pages/ImsReportsPage'))
 const SkuHistoryPage = lazy(() => import('@/modules/ims/pages/SkuHistoryPage'))
+const PartsPage = lazy(() => import('@/modules/ims/pages/PartsPage'))
+const PartDetailPage = lazy(() => import('@/modules/ims/pages/PartDetailPage'))
+const PartFormPage = lazy(() => import('@/modules/ims/pages/PartFormPage'))
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return (
@@ -137,6 +141,12 @@ export const router = createBrowserRouter([
       { path: '/ims', element: <LazyRoute><ImsDashboard /></LazyRoute> },
       { path: '/ims/inventory', element: <LazyRoute><StockItemsPage /></LazyRoute> },
       { path: '/ims/categories', element: <LazyRoute><CategoriesPage /></LazyRoute> },
+      { path: '/ims/categories/new', element: <LazyRoute><CategoryFormPage /></LazyRoute> },
+      { path: '/ims/categories/:id/edit', element: <LazyRoute><CategoryFormPage /></LazyRoute> },
+      { path: '/ims/parts', element: <LazyRoute><PartsPage /></LazyRoute> },
+      { path: '/ims/parts/new', element: <LazyRoute><PartFormPage /></LazyRoute> },
+      { path: '/ims/parts/:id', element: <LazyRoute><PartDetailPage /></LazyRoute> },
+      { path: '/ims/parts/:id/edit', element: <LazyRoute><PartFormPage /></LazyRoute> },
       { path: '/ims/stock-items', element: <LazyRoute><StockItemsPage /></LazyRoute> },
       { path: '/ims/stock-items/:id', element: <LazyRoute><StockItemDetailPage /></LazyRoute> },
       { path: '/ims/stock-items/:id/sku/:sku', element: <LazyRoute><SkuHistoryPage /></LazyRoute> },

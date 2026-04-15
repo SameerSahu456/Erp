@@ -353,6 +353,40 @@ export interface IMSCategory {
   parentId?: string
   subcategories?: IMSCategory[]
   partCount: number
+  description?: string
+  productManager?: string
+  isActive: boolean
+}
+
+// ── Part/Product Management ──
+export interface Part {
+  id: string
+  name: string
+  aliases: string[]
+  sku: string
+  categoryId: string
+  categoryName: string
+  subcategoryId?: string
+  subcategoryName?: string
+  brand: string
+  model?: string
+  description?: string
+  images: string[]  // URLs or placeholder paths
+  specifications?: Record<string, string>  // e.g., { 'RAM': '16GB', 'Storage': '512GB SSD' }
+  productManager?: string
+  productManagerEmail?: string
+  // Checklist assignments
+  inwardChecklistId?: string
+  outwardChecklistId?: string
+  inspectionChecklistId?: string
+  // Stock info
+  reorderLevel: number
+  unitOfMeasure: string  // 'Units', 'Pieces', 'Sets'
+  hsnCode?: string  // for GST
+  // Status
+  isActive: boolean
+  createdAt: string
+  updatedAt?: string
 }
 
 export interface StockItem {

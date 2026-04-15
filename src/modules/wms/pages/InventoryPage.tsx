@@ -22,6 +22,7 @@ import {
   type DeviceStatus,
 } from '../types'
 import { mockDevices } from '../data/devices'
+import { mockWarehouses } from '../data/warehouses'
 
 const STATUS_FILTER_OPTIONS: DeviceStatus[] = [
   'IN_STOCK',
@@ -31,6 +32,14 @@ const STATUS_FILTER_OPTIONS: DeviceStatus[] = [
   'AWAITING_OUTWARD_QC',
   'UNDER_OUTWARD_QC',
 ]
+
+// Map location strings to warehouse IDs
+function getWarehouseIdFromLocation(location: string): string | undefined {
+  if (location.startsWith('Mumbai')) return 'wh-001'
+  if (location.startsWith('Bangalore')) return 'wh-002'
+  if (location.startsWith('Delhi')) return 'wh-003'
+  return undefined
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -44,6 +53,7 @@ export default function InventoryPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [brandFilter, setBrandFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [warehouseFilter, setWarehouseFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
 
   const brands = useMemo(
@@ -60,6 +70,10 @@ export default function InventoryPage() {
       if (statusFilter !== 'all' && d.status !== statusFilter) return false
       if (brandFilter !== 'all' && d.brand !== brandFilter) return false
       if (categoryFilter !== 'all' && d.category !== categoryFilter) return false
+      if (warehouseFilter !== 'all') {
+        const whId = d.warehouseId ?? getWarehouseIdFromLocation(d.location)
+        if (whId !== warehouseFilter) return false
+      }
       if (search) {
         const q = search.toLowerCase()
         if (
@@ -70,7 +84,7 @@ export default function InventoryPage() {
       }
       return true
     })
-  }, [statusFilter, brandFilter, categoryFilter, search])
+  }, [statusFilter, brandFilter, categoryFilter, warehouseFilter, search])
 
   const inStockDevices = filtered.filter((d) => d.status === 'IN_STOCK')
   const gradeACount = filtered.filter((d) => d.grade === 'A').length
@@ -94,17 +108,23 @@ export default function InventoryPage() {
       { key: 'model', label: 'Model', sortable: true },
       { key: 'brand', label: 'Brand', sortable: true },
       { key: 'grade', label: 'Grade', sortable: true },
+      { key: 'warehouse', label: 'Warehouse', sortable: true },
       { key: 'location', label: 'Location', sortable: true },
       { key: 'stockedSince', label: 'Stocked Since', sortable: true },
     ],
-    data: inStockDevices.map((d) => ({
-      barcode: d.barcode,
-      model: d.model,
-      brand: d.brand,
-      grade: d.grade ?? '-',
-      location: d.location,
-      stockedSince: d.qcPassedAt ? formatDate(d.qcPassedAt) : '-',
-    })),
+    data: inStockDevices.map((d) => {
+      const whId = d.warehouseId ?? getWarehouseIdFromLocation(d.location)
+      const wh = mockWarehouses.find((w) => w.id === whId)
+      return {
+        barcode: d.barcode,
+        model: d.model,
+        brand: d.brand,
+        grade: d.grade ?? '-',
+        warehouse: wh?.name ?? '-',
+        location: d.location,
+        stockedSince: d.qcPassedAt ? formatDate(d.qcPassedAt) : '-',
+      }
+    }),
   }
 
   const allTab: TabConfig = {
@@ -116,16 +136,22 @@ export default function InventoryPage() {
       { key: 'brand', label: 'Brand', sortable: true },
       { key: 'status', label: 'Status', sortable: true },
       { key: 'grade', label: 'Grade', sortable: true },
+      { key: 'warehouse', label: 'Warehouse', sortable: true },
       { key: 'location', label: 'Location', sortable: true },
     ],
-    data: filtered.map((d) => ({
-      barcode: d.barcode,
-      model: d.model,
-      brand: d.brand,
-      status: d.status,
-      grade: d.grade ?? '-',
-      location: d.location,
-    })),
+    data: filtered.map((d) => {
+      const whId = d.warehouseId ?? getWarehouseIdFromLocation(d.location)
+      const wh = mockWarehouses.find((w) => w.id === whId)
+      return {
+        barcode: d.barcode,
+        model: d.model,
+        brand: d.brand,
+        status: d.status,
+        grade: d.grade ?? '-',
+        warehouse: wh?.name ?? '-',
+        location: d.location,
+      }
+    }),
   }
 
   const cellFormatter: CellFormatter = (value, key, _row) => {
@@ -152,6 +178,20 @@ export default function InventoryPage() {
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-3">
+        <Select value={warehouseFilter} onValueChange={(v) => setWarehouseFilter(v ?? 'all')}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Warehouse" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Warehouses</SelectItem>
+            {mockWarehouses.map((wh) => (
+              <SelectItem key={wh.id} value={wh.id}>
+                {wh.city}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? 'all')}>
           <SelectTrigger className="w-44">
             <SelectValue placeholder="Status" />

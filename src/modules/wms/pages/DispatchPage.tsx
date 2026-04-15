@@ -11,13 +11,22 @@ import {
   Clock,
   CheckCircle2,
   ClipboardCheck,
+  Tag,
 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { OutwardRecord, OutwardType } from '../types'
 import { mockOutwardRecords } from '../data/outward'
+import { mockWarehouses } from '../data/warehouses'
 import {
   VehicleAssignmentDialog,
   type VehicleAssignment,
@@ -290,6 +299,25 @@ function DispatchCard({
             </StatusBadge>
           </div>
 
+          {/* Source / Origin reference */}
+          <div className="flex items-center gap-1.5 text-xs">
+            <Tag className="size-3 text-muted-foreground" />
+            <span className="font-medium text-muted-foreground">Source:</span>
+            <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium">
+              {record.type === 'SALES' && record.salesOrderNumber
+                ? `SO: ${record.salesOrderNumber}`
+                : record.type === 'RENTAL' && record.rentalContractId
+                  ? `Rental: ${record.rentalContractId}`
+                  : record.type === 'DEMO' && record.demoRequestId
+                    ? `Demo: ${record.demoRequestId}`
+                    : record.type === 'INTERNAL_TRANSFER'
+                      ? 'Internal Transfer'
+                      : record.type === 'RETURN_REPLACEMENT'
+                        ? 'Return / Replacement'
+                        : TYPE_LABELS[record.type]}
+            </span>
+          </div>
+
           {/* Customer + Address */}
           <div className="space-y-1 border-t pt-2">
             <div className="flex items-start gap-1.5">
@@ -429,6 +457,8 @@ export default function DispatchPage() {
   const [assignments, setAssignments] = useState<Record<string, VehicleAssignment>>({})
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
   const [assignDialogRecord, setAssignDialogRecord] = useState<OutwardRecord | null>(null)
+  const [warehouseFilter, setWarehouseFilter] = useState<string>('all')
+  const [originFilter, setOriginFilter] = useState<string>('all')
 
   const getStatus = (id: string) => statuses[id] ?? 'Draft'
 
@@ -453,7 +483,16 @@ export default function DispatchPage() {
     setAssignDialogRecord(null)
   }
 
-  // Group records by columns
+  // Origin type mapping for filter
+  const ORIGIN_TYPE_MAP: Record<string, OutwardType[]> = {
+    'Sales Order': ['SALES'],
+    Rental: ['RENTAL'],
+    Demo: ['DEMO'],
+    Internal: ['INTERNAL_TRANSFER'],
+    Return: ['RETURN_REPLACEMENT'],
+  }
+
+  // Group records by columns (with filters applied)
   const columnData = useMemo(() => {
     const groups: Record<string, OutwardRecord[]> = {}
     KANBAN_COLUMNS.forEach((col) => {
@@ -461,6 +500,21 @@ export default function DispatchPage() {
     })
 
     mockOutwardRecords.forEach((record) => {
+      // Apply origin filter
+      if (originFilter !== 'all') {
+        const allowedTypes = ORIGIN_TYPE_MAP[originFilter]
+        if (allowedTypes && !allowedTypes.includes(record.type)) return
+      }
+
+      // Apply warehouse filter (based on shipping address city)
+      if (warehouseFilter !== 'all') {
+        const wh = mockWarehouses.find((w) => w.id === warehouseFilter)
+        if (wh && !record.shippingAddress.toLowerCase().includes(wh.city.toLowerCase())) {
+          // Also check store manager location as a fallback
+          return
+        }
+      }
+
       const status = getStatus(record.id)
       for (const col of KANBAN_COLUMNS) {
         if (col.matchStatuses.includes(status)) {
@@ -472,7 +526,7 @@ export default function DispatchPage() {
 
     return groups
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statuses])
+  }, [statuses, warehouseFilter, originFilter])
 
   const totalActive = Object.values(columnData).reduce((sum, arr) => sum + arr.length, 0)
 
@@ -484,6 +538,37 @@ export default function DispatchPage() {
         <p className="text-sm text-muted-foreground">
           Track and manage all outward shipments &mdash; {totalActive} active dispatch{totalActive !== 1 ? 'es' : ''}
         </p>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Select value={warehouseFilter} onValueChange={(v) => setWarehouseFilter(v ?? 'all')}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Warehouse" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Warehouses</SelectItem>
+            {mockWarehouses.map((wh) => (
+              <SelectItem key={wh.id} value={wh.id}>
+                {wh.city}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={originFilter} onValueChange={(v) => setOriginFilter(v ?? 'all')}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Origin" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Origins</SelectItem>
+            <SelectItem value="Sales Order">Sales Order</SelectItem>
+            <SelectItem value="Rental">Rental</SelectItem>
+            <SelectItem value="Demo">Demo</SelectItem>
+            <SelectItem value="Internal">Internal</SelectItem>
+            <SelectItem value="Return">Return</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Kanban Board */}

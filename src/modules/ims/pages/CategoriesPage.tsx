@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
-import { ChevronRight, FolderTree } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ChevronRight, FolderTree, Plus, Pencil, Trash2, User } from 'lucide-react'
+import { toast } from 'sonner'
 
+import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import {
   BusinessMetricsTable,
@@ -43,8 +46,9 @@ function CategoryNode({
       <Collapsible open={open} onOpenChange={setOpen}>
         <div
           className={cn(
-            'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors',
+            'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors group',
             isSelected && 'bg-muted font-medium',
+            !category.isActive && 'opacity-60',
           )}
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={() => onSelect(category.id)}
@@ -68,8 +72,40 @@ function CategoryNode({
             <span className="size-5" />
           )}
           <FolderTree className="size-4 text-muted-foreground" />
-          <span className="flex-1">{category.name}</span>
+          <span className="flex-1 truncate">{category.name}</span>
+
+          {!category.isActive && (
+            <StatusBadge variant="neutral">Inactive</StatusBadge>
+          )}
+
+          {category.productManager && (
+            <span className="hidden items-center gap-1 text-xs text-muted-foreground lg:flex">
+              <User className="size-3" />
+              {category.productManager}
+            </span>
+          )}
+
           <StatusBadge variant="neutral">{category.partCount}</StatusBadge>
+
+          {/* Edit / Delete actions */}
+          <div className="hidden items-center gap-0.5 group-hover:flex">
+            <Link
+              to={`/ims/categories/${category.id}/edit`}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded p-1 hover:bg-muted"
+            >
+              <Pencil className="size-3.5 text-muted-foreground" />
+            </Link>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                toast.success(`Category "${category.name}" deleted`)
+              }}
+              className="rounded p-1 hover:bg-destructive/10"
+            >
+              <Trash2 className="size-3.5 text-destructive" />
+            </button>
+          </div>
         </div>
 
         {hasSubs && (
@@ -175,9 +211,15 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">
-        Categories
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-2xl font-semibold tracking-tight">
+          Categories
+        </h1>
+        <Button render={<Link to="/ims/categories/new" />}>
+          <Plus className="mr-1.5 size-4" />
+          Create Category
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
         {/* Category tree */}
