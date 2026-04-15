@@ -82,6 +82,15 @@ const VendorReconciliationPage = lazy(() => import('@/modules/reconciliation/pag
 const InventoryReconciliationPage = lazy(() => import('@/modules/reconciliation/pages/InventoryReconciliationPage'))
 const InterModuleReconciliationPage = lazy(() => import('@/modules/reconciliation/pages/InterModuleReconciliationPage'))
 
+// Reports pages
+const ReportBuilderPage = lazy(() => import('@/modules/reports/pages/ReportBuilderPage'))
+
+// Settings pages
+const ProfilePage = lazy(() => import('@/modules/settings/pages/ProfilePage'))
+const UserManagementPage = lazy(() => import('@/modules/settings/pages/UserManagementPage'))
+const RolesPermissionsPage = lazy(() => import('@/modules/settings/pages/RolesPermissionsPage'))
+const AppSettingsPage = lazy(() => import('@/modules/settings/pages/AppSettingsPage'))
+
 // IMS pages
 const ImsDashboard = lazy(() => import('@/modules/ims/pages/ImsDashboard'))
 const CategoriesPage = lazy(() => import('@/modules/ims/pages/CategoriesPage'))
@@ -215,6 +224,15 @@ export const router = createBrowserRouter([
       { path: '/reconciliation/vendor', element: <LazyRoute><VendorReconciliationPage /></LazyRoute> },
       { path: '/reconciliation/inventory', element: <LazyRoute><InventoryReconciliationPage /></LazyRoute> },
       { path: '/reconciliation/inter-module', element: <LazyRoute><InterModuleReconciliationPage /></LazyRoute> },
+
+      // Reports routes
+      { path: '/reports', element: <LazyRoute><ReportBuilderPage /></LazyRoute> },
+
+      // Settings routes
+      { path: '/settings/profile', element: <LazyRoute><ProfilePage /></LazyRoute> },
+      { path: '/settings/users', element: <LazyRoute><UserManagementPage /></LazyRoute> },
+      { path: '/settings/roles', element: <LazyRoute><RolesPermissionsPage /></LazyRoute> },
+      { path: '/settings/app', element: <LazyRoute><AppSettingsPage /></LazyRoute> },
     ],
   },
 ])
