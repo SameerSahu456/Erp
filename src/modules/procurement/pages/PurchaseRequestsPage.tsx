@@ -1,0 +1,114 @@
+import { Link, useNavigate } from 'react-router-dom'
+import { Plus } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
+import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
+import { StatusBadge } from '@/components/common/StatusBadge'
+import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+
+import { mockPurchaseRequests } from '@/modules/procurement/data/purchase-requests'
+import type { PRStatus } from '@/modules/procurement/types'
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(value)
+
+function getPRStatusVariant(status: string): StatusBadgeVariant {
+  switch (status) {
+    case 'Draft': return 'neutral'
+    case 'Submitted': return 'info'
+    case 'Under Review': return 'warning'
+    case 'Approved': return 'success'
+    case 'Partially Approved': return 'warning'
+    case 'Rejected': return 'error'
+    case 'Converted to PO': return 'success'
+    default: return 'neutral'
+  }
+}
+
+const columns = [
+  { key: 'prNumber', label: 'PR#', sortable: true },
+  { key: 'title', label: 'Title', sortable: true },
+  { key: 'department', label: 'Department', sortable: true },
+  { key: 'items', label: 'Items', align: 'right' as const },
+  { key: 'totalEstimated', label: 'Est. Total', sortable: true, align: 'right' as const },
+  { key: 'status', label: 'Status' },
+  { key: 'requestedBy', label: 'Requested By', sortable: true },
+  { key: 'requestedDate', label: 'Date', sortable: true },
+]
+
+function buildData(filter?: PRStatus | PRStatus[]) {
+  let prs = mockPurchaseRequests
+  if (filter) {
+    const filters = Array.isArray(filter) ? filter : [filter]
+    prs = prs.filter((pr) => filters.includes(pr.status))
+  }
+  return prs.map((pr) => ({
+    id: pr.id,
+    prNumber: pr.prNumber,
+    title: pr.title,
+    department: pr.department,
+    items: pr.items.length,
+    totalEstimated: pr.totalEstimated,
+    status: pr.status,
+    requestedBy: pr.requestedBy,
+    requestedDate: pr.requestedDate,
+  }))
+}
+
+const tabs: TabConfig[] = [
+  { id: 'all', label: 'All', columns, data: buildData() },
+  { id: 'draft', label: 'Draft', columns, data: buildData('Draft') },
+  { id: 'pending', label: 'Pending', columns, data: buildData(['Submitted', 'Under Review', 'Partially Approved']) },
+  { id: 'approved', label: 'Approved', columns, data: buildData(['Approved', 'Converted to PO']) },
+  { id: 'rejected', label: 'Rejected', columns, data: buildData('Rejected') },
+]
+
+const cellFormatter: CellFormatter = (value, key, row) => {
+  if (key === 'prNumber' && typeof value === 'string') {
+    return {
+      display: (
+        <Link to={`/procurement/pr/${row['id']}`} className="text-primary hover:underline font-medium">
+          {value}
+        </Link>
+      ),
+    }
+  }
+  if (key === 'totalEstimated' && typeof value === 'number') {
+    return { display: formatCurrency(value) }
+  }
+  if (key === 'status' && typeof value === 'string') {
+    return {
+      display: <StatusBadge variant={getPRStatusVariant(value)}>{value}</StatusBadge>,
+    }
+  }
+  return null
+}
+
+function PurchaseRequestsPage() {
+  const navigate = useNavigate()
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-display font-semibold">Purchase Requests</h2>
+        <Button onClick={() => navigate('/procurement/pr/new')}>
+          <Plus className="mr-1 size-4" />
+          Create PR
+        </Button>
+      </div>
+
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        pageSize={10}
+      />
+    </div>
+  )
+}
+
+export default PurchaseRequestsPage
