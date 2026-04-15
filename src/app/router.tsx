@@ -91,6 +91,26 @@ const UserManagementPage = lazy(() => import('@/modules/settings/pages/UserManag
 const RolesPermissionsPage = lazy(() => import('@/modules/settings/pages/RolesPermissionsPage'))
 const AppSettingsPage = lazy(() => import('@/modules/settings/pages/AppSettingsPage'))
 
+// Vendor pages
+const VendorListPage = lazy(() => import('@/modules/vendors/pages/VendorListPage'))
+const VendorFormPage = lazy(() => import('@/modules/vendors/pages/VendorFormPage'))
+const VendorOnboardDetailPage = lazy(() => import('@/modules/vendors/pages/VendorDetailPage'))
+const VendorApprovalsPage = lazy(() => import('@/modules/vendors/pages/VendorApprovalsPage'))
+
+// Customer pages
+const CustomerListPage = lazy(() => import('@/modules/customers/pages/CustomerListPage'))
+const CustomerFormPage = lazy(() => import('@/modules/customers/pages/CustomerFormPage'))
+const CustomerDetailPage = lazy(() => import('@/modules/customers/pages/CustomerDetailPage'))
+const CustomerApprovalsPage = lazy(() => import('@/modules/customers/pages/CustomerApprovalsPage'))
+
+// Rental pages
+const RentalDashboard = lazy(() => import('@/modules/rentals/pages/RentalDashboard'))
+const RentalContractsPage = lazy(() => import('@/modules/rentals/pages/RentalContractsPage'))
+const RentalContractFormPage = lazy(() => import('@/modules/rentals/pages/RentalContractFormPage'))
+const RentalContractDetailPage = lazy(() => import('@/modules/rentals/pages/RentalContractDetailPage'))
+const DeviceTrackingPage = lazy(() => import('@/modules/rentals/pages/DeviceTrackingPage'))
+const RentalReturnsPage = lazy(() => import('@/modules/rentals/pages/RentalReturnsPage'))
+
 // IMS pages
 const ImsDashboard = lazy(() => import('@/modules/ims/pages/ImsDashboard'))
 const CategoriesPage = lazy(() => import('@/modules/ims/pages/CategoriesPage'))
@@ -224,6 +244,29 @@ export const router = createBrowserRouter([
       { path: '/reconciliation/vendor', element: <LazyRoute><VendorReconciliationPage /></LazyRoute> },
       { path: '/reconciliation/inventory', element: <LazyRoute><InventoryReconciliationPage /></LazyRoute> },
       { path: '/reconciliation/inter-module', element: <LazyRoute><InterModuleReconciliationPage /></LazyRoute> },
+
+      // Vendor routes
+      { path: '/vendors', element: <LazyRoute><VendorListPage /></LazyRoute> },
+      { path: '/vendors/new', element: <LazyRoute><VendorFormPage /></LazyRoute> },
+      { path: '/vendors/approvals', element: <LazyRoute><VendorApprovalsPage /></LazyRoute> },
+      { path: '/vendors/:id/edit', element: <LazyRoute><VendorFormPage /></LazyRoute> },
+      { path: '/vendors/:id', element: <LazyRoute><VendorOnboardDetailPage /></LazyRoute> },
+
+      // Customer routes
+      { path: '/customers', element: <LazyRoute><CustomerListPage /></LazyRoute> },
+      { path: '/customers/new', element: <LazyRoute><CustomerFormPage /></LazyRoute> },
+      { path: '/customers/approvals', element: <LazyRoute><CustomerApprovalsPage /></LazyRoute> },
+      { path: '/customers/:id/edit', element: <LazyRoute><CustomerFormPage /></LazyRoute> },
+      { path: '/customers/:id', element: <LazyRoute><CustomerDetailPage /></LazyRoute> },
+
+      // Rental routes
+      { path: '/rentals', element: <LazyRoute><RentalDashboard /></LazyRoute> },
+      { path: '/rentals/contracts', element: <LazyRoute><RentalContractsPage /></LazyRoute> },
+      { path: '/rentals/contracts/new', element: <LazyRoute><RentalContractFormPage /></LazyRoute> },
+      { path: '/rentals/contracts/:id/edit', element: <LazyRoute><RentalContractFormPage /></LazyRoute> },
+      { path: '/rentals/contracts/:id', element: <LazyRoute><RentalContractDetailPage /></LazyRoute> },
+      { path: '/rentals/tracking', element: <LazyRoute><DeviceTrackingPage /></LazyRoute> },
+      { path: '/rentals/returns', element: <LazyRoute><RentalReturnsPage /></LazyRoute> },
 
       // Reports routes
       { path: '/reports', element: <LazyRoute><ReportBuilderPage /></LazyRoute> },
