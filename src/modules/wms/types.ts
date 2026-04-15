@@ -503,3 +503,29 @@ export interface PartAlias {
   partId: string
   aliases: string[]  // alternate names for search
 }
+
+// ── Courier/Transport Partners ──
+export interface CourierPartner {
+  id: string
+  name: string
+  type: 'Own Vehicle' | 'Courier' | 'Transporter' | 'Customer Pickup'
+  contactPerson: string
+  phone: string
+  trackingUrlPattern?: string  // e.g., 'https://track.delhivery.com/{tracking}'
+}
+
+export const DISPATCH_STATUSES = [
+  'Pending Approval',
+  'Approved',
+  'Picking',
+  'Packed',
+  'Pending QC',
+  'QC Passed',
+  'Vehicle Assigned',
+  'Ready for Dispatch',
+  'Dispatched',
+  'In Transit',
+  'Delivered',
+] as const
+
+export type DispatchStatus = (typeof DISPATCH_STATUSES)[number]

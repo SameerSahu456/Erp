@@ -27,6 +27,7 @@ import {
 } from '../types'
 import { mockOutwardRecords } from '../data/outward'
 import { mockReturnRecords } from '../data/returns'
+import { mockCourierPartners } from '../data/courier-partners'
 
 const TYPE_VARIANT: Record<OutwardType, 'info' | 'warning' | 'neutral' | 'success' | 'error'> = {
   SALES: 'info',
@@ -349,10 +350,10 @@ export default function OutwardDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Customer Info */}
+        {/* Delivery Details */}
         <Card>
           <CardHeader>
-            <CardTitle>Customer Info</CardTitle>
+            <CardTitle>Delivery Details</CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="space-y-3">
@@ -366,12 +367,48 @@ export default function OutwardDetailPage() {
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Phone</dt>
-                <dd className="mt-1 text-sm">{record.contactPhone}</dd>
+                <dd className="mt-1">
+                  <a href={`tel:${record.contactPhone}`} className="text-sm text-primary hover:underline">
+                    {record.contactPhone}
+                  </a>
+                </dd>
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Shipping Address</dt>
-                <dd className="mt-1 text-sm">{record.shippingAddress}</dd>
+                <dd className="mt-1 text-sm whitespace-pre-line">
+                  {record.shippingAddress.split(',').map((part) => part.trim()).join('\n')}
+                </dd>
               </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Expected Delivery</dt>
+                <dd className="mt-1 text-sm">{formatDate(record.expectedDispatchDate)}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Dispatch Type</dt>
+                <dd className="mt-1">
+                  <StatusBadge variant={TYPE_VARIANT[record.type]}>
+                    {TYPE_LABELS[record.type]}
+                  </StatusBadge>
+                </dd>
+              </div>
+              {record.salesOrderNumber && (
+                <div>
+                  <dt className="text-sm text-muted-foreground">Reference (SO)</dt>
+                  <dd className="mt-1 text-sm font-medium">{record.salesOrderNumber}</dd>
+                </div>
+              )}
+              {record.rentalContractId && (
+                <div>
+                  <dt className="text-sm text-muted-foreground">Reference (Rental)</dt>
+                  <dd className="mt-1 text-sm font-medium">{record.rentalContractId}</dd>
+                </div>
+              )}
+              {record.demoRequestId && (
+                <div>
+                  <dt className="text-sm text-muted-foreground">Reference (Demo)</dt>
+                  <dd className="mt-1 text-sm font-medium">{record.demoRequestId}</dd>
+                </div>
+              )}
             </dl>
           </CardContent>
         </Card>
@@ -545,19 +582,99 @@ export default function OutwardDetailPage() {
     </div>
   )
 
+  // Find matching courier partner by transporter name
+  const matchedCourierPartner = record.logistics.transporterName
+    ? mockCourierPartners.find(
+        (cp) => cp.name.toLowerCase() === record.logistics.transporterName?.toLowerCase()
+          || record.logistics.transporterName?.toLowerCase().includes(cp.name.toLowerCase())
+      )
+    : undefined
+
+  const trackingUrl = matchedCourierPartner?.trackingUrlPattern && record.logistics.trackingNumber
+    ? matchedCourierPartner.trackingUrlPattern.replace('{tracking}', record.logistics.trackingNumber)
+    : undefined
+
   const logisticsTab = (
     <div className="space-y-6">
+      {/* Transport Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Transport Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <dt className="text-sm text-muted-foreground">Courier / Transport</dt>
+              <dd className="mt-1 flex items-center gap-2 text-sm font-medium">
+                {record.logistics.transporterName ?? '-'}
+                {matchedCourierPartner && (
+                  <StatusBadge variant="info">{matchedCourierPartner.type}</StatusBadge>
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm text-muted-foreground">Vehicle Number</dt>
+              <dd className="mt-1 text-sm font-medium">{record.logistics.vehicleNumber ?? '-'}</dd>
+            </div>
+            <div>
+              <dt className="text-sm text-muted-foreground">Driver</dt>
+              <dd className="mt-1 text-sm font-medium">
+                {record.logistics.driverName ?? '-'}
+                {record.logistics.driverPhone && (
+                  <span className="ml-2 text-muted-foreground">
+                    - <a href={`tel:${record.logistics.driverPhone}`} className="text-primary hover:underline">{record.logistics.driverPhone}</a>
+                  </span>
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm text-muted-foreground">AWB / Tracking #</dt>
+              <dd className="mt-1 text-sm font-medium">
+                {record.logistics.trackingNumber ? (
+                  trackingUrl ? (
+                    <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {record.logistics.trackingNumber}
+                    </a>
+                  ) : (
+                    record.logistics.trackingNumber
+                  )
+                ) : '-'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm text-muted-foreground">Challan / LR #</dt>
+              <dd className="mt-1 text-sm">{record.logistics.challanNumber ?? '-'}</dd>
+            </div>
+            <div>
+              <dt className="text-sm text-muted-foreground">Packaging</dt>
+              <dd className="mt-1 text-sm">{record.logistics.packagingType ?? '-'}</dd>
+            </div>
+            <div>
+              <dt className="text-sm text-muted-foreground">Total Weight</dt>
+              <dd className="mt-1 text-sm">{record.logistics.totalWeight ? `${record.logistics.totalWeight} kg` : '-'}</dd>
+            </div>
+            {record.logistics.estimatedDelivery && (
+              <div>
+                <dt className="text-sm text-muted-foreground">Estimated Delivery</dt>
+                <dd className="mt-1 text-sm">{formatDate(record.logistics.estimatedDelivery)}</dd>
+              </div>
+            )}
+          </dl>
+        </CardContent>
+      </Card>
+
+      {/* Edit Logistics */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Vehicle & Tracking</CardTitle>
+          <CardTitle>Update Logistics</CardTitle>
           {!editLogistics && (
             <Button size="sm" variant="outline" onClick={() => setEditLogistics(true)}>
-              Update Logistics
+              Edit
             </Button>
           )}
         </CardHeader>
-        <CardContent>
-          {editLogistics ? (
+        {editLogistics && (
+          <CardContent>
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -586,49 +703,8 @@ export default function OutwardDetailPage() {
                 <Button size="sm" variant="outline" onClick={() => setEditLogistics(false)}>Cancel</Button>
               </div>
             </div>
-          ) : (
-            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <dt className="text-sm text-muted-foreground">Vehicle Number</dt>
-                <dd className="mt-1 text-sm font-medium">{record.logistics.vehicleNumber ?? '-'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Driver</dt>
-                <dd className="mt-1 text-sm font-medium">{record.logistics.driverName ?? '-'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Driver Phone</dt>
-                <dd className="mt-1 text-sm">{record.logistics.driverPhone ?? '-'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Transporter</dt>
-                <dd className="mt-1 text-sm">{record.logistics.transporterName ?? '-'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Tracking #</dt>
-                <dd className="mt-1 text-sm">{record.logistics.trackingNumber ?? '-'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Challan / DC #</dt>
-                <dd className="mt-1 text-sm">{record.logistics.challanNumber ?? '-'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Packaging</dt>
-                <dd className="mt-1 text-sm">{record.logistics.packagingType ?? '-'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Total Weight</dt>
-                <dd className="mt-1 text-sm">{record.logistics.totalWeight ? `${record.logistics.totalWeight} kg` : '-'}</dd>
-              </div>
-              {record.logistics.estimatedDelivery && (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Estimated Delivery</dt>
-                  <dd className="mt-1 text-sm">{formatDate(record.logistics.estimatedDelivery)}</dd>
-                </div>
-              )}
-            </dl>
-          )}
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
 
       {record.logistics.specialInstructions && (
