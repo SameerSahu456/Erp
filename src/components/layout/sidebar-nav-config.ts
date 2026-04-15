@@ -95,17 +95,9 @@ export const SIDEBAR_NAV: NavGroup[] = [
     items: [
       { label: 'Dashboard', href: '/procurement', icon: LayoutDashboard, module: 'procurement' },
       { label: 'Purchase Requests', href: '/procurement/pr', icon: FilePlus, module: 'procurement' },
-      { label: 'Approvals', href: '/procurement/approvals', icon: FileCheck, module: 'procurement' },
-    ],
-  },
-  {
-    label: 'Purchase Orders',
-    module: 'purchase-orders',
-    icon: FileText,
-    items: [
-      { label: 'Dashboard', href: '/purchase-orders', icon: LayoutDashboard, module: 'purchase-orders' },
-      { label: 'PO List', href: '/purchase-orders/list', icon: FileText, module: 'purchase-orders' },
-      { label: 'GRN Matching', href: '/purchase-orders/grn-matching', icon: ArrowLeftRight, module: 'purchase-orders' },
+      { label: 'Purchase Orders', href: '/procurement/po', icon: FileText, module: 'procurement' },
+      { label: 'Vendors', href: '/procurement/vendors', icon: Store, module: 'procurement' },
+      { label: 'GRN Matching', href: '/procurement/grn-matching', icon: ArrowLeftRight, module: 'procurement' },
     ],
   },
   {

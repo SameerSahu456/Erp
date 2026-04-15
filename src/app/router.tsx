@@ -50,6 +50,38 @@ const ChecklistTemplatesPage = lazy(() => import('@/modules/wms/pages/ChecklistT
 const ChecklistTemplateFormPage = lazy(() => import('@/modules/wms/pages/ChecklistTemplateFormPage'))
 const WarehouseLocationsPage = lazy(() => import('@/modules/wms/pages/WarehouseLocationsPage'))
 
+// Procurement pages
+const ProcurementDashboard = lazy(() => import('@/modules/procurement/pages/ProcurementDashboard'))
+const ProcPurchaseRequestsPage = lazy(() => import('@/modules/procurement/pages/PurchaseRequestsPage'))
+const PRFormPage = lazy(() => import('@/modules/procurement/pages/PRFormPage'))
+const PRDetailPage = lazy(() => import('@/modules/procurement/pages/PRDetailPage'))
+const PurchaseOrdersPage = lazy(() => import('@/modules/procurement/pages/PurchaseOrdersPage'))
+const POFormPage = lazy(() => import('@/modules/procurement/pages/POFormPage'))
+const PODetailPage = lazy(() => import('@/modules/procurement/pages/PODetailPage'))
+const VendorsPage = lazy(() => import('@/modules/procurement/pages/VendorsPage'))
+const VendorDetailPage = lazy(() => import('@/modules/procurement/pages/VendorDetailPage'))
+const GRNMatchingPage = lazy(() => import('@/modules/procurement/pages/GRNMatchingPage'))
+
+// Invoice pages
+const InvoiceDashboard = lazy(() => import('@/modules/invoices/pages/InvoiceDashboard'))
+const SalesInvoicesPage = lazy(() => import('@/modules/invoices/pages/SalesInvoicesPage'))
+const SalesInvoiceFormPage = lazy(() => import('@/modules/invoices/pages/SalesInvoiceFormPage'))
+const SalesInvoiceDetailPage = lazy(() => import('@/modules/invoices/pages/SalesInvoiceDetailPage'))
+const PurchaseInvoicesPage = lazy(() => import('@/modules/invoices/pages/PurchaseInvoicesPage'))
+const CreditNotesPage = lazy(() => import('@/modules/invoices/pages/CreditNotesPage'))
+
+// Accounting pages
+const AccountingDashboard = lazy(() => import('@/modules/accounting/pages/AccountingDashboard'))
+const LedgerPage = lazy(() => import('@/modules/accounting/pages/LedgerPage'))
+const PaymentsPage = lazy(() => import('@/modules/accounting/pages/PaymentsPage'))
+const AccountingReportsPage = lazy(() => import('@/modules/accounting/pages/AccountingReportsPage'))
+
+// Reconciliation pages
+const BankReconciliationPage = lazy(() => import('@/modules/reconciliation/pages/BankReconciliationPage'))
+const VendorReconciliationPage = lazy(() => import('@/modules/reconciliation/pages/VendorReconciliationPage'))
+const InventoryReconciliationPage = lazy(() => import('@/modules/reconciliation/pages/InventoryReconciliationPage'))
+const InterModuleReconciliationPage = lazy(() => import('@/modules/reconciliation/pages/InterModuleReconciliationPage'))
+
 // IMS pages
 const ImsDashboard = lazy(() => import('@/modules/ims/pages/ImsDashboard'))
 const CategoriesPage = lazy(() => import('@/modules/ims/pages/CategoriesPage'))
@@ -151,6 +183,38 @@ export const router = createBrowserRouter([
       { path: '/ims/stock-items/:id', element: <LazyRoute><StockItemDetailPage /></LazyRoute> },
       { path: '/ims/stock-items/:id/sku/:sku', element: <LazyRoute><SkuHistoryPage /></LazyRoute> },
       { path: '/ims/reports', element: <LazyRoute><ImsReportsPage /></LazyRoute> },
+
+      // Procurement routes
+      { path: '/procurement', element: <LazyRoute><ProcurementDashboard /></LazyRoute> },
+      { path: '/procurement/pr', element: <LazyRoute><ProcPurchaseRequestsPage /></LazyRoute> },
+      { path: '/procurement/pr/new', element: <LazyRoute><PRFormPage /></LazyRoute> },
+      { path: '/procurement/pr/:id', element: <LazyRoute><PRDetailPage /></LazyRoute> },
+      { path: '/procurement/po', element: <LazyRoute><PurchaseOrdersPage /></LazyRoute> },
+      { path: '/procurement/po/new', element: <LazyRoute><POFormPage /></LazyRoute> },
+      { path: '/procurement/po/:id', element: <LazyRoute><PODetailPage /></LazyRoute> },
+      { path: '/procurement/vendors', element: <LazyRoute><VendorsPage /></LazyRoute> },
+      { path: '/procurement/vendors/:id', element: <LazyRoute><VendorDetailPage /></LazyRoute> },
+      { path: '/procurement/grn-matching', element: <LazyRoute><GRNMatchingPage /></LazyRoute> },
+
+      // Invoice routes
+      { path: '/invoices', element: <LazyRoute><InvoiceDashboard /></LazyRoute> },
+      { path: '/invoices/sales', element: <LazyRoute><SalesInvoicesPage /></LazyRoute> },
+      { path: '/invoices/sales/new', element: <LazyRoute><SalesInvoiceFormPage /></LazyRoute> },
+      { path: '/invoices/sales/:id', element: <LazyRoute><SalesInvoiceDetailPage /></LazyRoute> },
+      { path: '/invoices/purchase', element: <LazyRoute><PurchaseInvoicesPage /></LazyRoute> },
+      { path: '/invoices/credit-notes', element: <LazyRoute><CreditNotesPage /></LazyRoute> },
+
+      // Accounting routes
+      { path: '/accounting', element: <LazyRoute><AccountingDashboard /></LazyRoute> },
+      { path: '/accounting/ledger', element: <LazyRoute><LedgerPage /></LazyRoute> },
+      { path: '/accounting/payments', element: <LazyRoute><PaymentsPage /></LazyRoute> },
+      { path: '/accounting/reports', element: <LazyRoute><AccountingReportsPage /></LazyRoute> },
+
+      // Reconciliation routes
+      { path: '/reconciliation/bank', element: <LazyRoute><BankReconciliationPage /></LazyRoute> },
+      { path: '/reconciliation/vendor', element: <LazyRoute><VendorReconciliationPage /></LazyRoute> },
+      { path: '/reconciliation/inventory', element: <LazyRoute><InventoryReconciliationPage /></LazyRoute> },
+      { path: '/reconciliation/inter-module', element: <LazyRoute><InterModuleReconciliationPage /></LazyRoute> },
     ],
   },
 ])
