@@ -8,9 +8,9 @@
 
 @theme inline {
     --font-heading: var(--font-display);
-    --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    --font-ui: 'Inter', system-ui, sans-serif;
-    --font-display: 'Funnel Display', Georgia, serif;
+    --font-sans: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-ui: 'Lato', system-ui, sans-serif;
+    --font-display: 'Lato', Georgia, sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -77,33 +77,66 @@
   h6 { @apply text-base font-medium; }
 }
 
-/* ── Custom theme tokens for Tailwind ── */
+/* ── Custom theme tokens for Tailwind (ITASM Design System) ── */
 @theme {
   /* Typography */
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Primary Teal Scale */
-  --color-primary-50: #f0fafa;
-  --color-primary-100: #d1eded;
-  --color-primary-200: #a3dbdb;
-  --color-primary-300: #75c9c9;
-  --color-primary-400: #47b7b7;
-  --color-primary-500: #2b8a8a;
-  --color-primary-600: #236e6e;
-  --color-primary-700: #1b5353;
-  --color-primary-800: #133737;
-  --color-primary-900: #0b1c1c;
-  --color-primary-950: #060e0e;
+  /* ITASM Primary Blue Scale */
+  --color-primary-50: #eef5ff;
+  --color-primary-100: #d9e8ff;
+  --color-primary-200: #b3d1ff;
+  --color-primary-300: #8dbaff;
+  --color-primary-400: #3e96ff;
+  --color-primary-500: #1379f0;
+  --color-primary-600: #086de3;
+  --color-primary-700: #0d4b94;
+  --color-primary-800: #0a3a73;
+  --color-primary-900: #072952;
+  --color-primary-950: #041831;
 
-  /* Status Colors */
-  --color-status-error-text: #b91c1c;
-  --color-status-error-bg: #fee2e2;
-  --color-status-success-text: #15803d;
-  --color-status-success-bg: #dcfce7;
-  --color-status-warning-text: #a16207;
-  --color-status-warning-bg: #fef9c3;
-  --color-status-info-text: #1d4ed8;
-  --color-status-info-bg: #dbeafe;
+  /* ITASM Gray Scale */
+  --color-gray-50: #f9f9f9;
+  --color-gray-100: #f1f1f2;
+  --color-gray-200: #e0e2e9;
+  --color-gray-300: #d8d8e5;
+  --color-gray-400: #a1a5b7;
+  --color-gray-500: #7e8299;
+  --color-gray-600: #5e6278;
+  --color-gray-700: #3f4254;
+  --color-gray-800: #181c32;
+  --color-gray-900: #151521;
+
+  /* ITASM Semantic Status Colors */
+  --color-itasm-success: #50cd89;
+  --color-itasm-success-active: #46be7d;
+  --color-itasm-success-dark: #0b5c22;
+  --color-itasm-success-light: #e8fff3;
+
+  --color-itasm-danger: #f1416c;
+  --color-itasm-danger-active: #d9214e;
+  --color-itasm-danger-dark: #991930;
+  --color-itasm-danger-light: #fff5f8;
+
+  --color-itasm-warning: #f6c000;
+  --color-itasm-warning-active: #e8b500;
+  --color-itasm-warning-dark: #b88800;
+  --color-itasm-warning-light: #fff8dd;
+
+  --color-itasm-info: #7239ea;
+  --color-itasm-info-active: #5014d0;
+  --color-itasm-info-dark: #271086;
+  --color-itasm-info-light: #f8f5ff;
+
+  /* Status Colors (backward compatible) */
+  --color-status-error-text: #991930;
+  --color-status-error-bg: #fff5f8;
+  --color-status-success-text: #0b5c22;
+  --color-status-success-bg: #e8fff3;
+  --color-status-warning-text: #b88800;
+  --color-status-warning-bg: #fff8dd;
+  --color-status-info-text: #271086;
+  --color-status-info-bg: #f8f5ff;
 }
 
 /* ── Status Cell Utilities ── */

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 
 export const THEMES = [
+  { id: 'itasm', label: 'ITASM' },
   { id: 'shadcn-default', label: 'Shadcn Default' },
   { id: 'comprint-crm', label: 'Comprint CRM' },
   { id: 'corporate-slate', label: 'Corporate Slate' },
@@ -27,6 +28,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 const STORAGE_KEY_THEME = 'comprint-theme'
 const STORAGE_KEY_MODE = 'comprint-color-mode'
+const ITASM_MIGRATION_KEY = 'comprint-itasm-migrated'
 
 function getSystemDark(): boolean {
   return window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -34,8 +36,14 @@ function getSystemDark(): boolean {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>(() => {
+    // One-time migration: set ITASM as default for users who haven't explicitly chosen it
+    if (!localStorage.getItem(ITASM_MIGRATION_KEY)) {
+      localStorage.setItem(ITASM_MIGRATION_KEY, '1')
+      localStorage.setItem(STORAGE_KEY_THEME, 'itasm')
+      return 'itasm'
+    }
     const stored = localStorage.getItem(STORAGE_KEY_THEME)
-    return (stored as ThemeId) || 'corporate-slate'
+    return (stored as ThemeId) || 'itasm'
   })
 
   const [colorMode, setColorModeState] = useState<ColorMode>(() => {

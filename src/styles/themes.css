@@ -498,3 +498,69 @@
   --sidebar-border: hsl(25 10% 22%);
   --sidebar-ring: hsl(43 96% 58%);
 }
+
+/* ── 9. ITASM — Blue Primary + Semantic Colors (from Figma) ── */
+[data-theme='itasm'] {
+  --background: #f9f9f9;
+  --foreground: #181c32;
+  --card: #ffffff;
+  --card-foreground: #181c32;
+  --popover: #ffffff;
+  --popover-foreground: #181c32;
+  --primary: #1379f0;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f1f2;
+  --secondary-foreground: #3f4254;
+  --muted: #f1f1f2;
+  --muted-foreground: #7e8299;
+  --accent: #7239ea;
+  --accent-foreground: #ffffff;
+  --destructive: #f1416c;
+  --border: #e0e2e9;
+  --input: #e0e2e9;
+  --ring: #1379f0;
+  --radius: 0.375rem;
+  --chart-1: #1379f0;
+  --chart-2: #50cd89;
+  --chart-3: #7239ea;
+  --chart-4: #f6c000;
+  --chart-5: #f1416c;
+  --sidebar: #1e1e2d;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #1379f0;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2d2d3f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #3f4254;
+  --sidebar-ring: #1379f0;
+}
+
+.dark [data-theme='itasm'],
+[data-theme='itasm'].dark {
+  --background: #181c32;
+  --foreground: #f9f9f9;
+  --card: #1e1e2d;
+  --card-foreground: #f9f9f9;
+  --popover: #1e1e2d;
+  --popover-foreground: #f9f9f9;
+  --primary: #3e96ff;
+  --primary-foreground: #ffffff;
+  --secondary: #2d2d3f;
+  --secondary-foreground: #d8d8e5;
+  --muted: #2d2d3f;
+  --muted-foreground: #a1a5b7;
+  --accent: #7239ea;
+  --accent-foreground: #ffffff;
+  --destructive: #f1416c;
+  --border: #3f4254;
+  --input: #3f4254;
+  --ring: #3e96ff;
+  --sidebar: #151521;
+  --sidebar-foreground: #f9f9f9;
+  --sidebar-primary: #3e96ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2d2d3f;
+  --sidebar-accent-foreground: #d8d8e5;
+  --sidebar-border: #3f4254;
+  --sidebar-ring: #3e96ff;
+}
