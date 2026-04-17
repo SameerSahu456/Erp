@@ -57,9 +57,9 @@ function fmt(n: number): string {
 }
 
 const VARIANT_COLORS: Record<VariantType, string> = {
-  New: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  Refurbished: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-  'New Pool': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  New: 'bg-[#e8fff3] text-[#0b5c22] dark:bg-[#0b5c22]/20 dark:text-[#50cd89]',
+  Refurbished: 'bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]',
+  'New Pool': 'bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]',
 }
 
 /** Merge stock items with IMS parts to get a unified searchable list */

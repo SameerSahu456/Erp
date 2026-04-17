@@ -530,10 +530,10 @@ function QuoteBuilderPage() {
                                       <Badge
                                         className={`shrink-0 text-[10px] ${
                                           li.variantType === 'New'
-                                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                            ? 'bg-[#e8fff3] text-[#0b5c22] dark:bg-[#0b5c22]/20 dark:text-[#50cd89]'
                                             : li.variantType === 'Refurbished'
-                                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
-                                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                              ? 'bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]'
+                                              : 'bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]'
                                         }`}
                                       >
                                         <Tag className="mr-1 size-3" />
@@ -558,13 +558,13 @@ function QuoteBuilderPage() {
                                     <Badge variant="outline">{li.partSku}</Badge>
                                     <Badge variant="secondary">{li.category}</Badge>
                                     {li.bomId && (
-                                      <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                      <Badge className="bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]">
                                         <Cpu className="mr-1 size-3" />
                                         Has BOM
                                       </Badge>
                                     )}
                                     {configSummary.hasChanges && (
-                                      <Badge className="bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                                      <Badge className="bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]">
                                         {configSummary.excluded > 0 && `${configSummary.excluded} removed`}
                                         {configSummary.excluded > 0 && configSummary.swapped > 0 && ', '}
                                         {configSummary.swapped > 0 && `${configSummary.swapped} swapped`}
@@ -661,7 +661,7 @@ function QuoteBuilderPage() {
                               {configSummary.hasChanges && (
                                 <Badge
                                   variant="outline"
-                                  className="ml-auto border-amber-300 text-amber-600"
+                                  className="ml-auto border-[#f6c000]/40 text-[#b88800]"
                                 >
                                   Customized
                                 </Badge>
@@ -716,9 +716,9 @@ function QuoteBuilderPage() {
                                             key={comp.bomItemId}
                                             className={`border-b last:border-b-0 transition-colors ${
                                               comp.action === 'EXCLUDE'
-                                                ? 'bg-red-50/50 dark:bg-red-950/20'
+                                                ? 'bg-[#fff5f8]/60 dark:bg-[#991930]/10'
                                                 : comp.action === 'SWAP'
-                                                  ? 'bg-blue-50/50 dark:bg-blue-950/20'
+                                                  ? 'bg-[#eef5ff]/60 dark:bg-[#0d4b94]/10'
                                                   : ''
                                             }`}
                                           >
@@ -732,7 +732,7 @@ function QuoteBuilderPage() {
                                                   }
                                                 />
                                               ) : (
-                                                <Check className="mx-auto size-4 text-green-600" />
+                                                <Check className="mx-auto size-4 text-[#50cd89]" />
                                               )}
                                             </td>
 
@@ -747,7 +747,7 @@ function QuoteBuilderPage() {
                                                     : comp.partName}
                                                 </div>
                                                 {comp.action === 'SWAP' && (
-                                                  <div className="flex items-center gap-1 text-xs text-blue-600">
+                                                  <div className="flex items-center gap-1 text-xs text-[#1379f0]">
                                                     <ArrowLeftRight className="size-3" />
                                                     Replaces: {comp.partName}
                                                   </div>
@@ -801,7 +801,7 @@ function QuoteBuilderPage() {
                                               {comp.action === 'EXCLUDE' && (
                                                 <Badge
                                                   variant="outline"
-                                                  className="border-red-300 text-red-600"
+                                                  className="border-[#f1416c]/40 text-[#f1416c]"
                                                 >
                                                   <X className="mr-1 size-3" />
                                                   Removed
@@ -810,7 +810,7 @@ function QuoteBuilderPage() {
                                               {comp.action === 'SWAP' && (
                                                 <Badge
                                                   variant="outline"
-                                                  className="border-blue-300 text-blue-600"
+                                                  className="border-[#1379f0]/40 text-[#1379f0]"
                                                 >
                                                   <ArrowLeftRight className="mr-1 size-3" />
                                                   Swapped
@@ -819,7 +819,7 @@ function QuoteBuilderPage() {
                                               {comp.action === 'INCLUDE' && (
                                                 <Badge
                                                   variant="outline"
-                                                  className="border-green-300 text-green-600"
+                                                  className="border-[#50cd89]/40 text-[#0b5c22]"
                                                 >
                                                   <Check className="mr-1 size-3" />
                                                   Included

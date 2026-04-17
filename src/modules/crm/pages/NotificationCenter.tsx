@@ -20,9 +20,9 @@ const filterMap: Record<FilterTab, CrmNotification["type"][] | null> = {
 }
 
 const typeBadgeVariant: Record<CrmNotification["type"], string> = {
-  lead: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  lead: "bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]",
   deal: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  order: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  order: "bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]",
   system: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
 }
 

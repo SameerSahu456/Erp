@@ -445,7 +445,7 @@ function InspectionPage() {
                                   className={
                                     state?.result === 'FAIL'
                                       ? 'border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20'
-                                      : 'border-red-200 text-red-500 hover:border-red-400 hover:bg-red-50 dark:border-red-800 dark:text-red-400'
+                                      : 'border-[#f1416c]/30 text-[#f1416c] hover:border-[#f1416c]/60 hover:bg-[#fff5f8] dark:border-[#f1416c]/40 dark:text-[#f1416c]'
                                   }
                                   onClick={() =>
                                     handleChecklistChange(item.id, 'FAIL')
@@ -606,7 +606,7 @@ function InspectionPage() {
                   </div>
                 </div>
                 {failCount > 0 && (
-                  <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400">
+                  <div className="mt-3 rounded border border-[#f6c000]/30 bg-[#fff8dd] p-2 text-xs text-[#b88800] dark:border-[#f6c000]/40 dark:bg-[#b88800]/15 dark:text-[#f6c000]">
                     {failCount} item{failCount > 1 ? 's' : ''} failed - review inspection flags below
                   </div>
                 )}

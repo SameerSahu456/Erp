@@ -310,7 +310,7 @@ function RepairPage() {
             <CardTitle className="text-muted-foreground text-xs font-normal">In Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-amber-600">{summaryStats.inProgress}</p>
+            <p className="text-2xl font-bold text-[#f6c000]">{summaryStats.inProgress}</p>
           </CardContent>
         </Card>
         <Card size="sm">

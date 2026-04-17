@@ -158,9 +158,9 @@ function WorkOrderDetailPage() {
                   <div
                     className={`flex size-8 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
                       isFailed
-                        ? 'bg-red-100 text-red-700 ring-2 ring-red-400'
+                        ? 'bg-[#fff5f8] text-[#991930] ring-2 ring-[#f1416c]'
                         : isCompleted
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-[#e8fff3] text-[#0b5c22]'
                           : isActive
                             ? 'bg-primary text-primary-foreground ring-2 ring-primary/30'
                             : 'bg-muted text-muted-foreground'
@@ -181,7 +181,7 @@ function WorkOrderDetailPage() {
                 {idx < WORK_ORDER_WORKFLOW_STAGES.length - 1 && (
                   <div
                     className={`h-0.5 w-full min-w-4 ${
-                      idx < activeStage ? 'bg-green-400' : 'bg-muted'
+                      idx < activeStage ? 'bg-[#50cd89]' : 'bg-muted'
                     }`}
                   />
                 )}
@@ -232,11 +232,11 @@ function WorkOrderDetailPage() {
           </div>
           <p className="mt-1 font-semibold">{formatDate(wo.dueDate)}</p>
           {wo.completedAt ? (
-            <p className="text-sm text-green-600">Completed {formatDate(wo.completedAt)}</p>
+            <p className="text-sm text-[#50cd89]">Completed {formatDate(wo.completedAt)}</p>
           ) : (
             <p className="text-sm text-muted-foreground">
               {new Date(wo.dueDate) < new Date() ? (
-                <span className="text-red-600">Overdue</span>
+                <span className="text-[#f1416c]">Overdue</span>
               ) : (
                 `${Math.ceil((new Date(wo.dueDate).getTime() - Date.now()) / 86400000)} days left`
               )}
@@ -300,7 +300,7 @@ function WorkOrderDetailPage() {
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
             <div
               className={`h-full rounded-full transition-all ${
-                pickingProgress === 100 ? 'bg-green-500' : 'bg-primary'
+                pickingProgress === 100 ? 'bg-[#50cd89]' : 'bg-primary'
               }`}
               style={{ width: `${pickingProgress}%` }}
             />
@@ -353,7 +353,7 @@ function WorkOrderDetailPage() {
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
                     className={`h-full rounded-full ${
-                      progress === 100 ? 'bg-green-500' : progress > 0 ? 'bg-yellow-500' : 'bg-muted'
+                      progress === 100 ? 'bg-[#50cd89]' : progress > 0 ? 'bg-[#f6c000]' : 'bg-muted'
                     }`}
                     style={{ width: `${progress}%` }}
                   />
@@ -429,12 +429,12 @@ function WorkOrderDetailPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {qc.result === 'PASSED' ? (
-                      <div className="flex size-10 items-center justify-center rounded-full bg-green-100">
-                        <CheckCircle2 className="size-5 text-green-600" />
+                      <div className="flex size-10 items-center justify-center rounded-full bg-[#e8fff3]">
+                        <CheckCircle2 className="size-5 text-[#50cd89]" />
                       </div>
                     ) : (
-                      <div className="flex size-10 items-center justify-center rounded-full bg-red-100">
-                        <XCircle className="size-5 text-red-600" />
+                      <div className="flex size-10 items-center justify-center rounded-full bg-[#fff5f8]">
+                        <XCircle className="size-5 text-[#f1416c]" />
                       </div>
                     )}
                     <div>
@@ -454,7 +454,7 @@ function WorkOrderDetailPage() {
                     <div
                       key={item.item}
                       className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${
-                        item.result === 'PASS' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+                        item.result === 'PASS' ? 'bg-[#e8fff3] text-[#0b5c22]' : 'bg-[#fff5f8] text-[#991930]'
                       }`}
                     >
                       {item.result === 'PASS' ? (
@@ -469,12 +469,12 @@ function WorkOrderDetailPage() {
 
                 {/* Failure reasons */}
                 {qc.failureReasons && qc.failureReasons.length > 0 && (
-                  <div className="mt-3 rounded-md bg-red-50 px-4 py-3">
-                    <p className="text-sm font-medium text-red-800 flex items-center gap-1.5">
+                  <div className="mt-3 rounded-md bg-[#fff5f8] px-4 py-3">
+                    <p className="text-sm font-medium text-[#991930] flex items-center gap-1.5">
                       <AlertTriangle className="size-4" />
                       Failure Reasons
                     </p>
-                    <ul className="mt-1 list-disc list-inside text-sm text-red-700">
+                    <ul className="mt-1 list-disc list-inside text-sm text-[#991930]">
                       {qc.failureReasons.map((r, i) => (
                         <li key={i}>{r}</li>
                       ))}
@@ -530,7 +530,7 @@ function WorkOrderDetailPage() {
         </div>
         {wo.destinationType === 'RENTAL_WAREHOUSE' && (
           <div className="border-t px-6 py-4">
-            <div className="flex items-center gap-2 rounded-md bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+            <div className="flex items-center gap-2 rounded-md bg-[#fff8dd] px-4 py-3 text-sm text-[#b88800]">
               <Warehouse className="size-4 shrink-0" />
               <span>
                 This is a <strong>rental order</strong>. After QC, units are sent to the rental warehouse
@@ -554,7 +554,7 @@ function WorkOrderDetailPage() {
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Approved By</dt>
                 <dd className="flex items-center gap-1">
-                  <CheckCircle2 className="size-3.5 text-green-600" />
+                  <CheckCircle2 className="size-3.5 text-[#50cd89]" />
                   {wo.approvedBy}
                 </dd>
               </div>
@@ -586,7 +586,7 @@ function WorkOrderDetailPage() {
             {wo.completedAt && (
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Completed</dt>
-                <dd className="text-green-600">{formatDate(wo.completedAt)}</dd>
+                <dd className="text-[#50cd89]">{formatDate(wo.completedAt)}</dd>
               </div>
             )}
           </dl>

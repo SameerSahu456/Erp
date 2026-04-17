@@ -101,13 +101,13 @@ function PurchaseRequestsPage() {
         display: (
           <span className="inline-flex items-center gap-1.5 text-sm">
             {allDone ? (
-              <CheckCircle2 className="size-3.5 text-green-600" />
+              <CheckCircle2 className="size-3.5 text-[#50cd89]" />
             ) : approved > 0 ? (
-              <Clock className="size-3.5 text-yellow-600" />
+              <Clock className="size-3.5 text-[#f6c000]" />
             ) : (
               <Clock className="size-3.5 text-muted-foreground" />
             )}
-            <span className={allDone ? 'text-green-600 font-medium' : ''}>
+            <span className={allDone ? 'text-[#50cd89] font-medium' : ''}>
               {value as string}
             </span>
           </span>

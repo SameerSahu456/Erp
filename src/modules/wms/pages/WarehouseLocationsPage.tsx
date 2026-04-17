@@ -69,7 +69,7 @@ function RackCard({
     rack.capacityUsed >= 90
       ? 'text-destructive'
       : rack.capacityUsed >= 60
-        ? 'text-amber-600'
+        ? 'text-[#f6c000]'
         : 'text-emerald-600'
 
   return (
@@ -100,8 +100,8 @@ function RackCard({
               bin.status === 'Empty'
                 ? 'bg-emerald-100 border-emerald-300 dark:bg-emerald-950 dark:border-emerald-800'
                 : bin.status === 'Full'
-                  ? 'bg-red-100 border-red-300 dark:bg-red-950 dark:border-red-800'
-                  : 'bg-amber-100 border-amber-300 dark:bg-amber-950 dark:border-amber-800'
+                  ? 'bg-[#fff5f8] border-[#f1416c]/40 dark:bg-[#991930]/15 dark:border-[#f1416c]/40'
+                  : 'bg-[#fff8dd] border-[#f6c000]/40 dark:bg-[#b88800]/15 dark:border-[#f6c000]/40'
             return (
               <div
                 key={bin.id}
@@ -208,11 +208,11 @@ function WarehouseTab({ warehouse }: { warehouse: Warehouse }) {
           Empty
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block size-3 rounded bg-amber-100 border border-amber-300" />
+          <span className="inline-block size-3 rounded bg-[#fff8dd] border border-[#f6c000]/40" />
           Partial
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block size-3 rounded bg-red-100 border border-red-300" />
+          <span className="inline-block size-3 rounded bg-[#fff5f8] border border-[#f1416c]/40" />
           Full
         </span>
       </div>

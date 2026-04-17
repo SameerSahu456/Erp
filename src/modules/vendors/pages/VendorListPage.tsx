@@ -126,7 +126,7 @@ const cellFormatter: CellFormatter = (value, key, row) => {
     return {
       display: (
         <span className="text-sm">
-          <span className="text-amber-500">&#9733;</span> {value}
+          <span className="text-[#f6c000]">&#9733;</span> {value}
         </span>
       ),
     }

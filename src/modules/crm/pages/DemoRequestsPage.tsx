@@ -116,7 +116,7 @@ function DemoRequestsPage() {
       if (!isOverdue) return { display: <span className="text-muted-foreground">—</span> }
       return {
         display: (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-red-600">
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-[#f1416c]">
             <AlertTriangle className="size-3.5" />
             {days}d overdue
           </span>
@@ -127,7 +127,7 @@ function DemoRequestsPage() {
       const isOverdue = row.overdue as boolean
       return {
         display: (
-          <span className={isOverdue ? 'font-medium text-red-600' : ''}>
+          <span className={isOverdue ? 'font-medium text-[#f1416c]' : ''}>
             {value as string}
           </span>
         ),
@@ -168,13 +168,13 @@ function DemoRequestsPage() {
 
       {/* Overdue alert banner */}
       {overdue.length > 0 && (
-        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <AlertTriangle className="size-5 text-red-600 shrink-0" />
+        <div className="flex items-center gap-3 rounded-lg border border-[#f1416c]/30 bg-[#fff5f8] px-4 py-3">
+          <AlertTriangle className="size-5 text-[#f1416c] shrink-0" />
           <div>
-            <p className="text-sm font-medium text-red-800">
+            <p className="text-sm font-medium text-[#991930]">
               {overdue.length} demo return{overdue.length > 1 ? 's' : ''} overdue
             </p>
-            <p className="text-xs text-red-600">
+            <p className="text-xs text-[#f1416c]">
               {overdue.map((r) => `${r.demoNumber} (${r.account})`).join(', ')}
             </p>
           </div>

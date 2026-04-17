@@ -475,7 +475,7 @@ export default function RentalContractDetailPage() {
                       daysRemaining < 0
                         ? 'text-destructive font-medium'
                         : daysRemaining < 14
-                          ? 'text-yellow-600 font-medium'
+                          ? 'text-[#f6c000] font-medium'
                           : ''
                     }
                   >

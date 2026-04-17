@@ -632,7 +632,7 @@ function VendorDetailPage() {
                 <div className="flex items-center justify-between">
                   <dt className="text-xs font-ui text-muted-foreground">Rating</dt>
                   <dd className="text-sm">
-                    <span className="text-amber-500">&#9733;</span>{' '}
+                    <span className="text-[#f6c000]">&#9733;</span>{' '}
                     {vendor.status === 'Active' ? '4.5' : '-'}
                   </dd>
                 </div>

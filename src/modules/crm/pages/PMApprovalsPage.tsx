@@ -207,7 +207,7 @@ function PMApprovalsPage() {
         <h2 className="mb-3 text-lg font-semibold">
           Purchase Request Approvals
           {pendingPRApprovals.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-yellow-600">
+            <span className="ml-2 text-sm font-normal text-[#f6c000]">
               ({pendingPRApprovals.length} pending)
             </span>
           )}
@@ -251,7 +251,7 @@ function PMApprovalsPage() {
         <h2 className="mb-3 text-lg font-semibold">
           Demo Request Approvals
           {pendingDemos.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-yellow-600">
+            <span className="ml-2 text-sm font-normal text-[#f6c000]">
               ({pendingDemos.length} pending)
             </span>
           )}
@@ -344,7 +344,7 @@ function PRApprovalCard({
           <div key={approval.id} className="border-b last:border-0">
             {/* Category header */}
             <div className={`flex items-center justify-between px-5 py-3 ${
-              isPending ? 'bg-yellow-50/50' : ''
+              isPending ? 'bg-[#fff8dd]/60' : ''
             }`}>
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
@@ -413,7 +413,7 @@ function PRApprovalCard({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-red-600 border-red-200 hover:bg-red-50"
+                    className="text-[#f1416c] border-[#f1416c]/30 hover:bg-[#fff5f8]"
                     onClick={() => onApprove(pr.id, approval.category, 'Rejected', catRemarks)}
                   >
                     <XCircle className="mr-1 size-3.5" />
@@ -521,7 +521,7 @@ function DemoApprovalCard({
             <Button
               size="sm"
               variant="outline"
-              className="text-red-600 border-red-200 hover:bg-red-50"
+              className="text-[#f1416c] border-[#f1416c]/30 hover:bg-[#fff5f8]"
               onClick={() => onApprove(demo.id, 'PM Rejected', remarks)}
             >
               <XCircle className="mr-1 size-3.5" />

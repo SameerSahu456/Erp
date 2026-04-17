@@ -180,7 +180,7 @@ function BOMDetailPage() {
                   <p className="mt-1 text-xs text-muted-foreground italic">{item.notes}</p>
                 )}
                 {item.substitutePartIds && item.substitutePartIds.length > 0 && (
-                  <p className="mt-1 text-xs text-blue-600">
+                  <p className="mt-1 text-xs text-[#1379f0]">
                     {item.substitutePartIds.length} substitute(s) available
                   </p>
                 )}
@@ -207,7 +207,7 @@ function BOMDetailPage() {
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Approved By</dt>
                 <dd className="flex items-center gap-1">
-                  <CheckCircle2 className="size-3.5 text-green-600" />
+                  <CheckCircle2 className="size-3.5 text-[#50cd89]" />
                   {bom.approvedBy}
                 </dd>
               </div>

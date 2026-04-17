@@ -45,9 +45,9 @@ function fmt(n: number): string {
 }
 
 const VARIANT_COLORS: Record<VariantType, string> = {
-  New: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  Refurbished: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-  'New Pool': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  New: 'bg-[#e8fff3] text-[#0b5c22] dark:bg-[#0b5c22]/20 dark:text-[#50cd89]',
+  Refurbished: 'bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]',
+  'New Pool': 'bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]',
 }
 
 /** Build component catalog from BOM data + stock items */
@@ -172,7 +172,7 @@ function SwapComponentDialog({
             <span className="text-sm font-medium">{comp.name}</span>
             <span className="text-xs text-muted-foreground">{comp.sku}</span>
             {isSuggested && (
-              <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300 text-[10px]">
+              <Badge className="bg-[#e8fff3] text-[#0b5c22] dark:bg-[#0b5c22]/20 dark:text-[#50cd89] text-[10px]">
                 <Check className="mr-0.5 size-2.5" />
                 Recommended
               </Badge>

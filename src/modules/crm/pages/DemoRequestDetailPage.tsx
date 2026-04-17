@@ -122,13 +122,13 @@ function DemoRequestDetailPage() {
 
       {/* Overdue alert */}
       {isOverdue && (
-        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <AlertTriangle className="size-5 text-red-600 shrink-0" />
+        <div className="flex items-center gap-3 rounded-lg border border-[#f1416c]/30 bg-[#fff5f8] px-4 py-3">
+          <AlertTriangle className="size-5 text-[#f1416c] shrink-0" />
           <div>
-            <p className="text-sm font-medium text-red-800">
+            <p className="text-sm font-medium text-[#991930]">
               Return overdue by {demo.overdueByDays} day{(demo.overdueByDays ?? 0) > 1 ? 's' : ''}
             </p>
-            <p className="text-xs text-red-600">
+            <p className="text-xs text-[#f1416c]">
               Expected return: {formatDate(demo.expectedReturnDate)}. Contact {demo.contactName} at {demo.contactPhone} immediately.
             </p>
           </div>
@@ -151,9 +151,9 @@ function DemoRequestDetailPage() {
                   <div
                     className={`flex size-8 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
                       isFailed
-                        ? 'bg-red-100 text-red-700 ring-2 ring-red-400'
+                        ? 'bg-[#fff5f8] text-[#991930] ring-2 ring-[#f1416c]'
                         : isCompleted
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-[#e8fff3] text-[#0b5c22]'
                           : isActive
                             ? 'bg-primary text-primary-foreground ring-2 ring-primary/30'
                             : 'bg-muted text-muted-foreground'
@@ -172,7 +172,7 @@ function DemoRequestDetailPage() {
                   </span>
                 </div>
                 {idx < DEMO_WORKFLOW_STAGES.length - 1 && (
-                  <div className={`h-0.5 w-full min-w-4 ${idx < activeStage ? 'bg-green-400' : 'bg-muted'}`} />
+                  <div className={`h-0.5 w-full min-w-4 ${idx < activeStage ? 'bg-[#50cd89]' : 'bg-muted'}`} />
                 )}
               </div>
             )
@@ -263,21 +263,21 @@ function DemoRequestDetailPage() {
               </div>
             )}
             <div className="flex justify-between">
-              <dt className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
+              <dt className={`flex items-center gap-1 ${isOverdue ? 'text-[#f1416c] font-medium' : 'text-muted-foreground'}`}>
                 <RotateCcw className="size-3" /> Return By
               </dt>
-              <dd className={isOverdue ? 'text-red-600 font-medium' : ''}>
+              <dd className={isOverdue ? 'text-[#f1416c] font-medium' : ''}>
                 {formatDate(demo.expectedReturnDate)}
               </dd>
             </div>
             {demo.actualReturnDate && (
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Actual Return</dt>
-                <dd className="text-green-600">{formatDate(demo.actualReturnDate)}</dd>
+                <dd className="text-[#50cd89]">{formatDate(demo.actualReturnDate)}</dd>
               </div>
             )}
             {isOverdue && (
-              <div className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs font-medium text-red-700 flex items-center gap-1.5">
+              <div className="mt-2 rounded-md bg-[#fff5f8] px-3 py-2 text-xs font-medium text-[#991930] flex items-center gap-1.5">
                 <AlertTriangle className="size-3.5" />
                 Overdue by {demo.overdueByDays} day{(demo.overdueByDays ?? 0) > 1 ? 's' : ''}
               </div>

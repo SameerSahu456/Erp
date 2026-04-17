@@ -145,7 +145,7 @@ export default function DeviceTrackingPage() {
       const days = value as number
       let colorClass = 'text-status-success-text'
       if (days < 0) colorClass = 'bg-destructive/10 text-destructive font-medium'
-      else if (days <= 7) colorClass = 'text-yellow-600 font-medium'
+      else if (days <= 7) colorClass = 'text-[#f6c000] font-medium'
 
       return {
         display: `${days} days`,

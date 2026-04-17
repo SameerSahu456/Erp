@@ -81,15 +81,15 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     id: 'pending-approval',
     label: 'Pending Approval',
     matchStatuses: ['Pending Approval'],
-    headerColor: 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800',
-    badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+    headerColor: 'bg-[#fff8dd] border-[#f6c000]/30 dark:bg-[#b88800]/10 dark:border-[#f6c000]/30',
+    badgeColor: 'bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]',
   },
   {
     id: 'picking',
     label: 'Picking',
     matchStatuses: ['Approved', 'Picking'],
-    headerColor: 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800',
-    badgeColor: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    headerColor: 'bg-[#eef5ff] border-[#1379f0]/30 dark:bg-[#0d4b94]/10 dark:border-[#1379f0]/30',
+    badgeColor: 'bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]',
   },
   {
     id: 'packing',
@@ -123,8 +123,8 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     id: 'dispatched-today',
     label: 'Dispatched Today',
     matchStatuses: ['Dispatched'],
-    headerColor: 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800',
-    badgeColor: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    headerColor: 'bg-[#e8fff3] border-[#50cd89]/30 dark:bg-[#0b5c22]/10 dark:border-[#50cd89]/30',
+    badgeColor: 'bg-[#e8fff3] text-[#0b5c22] dark:bg-[#0b5c22]/20 dark:text-[#50cd89]',
   },
 ]
 
@@ -362,7 +362,7 @@ function DispatchCard({
                 {qcPassedCount === totalDevices ? (
                   <CheckCircle2 className="size-3.5 text-emerald-600" />
                 ) : qcFailedCount > 0 ? (
-                  <AlertTriangle className="size-3.5 text-amber-600" />
+                  <AlertTriangle className="size-3.5 text-[#f6c000]" />
                 ) : (
                   <Clock className="size-3.5 text-muted-foreground" />
                 )}

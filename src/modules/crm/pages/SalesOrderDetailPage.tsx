@@ -137,7 +137,7 @@ function SalesOrderDetailPage() {
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">Config Changes</p>
-          <p className={`mt-1 text-xl font-semibold ${configItems.length > 0 ? 'text-yellow-600' : ''}`}>
+          <p className={`mt-1 text-xl font-semibold ${configItems.length > 0 ? 'text-[#f6c000]' : ''}`}>
             {configItems.length}
           </p>
         </div>
@@ -179,9 +179,9 @@ function SalesOrderDetailPage() {
 
       {/* Part Configuration Alert — visible on dispatch */}
       {so.hasPartConfig && configItems.length > 0 && (
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50">
-          <div className="border-b border-yellow-200 px-6 py-4">
-            <h2 className="font-semibold text-yellow-800 flex items-center gap-2">
+        <div className="rounded-lg border border-[#f6c000]/30 bg-[#fff8dd]">
+          <div className="border-b border-[#f6c000]/30 px-6 py-4">
+            <h2 className="font-semibold text-[#b88800] flex items-center gap-2">
               <AlertCircle className="size-4" />
               Part Configuration Changes
               <span className="text-xs font-normal">
@@ -189,16 +189,16 @@ function SalesOrderDetailPage() {
               </span>
             </h2>
             {so.dispatchNotes && (
-              <p className="mt-1 text-sm text-yellow-700">{so.dispatchNotes}</p>
+              <p className="mt-1 text-sm text-[#b88800]">{so.dispatchNotes}</p>
             )}
           </div>
-          <div className="divide-y divide-yellow-100">
+          <div className="divide-y divide-[#f6c000]/15">
             {configItems.map((item) => (
               <div key={item.id} className="flex items-center gap-4 px-6 py-3">
                 <div className={`flex size-8 items-center justify-center rounded-full ${
-                  item.configAction === 'ADD' ? 'bg-green-100 text-green-700' :
-                  item.configAction === 'REMOVE' ? 'bg-red-100 text-red-700' :
-                  'bg-yellow-100 text-yellow-700'
+                  item.configAction === 'ADD' ? 'bg-[#e8fff3] text-[#0b5c22]' :
+                  item.configAction === 'REMOVE' ? 'bg-[#fff5f8] text-[#991930]' :
+                  'bg-[#fff8dd] text-[#b88800]'
                 }`}>
                   {CONFIG_ACTION_ICON[item.configAction]}
                 </div>
@@ -216,7 +216,7 @@ function SalesOrderDetailPage() {
                     )}
                   </p>
                   {item.configNotes && (
-                    <p className="mt-0.5 text-xs italic text-yellow-700">{item.configNotes}</p>
+                    <p className="mt-0.5 text-xs italic text-[#b88800]">{item.configNotes}</p>
                   )}
                 </div>
               </div>
@@ -249,9 +249,9 @@ function SalesOrderDetailPage() {
             <tbody>
               {so.lineItems.map((item) => (
                 <tr key={item.id} className={`border-b last:border-0 ${
-                  item.configAction === 'ADD' ? 'bg-green-50/50' :
-                  item.configAction === 'REMOVE' ? 'bg-red-50/50' :
-                  item.configAction === 'SWAP' ? 'bg-yellow-50/50' : ''
+                  item.configAction === 'ADD' ? 'bg-[#e8fff3]/60' :
+                  item.configAction === 'REMOVE' ? 'bg-[#fff5f8]/60' :
+                  item.configAction === 'SWAP' ? 'bg-[#fff8dd]/60' : ''
                 }`}>
                   <td className="px-4 py-3">
                     <p className="font-medium">{item.partName}</p>
@@ -311,7 +311,7 @@ function SalesOrderDetailPage() {
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Approved By</dt>
                 <dd className="flex items-center gap-1">
-                  <CheckCircle2 className="size-3.5 text-green-600" />
+                  <CheckCircle2 className="size-3.5 text-[#50cd89]" />
                   {so.approvedBy}
                 </dd>
               </div>

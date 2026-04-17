@@ -23,12 +23,12 @@ const ROLE_CONFIG = {
   },
   procurement: {
     label: 'Procurement',
-    avatarClass: 'bg-green-600 text-white',
+    avatarClass: 'bg-[#50cd89] text-white',
     badgeVariant: 'secondary' as const,
   },
   product_manager: {
     label: 'Product Manager',
-    avatarClass: 'bg-amber-500 text-white',
+    avatarClass: 'bg-[#f6c000] text-white',
     badgeVariant: 'outline' as const,
   },
 } as const
