@@ -36,7 +36,7 @@ function EntityHeader({
   return (
     <div className={cn('flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between', className)}>
       <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon-sm" render={<Link to={backHref} />}>
+        <Button variant="ghost" size="icon-sm" nativeButton={false} render={<Link to={backHref} />}>
           <ArrowLeft />
         </Button>
 

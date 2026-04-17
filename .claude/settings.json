@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat /Users/amardaxini/projects/comprint/theme/src/constants/*.ts)"
+    ]
+  }
+}

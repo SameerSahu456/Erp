@@ -33,6 +33,7 @@ const DemoRequestsPage = lazy(() => import('@/modules/crm/pages/DemoRequestsPage
 const DemoRequestDetailPage = lazy(() => import('@/modules/crm/pages/DemoRequestDetailPage'))
 const SalesOrderDetailPage = lazy(() => import('@/modules/crm/pages/SalesOrderDetailPage'))
 const PMApprovalsPage = lazy(() => import('@/modules/crm/pages/PMApprovalsPage'))
+const QuoteBuilderPage = lazy(() => import('@/modules/crm/pages/QuoteBuilderPage'))
 
 // WMS pages
 const WmsDashboard = lazy(() => import('@/modules/wms/pages/WmsDashboard'))
@@ -178,6 +179,7 @@ export const router = createBrowserRouter([
       { path: '/crm/quotes', element: <LazyRoute><QuotesPage /></LazyRoute> },
       { path: '/crm/quotes/new', element: <LazyRoute><QuoteFormPage /></LazyRoute> },
       { path: '/crm/quotes/:id/edit', element: <LazyRoute><QuoteFormPage /></LazyRoute> },
+      { path: '/crm/quote-builder', element: <LazyRoute><QuoteBuilderPage /></LazyRoute> },
       { path: '/crm/invoices', element: <LazyRoute><InvoicesPage /></LazyRoute> },
       { path: '/crm/invoices/new', element: <LazyRoute><InvoiceFormPage /></LazyRoute> },
       { path: '/crm/invoices/:id/edit', element: <LazyRoute><InvoiceFormPage /></LazyRoute> },
