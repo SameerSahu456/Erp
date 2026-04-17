@@ -12,6 +12,7 @@ import { PermissionGate } from '@/components/common/PermissionGate'
 import { cn } from '@/lib/utils'
 import { mockStockItems } from '../data/stock-items'
 import { mockSkuHistory } from '../data/sku-history'
+import { mockComponentMovements } from '@/modules/wms/data/component-movements'
 import type { StockItem, StockVariant, StockSku } from '@/modules/wms/types'
 
 const currencyFmt = new Intl.NumberFormat('en-IN', {
@@ -197,6 +198,9 @@ export default function StockItemDetailPage() {
         })}
       </div>
 
+      {/* Component Movement History */}
+      <ComponentMovementSection itemId={item.id} itemName={item.name} />
+
       {/* Price Change Log */}
       {priceChangeEntries.length > 0 && (
         <Card>
@@ -338,6 +342,80 @@ function VariantCard({
         ) : (
           <p className="text-sm text-muted-foreground">No individual SKUs tracked.</p>
         )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Component Movement History section ──
+
+const MOVEMENT_BADGE_MAP: Record<string, 'success' | 'warning' | 'info' | 'neutral'> = {
+  INSTALLED: 'success',
+  REMOVED: 'warning',
+  SWAPPED: 'info',
+  TRANSFERRED: 'neutral',
+}
+
+function ComponentMovementSection({ itemId, itemName }: { itemId: string; itemName: string }) {
+  // Match movements by itemId or by itemName (since mock data uses different ID schemes)
+  const movements = useMemo(
+    () =>
+      mockComponentMovements
+        .filter((m) => m.itemId === itemId || m.itemName.toLowerCase().includes(itemName.toLowerCase()))
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+    [itemId, itemName]
+  )
+
+  if (movements.length === 0) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Component Movement History</CardTitle>
+          <Link
+            to="/wms/component-history"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            View All
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="pb-2 pr-4 font-medium">Date</th>
+                <th className="pb-2 pr-4 font-medium">Type</th>
+                <th className="pb-2 pr-4 font-medium">Parent Part</th>
+                <th className="pb-2 pr-4 font-medium">Work Order</th>
+                <th className="pb-2 pr-4 font-medium">From → To</th>
+                <th className="pb-2 pr-4 font-medium">By</th>
+                <th className="pb-2 font-medium">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movements.map((m) => (
+                <tr key={m.id} className="border-b last:border-0">
+                  <td className="py-2 pr-4 whitespace-nowrap">{formatDate(m.timestamp)}</td>
+                  <td className="py-2 pr-4">
+                    <StatusBadge variant={MOVEMENT_BADGE_MAP[m.movementType] ?? 'neutral'}>
+                      {m.movementType}
+                    </StatusBadge>
+                  </td>
+                  <td className="py-2 pr-4">{m.parentItemName ?? '-'}</td>
+                  <td className="py-2 pr-4 font-mono text-xs">{m.workOrderNumber ?? '-'}</td>
+                  <td className="py-2 pr-4 whitespace-nowrap">
+                    {m.fromRackName || 'Assembly'} → {m.toRackName || 'Assembly'}
+                  </td>
+                  <td className="py-2 pr-4">{m.performedByName}</td>
+                  <td className="py-2 text-muted-foreground">{m.notes}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </CardContent>
     </Card>
   )

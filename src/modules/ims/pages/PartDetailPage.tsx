@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   Pencil,
@@ -11,6 +11,7 @@ import {
   Replace,
   Plus,
   X,
+  DollarSign,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -30,6 +31,7 @@ import {
 import { cn } from '@/lib/utils'
 import { mockParts } from '../data/parts'
 import { mockStockItems } from '../data/stock-items'
+import { mockPricing, mockPriceHistory } from '../data/pricing'
 import { mockChecklistTemplates } from '@/modules/wms/data/checklist-templates'
 import { mockRelatedParts } from '@/modules/wms/data/related-parts'
 import { mockBOMs } from '@/modules/wms/data/boms'
@@ -76,6 +78,12 @@ function getInitials(name: string): string {
     .toUpperCase()
     .slice(0, 2)
 }
+
+const currencyFmt = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 0,
+})
 
 function ChecklistAssignmentRow({
   label,
@@ -1075,6 +1083,173 @@ export default function PartDetailPage() {
     ),
   }
 
+  // ── Pricing tab ──
+  const partPricing = useMemo(
+    () => mockPricing.filter((p) => p.partId === part.id),
+    [part.id]
+  )
+
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
+  const [editPriceValue, setEditPriceValue] = useState('')
+  const editPriceRef = useRef<HTMLInputElement>(null)
+
+  const startPriceEdit = useCallback((entryId: string, currentPrice: number) => {
+    setEditingPriceId(entryId)
+    setEditPriceValue(String(currentPrice))
+    setTimeout(() => editPriceRef.current?.focus(), 0)
+  }, [])
+
+  const cancelPriceEdit = useCallback(() => {
+    setEditingPriceId(null)
+    setEditPriceValue('')
+  }, [])
+
+  const [localPricing, setLocalPricing] = useState(partPricing)
+  const [localPriceHistory, setLocalPriceHistory] = useState(mockPriceHistory)
+
+  const savePriceEdit = useCallback(
+    (entryId: string) => {
+      const newPrice = parseInt(editPriceValue, 10)
+      if (isNaN(newPrice) || newPrice < 0) {
+        cancelPriceEdit()
+        return
+      }
+      setLocalPricing((prev) =>
+        prev.map((p) => {
+          if (p.id !== entryId || p.sellPrice === newPrice) return p
+          const historyEntry = {
+            id: `ph-${Date.now()}`,
+            priceEntryId: entryId,
+            oldPrice: p.sellPrice,
+            newPrice,
+            changedBy: 'Current User',
+            changedAt: new Date().toISOString(),
+            notes: 'Manual price update',
+          }
+          setLocalPriceHistory((h) => [historyEntry, ...h])
+          toast.success('Price updated')
+          return { ...p, sellPrice: newPrice, updatedBy: 'Current User', updatedAt: new Date().toISOString() }
+        })
+      )
+      setEditingPriceId(null)
+      setEditPriceValue('')
+    },
+    [editPriceValue, cancelPriceEdit]
+  )
+
+  // Group pricing by variant
+  const newPrices = useMemo(() => localPricing.filter((p) => p.variant === 'new'), [localPricing])
+  const refurbishedPrices = useMemo(() => localPricing.filter((p) => p.variant === 'refurbished'), [localPricing])
+
+  // All price history for this part's entries
+  const partPriceHistory = useMemo(
+    () => {
+      const entryIds = new Set(localPricing.map((p) => p.id))
+      return localPriceHistory
+        .filter((h) => entryIds.has(h.priceEntryId))
+        .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
+    },
+    [localPricing, localPriceHistory]
+  )
+
+  const pricingTab = {
+    id: 'pricing',
+    label: 'Pricing',
+    count: localPricing.length,
+    content: (
+      <div className="space-y-4">
+        {localPricing.length > 0 ? (
+          <>
+            {/* New variant card */}
+            {newPrices.length > 0 && (
+              <PricingVariantCard
+                variantLabel="New"
+                variantBadge="success"
+                entries={newPrices}
+                editingId={editingPriceId}
+                editValue={editPriceValue}
+                editRef={editPriceRef}
+                onStartEdit={startPriceEdit}
+                onEditChange={setEditPriceValue}
+                onSave={savePriceEdit}
+                onCancel={cancelPriceEdit}
+              />
+            )}
+
+            {/* Refurbished variant card */}
+            {refurbishedPrices.length > 0 && (
+              <PricingVariantCard
+                variantLabel="Refurbished"
+                variantBadge="info"
+                entries={refurbishedPrices}
+                editingId={editingPriceId}
+                editValue={editPriceValue}
+                editRef={editPriceRef}
+                onStartEdit={startPriceEdit}
+                onEditChange={setEditPriceValue}
+                onSave={savePriceEdit}
+                onCancel={cancelPriceEdit}
+              />
+            )}
+
+            {/* Price Change History */}
+            {partPriceHistory.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Price Change History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {partPriceHistory.map((h) => {
+                      const entry = localPricing.find((p) => p.id === h.priceEntryId)
+                      return (
+                        <div key={h.id} className="flex items-start gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className="mt-1 size-2.5 rounded-full bg-primary" />
+                            <div className="w-px flex-1 bg-border" />
+                          </div>
+                          <div className="flex-1 pb-3">
+                            <p className="text-sm">
+                              <span className="font-medium tabular-nums">
+                                {currencyFmt.format(h.oldPrice)}
+                              </span>
+                              <span className="text-muted-foreground"> &rarr; </span>
+                              <span className="font-medium tabular-nums">
+                                {currencyFmt.format(h.newPrice)}
+                              </span>
+                              {entry && (
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  ({entry.variant === 'new' ? 'New' : 'Refurbished'}
+                                  {entry.tag ? ` / ${entry.tag}` : ' / Base'})
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {h.changedBy} &middot; {formatDate(h.changedAt)}
+                              {h.notes && ` &middot; ${h.notes}`}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        ) : (
+          <div className="rounded-lg border border-dashed p-8 text-center">
+            <DollarSign className="mx-auto mb-2 size-8 text-muted-foreground" />
+            <p className="text-sm font-medium">No pricing defined</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Pricing entries for this part will appear here
+            </p>
+          </div>
+        )}
+      </div>
+    ),
+  }
+
   return (
     <div className="space-y-6">
       <EntityHeader
@@ -1092,7 +1267,7 @@ export default function PartDetailPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         {/* Left: Tabs */}
-        <DetailTabs tabs={[overviewTab, relatedPartsTab, bomsTab, inventoryTab, checklistsTab, historyTab]} />
+        <DetailTabs tabs={[overviewTab, relatedPartsTab, bomsTab, inventoryTab, pricingTab, checklistsTab, historyTab]} />
 
         {/* Right: Sidebar cards */}
         <div className="space-y-4">
@@ -1147,10 +1322,6 @@ export default function PartDetailPage() {
                   <span className="font-medium">{part.model}</span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">SKU</span>
-                <span className="font-mono text-xs font-medium">{part.sku}</span>
-              </div>
               {part.hsnCode && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">HSN Code</span>
@@ -1199,5 +1370,130 @@ export default function PartDetailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// ── Pricing Variant Card component (like StockItemDetailPage's VariantCard) ──
+
+interface PricingVariantCardProps {
+  variantLabel: string
+  variantBadge: 'success' | 'info' | 'warning'
+  entries: import('../data/pricing').PriceEntry[]
+  editingId: string | null
+  editValue: string
+  editRef: React.RefObject<HTMLInputElement | null>
+  onStartEdit: (entryId: string, currentPrice: number) => void
+  onEditChange: (v: string) => void
+  onSave: (entryId: string) => void
+  onCancel: () => void
+}
+
+function PricingVariantCard({
+  variantLabel,
+  variantBadge,
+  entries,
+  editingId,
+  editValue,
+  editRef,
+  onStartEdit,
+  onEditChange,
+  onSave,
+  onCancel,
+}: PricingVariantCardProps) {
+  const baseEntry = entries.find((e) => e.tag === null)
+  const tagEntries = entries.filter((e) => e.tag !== null)
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-center gap-4">
+          <StatusBadge variant={variantBadge}>{variantLabel}</StatusBadge>
+          {baseEntry && (
+            <div className="flex items-baseline gap-1">
+              <span className="text-sm text-muted-foreground">Base Price:</span>
+              {editingId === baseEntry.id ? (
+                <input
+                  ref={editRef}
+                  type="number"
+                  value={editValue}
+                  onChange={(e) => onEditChange(e.target.value)}
+                  onBlur={() => onSave(baseEntry.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') onSave(baseEntry.id)
+                    if (e.key === 'Escape') onCancel()
+                  }}
+                  className="h-7 w-28 rounded border border-input bg-background px-2 text-sm font-medium"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onStartEdit(baseEntry.id, baseEntry.sellPrice)}
+                  className="group inline-flex items-center gap-1"
+                >
+                  <span className="text-lg font-bold">{currencyFmt.format(baseEntry.sellPrice)}</span>
+                  <Pencil className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {tagEntries.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">Tag</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Sell Price</th>
+                  <th className="pb-2 pr-4 font-medium">Updated By</th>
+                  <th className="pb-2 font-medium">Last Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tagEntries.map((entry) => (
+                  <tr key={entry.id} className="border-b last:border-0">
+                    <td className="py-2 pr-4">
+                      <StatusBadge variant="neutral">{entry.tag}</StatusBadge>
+                    </td>
+                    <td className="py-2 pr-4 text-right">
+                      {editingId === entry.id ? (
+                        <input
+                          ref={editRef}
+                          type="number"
+                          value={editValue}
+                          onChange={(e) => onEditChange(e.target.value)}
+                          onBlur={() => onSave(entry.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') onSave(entry.id)
+                            if (e.key === 'Escape') onCancel()
+                          }}
+                          className="ml-auto h-7 w-28 rounded border border-input bg-background px-2 text-right text-sm font-medium"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onStartEdit(entry.id, entry.sellPrice)}
+                          className="group inline-flex items-center gap-1"
+                        >
+                          <span className="font-medium tabular-nums">
+                            {currencyFmt.format(entry.sellPrice)}
+                          </span>
+                          <Pencil className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                        </button>
+                      )}
+                    </td>
+                    <td className="py-2 pr-4">{entry.updatedBy}</td>
+                    <td className="py-2 text-muted-foreground">{formatDate(entry.updatedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No tag-specific prices.</p>
+        )}
+      </CardContent>
+    </Card>
   )
 }
