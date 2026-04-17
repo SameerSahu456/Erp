@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Pencil, Trash2, Mail, Phone, Building2, Globe, IndianRupee, CalendarDays, Plus } from 'lucide-react'
+import { Pencil, Trash2, Mail, Phone, Building2, Globe, IndianRupee, CalendarDays, Plus, XCircle, RotateCcw } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,8 @@ import {
   DialogFooter,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { Badge } from '@/components/ui/badge'
 import { EntityHeader } from '../components/EntityHeader'
@@ -29,6 +31,8 @@ import { materialInquiries } from '../data/material-inquiries'
 import { mockComments } from '../data/comments'
 import { LEAD_STAGES } from '../types'
 import { CommentSection } from '../components/CommentSection'
+import { useAuth } from '@/contexts/AuthContext'
+import { canReinstateLead } from '@/modules/crm/crm-roles'
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
@@ -51,6 +55,8 @@ function getStageVariant(stage: string): StatusBadgeVariant {
     case 'Won':
       return 'success'
     case 'Lost':
+      return 'error'
+    case 'Rejected':
       return 'error'
     default:
       return 'neutral'
@@ -113,6 +119,12 @@ function LeadDetailPage() {
   const { id: leadId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [reinstateDialogOpen, setReinstateDialogOpen] = useState(false)
+  const [reinstateNote, setReinstateNote] = useState('')
+  const { user } = useAuth()
+  const userCanReinstate = canReinstateLead(user.role)
 
   const lead = leads.find((l) => l.id === leadId)
 
@@ -162,9 +174,24 @@ function LeadDetailPage() {
   const pipelineStages = LEAD_STAGES.filter((s) => s !== 'Lost')
   const currentStageIndex = pipelineStages.indexOf(lead.stage as typeof pipelineStages[number])
   const isLost = lead.stage === 'Lost'
+  const isRejected = lead.stage === 'Rejected'
 
   function handleDelete() {
     setDeleteDialogOpen(false)
+    navigate('/crm/leads')
+  }
+
+  function handleReject() {
+    // In real app: API call to update lead stage + create activity
+    setRejectDialogOpen(false)
+    setRejectionReason('')
+    navigate('/crm/leads')
+  }
+
+  function handleReinstate() {
+    // In real app: API call to move lead to Qualified + create activity
+    setReinstateDialogOpen(false)
+    setReinstateNote('')
     navigate('/crm/leads')
   }
 
@@ -253,6 +280,23 @@ function LeadDetailPage() {
             <div className="flex items-center gap-2">
               <StatusBadge variant="error">Lost</StatusBadge>
               <span className="text-sm text-muted-foreground">This lead has been marked as lost.</span>
+            </div>
+          ) : isRejected ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <StatusBadge variant="error">Rejected</StatusBadge>
+                <span className="text-sm text-muted-foreground">This lead has been rejected.</span>
+              </div>
+              {lead.rejectionReason && (
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Reason:</span> {lead.rejectionReason}
+                </p>
+              )}
+              {lead.rejectedBy && lead.rejectedAt && (
+                <p className="text-xs text-muted-foreground">
+                  By {lead.rejectedBy} on {formatDate(lead.rejectedAt)}
+                </p>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-1">
@@ -462,6 +506,83 @@ function LeadDetailPage() {
               <Pencil className="size-3.5" data-icon="inline-start" />
               Edit
             </Button>
+
+            {/* Reject — only for New/Contacted leads */}
+            {(lead.stage === 'New' || lead.stage === 'Contacted') && (
+              <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+                <DialogTrigger render={<Button variant="outline" size="sm" className="text-destructive border-destructive/50 hover:bg-destructive/10" />}>
+                  <XCircle className="size-3.5" data-icon="inline-start" />
+                  Reject
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Reject Lead</DialogTitle>
+                    <DialogDescription>
+                      Mark "{lead.name}" as rejected. This will move the lead out of the active pipeline.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-2">
+                    <Label htmlFor="rejection-reason">Rejection Reason *</Label>
+                    <Textarea
+                      id="rejection-reason"
+                      placeholder="Enter the reason for rejection..."
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleReject}
+                      disabled={!rejectionReason.trim()}
+                    >
+                      Reject Lead
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {/* Reinstate — only for Rejected leads, manager roles only */}
+            {lead.stage === 'Rejected' && userCanReinstate && (
+              <Dialog open={reinstateDialogOpen} onOpenChange={setReinstateDialogOpen}>
+                <DialogTrigger render={<Button variant="outline" size="sm" />}>
+                  <RotateCcw className="size-3.5" data-icon="inline-start" />
+                  Move to Qualified
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Reinstate Lead</DialogTitle>
+                    <DialogDescription>
+                      Move "{lead.name}" back to the Qualified stage. This will return the lead to the active pipeline.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-2">
+                    <Label htmlFor="reinstate-note">Note (optional)</Label>
+                    <Textarea
+                      id="reinstate-note"
+                      placeholder="Why is this lead being reinstated?"
+                      value={reinstateNote}
+                      onChange={(e) => setReinstateNote(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setReinstateDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleReinstate}>
+                      Move to Qualified
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger render={<Button variant="destructive" size="sm" />}>
                 <Trash2 className="size-3.5" data-icon="inline-start" />
