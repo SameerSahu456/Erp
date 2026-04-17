@@ -107,6 +107,58 @@ export const ROLE_HIERARCHY: Record<string, RoleConfig> = {
     label: 'Viewer',
     defaultDashboard: '/reports',
   },
+  // CRM-specific roles
+  CRM_CHANNEL_MANAGER: {
+    role: 'CRM_CHANNEL_MANAGER',
+    label: 'Channel Manager',
+    inherits: ['CRM_SR_ACCOUNT_MANAGER'],
+    defaultDashboard: '/crm',
+  },
+  CRM_SR_ACCOUNT_MANAGER: {
+    role: 'CRM_SR_ACCOUNT_MANAGER',
+    label: 'Sr. Account Manager',
+    inherits: ['CRM_AREA_MANAGER'],
+    defaultDashboard: '/crm',
+  },
+  CRM_AREA_MANAGER: {
+    role: 'CRM_AREA_MANAGER',
+    label: 'Area Manager',
+    inherits: ['CRM_BDE_CHANNEL'],
+    defaultDashboard: '/crm',
+  },
+  CRM_BDE_CHANNEL: {
+    role: 'CRM_BDE_CHANNEL',
+    label: 'BDE (Channel)',
+    defaultDashboard: '/crm',
+  },
+  CRM_INSIDE_SALES_MANAGER: {
+    role: 'CRM_INSIDE_SALES_MANAGER',
+    label: 'Inside Sales Manager',
+    inherits: ['CRM_INSIDE_SALES_REP'],
+    defaultDashboard: '/crm',
+  },
+  CRM_INSIDE_SALES_REP: {
+    role: 'CRM_INSIDE_SALES_REP',
+    label: 'Inside Sales Rep',
+    inherits: ['CRM_BDE_END_CUSTOMER'],
+    defaultDashboard: '/crm',
+  },
+  CRM_BDE_END_CUSTOMER: {
+    role: 'CRM_BDE_END_CUSTOMER',
+    label: 'BDE (End Customer)',
+    defaultDashboard: '/crm',
+  },
+  CRM_SUPPORT_MANAGER: {
+    role: 'CRM_SUPPORT_MANAGER',
+    label: 'Support Manager',
+    inherits: ['CRM_SUPPORT_AGENT'],
+    defaultDashboard: '/crm',
+  },
+  CRM_SUPPORT_AGENT: {
+    role: 'CRM_SUPPORT_AGENT',
+    label: 'Support Agent',
+    defaultDashboard: '/crm',
+  },
 }
 
 export function hasRoleAccess(userRole: string, targetRole: string): boolean {
