@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2 } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Plus, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,8 @@ import type { WizardStepProps } from '@/components/common/MultiStepWizard'
 import { WorkflowStepper } from '@/components/common/WorkflowStepper'
 import type { StepConfig } from '@/components/common/WorkflowStepper'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { mockPMAssignments } from '@/modules/ims/data/pm-assignments'
+import type { PMAssignment } from '@/modules/ims/data/pm-assignments'
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-IN', {
@@ -27,16 +29,16 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value)
 
-// Mock parts catalog
+// Mock parts catalog with category IDs and OEM IDs for PM assignment resolution
 const mockParts = [
-  { id: 'PART-001', name: 'Dell PowerEdge R750', sku: 'DEL-SRV-R750', category: 'Servers', estCost: 285000 },
-  { id: 'PART-003', name: 'HP EliteBook 860 G10', sku: 'HP-EB-860G10', category: 'Laptops', estCost: 92000 },
-  { id: 'PART-004', name: 'Lenovo ThinkStation P360 Tower', sku: 'LEN-TS-P360', category: 'Workstations', estCost: 195000 },
-  { id: 'PART-005', name: 'Cisco Catalyst 9300-48P', sku: 'CISCO-C9300-48P', category: 'Networking', estCost: 245000 },
-  { id: 'PART-007', name: 'Palo Alto PA-5250', sku: 'PA-5250-BND', category: 'Security', estCost: 1850000 },
-  { id: 'PART-009', name: 'D-Link DBA-2820P', sku: 'DLINK-AP-2820P', category: 'Networking', estCost: 18500 },
-  { id: 'PART-010', name: 'APC Smart-UPS 3000VA', sku: 'APC-UPS-3000', category: 'UPS & Power', estCost: 38000 },
-  { id: 'PART-011', name: 'FortiGate 200F', sku: 'FG-200F-BND', category: 'Security', estCost: 385000 },
+  { id: 'PART-001', name: 'Dell PowerEdge R750', sku: 'DEL-SRV-R750', category: 'Servers', categoryId: 'cat-003', oemId: 'oem-001', oemName: 'Dell', estCost: 285000 },
+  { id: 'PART-003', name: 'HP EliteBook 860 G10', sku: 'HP-EB-860G10', category: 'Laptops', categoryId: 'cat-001', oemId: 'oem-002', oemName: 'HP', estCost: 92000 },
+  { id: 'PART-004', name: 'Lenovo ThinkStation P360 Tower', sku: 'LEN-TS-P360', category: 'Desktops', categoryId: 'cat-002', oemId: 'oem-003', oemName: 'Lenovo', estCost: 195000 },
+  { id: 'PART-005', name: 'Cisco Catalyst 9300-48P', sku: 'CISCO-C9300-48P', category: 'Networking', categoryId: 'cat-005', oemId: 'oem-004', oemName: 'Cisco', estCost: 245000 },
+  { id: 'PART-007', name: 'Palo Alto PA-5250', sku: 'PA-5250-BND', category: 'Networking', categoryId: 'cat-005', oemId: 'oem-008', oemName: 'Palo Alto Networks', estCost: 1850000 },
+  { id: 'PART-009', name: 'D-Link DBA-2820P', sku: 'DLINK-AP-2820P', category: 'Networking', categoryId: 'cat-005', oemId: null, oemName: 'D-Link', estCost: 18500 },
+  { id: 'PART-010', name: 'APC Smart-UPS 3000VA', sku: 'APC-UPS-3000', category: 'UPS & Power', categoryId: 'cat-008', oemId: 'oem-009', oemName: 'APC', estCost: 38000 },
+  { id: 'PART-011', name: 'FortiGate 200F', sku: 'FG-200F-BND', category: 'Networking', categoryId: 'cat-005', oemId: null, oemName: 'Fortinet', estCost: 385000 },
 ]
 
 const departments = ['IT Procurement', 'Network Solutions', 'Security Solutions', 'IT Infrastructure', 'General']
@@ -48,6 +50,9 @@ interface PRLineItem {
   partName: string
   partSku: string
   category: string
+  categoryId: string
+  oemId: string | null
+  oemName: string
   qty: number
   estimatedUnitCost: number
   notes: string
@@ -77,6 +82,9 @@ const initialState: PRFormState = {
       partName: '',
       partSku: '',
       category: '',
+      categoryId: '',
+      oemId: null,
+      oemName: '',
       qty: 1,
       estimatedUnitCost: 0,
       notes: '',
@@ -85,17 +93,56 @@ const initialState: PRFormState = {
   ],
 }
 
-function getApprovalChain(total: number): StepConfig[] {
-  const steps: StepConfig[] = [
-    { id: 'manager', label: 'Department Manager', description: 'Suresh Kumar', status: 'pending' },
-  ]
-  if (total >= 500000) {
-    steps.push({ id: 'finance', label: 'Finance Head', description: 'Priya Deshmukh', status: 'pending' })
+// Mock current user — in production this comes from auth context
+const CURRENT_USER_ID = 'user-999' // not a PM, so approval is never auto-approved in demo
+
+interface ResolvedApprover {
+  pmAssignment: PMAssignment
+  items: PRLineItem[]
+}
+
+function resolveApprovers(items: PRLineItem[]): ResolvedApprover[] {
+  const validItems = items.filter((i) => i.partId && i.categoryId)
+  const approverMap = new Map<string, ResolvedApprover>()
+
+  for (const item of validItems) {
+    // Find most specific PM assignment: category + OEM > category only
+    let match: PMAssignment | undefined
+    // Try exact category + OEM match first
+    if (item.oemId) {
+      match = mockPMAssignments.find(
+        (a) => a.categoryId === item.categoryId && a.oemId === item.oemId && a.variant === null
+      )
+    }
+    // Fallback to category-only match
+    if (!match) {
+      match = mockPMAssignments.find(
+        (a) => a.categoryId === item.categoryId && a.oemId === null && a.variant === null
+      )
+    }
+    if (match) {
+      const existing = approverMap.get(match.id)
+      if (existing) {
+        existing.items.push(item)
+      } else {
+        approverMap.set(match.id, { pmAssignment: match, items: [item] })
+      }
+    }
   }
-  if (total >= 2500000) {
-    steps.push({ id: 'vp', label: 'VP Operations', description: 'Vikram Singh', status: 'pending' })
+
+  return Array.from(approverMap.values())
+}
+
+function getApprovalSteps(approvers: ResolvedApprover[]): StepConfig[] {
+  if (approvers.length === 0) {
+    return [{ id: 'none', label: 'No PM Assigned', description: 'Configure PM Assignments', status: 'pending' }]
   }
-  return steps
+  return approvers.map((a) => ({
+    id: a.pmAssignment.id,
+    label: `PM: ${a.pmAssignment.pmName}`,
+    description: `${a.pmAssignment.categoryName}${a.pmAssignment.oemName ? ` / ${a.pmAssignment.oemName}` : ' / All OEMs'}`,
+    status: 'pending' as const,
+  }))
 }
 
 function PRFormPage() {
@@ -107,7 +154,10 @@ function PRFormPage() {
     [form.items]
   )
 
-  const approvalSteps = useMemo(() => getApprovalChain(totalEstimated), [totalEstimated])
+  const resolvedApprovers = useMemo(() => resolveApprovers(form.items), [form.items])
+  const isAutoApproved = resolvedApprovers.length > 0 && resolvedApprovers.every((a) => a.pmAssignment.pmId === CURRENT_USER_ID)
+  const hasUnassignedItems = form.items.some((i) => i.partId && i.categoryId && !resolvedApprovers.some((a) => a.items.includes(i)))
+  const approvalSteps = useMemo(() => getApprovalSteps(resolvedApprovers), [resolvedApprovers])
 
   const updateField = useCallback(<K extends keyof PRFormState>(key: K, value: PRFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -127,6 +177,9 @@ function PRFormPage() {
               partName: part.name,
               partSku: part.sku,
               category: part.category,
+              categoryId: part.categoryId,
+              oemId: part.oemId,
+              oemName: part.oemName,
               estimatedUnitCost: part.estCost,
             }
           }
@@ -147,6 +200,9 @@ function PRFormPage() {
           partName: '',
           partSku: '',
           category: '',
+          categoryId: '',
+          oemId: null,
+          oemName: '',
           qty: 1,
           estimatedUnitCost: 0,
           notes: '',
@@ -310,22 +366,71 @@ function PRFormPage() {
     )
   }
 
-  // Step 3: Approval Chain
+  // Step 3: PM Approval
   function ApprovalChainStep(_props: WizardStepProps) {
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Approval Chain</h3>
+        <h3 className="text-lg font-semibold">PM Approval</h3>
         <p className="text-sm text-muted-foreground">
-          Based on the estimated total of {formatCurrency(totalEstimated)}, the following approval chain will be used:
+          Based on the line items selected, the following Product Manager(s) will review this PR:
         </p>
-        <Card>
-          <CardContent className="pt-2">
-            <WorkflowStepper steps={approvalSteps} />
-          </CardContent>
-        </Card>
+
+        {isAutoApproved && (
+          <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3">
+            <CheckCircle2 className="size-4 text-green-600" />
+            <p className="text-sm font-medium text-green-800">This PR will be auto-approved as you are the assigned PM for all items.</p>
+          </div>
+        )}
+
+        {hasUnassignedItems && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <AlertTriangle className="size-4 text-amber-600" />
+            <p className="text-sm text-amber-800">
+              Some items have no PM assigned.{' '}
+              <Link to="/ims/pm-assignments" className="font-medium underline">Configure PM Assignments</Link>
+            </p>
+          </div>
+        )}
+
+        {resolvedApprovers.length > 0 ? (
+          <div className="space-y-3">
+            {resolvedApprovers.map((approver) => (
+              <Card key={approver.pmAssignment.id} size="sm">
+                <CardContent className="pt-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium">{approver.pmAssignment.pmName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {approver.pmAssignment.categoryName}
+                        {approver.pmAssignment.oemName ? ` / ${approver.pmAssignment.oemName}` : ' / All OEMs'}
+                        {approver.pmAssignment.variant ? ` / ${approver.pmAssignment.variant === 'new' ? 'New' : 'Refurbished'}` : ' / All Variants'}
+                      </p>
+                    </div>
+                    <StatusBadge variant="warning">Pending</StatusBadge>
+                  </div>
+                  <div className="mt-2 border-t pt-2">
+                    <p className="text-xs text-muted-foreground">Items under this PM:</p>
+                    <ul className="mt-1 space-y-0.5">
+                      {approver.items.map((item) => (
+                        <li key={item.id} className="text-sm">{item.partName} x {item.qty}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="pt-4">
+              <WorkflowStepper steps={approvalSteps} />
+            </CardContent>
+          </Card>
+        )}
+
         <div className="rounded-lg border border-dashed p-4">
           <p className="text-xs text-muted-foreground">
-            Approval rules: Below {formatCurrency(500000)} — Manager only. {formatCurrency(500000)} to {formatCurrency(2500000)} — Manager + Finance. Above {formatCurrency(2500000)} — Manager + Finance + VP.
+            Approval is routed by Category x OEM. If items span multiple categories/OEMs, each relevant PM must approve. Any rejection cancels the entire PR.
           </p>
         </div>
       </div>

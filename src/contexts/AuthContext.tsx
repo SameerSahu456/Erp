@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 import type { User, UserRole, PermissionAction } from '@/types/auth'
 import { ROLE_HIERARCHY, hasRoleAccess, hasCrossModuleView } from '@/constants/roles'
 import { MOCK_USERS } from '@/constants/mock-users'
+import { getCrmAccessLevel } from '@/modules/crm/crm-roles'
 
 interface AuthContextValue {
   user: User
@@ -10,6 +11,7 @@ interface AuthContextValue {
   hasRole: (role: UserRole) => boolean
   hasPermission: (module: string, entity: string, action: PermissionAction) => boolean
   hasModuleAccess: (module: string) => boolean
+  getAccessLevel: (module: string) => 'pre-sales' | 'post-sales' | 'both'
   getDefaultDashboard: () => string
   allUsers: User[]
 }
@@ -73,12 +75,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         FINANCE_EXEC: ['accounting', 'invoices'],
         RENTAL_MANAGER: ['rentals', 'ims', 'customers'],
         ECOMMERCE_ADMIN: ['ecommerce', 'ims'],
+        CRM_CHANNEL_MANAGER: ['crm'],
+        CRM_SR_ACCOUNT_MANAGER: ['crm'],
+        CRM_AREA_MANAGER: ['crm'],
+        CRM_BDE_CHANNEL: ['crm'],
+        CRM_INSIDE_SALES_MANAGER: ['crm'],
+        CRM_INSIDE_SALES_REP: ['crm'],
+        CRM_BDE_END_CUSTOMER: ['crm'],
+        CRM_SUPPORT_MANAGER: ['crm'],
+        CRM_SUPPORT_AGENT: ['crm'],
       }
 
       const directModules = roleModules[user.role] ?? []
       if (directModules.includes(module)) return true
 
       return hasCrossModuleView(user.role, module)
+    },
+    [user.role]
+  )
+
+  const getAccessLevel = useCallback(
+    (module: string): 'pre-sales' | 'post-sales' | 'both' => {
+      if (module === 'crm') return getCrmAccessLevel(user.role)
+      return 'both'
     },
     [user.role]
   )
@@ -96,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasRole,
         hasPermission,
         hasModuleAccess,
+        getAccessLevel,
         getDefaultDashboard,
         allUsers: MOCK_USERS,
       }}

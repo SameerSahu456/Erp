@@ -68,7 +68,9 @@ const listTab: TabConfig = {
     { key: "source", label: "Source", sortable: true },
     { key: "lastContact", label: "Last Contact", sortable: true },
   ],
-  data: leads.map((l) => ({
+  data: leads
+    .filter((l) => l.stage !== 'Rejected')
+    .map((l) => ({
     id: l.id,
     name: l.name,
     company: l.company,
@@ -110,7 +112,7 @@ function LeadsPage() {
   const navigate = useNavigate()
   const [view, setView] = useState<"kanban" | "list">("kanban")
   const [kanbanItems, setKanbanItems] = useState(() =>
-    groupLeadsByStage(leads)
+    groupLeadsByStage(leads.filter((l) => l.stage !== 'Rejected'))
   )
 
   const handleMoveAcross = useMemo(

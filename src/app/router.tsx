@@ -34,6 +34,7 @@ const DemoRequestDetailPage = lazy(() => import('@/modules/crm/pages/DemoRequest
 const SalesOrderDetailPage = lazy(() => import('@/modules/crm/pages/SalesOrderDetailPage'))
 const PMApprovalsPage = lazy(() => import('@/modules/crm/pages/PMApprovalsPage'))
 const QuoteBuilderPage = lazy(() => import('@/modules/crm/pages/QuoteBuilderPage'))
+const RejectedLeadsPage = lazy(() => import('@/modules/crm/pages/RejectedLeadsPage'))
 
 // WMS pages
 const WmsDashboard = lazy(() => import('@/modules/wms/pages/WmsDashboard'))
@@ -135,6 +136,14 @@ const SkuHistoryPage = lazy(() => import('@/modules/ims/pages/SkuHistoryPage'))
 const PartsPage = lazy(() => import('@/modules/ims/pages/PartsPage'))
 const PartDetailPage = lazy(() => import('@/modules/ims/pages/PartDetailPage'))
 const PartFormPage = lazy(() => import('@/modules/ims/pages/PartFormPage'))
+const PricingPage = lazy(() => import('@/modules/ims/pages/PricingPage'))
+const OEMListPage = lazy(() => import('@/modules/ims/pages/OEMListPage'))
+const OEMFormPage = lazy(() => import('@/modules/ims/pages/OEMFormPage'))
+const OEMDetailPage = lazy(() => import('@/modules/ims/pages/OEMDetailPage'))
+const PMAssignmentsPage = lazy(() => import('@/modules/ims/pages/PMAssignmentsPage'))
+
+// WMS additional pages
+const ComponentMovementHistoryPage = lazy(() => import('@/modules/wms/pages/ComponentMovementHistoryPage'))
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return (
@@ -161,6 +170,7 @@ export const router = createBrowserRouter([
       { path: '/crm/leads/new', element: <LazyRoute><LeadFormPage /></LazyRoute> },
       { path: '/crm/leads/:id/edit', element: <LazyRoute><LeadFormPage /></LazyRoute> },
       { path: '/crm/leads/:id', element: <LazyRoute><LeadDetailPage /></LazyRoute> },
+      { path: '/crm/rejected-leads', element: <LazyRoute><RejectedLeadsPage /></LazyRoute> },
       { path: '/crm/deals', element: <LazyRoute><DealsPage /></LazyRoute> },
       { path: '/crm/deals/new', element: <LazyRoute><DealFormPage /></LazyRoute> },
       { path: '/crm/deals/:id/edit', element: <LazyRoute><DealFormPage /></LazyRoute> },
@@ -220,6 +230,7 @@ export const router = createBrowserRouter([
       { path: '/wms/related-parts', element: <LazyRoute><RelatedPartsPage /></LazyRoute> },
       { path: '/wms/work-orders', element: <LazyRoute><WorkOrderListPage /></LazyRoute> },
       { path: '/wms/work-orders/:id', element: <LazyRoute><WorkOrderDetailPage /></LazyRoute> },
+      { path: '/wms/component-history', element: <LazyRoute><ComponentMovementHistoryPage /></LazyRoute> },
 
       // IMS routes
       { path: '/ims', element: <LazyRoute><ImsDashboard /></LazyRoute> },
@@ -234,6 +245,12 @@ export const router = createBrowserRouter([
       { path: '/ims/stock-items', element: <LazyRoute><StockItemsPage /></LazyRoute> },
       { path: '/ims/stock-items/:id', element: <LazyRoute><StockItemDetailPage /></LazyRoute> },
       { path: '/ims/stock-items/:id/sku/:sku', element: <LazyRoute><SkuHistoryPage /></LazyRoute> },
+      { path: '/ims/oems', element: <LazyRoute><OEMListPage /></LazyRoute> },
+      { path: '/ims/oems/new', element: <LazyRoute><OEMFormPage /></LazyRoute> },
+      { path: '/ims/oems/:id', element: <LazyRoute><OEMDetailPage /></LazyRoute> },
+      { path: '/ims/oems/:id/edit', element: <LazyRoute><OEMFormPage /></LazyRoute> },
+      { path: '/ims/pm-assignments', element: <LazyRoute><PMAssignmentsPage /></LazyRoute> },
+      { path: '/ims/pricing', element: <LazyRoute><PricingPage /></LazyRoute> },
       { path: '/ims/reports', element: <LazyRoute><ImsReportsPage /></LazyRoute> },
 
       // Procurement routes

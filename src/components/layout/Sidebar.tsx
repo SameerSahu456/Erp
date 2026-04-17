@@ -182,21 +182,28 @@ function SidebarNav({
 
 export function Sidebar() {
   const { isCollapsed, isMobileOpen, toggleCollapsed, setMobileOpen } = useSidebar()
-  const { hasModuleAccess, hasRole } = useAuth()
+  const { hasModuleAccess, hasRole, getAccessLevel } = useAuth()
   const location = useLocation()
   const pathname = location.pathname
 
   const filteredNav = SIDEBAR_NAV
     .filter((group) => hasModuleAccess(group.module))
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => {
-        if (item.requiredRole) {
-          return hasRole(item.requiredRole as import('@/types/auth').UserRole)
-        }
-        return true
-      }),
-    }))
+    .map((group) => {
+      const moduleAccessLevel = getAccessLevel(group.module)
+      return {
+        ...group,
+        items: group.items.filter((item) => {
+          if (item.requiredRole) {
+            if (!hasRole(item.requiredRole as import('@/types/auth').UserRole)) return false
+          }
+          if (item.accessLevel) {
+            if (moduleAccessLevel === 'both') return true
+            if (item.accessLevel !== moduleAccessLevel) return false
+          }
+          return true
+        }),
+      }
+    })
     .filter((group) => group.items.length > 0)
 
   return (

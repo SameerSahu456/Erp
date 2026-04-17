@@ -18,8 +18,42 @@ import {
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
 import { mockParts } from '../data/parts'
+import { mockPricing } from '../data/pricing'
 
 const MOCK_PRODUCT_MANAGERS = ['Rahul Mehta', 'Vikram Singh', 'Priya Sharma']
+
+const currencyFmt = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 0,
+})
+
+// Build a price lookup: partId → { newBase, refurbBase, tags: { tag → { new, refurb } } }
+interface PartPriceInfo {
+  newBase: number | null
+  refurbBase: number | null
+  newTags: { tag: string; price: number }[]
+  refurbTags: { tag: string; price: number }[]
+}
+
+function buildPriceLookup(): Map<string, PartPriceInfo> {
+  const map = new Map<string, PartPriceInfo>()
+  for (const entry of mockPricing) {
+    let info = map.get(entry.partId)
+    if (!info) {
+      info = { newBase: null, refurbBase: null, newTags: [], refurbTags: [] }
+      map.set(entry.partId, info)
+    }
+    if (entry.variant === 'new') {
+      if (entry.tag === null) info.newBase = entry.sellPrice
+      else info.newTags.push({ tag: entry.tag, price: entry.sellPrice })
+    } else {
+      if (entry.tag === null) info.refurbBase = entry.sellPrice
+      else info.refurbTags.push({ tag: entry.tag, price: entry.sellPrice })
+    }
+  }
+  return map
+}
 
 export default function PartsPage() {
   const [search, setSearch] = useState('')
@@ -27,6 +61,8 @@ export default function PartsPage() {
   const [brandFilter, setBrandFilter] = useState('all')
   const [pmFilter, setPmFilter] = useState('all')
   const [showActive, setShowActive] = useState<'all' | 'active'>('active')
+
+  const priceLookup = useMemo(() => buildPriceLookup(), [])
 
   const categories = useMemo(
     () => Array.from(new Set(mockParts.map((p) => p.categoryName))).sort(),
@@ -59,27 +95,28 @@ export default function PartsPage() {
     label: `Parts (${filtered.length})`,
     columns: [
       { key: 'name', label: 'Name', sortable: true },
-      { key: 'sku', label: 'SKU', sortable: true },
       { key: 'category', label: 'Category', sortable: true },
-      { key: 'subcategory', label: 'Subcategory', sortable: true },
       { key: 'brand', label: 'Brand', sortable: true },
       { key: 'pm', label: 'PM', sortable: true },
-      { key: 'aliases', label: 'Aliases' },
+      { key: 'newPrice', label: 'New Price' },
+      { key: 'refurbPrice', label: 'Refurb Price' },
       { key: 'reorderLevel', label: 'Reorder Lvl', sortable: true, align: 'right' },
       { key: 'status', label: 'Status', sortable: true },
     ],
-    data: filtered.map((p) => ({
-      name: p.name,
-      sku: p.sku,
-      category: p.categoryName,
-      subcategory: p.subcategoryName ?? '-',
-      brand: p.brand,
-      pm: p.productManager ?? '-',
-      aliases: p.aliases,
-      reorderLevel: p.reorderLevel,
-      status: p.isActive ? 'Active' : 'Inactive',
-      _id: p.id,
-    })),
+    data: filtered.map((p) => {
+      const prices = priceLookup.get(p.id)
+      return {
+        name: p.name,
+        category: p.categoryName,
+        brand: p.brand,
+        pm: p.productManager ?? '-',
+        newPrice: prices ?? null,
+        refurbPrice: prices ?? null,
+        reorderLevel: p.reorderLevel,
+        status: p.isActive ? 'Active' : 'Inactive',
+        _id: p.id,
+      }
+    }),
   }
 
   const cellFormatter: CellFormatter = (value, key, row) => {
@@ -93,22 +130,49 @@ export default function PartsPage() {
         ),
       }
     }
-    if (key === 'aliases' && Array.isArray(value)) {
-      const aliases = value as string[]
-      const shown = aliases.slice(0, 2)
-      const remaining = aliases.length - 2
+    if (key === 'newPrice') {
+      const prices = value as PartPriceInfo | null
+      if (!prices || (prices.newBase === null && prices.newTags.length === 0)) {
+        return { display: <span className="text-muted-foreground">-</span> }
+      }
       return {
         display: (
-          <div className="flex flex-wrap gap-1">
-            {shown.map((a) => (
-              <span key={a} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs">
-                {a}
-              </span>
-            ))}
-            {remaining > 0 && (
-              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                +{remaining}
-              </span>
+          <div className="space-y-0.5">
+            {prices.newBase !== null && (
+              <div className="font-medium tabular-nums">{currencyFmt.format(prices.newBase)}</div>
+            )}
+            {prices.newTags.length > 0 && (
+              <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                {prices.newTags.map((t) => (
+                  <span key={t.tag} className="text-xs text-muted-foreground">
+                    {t.tag}: <span className="tabular-nums">{currencyFmt.format(t.price)}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ),
+      }
+    }
+    if (key === 'refurbPrice') {
+      const prices = value as PartPriceInfo | null
+      if (!prices || (prices.refurbBase === null && prices.refurbTags.length === 0)) {
+        return { display: <span className="text-muted-foreground">-</span> }
+      }
+      return {
+        display: (
+          <div className="space-y-0.5">
+            {prices.refurbBase !== null && (
+              <div className="font-medium tabular-nums">{currencyFmt.format(prices.refurbBase)}</div>
+            )}
+            {prices.refurbTags.length > 0 && (
+              <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                {prices.refurbTags.map((t) => (
+                  <span key={t.tag} className="text-xs text-muted-foreground">
+                    {t.tag}: <span className="tabular-nums">{currencyFmt.format(t.price)}</span>
+                  </span>
+                ))}
+              </div>
             )}
           </div>
         ),
@@ -187,7 +251,7 @@ export default function PartsPage() {
         </Select>
 
         <Input
-          placeholder="Search name, SKU, alias..."
+          placeholder="Search name, alias..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-56"

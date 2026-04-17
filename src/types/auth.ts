@@ -16,6 +16,16 @@ export const USER_ROLES = [
   'RENTAL_MANAGER',
   'ECOMMERCE_ADMIN',
   'VIEWER',
+  // CRM-specific roles
+  'CRM_CHANNEL_MANAGER',
+  'CRM_SR_ACCOUNT_MANAGER',
+  'CRM_AREA_MANAGER',
+  'CRM_BDE_CHANNEL',
+  'CRM_INSIDE_SALES_MANAGER',
+  'CRM_INSIDE_SALES_REP',
+  'CRM_BDE_END_CUSTOMER',
+  'CRM_SUPPORT_MANAGER',
+  'CRM_SUPPORT_AGENT',
 ] as const
 
 export type UserRole = (typeof USER_ROLES)[number]
