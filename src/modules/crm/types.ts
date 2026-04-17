@@ -4,7 +4,7 @@ export interface Lead {
   company: string
   email: string
   phone: string
-  stage: 'New' | 'Contacted' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost'
+  stage: 'New' | 'Contacted' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost' | 'Rejected'
   value: number
   source: string
   owner: string
@@ -13,6 +13,9 @@ export interface Lead {
   notes?: string
   description: string
   categories: string[]
+  rejectedAt?: string
+  rejectedBy?: string
+  rejectionReason?: string
 }
 
 export interface Deal {
@@ -160,7 +163,7 @@ export interface CrmNotification {
 
 export interface Activity {
   id: string
-  type: 'call' | 'email' | 'meeting' | 'task' | 'note' | 'stage_change'
+  type: 'call' | 'email' | 'meeting' | 'task' | 'note' | 'stage_change' | 'rejection' | 'reinstatement'
   title: string
   description?: string
   user: string
