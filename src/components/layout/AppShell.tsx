@@ -9,8 +9,10 @@ export function AppShell() {
       <Header />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 min-w-0 p-6">
-          <Outlet />
+        <main className="flex-1 min-w-0 p-6 lg:p-8 animate-fade-in">
+          <div className="max-w-[1400px] mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
       <FloatingQueryButton />

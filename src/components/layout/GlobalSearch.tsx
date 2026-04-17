@@ -58,10 +58,10 @@ export function GlobalSearch() {
 
   return (
     <>
-      <Button variant="outline" className="h-9 w-9 md:w-64 md:justify-start md:px-3 gap-2 text-muted-foreground" onClick={() => setOpen(true)}>
-        <Search className="h-4 w-4" />
-        <span className="hidden md:inline text-sm">Search...</span>
-        <kbd className="hidden md:inline-flex ml-auto pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium">
+      <Button variant="outline" className="h-9 w-9 md:w-60 md:justify-start md:px-3 gap-2 text-muted-foreground border-border/50 bg-muted/30 hover:bg-accent/50" onClick={() => setOpen(true)}>
+        <Search className="h-3.5 w-3.5" />
+        <span className="hidden md:inline text-[13px]">Search...</span>
+        <kbd className="hidden md:inline-flex ml-auto pointer-events-none h-5 select-none items-center gap-1 rounded-md border border-border/50 bg-background/80 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
           <span className="text-xs">&#8984;</span>K
         </kbd>
       </Button>

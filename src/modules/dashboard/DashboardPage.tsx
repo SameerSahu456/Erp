@@ -12,6 +12,7 @@ import {
   UserPlus,
   FileText,
   Truck,
+  Activity,
 } from "lucide-react"
 
 import { StatsRow } from "@/components/common/StatsRow"
@@ -192,37 +193,39 @@ const teamMembers = [
 export default function DashboardPage() {
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h2 className="font-sans">Dashboard</h2>
-        <p className="text-muted-foreground mt-1">
-          Component showcase — visual verification of core UI primitives.
-        </p>
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/8 via-primary/4 to-transparent border border-primary/10 p-6 lg:p-8">
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 text-primary mb-1">
+            <Activity className="size-4" />
+            <span className="text-[11px] font-semibold uppercase tracking-widest">Overview</span>
+          </div>
+          <h2 className="font-sans text-2xl lg:text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground mt-1.5 text-[14px] max-w-lg">
+            Real-time insights across CRM, warehouse, inventory, and procurement modules.
+          </p>
+        </div>
+        <div className="absolute -right-8 -top-8 size-48 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -right-4 -bottom-12 size-32 rounded-full bg-primary/3 blur-2xl" />
       </div>
 
       {/* Section 1: KPI Stats */}
-      <section className="space-y-3">
-        <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
-          Key Performance Indicators
-        </h3>
+      <section className="space-y-4">
+        <SectionHeader title="Key Performance Indicators" />
         <StatsRow stats={kpiStats} />
       </section>
 
       {/* Section 2: Workflow Stepper */}
-      <section className="space-y-3">
-        <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
-          WMS Device Lifecycle
-        </h3>
-        <div className="rounded-lg border bg-card p-6">
+      <section className="space-y-4">
+        <SectionHeader title="WMS Device Lifecycle" />
+        <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm shadow-black/[0.02]">
           <WorkflowStepper steps={workflowSteps} />
         </div>
       </section>
 
       {/* Section 3: Business Metrics Table */}
-      <section className="space-y-3">
-        <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
-          Business Metrics
-        </h3>
+      <section className="space-y-4">
+        <SectionHeader title="Business Metrics" />
         <BusinessMetricsTable
           tabs={metricsTabs}
           cellFormatter={cellFormatter}
@@ -231,13 +234,11 @@ export default function DashboardPage() {
       </section>
 
       {/* Section 4: Two-column layout */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Left: Timeline */}
-        <section className="space-y-3">
-          <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
-            Recent Activity
-          </h3>
-          <div className="rounded-lg border bg-card p-6">
+        <section className="space-y-4">
+          <SectionHeader title="Recent Activity" />
+          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm shadow-black/[0.02]">
             <Timeline entries={timelineEntries} />
           </div>
         </section>
@@ -245,21 +246,17 @@ export default function DashboardPage() {
         {/* Right: AvatarGroup + StatusBadge */}
         <section className="space-y-6">
           {/* Avatar Group */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
-              Team Members
-            </h3>
-            <div className="rounded-lg border bg-card p-6">
+          <div className="space-y-4">
+            <SectionHeader title="Team Members" />
+            <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm shadow-black/[0.02]">
               <AvatarGroup users={teamMembers} max={4} />
             </div>
           </div>
 
           {/* Status Badge Examples */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
-              Status Badges
-            </h3>
-            <div className="rounded-lg border bg-card p-6">
+          <div className="space-y-4">
+            <SectionHeader title="Status Badges" />
+            <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm shadow-black/[0.02]">
               <div className="flex flex-wrap gap-3">
                 <StatusBadge variant="success">Active</StatusBadge>
                 <StatusBadge variant="warning">Pending Review</StatusBadge>
@@ -271,35 +268,35 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Additional info cards for height */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-sans font-medium text-muted-foreground uppercase tracking-wide">
-              Quick Stats
-            </h3>
-            <div className="rounded-lg border bg-card p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Devices repaired this week</span>
-                <span className="text-sm font-semibold">127</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Avg repair turnaround</span>
-                <span className="text-sm font-semibold">3.2 days</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Warehouse utilization</span>
-                <span className="text-sm font-semibold">78%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Pending inspections</span>
-                <span className="text-sm font-semibold">19</span>
-              </div>
+          {/* Quick Stats */}
+          <div className="space-y-4">
+            <SectionHeader title="Quick Stats" />
+            <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm shadow-black/[0.02] space-y-4">
+              {[
+                { label: "Devices repaired this week", value: "127" },
+                { label: "Avg repair turnaround", value: "3.2 days" },
+                { label: "Warehouse utilization", value: "78%" },
+                { label: "Pending inspections", value: "19" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between py-0.5">
+                  <span className="text-[13px] text-muted-foreground">{item.label}</span>
+                  <span className="text-[13px] font-semibold">{item.value}</span>
+                </div>
+              ))}
             </div>
           </div>
         </section>
       </div>
 
-      {/* Spacer for FloatingQueryButton testing */}
-      <div className="h-64" />
+      <div className="h-20" />
     </div>
+  )
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <h3 className="text-[13px] font-sans font-semibold text-muted-foreground uppercase tracking-wider">
+      {title}
+    </h3>
   )
 }

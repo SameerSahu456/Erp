@@ -8,35 +8,35 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground hover:bg-[#eef5ff] hover:text-[#1379f0]",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-secondary text-secondary-foreground hover:bg-[#e0e2e9] hover:text-[#3f4254] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-[#f1416c] text-white hover:bg-[#d9214e] focus-visible:border-[#f1416c]/40 focus-visible:ring-[#f1416c]/20",
+          "bg-[#f1416c] text-white hover:bg-[#fff5f8] hover:text-[#f1416c] focus-visible:border-[#f1416c]/40 focus-visible:ring-[#f1416c]/20",
         link: "text-primary underline-offset-4 hover:underline",
-        // ITASM Figma color variants — Solid
+        // ITASM Figma color variants — Solid (hover to light)
         success:
-          "bg-[#50cd89] text-white hover:bg-[#46be7d] focus-visible:ring-[#50cd89]/30",
+          "bg-[#50cd89] text-white hover:bg-[#e8fff3] hover:text-[#0b5c22] focus-visible:ring-[#50cd89]/30",
         warning:
-          "bg-[#f6c000] text-white hover:bg-[#e8b500] focus-visible:ring-[#f6c000]/30",
+          "bg-[#f6c000] text-white hover:bg-[#fff8dd] hover:text-[#b88800] focus-visible:ring-[#f6c000]/30",
         info:
-          "bg-[#7239ea] text-white hover:bg-[#5014d0] focus-visible:ring-[#7239ea]/30",
-        // ITASM Figma — Light variants
+          "bg-[#7239ea] text-white hover:bg-[#f8f5ff] hover:text-[#7239ea] focus-visible:ring-[#7239ea]/30",
+        // ITASM Figma — Light variants (hover slightly deeper)
         "primary-light":
-          "bg-[#eef5ff] text-[#1379f0] hover:bg-[#d9e8ff] focus-visible:ring-[#1379f0]/20",
+          "bg-[#eef5ff] text-[#1379f0] hover:bg-[#dceafc] focus-visible:ring-[#1379f0]/20",
         "success-light":
-          "bg-[#e8fff3] text-[#0b5c22] hover:bg-[#d0f5e3] focus-visible:ring-[#50cd89]/20",
+          "bg-[#e8fff3] text-[#0b5c22] hover:bg-[#d5f5e6] focus-visible:ring-[#50cd89]/20",
         "danger-light":
-          "bg-[#fff5f8] text-[#f1416c] hover:bg-[#ffe0e8] focus-visible:ring-[#f1416c]/20",
+          "bg-[#fff5f8] text-[#f1416c] hover:bg-[#ffe8ee] focus-visible:ring-[#f1416c]/20",
         "warning-light":
-          "bg-[#fff8dd] text-[#b88800] hover:bg-[#fff0bb] focus-visible:ring-[#f6c000]/20",
+          "bg-[#fff8dd] text-[#b88800] hover:bg-[#fff2c4] focus-visible:ring-[#f6c000]/20",
         "info-light":
-          "bg-[#f8f5ff] text-[#7239ea] hover:bg-[#ede5ff] focus-visible:ring-[#7239ea]/20",
-        // ITASM Figma — Tertiary (text-only, no background)
+          "bg-[#f8f5ff] text-[#7239ea] hover:bg-[#efe8ff] focus-visible:ring-[#7239ea]/20",
+        // ITASM Figma — Tertiary (text-only, hover to light bg)
         "primary-tertiary":
           "text-[#1379f0] hover:bg-[#eef5ff] focus-visible:ring-[#1379f0]/20",
         "success-tertiary":

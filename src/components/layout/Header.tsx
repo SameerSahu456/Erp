@@ -20,8 +20,8 @@ export function Header() {
   const location = useLocation()
 
   return (
-    <header className="sticky top-0 z-50 h-14 bg-card/95 backdrop-blur-sm border-b border-border">
-      <div className="flex items-center h-full px-4 gap-4">
+    <header className="sticky top-0 z-50 h-14 bg-card/80 backdrop-blur-xl border-b border-border/60">
+      <div className="flex items-center h-full px-4 gap-3">
         {/* Mobile hamburger */}
         <Button
           variant="ghost"
@@ -34,13 +34,13 @@ export function Header() {
         </Button>
 
         {/* Logo */}
-        <Link to="/" className="flex items-baseline gap-0 shrink-0">
-          <span className="text-primary font-ui font-semibold text-lg tracking-tight">comprint</span>
-          <span className="font-display font-semibold text-lg text-foreground">tech</span>
+        <Link to="/" className="flex items-baseline gap-0 shrink-0 group">
+          <span className="text-primary font-ui font-bold text-lg tracking-tight">comprint</span>
+          <span className="font-display font-bold text-lg text-foreground/80">tech</span>
         </Link>
 
         {/* Center nav links */}
-        <nav className="hidden lg:flex items-center gap-0.5 ml-6 font-ui">
+        <nav className="hidden lg:flex items-center gap-1 ml-8 font-ui">
           {NAV_LINKS.map((link) => {
             const isActive = location.pathname === link.href
             return (
@@ -48,10 +48,10 @@ export function Header() {
                 key={link.href}
                 to={link.href}
                 className={cn(
-                  'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                  'px-3.5 py-1.5 text-[13px] font-medium rounded-lg transition-all',
                   isActive
-                    ? 'text-primary bg-primary/8'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    ? 'text-primary bg-primary/8 font-semibold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/60'
                 )}
               >
                 {link.label}
@@ -64,12 +64,12 @@ export function Header() {
         <div className="flex-1" />
 
         {/* Right actions */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1">
           <GlobalSearch />
           <NotificationPopover />
           <ThemeSwitcher />
           <DevRoleSwitcher />
-          <div className="ml-1">
+          <div className="ml-1.5">
             <UserMenu />
           </div>
         </div>

@@ -22,22 +22,23 @@ function DataCard({ label, value, icon: Icon, trend, onClick, className }: DataC
   return (
     <Card
       className={cn(
-        onClick && "cursor-pointer transition-shadow hover:shadow-md",
+        "group/datacard",
+        onClick && "cursor-pointer",
         className
       )}
       onClick={onClick}
     >
       <CardContent className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold font-sans">{value}</p>
+        <div className="space-y-1.5">
+          <p className="text-[13px] font-medium text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold font-sans tracking-tight">{value}</p>
           {trend && (
             <div
               className={cn(
-                "flex items-center gap-1 text-xs font-medium",
+                "inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-md",
                 trend.isPositive
-                  ? "text-status-success-text"
-                  : "text-status-error-text"
+                  ? "text-status-success-text bg-status-success-bg"
+                  : "text-status-error-text bg-status-error-bg"
               )}
             >
               {trend.isPositive ? (
@@ -50,8 +51,8 @@ function DataCard({ label, value, icon: Icon, trend, onClick, className }: DataC
           )}
         </div>
         {Icon && (
-          <div className="rounded-md bg-muted p-2">
-            <Icon className="size-5 text-muted-foreground" />
+          <div className="rounded-lg bg-primary/8 p-2.5">
+            <Icon className="size-5 text-primary" />
           </div>
         )}
       </CardContent>

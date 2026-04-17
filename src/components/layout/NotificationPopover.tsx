@@ -53,7 +53,7 @@ export function NotificationPopover() {
             <p className="text-center text-muted-foreground text-sm py-8">No notifications</p>
           ) : (
             filtered.map((notification) => (
-              <div key={notification.id} className={cn('flex gap-3 p-3 border-b border-border hover:bg-accent cursor-pointer', !notification.read && 'bg-primary/5')}>
+              <div key={notification.id} className={cn('flex gap-3 p-3 border-b border-border/50 hover:bg-accent/50 cursor-pointer transition-colors', !notification.read && 'bg-primary/5')}>
                 {!notification.read && <div className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />}
                 <div className={cn('flex-1 min-w-0', notification.read && 'ml-5')}>
                   <p className="text-sm font-medium truncate">{notification.title}</p>

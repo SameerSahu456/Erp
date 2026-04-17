@@ -26,9 +26,9 @@ function NavItemLink({
     <Link
       to={item.href}
       className={cn(
-        'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-ui transition-colors',
-        'text-foreground/70 hover:bg-accent hover:text-foreground',
-        isActive && 'bg-primary/10 text-primary font-medium',
+        'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-ui transition-all',
+        'text-muted-foreground hover:bg-accent/70 hover:text-foreground',
+        isActive && 'bg-primary/8 text-primary font-semibold hover:bg-primary/10 hover:text-primary',
         isCollapsed && 'justify-center px-2 py-2'
       )}
     >
@@ -74,9 +74,9 @@ function NavGroupSection({
             <Link
               to={firstItem.href}
               className={cn(
-                'flex w-full items-center justify-center rounded-md px-2 py-2 transition-colors',
-                'text-foreground/70 hover:bg-accent hover:text-foreground',
-                isGroupActive && 'bg-primary/10 text-primary'
+                'flex w-full items-center justify-center rounded-lg px-2 py-2 transition-all',
+                'text-muted-foreground hover:bg-accent/70 hover:text-foreground',
+                isGroupActive && 'bg-primary/8 text-primary'
               )}
             />
           }
@@ -109,9 +109,9 @@ function NavGroupSection({
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         className={cn(
-          'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-ui font-semibold uppercase tracking-widest transition-colors',
-          'text-foreground/60 hover:text-foreground/80',
-          isGroupActive && 'text-foreground/90'
+          'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-ui font-semibold uppercase tracking-widest transition-all',
+          'text-muted-foreground/70 hover:text-muted-foreground hover:bg-accent/40',
+          isGroupActive && 'text-foreground/70'
         )}
       >
         <GroupIcon className="h-3.5 w-3.5 shrink-0" />
@@ -124,7 +124,7 @@ function NavGroupSection({
         />
       </button>
       {isOpen && (
-        <div className="mt-0.5 ml-3 pl-2.5 border-l border-border/50 space-y-0.5">
+        <div className="mt-0.5 ml-3 pl-2.5 border-l border-border/40 space-y-0.5">
           {group.items.map((item) => (
             <NavItemLink
               key={item.href}
@@ -162,10 +162,10 @@ function SidebarNav({
           isCollapsed={isCollapsed}
         />
 
-        <Separator className="my-1.5" />
+        <Separator className="my-1.5 opacity-50" />
 
         {/* Module groups */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
           {filteredNav.map((group) => (
             <NavGroupSection
               key={group.label}
@@ -205,19 +205,19 @@ export function Sidebar() {
       <aside
         className={cn(
           'hidden md:flex flex-col sticky top-14 h-[calc(100vh-3.5rem)] z-40',
-          'bg-card border-r border-border transition-all duration-200',
+          'bg-card/50 backdrop-blur-sm border-r border-border/50 transition-all duration-200',
           isCollapsed ? 'w-14' : 'w-60'
         )}
       >
         {/* Collapse toggle */}
         <div className={cn(
-          'flex items-center h-10 px-2 border-b border-border/50',
+          'flex items-center h-10 px-2 border-b border-border/30',
           isCollapsed ? 'justify-center' : 'justify-end'
         )}>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-accent/50"
             onClick={toggleCollapsed}
           >
             {isCollapsed ? (
@@ -246,9 +246,9 @@ export function Sidebar() {
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SheetDescription className="sr-only">Main navigation menu</SheetDescription>
           {/* Mobile logo */}
-          <div className="flex items-center h-14 px-4 border-b border-border">
-            <span className="text-primary font-ui font-semibold text-lg tracking-tight">comprint</span>
-            <span className="font-display font-semibold text-lg text-foreground">tech</span>
+          <div className="flex items-center h-14 px-4 border-b border-border/50">
+            <span className="text-primary font-ui font-bold text-lg tracking-tight">comprint</span>
+            <span className="font-display font-bold text-lg text-foreground/80">tech</span>
           </div>
           <ScrollArea className="h-[calc(100vh-3.5rem)]">
             <SidebarNav

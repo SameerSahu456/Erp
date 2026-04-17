@@ -63,10 +63,11 @@
     }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
     }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display;
+    @apply font-display tracking-tight;
   }
 
   h1 { @apply text-4xl font-bold; }
@@ -75,6 +76,10 @@
   h4 { @apply text-xl font-semibold; }
   h5 { @apply text-lg font-medium; }
   h6 { @apply text-base font-medium; }
+
+  ::selection {
+    background: oklch(0.62 0.19 255 / 0.18);
+  }
 }
 
 /* ── Custom theme tokens for Tailwind (ITASM Design System) ── */
@@ -161,8 +166,8 @@
 /* ── Custom Scrollbar ── */
 @layer base {
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
@@ -170,11 +175,43 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.3);
-    border-radius: 3px;
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 100px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.5);
+    background: hsl(var(--muted-foreground) / 0.35);
   }
+}
+
+/* ── Modern Transitions ── */
+@layer base {
+  a, button, input, select, textarea,
+  [data-slot="card"],
+  [data-slot="button"] {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+}
+
+/* ── Subtle Animations ── */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }

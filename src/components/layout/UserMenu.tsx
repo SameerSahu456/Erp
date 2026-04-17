@@ -29,7 +29,7 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-accent transition-colors" />
+          <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent/60 transition-all" />
         }
       >
         <Avatar className="h-8 w-8">

@@ -41,7 +41,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Bold, Italic, Underline, Type, Hash,
   ListOrdered, List, LayoutGrid, LayoutList, Table,
-  GitBranch, GitCommit, GitMerge, GitPullRequest, Github,
+  GitBranch, GitCommit, GitMerge, GitPullRequest, GitFork,
   Terminal, Code, Braces, Binary,
   UserPlus, UserMinus, UserCheck, UserX, Users2,
   LogIn, LogOut, UserCircle, Fingerprint,
@@ -347,7 +347,7 @@ export default function DesignSystemPage() {
               { Icon: Binary, name: 'binary' }, { Icon: Hash, name: 'hash' },
               { Icon: GitBranch, name: 'git-branch' }, { Icon: GitCommit, name: 'git-commit' },
               { Icon: GitMerge, name: 'git-merge' }, { Icon: GitPullRequest, name: 'git-pr' },
-              { Icon: Github, name: 'github' }, { Icon: Bug, name: 'bug' },
+              { Icon: GitFork, name: 'github' }, { Icon: Bug, name: 'bug' },
             ]} />
             <IconCategory title="Transport" icons={[
               { Icon: Truck, name: 'truck' }, { Icon: Car, name: 'car' }, { Icon: Plane, name: 'plane' },
