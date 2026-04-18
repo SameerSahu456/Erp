@@ -1,15 +1,16 @@
 @import 'tailwindcss';
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
 @import './themes.css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-display);
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    --font-ui: 'Inter', system-ui, sans-serif;
-    --font-display: 'Inter', sans-serif;
+    --font-sans: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-ui: 'Lato', system-ui, sans-serif;
+    --font-display: 'Lato', Georgia, sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -59,9 +60,6 @@
     }
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     }
   html {
     @apply font-sans;
@@ -70,64 +68,63 @@
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight;
-    letter-spacing: -0.025em;
   }
 
-  h1 { @apply text-[1.75rem] font-semibold leading-tight; }
-  h2 { @apply text-[1.5rem] font-semibold leading-tight; }
-  h3 { @apply text-xl font-semibold; }
-  h4 { @apply text-lg font-semibold; }
-  h5 { @apply text-base font-medium; }
-  h6 { @apply text-sm font-medium; }
+  h1 { @apply text-4xl font-bold; }
+  h2 { @apply text-3xl font-semibold; }
+  h3 { @apply text-2xl font-semibold; }
+  h4 { @apply text-xl font-semibold; }
+  h5 { @apply text-lg font-medium; }
+  h6 { @apply text-base font-medium; }
 
   ::selection {
-    background: oklch(0.62 0.19 255 / 0.15);
+    background: oklch(0.62 0.19 255 / 0.18);
   }
 }
 
-/* ── Metronic v9 Design Tokens ── */
+/* ── Custom theme tokens for Tailwind (ITASM Design System) ── */
 @theme {
   /* Typography */
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Primary Blue Scale (Metronic) */
+  /* ITASM Primary Blue Scale */
   --color-primary-50: #eef5ff;
   --color-primary-100: #d9e8ff;
   --color-primary-200: #b3d1ff;
   --color-primary-300: #8dbaff;
   --color-primary-400: #3e96ff;
-  --color-primary-500: #1b84ff;
-  --color-primary-600: #056ee9;
+  --color-primary-500: #1379f0;
+  --color-primary-600: #086de3;
   --color-primary-700: #0d4b94;
   --color-primary-800: #0a3a73;
   --color-primary-900: #072952;
   --color-primary-950: #041831;
 
-  /* Gray Scale (Metronic v9) */
+  /* ITASM Gray Scale */
   --color-gray-50: #f9f9f9;
-  --color-gray-100: #f1f1f4;
-  --color-gray-200: #dbdfe9;
-  --color-gray-300: #b5b5c3;
-  --color-gray-400: #99a1b7;
-  --color-gray-500: #78829d;
-  --color-gray-600: #4b5675;
-  --color-gray-700: #252f4a;
-  --color-gray-800: #1b1c22;
-  --color-gray-900: #0d0e12;
+  --color-gray-100: #f1f1f2;
+  --color-gray-200: #e0e2e9;
+  --color-gray-300: #d8d8e5;
+  --color-gray-400: #a1a5b7;
+  --color-gray-500: #7e8299;
+  --color-gray-600: #5e6278;
+  --color-gray-700: #3f4254;
+  --color-gray-800: #181c32;
+  --color-gray-900: #151521;
 
-  /* Metronic Semantic Status Colors */
-  --color-itasm-success: #17c653;
-  --color-itasm-success-active: #04b440;
+  /* ITASM Semantic Status Colors */
+  --color-itasm-success: #50cd89;
+  --color-itasm-success-active: #46be7d;
   --color-itasm-success-dark: #0b5c22;
-  --color-itasm-success-light: #dfffea;
+  --color-itasm-success-light: #e8fff3;
 
-  --color-itasm-danger: #f8285a;
-  --color-itasm-danger-active: #d81a48;
+  --color-itasm-danger: #f1416c;
+  --color-itasm-danger-active: #d9214e;
   --color-itasm-danger-dark: #991930;
-  --color-itasm-danger-light: #ffeef3;
+  --color-itasm-danger-light: #fff5f8;
 
-  --color-itasm-warning: #f6b100;
-  --color-itasm-warning-active: #e8a500;
+  --color-itasm-warning: #f6c000;
+  --color-itasm-warning-active: #e8b500;
   --color-itasm-warning-dark: #b88800;
   --color-itasm-warning-light: #fff8dd;
 
@@ -137,13 +134,13 @@
   --color-itasm-info-light: #f8f5ff;
 
   /* Status Colors (backward compatible) */
-  --color-status-error-text: #f8285a;
-  --color-status-error-bg: #ffeef3;
-  --color-status-success-text: #17c653;
-  --color-status-success-bg: #dfffea;
-  --color-status-warning-text: #f6b100;
+  --color-status-error-text: #991930;
+  --color-status-error-bg: #fff5f8;
+  --color-status-success-text: #0b5c22;
+  --color-status-success-bg: #e8fff3;
+  --color-status-warning-text: #b88800;
   --color-status-warning-bg: #fff8dd;
-  --color-status-info-text: #7239ea;
+  --color-status-info-text: #271086;
   --color-status-info-bg: #f8f5ff;
 }
 
@@ -166,11 +163,11 @@
   }
 }
 
-/* ── Metronic v9 Scrollbar ── */
+/* ── Custom Scrollbar ── */
 @layer base {
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 5px;
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
@@ -178,34 +175,34 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.15);
+    background: hsl(var(--muted-foreground) / 0.2);
     border-radius: 100px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.3);
+    background: hsl(var(--muted-foreground) / 0.35);
   }
 }
 
-/* ── Metronic v9 Transitions ── */
+/* ── Modern Transitions ── */
 @layer base {
   a, button, input, select, textarea,
   [data-slot="card"],
   [data-slot="button"] {
     transition-property: color, background-color, border-color, box-shadow, opacity, transform;
-    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
-    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
   }
 }
 
-/* ── Metronic v9 Animations ── */
+/* ── Subtle Animations ── */
 @layer utilities {
   .animate-fade-in {
-    animation: fadeIn 0.25s cubic-bezier(0.2, 0, 0, 1);
+    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .animate-slide-up {
-    animation: slideUp 0.25s cubic-bezier(0.2, 0, 0, 1);
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -215,9 +212,6 @@
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-/* ── Metronic v9 Inter Font Import ── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');

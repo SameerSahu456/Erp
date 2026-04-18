@@ -18,28 +18,27 @@ interface DataCardProps {
   className?: string
 }
 
-/* Metronic v9 style stat card */
 function DataCard({ label, value, icon: Icon, trend, onClick, className }: DataCardProps) {
   return (
     <Card
       className={cn(
         "group/datacard",
-        onClick && "cursor-pointer hover:border-primary/30",
+        onClick && "cursor-pointer",
         className
       )}
       onClick={onClick}
     >
       <CardContent className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-[12px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
-          <p className="text-[22px] font-semibold font-sans tracking-tight leading-none">{value}</p>
+        <div className="space-y-1.5">
+          <p className="text-[13px] font-medium text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold font-sans tracking-tight">{value}</p>
           {trend && (
             <div
               className={cn(
-                "inline-flex items-center gap-0.5 text-[11px] font-semibold mt-1",
+                "inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-md",
                 trend.isPositive
-                  ? "text-[#17c653]"
-                  : "text-[#f8285a]"
+                  ? "text-status-success-text bg-status-success-bg"
+                  : "text-status-error-text bg-status-error-bg"
               )}
             >
               {trend.isPositive ? (
@@ -52,8 +51,8 @@ function DataCard({ label, value, icon: Icon, trend, onClick, className }: DataC
           )}
         </div>
         {Icon && (
-          <div className="rounded-lg bg-gray-100 dark:bg-gray-800 p-2.5">
-            <Icon className="size-5 text-gray-500 dark:text-gray-400" />
+          <div className="rounded-lg bg-primary/8 p-2.5">
+            <Icon className="size-5 text-primary" />
           </div>
         )}
       </CardContent>
