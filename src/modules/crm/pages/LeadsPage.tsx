@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useRef } from "react"
 import { Plus, LayoutGrid, List, Search, X } from "lucide-react"
 import { useNavigate, Link } from "react-router-dom"
 import { toast } from "sonner"
+import { parseISO } from "date-fns"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,13 +14,28 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import type { StatusBadgeVariant } from "@/components/common/StatusBadge"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select"
 import { ClosedWonWizardDialog } from "../components/ClosedWonWizardDialog"
 import type { ClosedWonResult } from "../components/ClosedWonWizardDialog"
 import { LostReasonDialog } from "../components/LostReasonDialog"
 
 import { leads } from "@/modules/crm/data/leads"
-import { LEAD_STAGES } from "@/modules/crm/types"
+import { LEAD_STAGES, MOCK_USERS } from "@/modules/crm/types"
 import type { Lead } from "@/modules/crm/types"
+import {
+  type DateFilterPreset,
+  type DateRange,
+  getDateRange,
+  isDateInRange,
+  CURRENT_USER,
+  IS_SUPERADMIN,
+} from "@/modules/crm/utils/dashboard-filters"
 
 const formatCurrency = (value: number) =>
   `\u20B9${(value / 100000).toFixed(1)}L`
@@ -121,9 +137,45 @@ const listCellFormatter: CellFormatter = (value, key, row) => {
 function LeadsPage() {
   const navigate = useNavigate()
   const [view, setView] = useState<"kanban" | "list">("kanban")
+
+  // Filters
+  const [preset, setPreset] = useState<DateFilterPreset>("yearly")
+  const [customFrom, setCustomFrom] = useState("")
+  const [customTo, setCustomTo] = useState("")
+  const [selectedUser, setSelectedUser] = useState<string>(
+    IS_SUPERADMIN ? "__all__" : CURRENT_USER
+  )
+
+  const dateRange: DateRange = useMemo(() => {
+    if (preset === "custom" && customFrom && customTo) {
+      return { from: parseISO(customFrom), to: parseISO(customTo) }
+    }
+    return getDateRange(preset)
+  }, [preset, customFrom, customTo])
+
+  const isMyData = (owner: string) =>
+    selectedUser === "__all__" || owner === selectedUser
+
+  const filteredLeads = useMemo(
+    () =>
+      leads.filter(
+        (l) =>
+          l.stage !== "Rejected" &&
+          isMyData(l.owner) &&
+          isDateInRange(l.createdAt, dateRange)
+      ),
+    [selectedUser, dateRange]
+  )
+
   const [kanbanItems, setKanbanItems] = useState(() =>
     groupLeadsByStage(leads.filter((l) => l.stage !== 'Rejected'))
   )
+
+  // Re-group when filters change
+  useMemo(() => {
+    setKanbanItems(groupLeadsByStage(filteredLeads))
+  }, [filteredLeads])
+
   const [kanbanSearch, setKanbanSearch] = useState("")
 
   // Filtered kanban items for display
@@ -284,18 +336,68 @@ function LeadsPage() {
       {/* Content */}
       {view === "kanban" ? (
         <div className="space-y-3">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search leads..."
-              value={kanbanSearch}
-              onChange={(e) => setKanbanSearch(e.target.value)}
-              className="h-8 pl-8 pr-8 text-[13px]"
-            />
-            {kanbanSearch && (
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setKanbanSearch("")}>
-                <X className="size-3.5" />
-              </button>
+          {/* Filter bar */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative max-w-sm flex-1 min-w-[200px]">
+              <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search leads..."
+                value={kanbanSearch}
+                onChange={(e) => setKanbanSearch(e.target.value)}
+                className="h-8 pl-8 pr-8 text-[13px]"
+              />
+              {kanbanSearch && (
+                <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setKanbanSearch("")}>
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+            <Select
+              value={preset}
+              onValueChange={(v) => setPreset(v as DateFilterPreset)}
+            >
+              <SelectTrigger className="w-[140px] h-8 text-[13px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="monthly">This Month</SelectItem>
+                <SelectItem value="quarterly">This Quarter</SelectItem>
+                <SelectItem value="yearly">This Year</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
+              </SelectContent>
+            </Select>
+            {preset === "custom" && (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="w-[140px] h-8 text-[13px]"
+                />
+                <span className="text-muted-foreground text-xs">to</span>
+                <Input
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="w-[140px] h-8 text-[13px]"
+                />
+              </div>
+            )}
+            {IS_SUPERADMIN && (
+              <Select value={selectedUser} onValueChange={setSelectedUser}>
+                <SelectTrigger className="w-[170px] h-8 text-[13px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All Users</SelectItem>
+                  {MOCK_USERS.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {u}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
           <KanbanBoard<Lead>
