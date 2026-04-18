@@ -499,68 +499,68 @@
   --sidebar-ring: hsl(43 96% 58%);
 }
 
-/* ── 9. ITASM — Blue Primary + Semantic Colors (from Figma) ── */
+/* ── 9. ITASM — Metronic v9 Style (Blue Primary + Clean Layout) ── */
 [data-theme='itasm'] {
-  --background: #f5f7fa;
-  --foreground: #181c32;
+  --background: #f6f6f9;
+  --foreground: #071437;
   --card: #ffffff;
-  --card-foreground: #181c32;
+  --card-foreground: #071437;
   --popover: #ffffff;
-  --popover-foreground: #181c32;
-  --primary: #1379f0;
+  --popover-foreground: #071437;
+  --primary: #1b84ff;
   --primary-foreground: #ffffff;
-  --secondary: #f1f1f2;
-  --secondary-foreground: #3f4254;
-  --muted: #f1f1f2;
-  --muted-foreground: #7e8299;
-  --accent: #eef5ff;
-  --accent-foreground: #181c32;
-  --destructive: #f1416c;
-  --border: #e8eaef;
-  --input: #e0e2e9;
-  --ring: #1379f0;
+  --secondary: #f1f1f4;
+  --secondary-foreground: #252f4a;
+  --muted: #f1f1f4;
+  --muted-foreground: #78829d;
+  --accent: #f1f1f4;
+  --accent-foreground: #071437;
+  --destructive: #f8285a;
+  --border: #e1e3ea;
+  --input: #dbdfe9;
+  --ring: #1b84ff;
   --radius: 0.5rem;
-  --chart-1: #1379f0;
-  --chart-2: #50cd89;
+  --chart-1: #1b84ff;
+  --chart-2: #17c653;
   --chart-3: #7239ea;
-  --chart-4: #f6c000;
-  --chart-5: #f1416c;
+  --chart-4: #f6b100;
+  --chart-5: #f8285a;
   --sidebar: #ffffff;
-  --sidebar-foreground: #3f4254;
-  --sidebar-primary: #1379f0;
+  --sidebar-foreground: #4b5675;
+  --sidebar-primary: #1b84ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eef5ff;
-  --sidebar-accent-foreground: #1379f0;
-  --sidebar-border: #e8eaef;
-  --sidebar-ring: #1379f0;
+  --sidebar-accent: #f1f5ff;
+  --sidebar-accent-foreground: #1b84ff;
+  --sidebar-border: #e1e3ea;
+  --sidebar-ring: #1b84ff;
 }
 
 .dark [data-theme='itasm'],
 [data-theme='itasm'].dark {
-  --background: #0f1117;
-  --foreground: #f0f1f5;
-  --card: #181c2a;
-  --card-foreground: #f0f1f5;
-  --popover: #181c2a;
-  --popover-foreground: #f0f1f5;
-  --primary: #3e96ff;
+  --background: #0d0e12;
+  --foreground: #f5f5f5;
+  --card: #1b1c22;
+  --card-foreground: #f5f5f5;
+  --popover: #1b1c22;
+  --popover-foreground: #f5f5f5;
+  --primary: #1b84ff;
   --primary-foreground: #ffffff;
-  --secondary: #1e2235;
-  --secondary-foreground: #d8d8e5;
-  --muted: #1e2235;
-  --muted-foreground: #a1a5b7;
-  --accent: #1a2740;
-  --accent-foreground: #d8d8e5;
-  --destructive: #f1416c;
-  --border: #252a3a;
-  --input: #252a3a;
-  --ring: #3e96ff;
-  --sidebar: #131620;
-  --sidebar-foreground: #d8d8e5;
-  --sidebar-primary: #3e96ff;
+  --secondary: #26272d;
+  --secondary-foreground: #dbdfe9;
+  --muted: #26272d;
+  --muted-foreground: #99a1b7;
+  --accent: #1f2029;
+  --accent-foreground: #dbdfe9;
+  --destructive: #f8285a;
+  --border: #2a2b32;
+  --input: #2a2b32;
+  --ring: #1b84ff;
+  --sidebar: #14151a;
+  --sidebar-foreground: #99a1b7;
+  --sidebar-primary: #1b84ff;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1a2740;
-  --sidebar-accent-foreground: #d8d8e5;
-  --sidebar-border: #252a3a;
-  --sidebar-ring: #3e96ff;
+  --sidebar-accent-foreground: #dbdfe9;
+  --sidebar-border: #2a2b32;
+  --sidebar-ring: #1b84ff;
 }
