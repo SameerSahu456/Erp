@@ -183,7 +183,7 @@ function BatchDevicesPage() {
           </Button>
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-3">
-              <h1 className="font-display text-2xl font-semibold tracking-tight">
+              <h1 className="cpt-page-title">
                 {batch.batchNumber}
               </h1>
               <StatusBadge variant={batch.status === 'Open' ? 'success' : batch.status === 'In Inspection' ? 'warning' : 'neutral'}>

@@ -109,7 +109,7 @@ function DemoRequestDetailPage() {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-display text-2xl font-semibold tracking-tight">
+            <h1 className="cpt-page-title">
               {demo.demoNumber}
             </h1>
             <StatusBadge variant={STATUS_VARIANT[demo.status]}>{demo.status}</StatusBadge>

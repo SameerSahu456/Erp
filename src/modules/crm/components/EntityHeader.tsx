@@ -2,7 +2,6 @@ import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 
 interface EntityHeaderProps {
@@ -36,36 +35,28 @@ function EntityHeader({
   className,
 }: EntityHeaderProps) {
   return (
-    <div className={cn('flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between', className)}>
-      <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon-sm" nativeButton={false} render={<Link to={backHref} />}>
-          <ArrowLeft />
-        </Button>
-
-        <div className="min-w-0 space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+    <div className={cn('cpt-page-header', className)}>
+      <div className="cpt-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+        <Link to={backHref} className="cpt-btn cpt-btn-ghost" style={{ padding: 6, borderRadius: 7, marginTop: 2 }}>
+          <ArrowLeft className="size-4" />
+        </Link>
+        <div style={{ minWidth: 0 }}>
+          <div className="cpt-row" style={{ gap: 10, flexWrap: 'wrap' }}>
+            <h1 className="cpt-page-title">{title}</h1>
             {status && <StatusBadge variant={status.variant}>{status.label}</StatusBadge>}
             {badges}
           </div>
-          {subtitle && (
-            <p className="text-sm text-muted-foreground">{subtitle}</p>
-          )}
+          {subtitle && <div className="cpt-page-sub">{subtitle}</div>}
           {owner && (
-            <div className="flex items-center gap-2 pt-1">
-              <div className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                {getInitials(owner.name)}
-              </div>
-              <span className="text-sm">{owner.name}</span>
-              {owner.role && (
-                <span className="text-xs text-muted-foreground">({owner.role})</span>
-              )}
+            <div className="cpt-row" style={{ gap: 8, marginTop: 6 }}>
+              <div className="avatar" style={{ width: 24, height: 24, fontSize: 10 }}>{getInitials(owner.name)}</div>
+              <span style={{ fontSize: 13 }}>{owner.name}</span>
+              {owner.role && <span className="cpt-muted cpt-tiny">({owner.role})</span>}
             </div>
           )}
         </div>
       </div>
-
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="cpt-row" style={{ gap: 8 }}>{actions}</div>}
     </div>
   )
 }

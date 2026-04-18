@@ -137,7 +137,7 @@ function ChecklistTemplateFormPage() {
           <ArrowLeft />
         </Button>
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
+          <h1 className="cpt-page-title">
             {isEdit ? `Edit: ${existing?.name}` : 'Create Checklist Template'}
           </h1>
           <p className="text-sm text-muted-foreground">

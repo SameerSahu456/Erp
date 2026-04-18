@@ -1,5 +1,5 @@
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 interface DetailTab {
   id: string
@@ -19,30 +19,34 @@ function DetailTabs({ tabs, defaultTab, className }: DetailTabsProps) {
     ? Math.max(0, tabs.findIndex((t) => t.id === defaultTab))
     : 0
 
+  const [activeIndex, setActiveIndex] = useState(defaultIndex)
+
   if (tabs.length === 0) return null
 
   return (
-    <Tabs defaultValue={defaultIndex} className={cn(className)}>
-      <div className="sticky top-0 z-10 bg-background pb-4">
-        <TabsList variant="line">
-          {tabs.map((tab, index) => (
-            <TabsTrigger key={tab.id} value={index}>
-              {tab.label}
-              {tab.count != null && (
-                <span className="ml-1.5 inline-flex size-5 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                  {tab.count}
-                </span>
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+    <div className={cn(className)}>
+      <div className="cpt-tabs">
+        {tabs.map((tab, index) => (
+          <button
+            key={tab.id}
+            className={cn('cpt-tab', activeIndex === index && 'active')}
+            onClick={() => setActiveIndex(index)}
+          >
+            {tab.label}
+            {tab.count != null && (
+              <span style={{
+                marginLeft: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                minWidth: 20, height: 20, borderRadius: 10, background: '#EEF0F3',
+                fontSize: 11, fontWeight: 600, color: '#667085', padding: '0 5px',
+              }}>
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
-      {tabs.map((tab, index) => (
-        <TabsContent key={tab.id} value={index}>
-          {tab.content}
-        </TabsContent>
-      ))}
-    </Tabs>
+      {tabs[activeIndex] && tabs[activeIndex].content}
+    </div>
   )
 }
 

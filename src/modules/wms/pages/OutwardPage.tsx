@@ -241,7 +241,7 @@ export default function OutwardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
+        <h1 className="cpt-page-title">
           Dispatch Management
         </h1>
         <Button render={<Link to="/wms/outward/new" />}>

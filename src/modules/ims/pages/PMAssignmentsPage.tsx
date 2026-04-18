@@ -206,7 +206,7 @@ export default function PMAssignmentsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
+        <h1 className="cpt-page-title">
           PM Assignments
         </h1>
         <Button onClick={openAddDialog}>

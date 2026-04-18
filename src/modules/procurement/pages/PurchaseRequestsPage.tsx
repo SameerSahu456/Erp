@@ -141,7 +141,7 @@ function PurchaseRequestsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-display text-2xl font-semibold tracking-tight">
+          <h2 className="cpt-page-title">
             Purchase Requests
           </h2>
           <p className="text-sm text-muted-foreground">

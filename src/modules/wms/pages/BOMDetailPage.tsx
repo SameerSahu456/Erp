@@ -74,7 +74,7 @@ function BOMDetailPage() {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="font-display text-2xl font-semibold tracking-tight">{bom.name}</h1>
+            <h1 className="cpt-page-title">{bom.name}</h1>
             <StatusBadge variant={STATUS_VARIANT[bom.status]}>{bom.status}</StatusBadge>
             <StatusBadge variant={bom.type === 'ASSEMBLY' ? 'info' : 'warning'}>
               {bom.type === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'}

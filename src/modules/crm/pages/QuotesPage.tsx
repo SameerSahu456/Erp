@@ -255,7 +255,7 @@ function QuotesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">Quotes</h1>
+          <h1 className="cpt-page-title">Quotes</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Manage quotations, track versions, and convert to sales orders
           </p>

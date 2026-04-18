@@ -124,7 +124,7 @@ function PurchaseOrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-display text-2xl font-semibold tracking-tight">Purchase Orders</h2>
+          <h2 className="cpt-page-title">Purchase Orders</h2>
           <p className="text-sm text-muted-foreground">Track and manage vendor purchase orders</p>
         </div>
         <Button onClick={() => navigate('/procurement/po/new')}>

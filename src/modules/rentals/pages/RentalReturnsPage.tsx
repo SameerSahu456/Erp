@@ -234,7 +234,7 @@ export default function RentalReturnsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
+        <h1 className="cpt-page-title">
           Rental Returns
         </h1>
         <Button onClick={() => toast.info('Initiate Return dialog would open')}>

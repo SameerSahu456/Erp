@@ -132,7 +132,7 @@ function POFormPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="font-display text-2xl font-semibold tracking-tight">
+          <h2 className="cpt-page-title">
             Create Purchase Order
           </h2>
           {sourcePR && (

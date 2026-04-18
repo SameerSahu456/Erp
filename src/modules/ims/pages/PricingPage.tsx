@@ -134,7 +134,7 @@ export default function PricingPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
+        <h1 className="cpt-page-title">
           Pricing
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">

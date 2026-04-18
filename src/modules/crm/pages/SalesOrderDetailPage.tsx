@@ -119,7 +119,7 @@ function SalesOrderDetailPage() {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-display text-2xl font-semibold tracking-tight">
+            <h1 className="cpt-page-title">
               {so.orderNumber}
             </h1>
             <StatusBadge variant={STATUS_VARIANT[so.status] ?? 'neutral'}>{so.status}</StatusBadge>

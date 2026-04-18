@@ -259,7 +259,7 @@ function AssignToRackPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Assign to Rack</h1>
+        <h1 className="cpt-page-title">Assign to Rack</h1>
         <p className="text-sm text-muted-foreground">
           Assign QC-passed devices to warehouse rack locations.
         </p>

@@ -282,7 +282,7 @@ function InwardFormPage() {
           <ArrowLeft />
         </Button>
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
+          <h1 className="cpt-page-title">
             Create Inward / GRN
           </h1>
           <p className="text-sm text-muted-foreground">

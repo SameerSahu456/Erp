@@ -202,7 +202,7 @@ function PaintPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Paint Shop</h1>
+        <h1 className="cpt-page-title">Paint Shop</h1>
         <p className="text-sm text-muted-foreground">
           Track panel painting jobs through the paint shop workflow.
         </p>

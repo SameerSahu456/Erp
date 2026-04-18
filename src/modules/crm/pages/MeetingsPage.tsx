@@ -128,7 +128,7 @@ function MeetingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">Meetings</h1>
+          <h1 className="cpt-page-title">Meetings</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Schedule and track meetings with leads and deals
           </p>

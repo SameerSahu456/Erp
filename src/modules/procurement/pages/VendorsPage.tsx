@@ -144,7 +144,7 @@ function VendorsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-display text-2xl font-semibold tracking-tight">Vendors</h2>
+          <h2 className="cpt-page-title">Vendors</h2>
           <p className="text-sm text-muted-foreground">Manage vendor relationships and performance</p>
         </div>
         <Button onClick={() => navigate('/procurement/vendors/new')}>

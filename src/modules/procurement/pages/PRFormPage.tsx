@@ -552,7 +552,7 @@ function PRFormPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-2xl font-semibold tracking-tight">Create Purchase Request</h2>
+        <h2 className="cpt-page-title">Create Purchase Request</h2>
         <Button variant="outline" onClick={() => navigate('/procurement/pr')}>
           Cancel
         </Button>

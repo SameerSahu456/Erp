@@ -534,7 +534,7 @@ export default function DispatchPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Dispatch Board</h1>
+        <h1 className="cpt-page-title">Dispatch Board</h1>
         <p className="text-sm text-muted-foreground">
           Track and manage all outward shipments &mdash; {totalActive} active dispatch{totalActive !== 1 ? 'es' : ''}
         </p>

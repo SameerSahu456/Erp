@@ -124,7 +124,7 @@ function GRNMatchingPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="font-display text-2xl font-semibold tracking-tight">GRN Matching</h2>
+        <h2 className="cpt-page-title">GRN Matching</h2>
         <p className="text-sm text-muted-foreground">Match goods received against purchase orders</p>
       </div>
 

@@ -46,7 +46,7 @@ export default function QuoteBuilderPage() {
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-display text-2xl font-semibold tracking-tight">
+              <h1 className="cpt-page-title">
                 Quote Builder
               </h1>
               <Badge className="bg-gradient-to-r from-primary/80 to-primary text-primary-foreground text-[10px] gap-1">
