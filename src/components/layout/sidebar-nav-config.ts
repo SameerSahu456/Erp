@@ -59,6 +59,7 @@ export const SIDEBAR_NAV: NavGroup[] = [
       { label: 'Accounts', href: '/crm/accounts', icon: Building2, module: 'crm', accessLevel: 'pre-sales' },
       { label: 'Contacts', href: '/crm/contacts', icon: Contact, module: 'crm', accessLevel: 'pre-sales' },
       { label: 'Quotes', href: '/crm/quotes', icon: FileText, module: 'crm', accessLevel: 'pre-sales' },
+      { label: 'Quote Builder', href: '/crm/quote-builder', icon: FilePlus, module: 'crm', accessLevel: 'pre-sales' },
       { label: 'Material Inquiries', href: '/crm/material-inquiries', icon: PackageSearch, module: 'crm', accessLevel: 'pre-sales' },
       { label: 'Demo Requests', href: '/crm/demo-requests', icon: Monitor, module: 'crm', accessLevel: 'pre-sales' },
       { label: 'Tasks', href: '/crm/tasks', icon: ListTodo, module: 'crm' },

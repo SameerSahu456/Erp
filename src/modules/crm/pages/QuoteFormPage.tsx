@@ -1,7 +1,20 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CheckCircle, Loader2 } from 'lucide-react'
+import {
+  CheckCircle,
+  Loader2,
+  Plus,
+  Trash2,
+  Send,
+  Save,
+  Download,
+  Copy,
+  ArrowRight,
+  FileText,
+  History,
+  Sparkles,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,6 +62,14 @@ function formatCurrencyValue(value: number): string {
 const QUOTE_STATUSES: Quote['status'][] = ['Draft', 'Sent', 'Accepted', 'Rejected', 'Expired']
 const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
 
+const STATUS_VARIANTS: Record<Quote['status'], 'neutral' | 'info' | 'success' | 'error' | 'warning'> = {
+  Draft: 'neutral',
+  Sent: 'info',
+  Accepted: 'success',
+  Rejected: 'error',
+  Expired: 'warning',
+}
+
 function QuoteFormPage() {
   const { id: quoteId } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -57,7 +78,6 @@ function QuoteFormPage() {
   const existingQuote = quoteId ? quotes.find((q) => q.id === quoteId) : undefined
   const isEdit = !!existingQuote
 
-  // Read search params for pre-fill
   const paramLeadId = searchParams.get('leadId') ?? ''
   const paramParentQuoteId = searchParams.get('parentQuoteId') ?? ''
   const paramVersion = searchParams.get('version') ?? ''
@@ -111,6 +131,11 @@ function QuoteFormPage() {
     [lineItems]
   )
 
+  const accountName = useMemo(
+    () => accounts.find((a) => a.id === accountId)?.name ?? '',
+    [accountId],
+  )
+
   // Auto-save draft
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -124,7 +149,6 @@ function QuoteFormPage() {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
     autoSaveTimer.current = setTimeout(() => {
       setAutoSaveStatus('saving')
-      // Simulate save delay
       setTimeout(() => {
         setAutoSaveStatus('saved')
         setTimeout(() => setAutoSaveStatus('idle'), 2000)
@@ -153,13 +177,19 @@ function QuoteFormPage() {
   }
 
   function handleSaveDraft() {
-    if (!accountId) return
+    if (!accountId) {
+      toast.error('Please select an account.')
+      return
+    }
     toast.success('Quote saved as draft')
     navigate(backHref)
   }
 
   function handleSendQuote() {
-    if (!accountId) return
+    if (!accountId) {
+      toast.error('Please select an account.')
+      return
+    }
     toast.success('Quote sent successfully')
     navigate(backHref)
   }
@@ -178,24 +208,43 @@ function QuoteFormPage() {
     navigate(`/crm/sales-orders/new?quoteId=${existingQuote?.id}`)
   }
 
+  function handleDuplicateQuote() {
+    toast.success('Quote duplicated as new draft')
+    navigate('/crm/quotes/new')
+  }
+
   return (
     <div className="space-y-6">
       <EntityHeader
-        title={isEdit ? `Edit Quote: ${existingQuote.quoteNumber}` : 'Create Quote'}
+        title={isEdit ? quoteNumber : 'Create Quote'}
+        subtitle={
+          isEdit
+            ? `${accountName} — ${existingQuote?.lineItems?.length ?? 0} items`
+            : 'Create a new quotation'
+        }
+        status={isEdit ? { label: status, variant: STATUS_VARIANTS[status] } : undefined}
         backHref={backHref}
         actions={
-          isEdit ? (
-            <>
-              <Button variant="outline" size="sm" onClick={handleAmendQuote}>
-                Amend Quote
-              </Button>
-              {existingQuote.status === 'Accepted' && (
-                <Button size="sm" onClick={handleConvertToSO}>
-                  Convert to Sales Order
+          <div className="flex items-center gap-2">
+            {isEdit && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleDuplicateQuote}>
+                  <Copy className="size-4 mr-1.5" />
+                  Duplicate
                 </Button>
-              )}
-            </>
-          ) : undefined
+                <Button variant="outline" size="sm" onClick={handleAmendQuote}>
+                  <History className="size-4 mr-1.5" />
+                  Amend
+                </Button>
+                {existingQuote?.status === 'Accepted' && (
+                  <Button size="sm" onClick={handleConvertToSO}>
+                    <ArrowRight className="size-4 mr-1.5" />
+                    Convert to SO
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         }
       />
 
@@ -208,7 +257,10 @@ function QuoteFormPage() {
               <StatusBadge variant="info">{prefilledLead.name} ({prefilledLead.company})</StatusBadge>
             </div>
           )}
-          <Badge variant="outline">Version {version}</Badge>
+          <Badge variant="outline" className="gap-1">
+            <History className="size-3" />
+            Version {version}
+          </Badge>
           {parentQuote && (
             <span className="text-xs text-muted-foreground">
               (amended from {parentQuote.quoteNumber})
@@ -217,11 +269,46 @@ function QuoteFormPage() {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{isEdit ? 'Edit Quote Details' : 'New Quote'}</CardTitle>
+      {/* Tip bar for advanced builder */}
+      {!isEdit && (
+        <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+          <Sparkles className="size-5 text-primary shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">Need BOM configuration or IMS part selection?</p>
+            <p className="text-xs text-muted-foreground">
+              Use the advanced Quote Builder for full component-level configuration with swap &amp; substitute support.
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => navigate('/crm/quote-builder')}>
+            Open Quote Builder
+          </Button>
+        </div>
+      )}
+
+      <Card className="border-t-4 border-t-primary/20">
+        <CardHeader className="border-b bg-muted/30">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FileText className="size-5 text-primary" />
+              {isEdit ? 'Quote Details' : 'New Quote'}
+            </CardTitle>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {autoSaveStatus === 'saving' && (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              )}
+              {autoSaveStatus === 'saved' && (
+                <>
+                  <CheckCircle className="size-3.5 text-emerald-600" />
+                  <span>Saved</span>
+                </>
+              )}
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-8 pt-6">
           {/* Header fields */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-4">
@@ -290,7 +377,7 @@ function QuoteFormPage() {
             </div>
           </div>
 
-          {/* Line Items with Category */}
+          {/* Line Items */}
           <div>
             <h3 className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
               Line Items
@@ -299,22 +386,22 @@ function QuoteFormPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="w-10 px-3 py-2 text-left font-medium text-muted-foreground">#</th>
-                    <th className="min-w-[140px] px-3 py-2 text-left font-medium text-muted-foreground">Item</th>
-                    <th className="min-w-[160px] px-3 py-2 text-left font-medium text-muted-foreground">Description</th>
-                    <th className="min-w-[130px] px-3 py-2 text-left font-medium text-muted-foreground">Category</th>
-                    <th className="w-20 px-3 py-2 text-right font-medium text-muted-foreground">Qty</th>
-                    <th className="w-28 px-3 py-2 text-right font-medium text-muted-foreground">Rate (&#8377;)</th>
-                    <th className="w-32 px-3 py-2 text-right font-medium text-muted-foreground">Amount (&#8377;)</th>
-                    <th className="w-14 px-3 py-2" />
+                    <th className="w-10 px-3 py-2.5 text-left font-medium text-muted-foreground">#</th>
+                    <th className="min-w-[160px] px-3 py-2.5 text-left font-medium text-muted-foreground">Item</th>
+                    <th className="min-w-[180px] px-3 py-2.5 text-left font-medium text-muted-foreground">Description</th>
+                    <th className="min-w-[130px] px-3 py-2.5 text-left font-medium text-muted-foreground">Category</th>
+                    <th className="w-20 px-3 py-2.5 text-right font-medium text-muted-foreground">Qty</th>
+                    <th className="w-28 px-3 py-2.5 text-right font-medium text-muted-foreground">Rate (&#8377;)</th>
+                    <th className="w-32 px-3 py-2.5 text-right font-medium text-muted-foreground">Amount</th>
+                    <th className="w-12 px-3 py-2.5" />
                   </tr>
                 </thead>
                 <tbody>
                   {lineItems.map((lineItem, index) => {
                     const amount = lineItem.qty * lineItem.rate
                     return (
-                      <tr key={lineItem.id} className="border-b last:border-b-0">
-                        <td className="px-3 py-2 text-muted-foreground">{index + 1}</td>
+                      <tr key={lineItem.id} className="border-b last:border-b-0 hover:bg-muted/20 transition-colors">
+                        <td className="px-3 py-2 text-muted-foreground font-medium">{index + 1}</td>
                         <td className="px-2 py-1.5">
                           <Input
                             placeholder="Item name"
@@ -362,7 +449,7 @@ function QuoteFormPage() {
                             onChange={(e) => updateItem(lineItem.id, 'rate', Number(e.target.value) || 0)}
                           />
                         </td>
-                        <td className="px-3 py-2 text-right font-medium tabular-nums">
+                        <td className="px-3 py-2 text-right font-semibold tabular-nums">
                           &#8377;{formatCurrencyValue(amount)}
                         </td>
                         <td className="px-2 py-1.5 text-center">
@@ -373,8 +460,7 @@ function QuoteFormPage() {
                             disabled={lineItems.length <= 1}
                             className="text-muted-foreground hover:text-destructive"
                           >
-                            <span className="sr-only">Remove</span>
-                            &times;
+                            <Trash2 className="size-3.5" />
                           </Button>
                         </td>
                       </tr>
@@ -383,8 +469,9 @@ function QuoteFormPage() {
                 </tbody>
               </table>
             </div>
-            <Button variant="outline" size="sm" className="mt-3" onClick={addItem}>
-              + Add Line Item
+            <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={addItem}>
+              <Plus className="size-4" />
+              Add Line Item
             </Button>
           </div>
 
@@ -395,54 +482,46 @@ function QuoteFormPage() {
             onDiscountChange={setDiscount}
           />
 
-          {/* Full-width fields */}
-          <div className="space-y-4">
+          {/* Terms & Notes */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="quote-terms" className="font-ui">Terms &amp; Conditions</Label>
               <Textarea
                 id="quote-terms"
-                placeholder="Enter terms and conditions..."
+                placeholder="Payment terms, delivery conditions, warranty..."
                 value={terms}
                 onChange={(e) => setTerms(e.target.value)}
-                rows={3}
+                rows={4}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="quote-notes" className="font-ui">Notes</Label>
+              <Label htmlFor="quote-notes" className="font-ui">Internal Notes</Label>
               <Textarea
                 id="quote-notes"
-                placeholder="Add any notes..."
+                placeholder="Notes for internal reference..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={3}
+                rows={4}
               />
             </div>
           </div>
         </CardContent>
-        <CardFooter className="justify-between">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {autoSaveStatus === 'saving' && (
-              <>
-                <Loader2 className="size-3.5 animate-spin" />
-                <span>Saving draft...</span>
-              </>
-            )}
-            {autoSaveStatus === 'saved' && (
-              <>
-                <CheckCircle className="size-3.5 text-green-600" />
-                <span>Draft saved</span>
-              </>
-            )}
-          </div>
+        <CardFooter className="justify-between border-t bg-muted/20">
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleCancel}>
-              Cancel
+            <Button variant="outline" onClick={() => toast.success('PDF downloaded')}>
+              <Download className="size-4 mr-1.5" />
+              PDF
             </Button>
             <Button variant="outline" onClick={handleSaveDraft} disabled={!accountId}>
+              <Save className="size-4 mr-1.5" />
               Save Draft
             </Button>
             <Button onClick={handleSendQuote} disabled={!accountId}>
+              <Send className="size-4 mr-1.5" />
               Send Quote
             </Button>
           </div>
