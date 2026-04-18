@@ -9,6 +9,7 @@ interface EntityHeaderProps {
   title: string
   subtitle?: string
   status?: { label: string; variant: StatusBadgeVariant }
+  badges?: React.ReactNode
   owner?: { name: string; role?: string }
   backHref: string
   actions?: React.ReactNode
@@ -28,6 +29,7 @@ function EntityHeader({
   title,
   subtitle,
   status,
+  badges,
   owner,
   backHref,
   actions,
@@ -44,6 +46,7 @@ function EntityHeader({
           <div className="flex items-center gap-3">
             <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
             {status && <StatusBadge variant={status.variant}>{status.label}</StatusBadge>}
+            {badges}
           </div>
           {subtitle && (
             <p className="text-sm text-muted-foreground">{subtitle}</p>

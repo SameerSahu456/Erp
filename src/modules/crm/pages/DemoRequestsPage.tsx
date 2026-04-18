@@ -44,7 +44,7 @@ const columns = [
   { key: 'dispatchDate', label: 'Dispatched' },
   { key: 'returnDate', label: 'Return By', sortable: true },
   { key: 'overdue', label: 'Overdue' },
-  { key: 'status', label: 'Status' },
+  { key: 'status', label: 'Status', filterable: true },
   { key: 'actions', label: '' },
 ]
 

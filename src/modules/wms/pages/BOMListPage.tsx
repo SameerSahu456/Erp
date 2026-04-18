@@ -45,12 +45,12 @@ const TYPE_VARIANT: Record<BOMType, 'info' | 'warning'> = {
 const columns = [
   { key: 'bomNumber', label: 'BOM #', sortable: true },
   { key: 'name', label: 'Name', sortable: true },
-  { key: 'type', label: 'Type' },
+  { key: 'type', label: 'Type', filterable: true },
   { key: 'parentPart', label: 'Product' },
   { key: 'components', label: 'Components', align: 'right' as const },
   { key: 'version', label: 'Ver.', align: 'right' as const },
   { key: 'estimatedCost', label: 'Est. Cost', align: 'right' as const, sortable: true },
-  { key: 'status', label: 'Status' },
+  { key: 'status', label: 'Status', filterable: true },
   { key: 'createdAt', label: 'Created', sortable: true },
   { key: 'actions', label: '' },
 ]

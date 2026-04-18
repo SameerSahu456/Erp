@@ -95,13 +95,13 @@ export default function PartsPage() {
     label: `Parts (${filtered.length})`,
     columns: [
       { key: 'name', label: 'Name', sortable: true },
-      { key: 'category', label: 'Category', sortable: true },
-      { key: 'brand', label: 'Brand', sortable: true },
+      { key: 'category', label: 'Category', sortable: true, filterable: true },
+      { key: 'brand', label: 'Brand', sortable: true, filterable: true },
       { key: 'pm', label: 'PM', sortable: true },
       { key: 'newPrice', label: 'New Price' },
       { key: 'refurbPrice', label: 'Refurb Price' },
       { key: 'reorderLevel', label: 'Reorder Lvl', sortable: true, align: 'right' },
-      { key: 'status', label: 'Status', sortable: true },
+      { key: 'status', label: 'Status', sortable: true, filterable: true },
     ],
     data: filtered.map((p) => {
       const prices = priceLookup.get(p.id)

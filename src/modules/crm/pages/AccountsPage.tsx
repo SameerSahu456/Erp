@@ -2,6 +2,7 @@ import { Plus } from "lucide-react"
 import { useNavigate, Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
 import type { TabConfig, CellFormatter } from "@/components/common/BusinessMetricsTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
@@ -23,12 +24,14 @@ const accountsTab: TabConfig = {
   label: "All Accounts",
   columns: [
     { key: "name", label: "Name", sortable: true },
-    { key: "industry", label: "Industry", sortable: true },
-    { key: "type", label: "Type", sortable: true },
+    { key: "industry", label: "Industry", sortable: true, filterable: true },
+    { key: "type", label: "Type", sortable: true, filterable: true },
     { key: "revenue", label: "Revenue", sortable: true, align: "right" },
-    { key: "owner", label: "Owner", sortable: true },
-    { key: "status", label: "Status", sortable: true },
+    { key: "owner", label: "Owner", sortable: true, filterable: true },
+    { key: "status", label: "Status", sortable: true, filterable: true },
     { key: "city", label: "City", sortable: true },
+    { key: "categoriesInterested", label: "Interested" },
+    { key: "categoriesBuyed", label: "Buyed" },
   ],
   data: accounts.map((a) => ({
     id: a.id,
@@ -39,6 +42,8 @@ const accountsTab: TabConfig = {
     owner: a.owner,
     status: a.status,
     city: a.city,
+    categoriesInterested: a.categoriesInterested?.join(', ') ?? '',
+    categoriesBuyed: a.categoriesBuyed?.join(', ') ?? '',
   })),
 }
 
@@ -55,6 +60,28 @@ const cellFormatter: CellFormatter = (value, key, row) => {
     const variant = statusVariant[value] ?? "neutral"
     return {
       display: <StatusBadge variant={variant}>{value}</StatusBadge>,
+    }
+  }
+  if (key === "categoriesInterested" && typeof value === "string" && value) {
+    return {
+      display: (
+        <div className="flex flex-wrap gap-1">
+          {value.split(', ').map((cat) => (
+            <Badge key={cat} variant="primary-soft" size="sm" className="text-[10px]">{cat}</Badge>
+          ))}
+        </div>
+      ),
+    }
+  }
+  if (key === "categoriesBuyed" && typeof value === "string" && value) {
+    return {
+      display: (
+        <div className="flex flex-wrap gap-1">
+          {value.split(', ').map((cat) => (
+            <Badge key={cat} variant="success-soft" size="sm" className="text-[10px]">{cat}</Badge>
+          ))}
+        </div>
+      ),
     }
   }
   return null

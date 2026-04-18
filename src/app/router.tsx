@@ -32,9 +32,12 @@ const MaterialInquiryFormPage = lazy(() => import('@/modules/crm/pages/MaterialI
 const DemoRequestsPage = lazy(() => import('@/modules/crm/pages/DemoRequestsPage'))
 const DemoRequestDetailPage = lazy(() => import('@/modules/crm/pages/DemoRequestDetailPage'))
 const SalesOrderDetailPage = lazy(() => import('@/modules/crm/pages/SalesOrderDetailPage'))
-const PMApprovalsPage = lazy(() => import('@/modules/crm/pages/PMApprovalsPage'))
+const PMApprovalsPage = lazy(() => import('@/modules/procurement/pages/PMApprovalsPage'))
 const QuoteBuilderPage = lazy(() => import('@/modules/crm/pages/QuoteBuilderPage'))
 const RejectedLeadsPage = lazy(() => import('@/modules/crm/pages/RejectedLeadsPage'))
+const TasksPage = lazy(() => import('@/modules/crm/pages/TasksPage'))
+const MeetingsPage = lazy(() => import('@/modules/crm/pages/MeetingsPage'))
+const CalendarPage = lazy(() => import('@/modules/crm/pages/CalendarPage'))
 
 // WMS pages
 const WmsDashboard = lazy(() => import('@/modules/wms/pages/WmsDashboard'))
@@ -203,7 +206,11 @@ export const router = createBrowserRouter([
       { path: '/crm/demo-requests', element: <LazyRoute><DemoRequestsPage /></LazyRoute> },
       { path: '/crm/demo-requests/:id', element: <LazyRoute><DemoRequestDetailPage /></LazyRoute> },
       { path: '/crm/sales-orders/:id', element: <LazyRoute><SalesOrderDetailPage /></LazyRoute> },
-      { path: '/crm/pm-approvals', element: <LazyRoute><PMApprovalsPage /></LazyRoute> },
+      { path: '/crm/tasks', element: <LazyRoute><TasksPage /></LazyRoute> },
+      { path: '/crm/meetings', element: <LazyRoute><MeetingsPage /></LazyRoute> },
+      { path: '/crm/calendar', element: <LazyRoute><CalendarPage /></LazyRoute> },
+
+      { path: '/procurement/pm-approvals', element: <LazyRoute><PMApprovalsPage /></LazyRoute> },
       { path: '/crm/notifications', element: <LazyRoute><NotificationCenter /></LazyRoute> },
 
       // WMS routes

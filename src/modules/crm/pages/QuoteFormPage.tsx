@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { CheckCircle, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -109,6 +110,30 @@ function QuoteFormPage() {
     () => lineItems.reduce((sum, li) => sum + li.qty * li.rate, 0),
     [lineItems]
   )
+
+  // Auto-save draft
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hasInteracted = useRef(false)
+
+  const triggerAutoSave = useCallback(() => {
+    if (!hasInteracted.current) {
+      hasInteracted.current = true
+      return
+    }
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    autoSaveTimer.current = setTimeout(() => {
+      setAutoSaveStatus('saving')
+      // Simulate save delay
+      setTimeout(() => {
+        setAutoSaveStatus('saved')
+        setTimeout(() => setAutoSaveStatus('idle'), 2000)
+      }, 500)
+    }, 1500)
+  }, [])
+
+  useEffect(() => { triggerAutoSave() }, [accountId, validUntil, status, lineItems, discount, terms, notes, triggerAutoSave])
+  useEffect(() => { return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) } }, [])
 
   const backHref = '/crm/quotes'
 
@@ -395,16 +420,32 @@ function QuoteFormPage() {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="justify-end gap-2">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button variant="outline" onClick={handleSaveDraft} disabled={!accountId}>
-            Save Draft
-          </Button>
-          <Button onClick={handleSendQuote} disabled={!accountId}>
-            Send Quote
-          </Button>
+        <CardFooter className="justify-between">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {autoSaveStatus === 'saving' && (
+              <>
+                <Loader2 className="size-3.5 animate-spin" />
+                <span>Saving draft...</span>
+              </>
+            )}
+            {autoSaveStatus === 'saved' && (
+              <>
+                <CheckCircle className="size-3.5 text-green-600" />
+                <span>Draft saved</span>
+              </>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button variant="outline" onClick={handleSaveDraft} disabled={!accountId}>
+              Save Draft
+            </Button>
+            <Button onClick={handleSendQuote} disabled={!accountId}>
+              Send Quote
+            </Button>
+          </div>
         </CardFooter>
       </Card>
     </div>

@@ -33,7 +33,7 @@ function DealFormPage() {
 
   const [name, setName] = useState(existingDeal?.name ?? '')
   const [accountId, setAccountId] = useState(existingDeal?.accountId ?? '')
-  const [stage, setStage] = useState<Deal['stage']>(existingDeal?.stage ?? 'Discovery')
+  const [stage, setStage] = useState<Deal['stage']>(existingDeal?.stage ?? 'New')
   const [closeDate, setCloseDate] = useState(existingDeal?.closeDate ?? '')
   const [value, setValue] = useState(existingDeal?.value?.toString() ?? '')
   const [probability, setProbability] = useState(existingDeal?.probability?.toString() ?? '')

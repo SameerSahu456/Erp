@@ -36,7 +36,7 @@ const columns = [
   { key: 'categories', label: 'Categories' },
   { key: 'contact', label: 'Contact', sortable: true },
   { key: 'city', label: 'City', sortable: true },
-  { key: 'status', label: 'Status', sortable: true },
+  { key: 'status', label: 'Status', sortable: true, filterable: true },
   { key: 'rating', label: 'Rating', sortable: true, align: 'center' as const },
   { key: 'createdAt', label: 'Created', sortable: true },
 ]

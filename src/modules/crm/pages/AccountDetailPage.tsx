@@ -12,6 +12,7 @@ import {
   Phone,
   User,
   Plus,
+  Download,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -35,17 +36,21 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { Badge } from '@/components/ui/badge'
 import { EntityHeader } from '../components/EntityHeader'
 import { DetailTabs } from '../components/DetailTabs'
 import { ActivityFeed } from '../components/ActivityFeed'
 import { NotesSection } from '../components/NotesSection'
+import { MeetingsSection } from '../components/MeetingsSection'
 import { accounts } from '../data/accounts'
 import { contacts } from '../data/contacts'
 import { deals } from '../data/deals'
 import { salesOrders } from '../data/sales-orders'
 import { invoices } from '../data/invoices'
+import { quotes } from '../data/quotes'
 import { mockActivities } from '../data/activities'
 import { mockNotes } from '../data/notes'
+import { downloadQuotePdf } from '../utils/download-quote-pdf'
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
@@ -68,12 +73,16 @@ function getAccountStatusVariant(status: string): StatusBadgeVariant {
 
 function getDealStageVariant(stage: string): StatusBadgeVariant {
   switch (stage) {
-    case 'Discovery':
+    case 'New':
       return 'info'
+    case 'Procurement':
+      return 'info'
+    case 'Cold':
+      return 'neutral'
     case 'Proposal':
       return 'warning'
     case 'Negotiation':
-      return 'warning'
+      return 'info'
     case 'Closed Won':
       return 'success'
     case 'Closed Lost':
@@ -97,6 +106,17 @@ function getOrderStatusVariant(status: string): StatusBadgeVariant {
       return 'error'
     default:
       return 'neutral'
+  }
+}
+
+function getQuoteStatusVariant(status: string): StatusBadgeVariant {
+  switch (status) {
+    case 'Draft': return 'neutral'
+    case 'Sent': return 'info'
+    case 'Accepted': return 'success'
+    case 'Rejected': return 'error'
+    case 'Expired': return 'warning'
+    default: return 'neutral'
   }
 }
 
@@ -151,6 +171,7 @@ function AccountDetailPage() {
   const accountDeals = deals.filter((d) => d.accountId === account.id)
   const accountOrders = salesOrders.filter((o) => o.accountId === account.id)
   const accountInvoices = invoices.filter((i) => i.accountId === account.id)
+  const accountQuotes = quotes.filter((q) => q.accountId === account.id)
 
   const activityCount = mockActivities.filter(
     (a) => a.entityType === 'account' && a.entityId === account.id
@@ -251,6 +272,32 @@ function AccountDetailPage() {
               </div>
             </div>
           </dl>
+
+          {/* Categories */}
+          {(account.categoriesInterested?.length || account.categoriesBuyed?.length) ? (
+            <div className="mt-4 space-y-3 border-t border-border/50 pt-4">
+              {account.categoriesInterested && account.categoriesInterested.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Categories Interested</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {account.categoriesInterested.map((cat) => (
+                      <Badge key={cat} variant="primary-soft" size="sm">{cat}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {account.categoriesBuyed && account.categoriesBuyed.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Categories Buyed</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {account.categoriesBuyed.map((cat) => (
+                      <Badge key={cat} variant="success-soft" size="sm">{cat}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -459,6 +506,69 @@ function AccountDetailPage() {
     </div>
   )
 
+  const quotesContent = (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {accountQuotes.length} quote{accountQuotes.length !== 1 ? 's' : ''} for this account
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link to={`/crm/quotes/new?accountId=${account.id}`} />}
+        >
+          <Plus className="size-3.5" data-icon="inline-start" />
+          Create Quote
+        </Button>
+      </div>
+      {accountQuotes.length > 0 ? (
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Quote #</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Valid Until</TableHead>
+                <TableHead className="w-12" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {accountQuotes.map((quote) => (
+                <TableRow key={quote.id}>
+                  <TableCell>
+                    <Link to={`/crm/quotes/${quote.id}/edit`} className="text-sm font-medium text-primary hover:underline">
+                      {quote.quoteNumber}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-right">{formatCurrency(quote.total)}</TableCell>
+                  <TableCell>
+                    <StatusBadge variant={getQuoteStatusVariant(quote.status)}>{quote.status}</StatusBadge>
+                  </TableCell>
+                  <TableCell>{formatDate(quote.validUntil)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => downloadQuotePdf(quote)}
+                      title="Download Quote PDF"
+                    >
+                      <Download className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed p-8 text-center">
+          <p className="text-sm text-muted-foreground">No quotes for this account</p>
+        </div>
+      )}
+    </div>
+  )
+
   const tabs = [
     { id: 'overview', label: 'Overview', content: overviewContent },
     {
@@ -474,10 +584,21 @@ function AccountDetailPage() {
       content: dealsContent,
     },
     {
+      id: 'quotes',
+      label: 'Quotes',
+      count: accountQuotes.length,
+      content: quotesContent,
+    },
+    {
       id: 'orders-invoices',
       label: 'Orders & Invoices',
       count: accountOrders.length + accountInvoices.length,
       content: ordersInvoicesContent,
+    },
+    {
+      id: 'meetings',
+      label: 'Meetings',
+      content: <MeetingsSection entityType="account" entityId={account.id} entityName={account.name} />,
     },
     {
       id: 'activities',
@@ -499,6 +620,14 @@ function AccountDetailPage() {
         title={account.name}
         subtitle={subtitle}
         status={{ label: account.status, variant: getAccountStatusVariant(account.status) }}
+        badges={account.tag ? (
+          <Badge
+            variant={account.tag === 'Hunting' ? 'info' : account.tag === 'Farming' ? 'success' : 'grey'}
+            className="uppercase text-[10px] tracking-wider"
+          >
+            {account.tag}
+          </Badge>
+        ) : undefined}
         owner={{ name: account.owner, role: 'Account Manager' }}
         backHref="/crm/accounts"
         actions={

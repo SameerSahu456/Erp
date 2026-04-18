@@ -35,7 +35,7 @@ const columns = [
   { key: 'vendor', label: 'Vendor', sortable: true },
   { key: 'items', label: 'Items', align: 'right' as const },
   { key: 'grandTotal', label: 'Total', sortable: true, align: 'right' as const },
-  { key: 'status', label: 'Status' },
+  { key: 'status', label: 'Status', filterable: true },
   { key: 'prRef', label: 'PR Ref' },
   { key: 'expectedDelivery', label: 'Expected Delivery', sortable: true },
   { key: 'createdBy', label: 'Created By', sortable: true },

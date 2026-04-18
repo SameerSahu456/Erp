@@ -28,10 +28,10 @@ const TYPE_VARIANT: Record<ChecklistType, 'success' | 'warning' | 'info' | 'neut
 
 const columns = [
   { key: 'name', label: 'Name', sortable: true },
-  { key: 'type', label: 'Type' },
+  { key: 'type', label: 'Type', filterable: true },
   { key: 'assignedTo', label: 'Assigned To' },
   { key: 'itemCount', label: 'Items', sortable: true, align: 'right' as const },
-  { key: 'status', label: 'Status' },
+  { key: 'status', label: 'Status', filterable: true },
   { key: 'createdBy', label: 'Created By' },
 ]
 

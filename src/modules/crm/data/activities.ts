@@ -229,7 +229,7 @@ export const mockActivities: Activity[] = [
     timestamp: '2026-04-01T16:45:00Z',
     entityType: 'deal',
     entityId: 'DEAL-009',
-    metadata: { from: 'Discovery', to: 'Proposal' },
+    metadata: { from: 'New', to: 'Proposal' },
   },
   {
     id: 'ACT-024',

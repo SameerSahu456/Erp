@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Search, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -12,6 +12,7 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectTrigger,
@@ -24,6 +25,7 @@ interface ColumnDef {
   key: string
   label: string
   sortable?: boolean
+  filterable?: boolean
   width?: string
   align?: "left" | "center" | "right"
 }
@@ -49,6 +51,7 @@ interface BusinessMetricsTableProps {
   cellFormatter?: CellFormatter
   pageSize?: number
   stickyHeader?: boolean
+  searchable?: boolean
   className?: string
 }
 
@@ -59,6 +62,7 @@ function BusinessMetricsTable({
   cellFormatter,
   pageSize: initialPageSize = 10,
   stickyHeader = true,
+  searchable = true,
   className,
 }: BusinessMetricsTableProps) {
   const [activeTab, setActiveTab] = React.useState(tabs[0]?.id ?? "")
@@ -66,13 +70,31 @@ function BusinessMetricsTable({
   const [sortDirection, setSortDirection] = React.useState<SortDirection>(null)
   const [currentPage, setCurrentPage] = React.useState(0)
   const [pageSize, setPageSize] = React.useState(initialPageSize)
+  const [searchQuery, setSearchQuery] = React.useState("")
+  const [columnFilters, setColumnFilters] = React.useState<Record<string, string>>({})
 
   const activeTabConfig = tabs.find((t) => t.id === activeTab)
 
-  // Reset sort and page when switching tabs
+  // Build unique values for filterable columns
+  const filterOptions = React.useMemo(() => {
+    if (!activeTabConfig) return {}
+    const options: Record<string, string[]> = {}
+    for (const col of activeTabConfig.columns) {
+      if (col.filterable) {
+        const values = new Set<string>()
+        for (const row of activeTabConfig.data) {
+          const val = row[col.key]
+          if (val != null && val !== '') values.add(String(val))
+        }
+        options[col.key] = [...values].sort()
+      }
+    }
+    return options
+  }, [activeTabConfig])
+
+  // Reset sort, page, search, filters when switching tabs
   const handleTabChange = (value: unknown) => {
     const tabValue = value as string | number
-    // base-ui tabs use numeric index as value
     const tab = tabs[tabValue as number] ?? tabs.find((t) => t.id === String(tabValue))
     if (tab) {
       setActiveTab(tab.id)
@@ -80,6 +102,8 @@ function BusinessMetricsTable({
     setSortColumn(null)
     setSortDirection(null)
     setCurrentPage(0)
+    setSearchQuery("")
+    setColumnFilters({})
   }
 
   const handleSort = (columnKey: string) => {
@@ -97,9 +121,40 @@ function BusinessMetricsTable({
     setCurrentPage(0)
   }
 
-  const sortedData = React.useMemo(() => {
+  const handleFilterChange = (columnKey: string, value: string) => {
+    setColumnFilters((prev) => {
+      if (value === '__all__') {
+        const next = { ...prev }
+        delete next[columnKey]
+        return next
+      }
+      return { ...prev, [columnKey]: value }
+    })
+    setCurrentPage(0)
+  }
+
+  // Filter + search + sort
+  const processedData = React.useMemo(() => {
     if (!activeTabConfig) return []
-    const data = [...activeTabConfig.data]
+    let data = [...activeTabConfig.data]
+
+    // Apply search across all string columns
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      data = data.filter((row) =>
+        activeTabConfig.columns.some((col) => {
+          const val = row[col.key]
+          return val != null && String(val).toLowerCase().includes(q)
+        })
+      )
+    }
+
+    // Apply column filters
+    for (const [key, filterValue] of Object.entries(columnFilters)) {
+      data = data.filter((row) => String(row[key]) === filterValue)
+    }
+
+    // Apply sort
     if (sortColumn && sortDirection) {
       data.sort((a, b) => {
         const aVal = a[sortColumn]
@@ -118,10 +173,10 @@ function BusinessMetricsTable({
       })
     }
     return data
-  }, [activeTabConfig, sortColumn, sortDirection])
+  }, [activeTabConfig, sortColumn, sortDirection, searchQuery, columnFilters])
 
-  const totalPages = Math.max(1, Math.ceil(sortedData.length / pageSize))
-  const paginatedData = sortedData.slice(
+  const totalPages = Math.max(1, Math.ceil(processedData.length / pageSize))
+  const paginatedData = processedData.slice(
     currentPage * pageSize,
     (currentPage + 1) * pageSize
   )
@@ -136,6 +191,9 @@ function BusinessMetricsTable({
     if (align === "right") return "text-right"
     return "text-left"
   }
+
+  const hasActiveFilters = searchQuery.trim() !== '' || Object.keys(columnFilters).length > 0
+  const filterableColumns = activeTabConfig?.columns.filter((c) => c.filterable) ?? []
 
   if (tabs.length === 0) {
     return (
@@ -158,6 +216,72 @@ function BusinessMetricsTable({
 
         {tabs.map((tab, index) => (
           <TabsContent key={tab.id} value={index}>
+            {/* Search + Filters bar */}
+            {searchable && activeTab === tab.id && (
+              <div className="flex flex-wrap items-center gap-2 py-3">
+                {/* Search */}
+                <div className="relative flex-1 min-w-[200px] max-w-sm">
+                  <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0) }}
+                    className="h-8 pl-8 pr-8 text-[13px]"
+                  />
+                  {searchQuery && (
+                    <button
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setSearchQuery("")}
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Column filters */}
+                {filterableColumns.map((col) => {
+                  const options = filterOptions[col.key] ?? []
+                  if (options.length === 0) return null
+                  return (
+                    <Select
+                      key={col.key}
+                      value={columnFilters[col.key] ?? '__all__'}
+                      onValueChange={(v) => handleFilterChange(col.key, v)}
+                    >
+                      <SelectTrigger className="h-8 w-auto min-w-[120px] text-[13px]">
+                        <SelectValue placeholder={col.label} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">All {col.label}</SelectItem>
+                        {options.map((opt) => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )
+                })}
+
+                {/* Clear filters */}
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs text-muted-foreground"
+                    onClick={() => { setSearchQuery(""); setColumnFilters({}); setCurrentPage(0) }}
+                  >
+                    <X className="size-3 mr-1" />
+                    Clear
+                  </Button>
+                )}
+
+                {/* Result count */}
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {processedData.length} of {activeTabConfig?.data.length ?? 0}
+                  {hasActiveFilters && ' (filtered)'}
+                </span>
+              </div>
+            )}
+
             <div
               className={cn(
                 "relative overflow-x-auto rounded-md border",
@@ -238,7 +362,7 @@ function BusinessMetricsTable({
                         colSpan={tab.columns.length}
                         className="py-8 text-center text-muted-foreground"
                       >
-                        No data available
+                        {hasActiveFilters ? 'No results match your search' : 'No data available'}
                       </TableCell>
                     </TableRow>
                   ) : null}

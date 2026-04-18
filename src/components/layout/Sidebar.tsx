@@ -27,7 +27,7 @@ function NavItemLink({
       to={item.href}
       className={cn(
         'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-ui transition-all',
-        'text-muted-foreground hover:bg-accent/70 hover:text-foreground',
+        'text-foreground/70 hover:bg-accent/70 hover:text-foreground',
         isActive && 'bg-primary/8 text-primary font-semibold hover:bg-primary/10 hover:text-primary',
         isCollapsed && 'justify-center px-2 py-2'
       )}
@@ -75,7 +75,7 @@ function NavGroupSection({
               to={firstItem.href}
               className={cn(
                 'flex w-full items-center justify-center rounded-lg px-2 py-2 transition-all',
-                'text-muted-foreground hover:bg-accent/70 hover:text-foreground',
+                'text-foreground/70 hover:bg-accent/70 hover:text-foreground',
                 isGroupActive && 'bg-primary/8 text-primary'
               )}
             />
@@ -110,7 +110,7 @@ function NavGroupSection({
         onClick={() => setIsOpen((prev) => !prev)}
         className={cn(
           'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-ui font-semibold uppercase tracking-widest transition-all',
-          'text-muted-foreground/70 hover:text-muted-foreground hover:bg-accent/40',
+          'text-foreground/60 hover:text-foreground/80 hover:bg-accent/40',
           isGroupActive && 'text-foreground/70'
         )}
       >
@@ -224,7 +224,7 @@ export function Sidebar() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-accent/50"
+            className="h-7 w-7 text-foreground/50 hover:text-foreground hover:bg-accent/50"
             onClick={toggleCollapsed}
           >
             {isCollapsed ? (

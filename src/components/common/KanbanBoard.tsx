@@ -127,29 +127,30 @@ function KanbanBoard<T extends { id: string }>({
 
     if (!over) return
 
-    const activeCol = findColumn(String(active.id))
+    // Use the EXTERNAL items prop to find the original source column
+    // (localItems has been modified by handleDragOver during the drag)
+    const originalSourceCol = Object.entries(items).find(([, colItems]) =>
+      colItems.some((i) => i.id === String(active.id))
+    )?.[0]
+
     const overCol = findColumn(String(over.id))
 
-    if (!activeCol || !overCol) return
+    if (!originalSourceCol || !overCol) return
 
-    if (activeCol === overCol) {
+    if (originalSourceCol === overCol) {
       // Reorder within column
-      const colItems = localItems[activeCol] ?? []
+      const colItems = localItems[overCol] ?? []
       const oldIndex = colItems.findIndex((i) => i.id === String(active.id))
       const newIndex = colItems.findIndex((i) => i.id === String(over.id))
 
       if (oldIndex !== newIndex && oldIndex >= 0 && newIndex >= 0) {
         const newOrder = arrayMove(colItems, oldIndex, newIndex)
-        setLocalItems((prev) => ({ ...prev, [activeCol]: newOrder }))
-        onReorder?.(activeCol, newOrder.map((i) => i.id))
+        setLocalItems((prev) => ({ ...prev, [overCol]: newOrder }))
+        onReorder?.(overCol, newOrder.map((i) => i.id))
       }
     } else {
-      // Find the original source column from the items prop (before dragOver moved it)
-      const originalSourceCol = Object.entries(items).find(([, colItems]) =>
-        colItems.some((i) => i.id === String(active.id))
-      )?.[0]
-      const sourceCol = originalSourceCol ?? activeCol
-      onMoveAcross?.(String(active.id), sourceCol, overCol)
+      // Cross-column move
+      onMoveAcross?.(String(active.id), originalSourceCol, overCol)
       // Also fire reorder for the destination column
       const destItems = localItems[overCol] ?? []
       onReorder?.(overCol, destItems.map((i) => i.id))

@@ -46,11 +46,11 @@ const columns = [
   { key: 'contractNumber', label: 'Contract #', sortable: true },
   { key: 'customerName', label: 'Customer', sortable: true },
   { key: 'deviceCount', label: 'Devices', sortable: true, align: 'center' as const },
-  { key: 'variant', label: 'Variant' },
+  { key: 'variant', label: 'Variant', filterable: true },
   { key: 'monthlyRate', label: 'Monthly Rate', sortable: true, align: 'right' as const },
   { key: 'startDate', label: 'Start Date', sortable: true },
   { key: 'endDate', label: 'End Date', sortable: true },
-  { key: 'status', label: 'Status' },
+  { key: 'status', label: 'Status', filterable: true },
   { key: 'totalBilled', label: 'Total Billed', sortable: true, align: 'right' as const },
   { key: 'totalPaid', label: 'Total Paid', sortable: true, align: 'right' as const },
 ]

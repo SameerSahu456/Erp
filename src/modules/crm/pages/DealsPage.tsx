@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react"
-import { Plus, LayoutGrid, List } from "lucide-react"
+import { useState, useMemo, useCallback, useRef } from "react"
+import { Plus, LayoutGrid, List, Search, X } from "lucide-react"
 import { useNavigate, Link } from "react-router-dom"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,6 +11,11 @@ import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
 import type { TabConfig, CellFormatter } from "@/components/common/BusinessMetricsTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import type { StatusBadgeVariant } from "@/components/common/StatusBadge"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { ClosedWonWizardDialog } from "../components/ClosedWonWizardDialog"
+import type { ClosedWonResult } from "../components/ClosedWonWizardDialog"
+import { LostReasonDialog } from "../components/LostReasonDialog"
 
 import { deals } from "@/modules/crm/data/deals"
 import { DEAL_STAGES } from "@/modules/crm/types"
@@ -23,19 +29,23 @@ const formatCurrency = (value: number) =>
   }).format(value)
 
 const stageVariant: Record<string, StatusBadgeVariant> = {
-  Discovery: "info",
+  New: "info",
+  Procurement: "info",
+  Cold: "neutral",
   Proposal: "warning",
-  Negotiation: "neutral",
+  Negotiation: "info",
   "Closed Won": "success",
   "Closed Lost": "error",
 }
 
 const stageColors: Record<string, string> = {
-  Discovery: "#3b82f6",
-  Proposal: "#f59e0b",
-  Negotiation: "#6366f1",
-  "Closed Won": "#22c55e",
-  "Closed Lost": "#ef4444",
+  New: "#1379f0",
+  Procurement: "#0d4b94",
+  Cold: "#a1a5b7",
+  Proposal: "#f6c000",
+  Negotiation: "#7239ea",
+  "Closed Won": "#50cd89",
+  "Closed Lost": "#f1416c",
 }
 
 const kanbanColumns: KanbanColumnConfig[] = DEAL_STAGES.map((stage) => ({
@@ -62,11 +72,11 @@ const listTab: TabConfig = {
   columns: [
     { key: "deal", label: "Deal", sortable: true },
     { key: "account", label: "Account", sortable: true },
-    { key: "stage", label: "Stage", sortable: true },
+    { key: "stage", label: "Stage", sortable: true, filterable: true },
     { key: "value", label: "Value", sortable: true, align: "right" },
     { key: "probability", label: "Probability", sortable: true, align: "right" },
     { key: "closeDate", label: "Close Date", sortable: true },
-    { key: "owner", label: "Owner", sortable: true },
+    { key: "owner", label: "Owner", sortable: true, filterable: true },
   ],
   data: deals.map((d) => ({
     id: d.id,
@@ -115,9 +125,53 @@ function DealsPage() {
   const [kanbanItems, setKanbanItems] = useState(() =>
     groupDealsByStage(deals)
   )
+  const [kanbanSearch, setKanbanSearch] = useState("")
 
-  const handleMoveAcross = useMemo(
-    () => (itemId: string, fromColumn: string, toColumn: string) => {
+  const filteredKanbanItems = useMemo(() => {
+    if (!kanbanSearch.trim()) return kanbanItems
+    const q = kanbanSearch.toLowerCase()
+    const filtered: Record<string, Deal[]> = {}
+    for (const [stage, items] of Object.entries(kanbanItems)) {
+      filtered[stage] = items.filter(
+        (d) => d.name.toLowerCase().includes(q) || d.accountName.toLowerCase().includes(q) || d.owner.toLowerCase().includes(q)
+      )
+    }
+    return filtered
+  }, [kanbanItems, kanbanSearch])
+
+  // Closed Won wizard state
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const [pendingClosedWon, setPendingClosedWon] = useState<{ deal: Deal; fromColumn: string } | null>(null)
+
+  // Closed Lost reason state
+  const [lostReasonOpen, setLostReasonOpen] = useState(false)
+  const [pendingClosedLost, setPendingClosedLost] = useState<{ deal: Deal; fromColumn: string } | null>(null)
+
+  const kanbanItemsRef = useRef(kanbanItems)
+  kanbanItemsRef.current = kanbanItems
+
+  const handleMoveAcross = useCallback(
+    (itemId: string, fromColumn: string, toColumn: string) => {
+      // Intercept Closed Won — open wizard (SO form only, account already exists)
+      if (toColumn === 'Closed Won') {
+        const deal = (kanbanItemsRef.current[fromColumn] ?? []).find((i) => i.id === itemId)
+        if (deal) {
+          setPendingClosedWon({ deal, fromColumn })
+          setWizardOpen(true)
+        }
+        return
+      }
+
+      // Intercept Closed Lost — open lost reason dialog
+      if (toColumn === 'Closed Lost') {
+        const deal = (kanbanItemsRef.current[fromColumn] ?? []).find((i) => i.id === itemId)
+        if (deal) {
+          setPendingClosedLost({ deal, fromColumn })
+          setLostReasonOpen(true)
+        }
+        return
+      }
+
       setKanbanItems((prev) => {
         const fromItems = (prev[fromColumn] ?? []).filter(
           (i) => i.id !== itemId
@@ -134,6 +188,43 @@ function DealsPage() {
     []
   )
 
+  function handleClosedLostConfirm(reason: string, notes: string) {
+    if (!pendingClosedLost) return
+    const { deal, fromColumn } = pendingClosedLost
+
+    setKanbanItems((prev) => {
+      const fromItems = (prev[fromColumn] ?? []).filter((i) => i.id !== deal.id)
+      const updated = { ...deal, stage: 'Closed Lost' as Deal['stage'] }
+      const toItems = [...(prev['Closed Lost'] ?? []), updated]
+      return { ...prev, [fromColumn]: fromItems, 'Closed Lost': toItems }
+    })
+
+    toast.success(`Deal "${deal.name}" marked as lost — ${reason}`)
+    setPendingClosedLost(null)
+    setLostReasonOpen(false)
+  }
+
+  function handleClosedWonComplete(result: ClosedWonResult) {
+    if (!pendingClosedWon) return
+    const { deal, fromColumn } = pendingClosedWon
+
+    // Update deal value to match the SO line items total
+    const soTotal = result.salesOrder.lineItems.reduce((sum, li) => sum + li.qty * li.rate, 0)
+
+    setKanbanItems((prev) => {
+      const fromItems = (prev[fromColumn] ?? []).filter((i) => i.id !== deal.id)
+      const updated = { ...deal, stage: 'Closed Won' as Deal['stage'], value: soTotal, probability: 100 }
+      const toItems = [...(prev['Closed Won'] ?? []), updated]
+      return { ...prev, [fromColumn]: fromItems, 'Closed Won': toItems }
+    })
+
+    toast.success(`Deal "${deal.name}" closed won — ${formatCurrency(soTotal)}`)
+    setPendingClosedWon(null)
+    setWizardOpen(false)
+  }
+
+  const priorityVariant = (p: string) => p === 'High' ? 'destructive' as const : p === 'Medium' ? 'warning' as const : 'secondary' as const
+
   const renderDealCard = (deal: Deal) => (
     <div className="cursor-pointer" onClick={() => navigate(`/crm/deals/${deal.id}`)}>
     <Card size="sm">
@@ -146,12 +237,12 @@ function DealsPage() {
           <span className="text-sm font-semibold font-sans">
             {formatCurrency(deal.value)}
           </span>
-          <StatusBadge variant={stageVariant[deal.stage] ?? "neutral"}>
-            {deal.stage}
-          </StatusBadge>
+          <Badge variant={priorityVariant(deal.priority)} className="text-[10px]">
+            {deal.priority}
+          </Badge>
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{deal.probability}% probability</span>
+          {deal.customerType && <span>{deal.customerType}</span>}
           <span>{deal.closeDate}</span>
         </div>
       </CardContent>
@@ -192,17 +283,62 @@ function DealsPage() {
 
       {/* Content */}
       {view === "kanban" ? (
-        <KanbanBoard<Deal>
-          columns={kanbanColumns}
-          items={kanbanItems}
-          renderCard={renderDealCard}
-          onMoveAcross={handleMoveAcross}
-        />
+        <div className="space-y-3">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search deals..."
+              value={kanbanSearch}
+              onChange={(e) => setKanbanSearch(e.target.value)}
+              className="h-8 pl-8 pr-8 text-[13px]"
+            />
+            {kanbanSearch && (
+              <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setKanbanSearch("")}>
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+          <KanbanBoard<Deal>
+            columns={kanbanColumns}
+            items={filteredKanbanItems}
+            renderCard={renderDealCard}
+            onMoveAcross={handleMoveAcross}
+          />
+        </div>
       ) : (
         <BusinessMetricsTable
           tabs={[listTab]}
           cellFormatter={listCellFormatter}
           pageSize={10}
+        />
+      )}
+      {/* Closed Won Wizard */}
+      {pendingClosedWon && (
+        <ClosedWonWizardDialog
+          open={wizardOpen}
+          onOpenChange={(open) => {
+            setWizardOpen(open)
+            if (!open) setPendingClosedWon(null)
+          }}
+          entityType="deal"
+          entityName={pendingClosedWon.deal.name}
+          entityValue={pendingClosedWon.deal.value}
+          existingAccountId={pendingClosedWon.deal.accountId}
+          existingAccountName={pendingClosedWon.deal.accountName}
+          onComplete={handleClosedWonComplete}
+        />
+      )}
+      {/* Closed Lost Reason */}
+      {pendingClosedLost && (
+        <LostReasonDialog
+          open={lostReasonOpen}
+          onOpenChange={(open) => {
+            setLostReasonOpen(open)
+            if (!open) setPendingClosedLost(null)
+          }}
+          entityType="deal"
+          entityName={pendingClosedLost.deal.name}
+          onConfirm={handleClosedLostConfirm}
         />
       )}
     </div>

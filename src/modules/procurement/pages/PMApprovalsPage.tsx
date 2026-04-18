@@ -21,9 +21,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { purchaseRequests } from '../data/purchase-requests'
-import { demoRequests } from '../data/demo-requests'
-import type { PurchaseRequest, PRCategoryApproval, DemoRequest } from '../types'
+import { purchaseRequests } from '@/modules/crm/data/purchase-requests'
+import { demoRequests } from '@/modules/crm/data/demo-requests'
+import type { PurchaseRequest, PRCategoryApproval, DemoRequest } from '@/modules/crm/types'
 
 // PM → Category mapping (derived from Parts data)
 const PM_CATEGORIES: Record<string, string[]> = {

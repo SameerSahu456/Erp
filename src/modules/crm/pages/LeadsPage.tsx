@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react"
-import { Plus, LayoutGrid, List } from "lucide-react"
+import { useState, useMemo, useCallback, useRef } from "react"
+import { Plus, LayoutGrid, List, Search, X } from "lucide-react"
 import { useNavigate, Link } from "react-router-dom"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,6 +11,11 @@ import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
 import type { TabConfig, CellFormatter } from "@/components/common/BusinessMetricsTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import type { StatusBadgeVariant } from "@/components/common/StatusBadge"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { ClosedWonWizardDialog } from "../components/ClosedWonWizardDialog"
+import type { ClosedWonResult } from "../components/ClosedWonWizardDialog"
+import { LostReasonDialog } from "../components/LostReasonDialog"
 
 import { leads } from "@/modules/crm/data/leads"
 import { LEAD_STAGES } from "@/modules/crm/types"
@@ -21,21 +27,25 @@ const formatCurrency = (value: number) =>
 const stageVariant: Record<string, StatusBadgeVariant> = {
   New: "info",
   Contacted: "neutral",
-  Qualified: "warning",
+  Qualified: "success",
+  Procurement: "info",
+  Cold: "neutral",
   Proposal: "warning",
-  Negotiation: "neutral",
-  Won: "success",
-  Lost: "error",
+  Negotiation: "info",
+  "Closed Won": "success",
+  "Closed Lost": "error",
 }
 
 const stageColors: Record<string, string> = {
-  New: "#3b82f6",
-  Contacted: "#8b5cf6",
-  Qualified: "#f59e0b",
-  Proposal: "#f97316",
-  Negotiation: "#6366f1",
-  Won: "#22c55e",
-  Lost: "#ef4444",
+  New: "#1379f0",
+  Contacted: "#7239ea",
+  Qualified: "#50cd89",
+  Procurement: "#0d4b94",
+  Cold: "#a1a5b7",
+  Proposal: "#f6c000",
+  Negotiation: "#7239ea",
+  "Closed Won": "#50cd89",
+  "Closed Lost": "#f1416c",
 }
 
 const kanbanColumns: KanbanColumnConfig[] = LEAD_STAGES.map((stage) => ({
@@ -62,10 +72,10 @@ const listTab: TabConfig = {
   columns: [
     { key: "name", label: "Name", sortable: true },
     { key: "company", label: "Company", sortable: true },
-    { key: "stage", label: "Stage", sortable: true },
+    { key: "stage", label: "Stage", sortable: true, filterable: true },
     { key: "value", label: "Value", sortable: true, align: "right" },
-    { key: "owner", label: "Owner", sortable: true },
-    { key: "source", label: "Source", sortable: true },
+    { key: "owner", label: "Owner", sortable: true, filterable: true },
+    { key: "source", label: "Source", sortable: true, filterable: true },
     { key: "lastContact", label: "Last Contact", sortable: true },
   ],
   data: leads
@@ -99,10 +109,10 @@ const listCellFormatter: CellFormatter = (value, key, row) => {
   }
   if (key === "stage") return null
   const stage = row["stage"]
-  if (stage === "Lost") {
+  if (stage === "Closed Lost") {
     return { className: "text-destructive" }
   }
-  if (stage === "Won") {
+  if (stage === "Closed Won") {
     return { className: "text-status-success-text" }
   }
   return null
@@ -114,9 +124,55 @@ function LeadsPage() {
   const [kanbanItems, setKanbanItems] = useState(() =>
     groupLeadsByStage(leads.filter((l) => l.stage !== 'Rejected'))
   )
+  const [kanbanSearch, setKanbanSearch] = useState("")
 
-  const handleMoveAcross = useMemo(
-    () => (itemId: string, fromColumn: string, toColumn: string) => {
+  // Filtered kanban items for display
+  const filteredKanbanItems = useMemo(() => {
+    if (!kanbanSearch.trim()) return kanbanItems
+    const q = kanbanSearch.toLowerCase()
+    const filtered: Record<string, Lead[]> = {}
+    for (const [stage, items] of Object.entries(kanbanItems)) {
+      filtered[stage] = items.filter(
+        (l) => l.name.toLowerCase().includes(q) || l.company.toLowerCase().includes(q) || l.owner.toLowerCase().includes(q)
+      )
+    }
+    return filtered
+  }, [kanbanItems, kanbanSearch])
+
+  // Closed Won wizard state
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const [pendingClosedWon, setPendingClosedWon] = useState<{ lead: Lead; fromColumn: string } | null>(null)
+
+  // Closed Lost reason state
+  const [lostReasonOpen, setLostReasonOpen] = useState(false)
+  const [pendingClosedLost, setPendingClosedLost] = useState<{ lead: Lead; fromColumn: string } | null>(null)
+
+  // Use a ref so the callback always sees the latest kanbanItems without causing re-renders
+  const kanbanItemsRef = useRef(kanbanItems)
+  kanbanItemsRef.current = kanbanItems
+
+  const handleMoveAcross = useCallback(
+    (itemId: string, fromColumn: string, toColumn: string) => {
+      // Intercept Closed Won — open wizard instead of immediate move
+      if (toColumn === 'Closed Won') {
+        const lead = (kanbanItemsRef.current[fromColumn] ?? []).find((i) => i.id === itemId)
+        if (lead) {
+          setPendingClosedWon({ lead, fromColumn })
+          setWizardOpen(true)
+        }
+        return
+      }
+
+      // Intercept Closed Lost — open lost reason dialog
+      if (toColumn === 'Closed Lost') {
+        const lead = (kanbanItemsRef.current[fromColumn] ?? []).find((i) => i.id === itemId)
+        if (lead) {
+          setPendingClosedLost({ lead, fromColumn })
+          setLostReasonOpen(true)
+        }
+        return
+      }
+
       setKanbanItems((prev) => {
         const fromItems = (prev[fromColumn] ?? []).filter(
           (i) => i.id !== itemId
@@ -133,6 +189,40 @@ function LeadsPage() {
     []
   )
 
+  function handleClosedLostConfirm(reason: string, notes: string) {
+    if (!pendingClosedLost) return
+    const { lead, fromColumn } = pendingClosedLost
+
+    setKanbanItems((prev) => {
+      const fromItems = (prev[fromColumn] ?? []).filter((i) => i.id !== lead.id)
+      const updated = { ...lead, stage: 'Closed Lost' as Lead['stage'] }
+      const toItems = [...(prev['Closed Lost'] ?? []), updated]
+      return { ...prev, [fromColumn]: fromItems, 'Closed Lost': toItems }
+    })
+
+    toast.success(`Lead "${lead.name}" marked as lost — ${reason}`)
+    setPendingClosedLost(null)
+    setLostReasonOpen(false)
+  }
+
+  function handleClosedWonComplete(_result: ClosedWonResult) {
+    if (!pendingClosedWon) return
+    const { lead, fromColumn } = pendingClosedWon
+
+    setKanbanItems((prev) => {
+      const fromItems = (prev[fromColumn] ?? []).filter((i) => i.id !== lead.id)
+      const updated = { ...lead, stage: 'Closed Won' as Lead['stage'] }
+      const toItems = [...(prev['Closed Won'] ?? []), updated]
+      return { ...prev, [fromColumn]: fromItems, 'Closed Won': toItems }
+    })
+
+    toast.success(`Lead "${lead.name}" closed won — Account & Sales Order created`)
+    setPendingClosedWon(null)
+    setWizardOpen(false)
+  }
+
+  const priorityVariant = (p: string) => p === 'High' ? 'destructive' as const : p === 'Medium' ? 'warning' as const : 'secondary' as const
+
   const renderLeadCard = (lead: Lead) => (
     <div className="cursor-pointer" onClick={() => navigate(`/crm/leads/${lead.id}`)}>
     <Card size="sm">
@@ -145,11 +235,16 @@ function LeadsPage() {
           <span className="text-sm font-semibold font-sans">
             {formatCurrency(lead.value)}
           </span>
-          <StatusBadge variant={stageVariant[lead.stage] ?? "neutral"}>
-            {lead.stage}
-          </StatusBadge>
+          <Badge variant={priorityVariant(lead.priority)} className="text-[10px]">
+            {lead.priority}
+          </Badge>
         </div>
-        <p className="text-xs text-muted-foreground">{lead.owner}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">{lead.owner}</p>
+          {lead.customerType && (
+            <span className="text-[10px] text-muted-foreground">{lead.customerType}</span>
+          )}
+        </div>
       </CardContent>
     </Card>
     </div>
@@ -188,17 +283,61 @@ function LeadsPage() {
 
       {/* Content */}
       {view === "kanban" ? (
-        <KanbanBoard<Lead>
-          columns={kanbanColumns}
-          items={kanbanItems}
-          renderCard={renderLeadCard}
-          onMoveAcross={handleMoveAcross}
-        />
+        <div className="space-y-3">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search leads..."
+              value={kanbanSearch}
+              onChange={(e) => setKanbanSearch(e.target.value)}
+              className="h-8 pl-8 pr-8 text-[13px]"
+            />
+            {kanbanSearch && (
+              <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setKanbanSearch("")}>
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+          <KanbanBoard<Lead>
+            columns={kanbanColumns}
+            items={filteredKanbanItems}
+            renderCard={renderLeadCard}
+            onMoveAcross={handleMoveAcross}
+          />
+        </div>
       ) : (
         <BusinessMetricsTable
           tabs={[listTab]}
           cellFormatter={listCellFormatter}
           pageSize={10}
+        />
+      )}
+      {/* Closed Won Wizard */}
+      {pendingClosedWon && (
+        <ClosedWonWizardDialog
+          open={wizardOpen}
+          onOpenChange={(open) => {
+            setWizardOpen(open)
+            if (!open) setPendingClosedWon(null)
+          }}
+          entityType="lead"
+          entityName={pendingClosedWon.lead.name}
+          entityValue={pendingClosedWon.lead.value}
+          entityCompany={pendingClosedWon.lead.company}
+          onComplete={handleClosedWonComplete}
+        />
+      )}
+      {/* Closed Lost Reason */}
+      {pendingClosedLost && (
+        <LostReasonDialog
+          open={lostReasonOpen}
+          onOpenChange={(open) => {
+            setLostReasonOpen(open)
+            if (!open) setPendingClosedLost(null)
+          }}
+          entityType="lead"
+          entityName={pendingClosedLost.lead.name}
+          onConfirm={handleClosedLostConfirm}
         />
       )}
     </div>

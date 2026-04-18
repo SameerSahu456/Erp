@@ -32,7 +32,7 @@ const ordersTab: TabConfig = {
     { key: "accountName", label: "Account", sortable: true },
     { key: "items", label: "Items", sortable: true, align: "right" },
     { key: "total", label: "Total", sortable: true, align: "right" },
-    { key: "status", label: "Status", sortable: true },
+    { key: "status", label: "Status", sortable: true, filterable: true },
     { key: "date", label: "Date", sortable: true },
   ],
   data: salesOrders.map((o) => ({

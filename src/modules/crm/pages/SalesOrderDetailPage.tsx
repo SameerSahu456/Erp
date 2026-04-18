@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import {
   ArrowLeft,
   Package,
@@ -12,12 +13,26 @@ import {
   CheckCircle2,
   FileText,
   Hammer,
+  Pencil,
+  Download,
+  Building2,
+  CalendarDays,
+  IndianRupee,
+  Mail,
+  Phone,
+  User,
+  MapPin,
+  Tag,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import { salesOrders } from '../data/sales-orders'
-import type { SalesOrderLineItem } from '../types'
+import { contacts } from '../data/contacts'
+import { accounts } from '../data/accounts'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-IN', {
@@ -85,9 +100,15 @@ function SalesOrderDetailPage() {
     )
   }
 
+  const account = accounts.find((a) => a.id === so.accountId)
+  const contactSpoc = contacts.find((c) => c.accountId === so.accountId)
   const configItems = so.lineItems.filter((li) => li.configAction !== 'STANDARD')
-  const bomLinked = so.lineItems.filter((li) => li.bomId)
   const subtotal = so.lineItems.reduce((s, li) => s + li.amount, 0)
+  const categories = [...new Set(so.lineItems.map((li) => li.category))]
+
+  function handleDownload() {
+    toast.success('Sales Order PDF downloaded')
+  }
 
   return (
     <div className="space-y-6">
@@ -119,28 +140,180 @@ function SalesOrderDetailPage() {
             {so.accountName} &middot; {formatCurrency(so.total)} &middot; {formatDate(so.date)}
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+          >
+            <Download className="size-3.5 mr-1" />
+            Download
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/crm/sales-orders/${so.id}/edit`)}
+          >
+            <Pencil className="size-3.5 mr-1" />
+            Edit
+          </Button>
+          {so.approvalStatus === 'Approved' && !so.purchaseRequestId && (
+            <Button
+              size="sm"
+              onClick={() => navigate(`/crm/purchase-requests/new?salesOrderId=${so.id}`)}
+            >
+              <Plus className="size-3.5 mr-1" />
+              Create PR
+            </Button>
+          )}
+          {so.purchaseRequestId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/crm/purchase-requests/${so.purchaseRequestId}`)}
+            >
+              <FileText className="size-3.5 mr-1" />
+              View PR
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Key Info */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Total Value</p>
-          <p className="mt-1 text-xl font-semibold">{formatCurrency(so.total)}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Line Items</p>
-          <p className="mt-1 text-xl font-semibold">{so.lineItems.length}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">BOM Linked</p>
-          <p className="mt-1 text-xl font-semibold">{bomLinked.length}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Config Changes</p>
-          <p className={`mt-1 text-xl font-semibold ${configItems.length > 0 ? 'text-[#f6c000]' : ''}`}>
-            {configItems.length}
-          </p>
-        </div>
+      {/* Order Information + Contact Information */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Order Information */}
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Order Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex items-start gap-2">
+                <Building2 className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Company Name</dt>
+                  <dd className="text-sm font-medium">
+                    {account ? (
+                      <Link to={`/crm/accounts/${account.id}`} className="text-primary hover:underline">
+                        {so.accountName}
+                      </Link>
+                    ) : so.accountName}
+                  </dd>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <CalendarDays className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Sale Date</dt>
+                  <dd className="text-sm">{formatDate(so.date)}</dd>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Package className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Order Type</dt>
+                  <dd className="text-sm">{so.status === 'Draft' ? 'Draft' : 'Standard'}</dd>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <IndianRupee className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Payment Status</dt>
+                  <dd>
+                    <StatusBadge variant={so.approvalStatus === 'Approved' ? 'success' : 'warning'}>
+                      {so.approvalStatus === 'Approved' ? 'Confirmed' : 'Pending'}
+                    </StatusBadge>
+                  </dd>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 sm:col-span-2">
+                <Tag className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Categories</dt>
+                  <dd className="flex flex-wrap gap-1.5 mt-1">
+                    {categories.map((cat) => (
+                      <Badge key={cat} variant="secondary" size="sm">{cat}</Badge>
+                    ))}
+                  </dd>
+                </div>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+
+        {/* Contact Information */}
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Contact Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {contactSpoc ? (
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex items-start gap-2">
+                  <User className="mt-0.5 size-4 text-muted-foreground" />
+                  <div>
+                    <dt className="text-xs font-ui text-muted-foreground">Contact Name</dt>
+                    <dd className="text-sm font-medium">{contactSpoc.name}</dd>
+                    <dd className="text-xs text-muted-foreground">{contactSpoc.title}</dd>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Phone className="mt-0.5 size-4 text-muted-foreground" />
+                  <div>
+                    <dt className="text-xs font-ui text-muted-foreground">Contact Number</dt>
+                    <dd className="text-sm">{contactSpoc.phone}</dd>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 sm:col-span-2">
+                  <Mail className="mt-0.5 size-4 text-muted-foreground" />
+                  <div>
+                    <dt className="text-xs font-ui text-muted-foreground">Email</dt>
+                    <dd className="text-sm">{contactSpoc.email}</dd>
+                  </div>
+                </div>
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">No contact associated with this account.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Billing & Shipping Address */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="size-4" />
+              Billing Address
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {so.accountName}<br />
+              {account?.city ?? '—'}, India
+            </p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="size-4" />
+              Shipping Address
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {so.accountName}<br />
+              {account?.city ?? '—'}, India
+            </p>
+            {so.dispatchNotes && (
+              <p className="mt-2 text-xs italic text-muted-foreground">
+                Note: {so.dispatchNotes}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* References */}
@@ -175,22 +348,25 @@ function SalesOrderDetailPage() {
             </div>
           </Link>
         )}
+        {so.approvedBy && (
+          <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
+            <CheckCircle2 className="size-4 text-[#50cd89]" />
+            <div>
+              <p className="text-xs text-muted-foreground">Approved By</p>
+              <p className="text-sm font-medium">{so.approvedBy}</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Part Configuration Alert — visible on dispatch */}
+      {/* Part Configuration Alert */}
       {so.hasPartConfig && configItems.length > 0 && (
         <div className="rounded-lg border border-[#f6c000]/30 bg-[#fff8dd]">
           <div className="border-b border-[#f6c000]/30 px-6 py-4">
             <h2 className="font-semibold text-[#b88800] flex items-center gap-2">
               <AlertCircle className="size-4" />
               Part Configuration Changes
-              <span className="text-xs font-normal">
-                (visible on dispatch request)
-              </span>
             </h2>
-            {so.dispatchNotes && (
-              <p className="mt-1 text-sm text-[#b88800]">{so.dispatchNotes}</p>
-            )}
           </div>
           <div className="divide-y divide-[#f6c000]/15">
             {configItems.map((item) => (
@@ -215,9 +391,6 @@ function SalesOrderDetailPage() {
                       <span> &middot; Replaces: <strong>{item.swapPartName}</strong></span>
                     )}
                   </p>
-                  {item.configNotes && (
-                    <p className="mt-0.5 text-xs italic text-[#b88800]">{item.configNotes}</p>
-                  )}
                 </div>
               </div>
             ))}
@@ -225,110 +398,86 @@ function SalesOrderDetailPage() {
         </div>
       )}
 
-      {/* Full Line Items Table */}
-      <div className="rounded-lg border bg-card">
-        <div className="border-b px-6 py-4">
-          <h2 className="font-semibold flex items-center gap-2">
+      {/* Line Item Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <Package className="size-4" />
-            Line Items
-          </h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="px-4 py-2.5 text-left font-medium">Part</th>
-                <th className="px-4 py-2.5 text-left font-medium">Category</th>
-                <th className="px-4 py-2.5 text-left font-medium">BOM</th>
-                <th className="px-4 py-2.5 text-left font-medium">Config</th>
-                <th className="px-4 py-2.5 text-right font-medium">Qty</th>
-                <th className="px-4 py-2.5 text-right font-medium">Rate</th>
-                <th className="px-4 py-2.5 text-right font-medium">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {so.lineItems.map((item) => (
-                <tr key={item.id} className={`border-b last:border-0 ${
-                  item.configAction === 'ADD' ? 'bg-[#e8fff3]/60' :
-                  item.configAction === 'REMOVE' ? 'bg-[#fff5f8]/60' :
-                  item.configAction === 'SWAP' ? 'bg-[#fff8dd]/60' : ''
-                }`}>
-                  <td className="px-4 py-3">
-                    <p className="font-medium">{item.partName}</p>
-                    <p className="text-xs text-muted-foreground">{item.brand} · {item.partSku}</p>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{item.category}</td>
-                  <td className="px-4 py-3">
-                    {item.bomId ? (
-                      <Link to={`/wms/bom/${item.bomId}`} className="text-xs text-primary hover:underline flex items-center gap-1">
-                        <Layers className="size-3" />
-                        {item.bomName}
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge variant={CONFIG_ACTION_VARIANT[item.configAction]}>
-                      {CONFIG_ACTION_ICON[item.configAction]}
-                      <span className="ml-1">{CONFIG_ACTION_LABEL[item.configAction]}</span>
-                    </StatusBadge>
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium">{item.qty}</td>
-                  <td className="px-4 py-3 text-right">{formatCurrency(item.rate)}</td>
-                  <td className="px-4 py-3 text-right font-medium">{formatCurrency(item.amount)}</td>
+            Line Item Details
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-4 py-2.5 text-left font-medium">#</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Part</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Category</th>
+                  <th className="px-4 py-2.5 text-left font-medium">BOM</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Config</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Qty</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Rate</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t-2">
-                <td colSpan={6} className="px-4 py-3 text-right font-semibold">Total</td>
-                <td className="px-4 py-3 text-right font-semibold text-lg">{formatCurrency(subtotal)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-
-      {/* Metadata */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-lg border bg-card p-6">
-          <h3 className="mb-3 font-semibold">Details</h3>
-          <dl className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">Account</dt>
-              <dd className="font-medium">{so.accountName}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">Date</dt>
-              <dd>{formatDate(so.date)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">Created</dt>
-              <dd>{formatDate(so.createdAt)}</dd>
-            </div>
-            {so.approvedBy && (
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Approved By</dt>
-                <dd className="flex items-center gap-1">
-                  <CheckCircle2 className="size-3.5 text-[#50cd89]" />
-                  {so.approvedBy}
-                </dd>
-              </div>
-            )}
-          </dl>
-        </div>
-
-        {so.dispatchNotes && (
-          <div className="rounded-lg border bg-card p-6">
-            <h3 className="mb-3 font-semibold flex items-center gap-2">
-              <Truck className="size-4" />
-              Dispatch Notes
-            </h3>
-            <p className="text-sm text-muted-foreground">{so.dispatchNotes}</p>
+              </thead>
+              <tbody>
+                {so.lineItems.map((item, idx) => (
+                  <tr key={item.id} className={`border-b last:border-0 ${
+                    item.configAction === 'ADD' ? 'bg-[#e8fff3]/60' :
+                    item.configAction === 'REMOVE' ? 'bg-[#fff5f8]/60' :
+                    item.configAction === 'SWAP' ? 'bg-[#fff8dd]/60' : ''
+                  }`}>
+                    <td className="px-4 py-3 text-muted-foreground">{idx + 1}</td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{item.partName}</p>
+                      <p className="text-xs text-muted-foreground">{item.brand} · {item.partSku}</p>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{item.category}</td>
+                    <td className="px-4 py-3">
+                      {item.bomId ? (
+                        <Link to={`/wms/bom/${item.bomId}`} className="text-xs text-primary hover:underline flex items-center gap-1">
+                          <Layers className="size-3" />
+                          {item.bomName}
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge variant={CONFIG_ACTION_VARIANT[item.configAction]}>
+                        {CONFIG_ACTION_ICON[item.configAction]}
+                        <span className="ml-1">{CONFIG_ACTION_LABEL[item.configAction]}</span>
+                      </StatusBadge>
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium">{item.qty}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(item.rate)}</td>
+                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(item.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t bg-muted/30">
+                  <td colSpan={7} className="px-4 py-3 text-right text-sm text-muted-foreground">Subtotal</td>
+                  <td className="px-4 py-3 text-right font-medium">{formatCurrency(subtotal)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={7} className="px-4 py-1.5 text-right text-sm text-muted-foreground">CGST (9%)</td>
+                  <td className="px-4 py-1.5 text-right text-sm">{formatCurrency(subtotal * 0.09)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={7} className="px-4 py-1.5 text-right text-sm text-muted-foreground">SGST (9%)</td>
+                  <td className="px-4 py-1.5 text-right text-sm">{formatCurrency(subtotal * 0.09)}</td>
+                </tr>
+                <tr className="border-t-2">
+                  <td colSpan={7} className="px-4 py-3 text-right font-semibold">Grand Total</td>
+                  <td className="px-4 py-3 text-right font-semibold text-lg">{formatCurrency(subtotal * 1.18)}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

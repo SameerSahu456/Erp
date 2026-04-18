@@ -32,7 +32,7 @@ const columns = [
   { key: 'vendorName', label: 'Vendor', sortable: true },
   { key: 'grandTotal', label: 'Amount', sortable: true, align: 'right' as const },
   { key: 'balanceDue', label: 'Balance', sortable: true, align: 'right' as const },
-  { key: 'status', label: 'Status' },
+  { key: 'status', label: 'Status', filterable: true },
   { key: 'dueDate', label: 'Due Date', sortable: true },
 ]
 

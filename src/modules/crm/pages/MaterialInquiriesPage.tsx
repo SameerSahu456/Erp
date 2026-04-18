@@ -28,7 +28,7 @@ const miTab: TabConfig = {
     { key: 'linkedTo', label: 'Lead / Deal', sortable: true },
     { key: 'categories', label: 'Categories', sortable: true },
     { key: 'itemsCount', label: 'Items', sortable: true, align: 'right' },
-    { key: 'status', label: 'Status', sortable: true },
+    { key: 'status', label: 'Status', sortable: true, filterable: true },
     { key: 'requestedBy', label: 'Requested By', sortable: true },
     { key: 'createdAt', label: 'Created', sortable: true },
   ],

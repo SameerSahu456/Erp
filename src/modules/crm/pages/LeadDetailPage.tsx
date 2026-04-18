@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Pencil, Trash2, Mail, Phone, Building2, Globe, IndianRupee, CalendarDays, Plus, XCircle, RotateCcw } from 'lucide-react'
+import { Pencil, Trash2, Mail, Phone, Building2, Globe, IndianRupee, CalendarDays, Plus, XCircle, RotateCcw, MapPin, Users, Briefcase, Download } from 'lucide-react'
 
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -20,10 +22,8 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/common/Status
 import { Badge } from '@/components/ui/badge'
 import { EntityHeader } from '../components/EntityHeader'
 import { DetailTabs } from '../components/DetailTabs'
-import { ActivityFeed } from '../components/ActivityFeed'
 import { NotesSection } from '../components/NotesSection'
 import { leads } from '../data/leads'
-import { deals } from '../data/deals'
 import { quotes } from '../data/quotes'
 import { mockActivities } from '../data/activities'
 import { mockNotes } from '../data/notes'
@@ -31,6 +31,12 @@ import { materialInquiries } from '../data/material-inquiries'
 import { mockComments } from '../data/comments'
 import { LEAD_STAGES } from '../types'
 import { CommentSection } from '../components/CommentSection'
+import { TasksSection } from '../components/TasksSection'
+import { AuditTrail } from '../components/AuditTrail'
+import { ClosedWonWizardDialog } from '../components/ClosedWonWizardDialog'
+import { LostReasonDialog } from '../components/LostReasonDialog'
+import { mockTasks } from '../data/tasks'
+import { downloadQuotePdf } from '../utils/download-quote-pdf'
 import { useAuth } from '@/contexts/AuthContext'
 import { canReinstateLead } from '@/modules/crm/crm-roles'
 
@@ -52,9 +58,9 @@ function getStageVariant(stage: string): StatusBadgeVariant {
       return 'warning'
     case 'Negotiation':
       return 'warning'
-    case 'Won':
+    case 'Closed Won':
       return 'success'
-    case 'Lost':
+    case 'Closed Lost':
       return 'error'
     case 'Rejected':
       return 'error'
@@ -63,22 +69,6 @@ function getStageVariant(stage: string): StatusBadgeVariant {
   }
 }
 
-function getDealStageVariant(stage: string): StatusBadgeVariant {
-  switch (stage) {
-    case 'Discovery':
-      return 'info'
-    case 'Proposal':
-      return 'warning'
-    case 'Negotiation':
-      return 'warning'
-    case 'Closed Won':
-      return 'success'
-    case 'Closed Lost':
-      return 'error'
-    default:
-      return 'neutral'
-  }
-}
 
 function getQuoteStatusVariant(status: string): StatusBadgeVariant {
   switch (status) {
@@ -108,12 +98,16 @@ function getMIStatusVariant(status: string): StatusBadgeVariant {
   }
 }
 
-// Mock account manager info
-const MOCK_MANAGERS: Record<string, { email: string; phone: string }> = {
+// Mock staff info
+const MOCK_STAFF: Record<string, { email: string; phone: string }> = {
   'Amit Patel': { email: 'amit.patel@comprint.in', phone: '+91 98200 11111' },
   'Sneha Desai': { email: 'sneha.desai@comprint.in', phone: '+91 98200 22222' },
   'Rahul Verma': { email: 'rahul.verma@comprint.in', phone: '+91 98200 33333' },
+  'Deepak Gupta': { email: 'deepak.gupta@comprint.in', phone: '+91 98200 44444' },
+  'Kiran Mehta': { email: 'kiran.mehta@comprint.in', phone: '+91 98200 55555' },
 }
+
+const PRE_QUALIFIED_STAGES = ['New', 'Contacted']
 
 function LeadDetailPage() {
   const { id: leadId } = useParams<{ id: string }>()
@@ -123,6 +117,9 @@ function LeadDetailPage() {
   const [rejectionReason, setRejectionReason] = useState('')
   const [reinstateDialogOpen, setReinstateDialogOpen] = useState(false)
   const [reinstateNote, setReinstateNote] = useState('')
+  const [closedWonWizardOpen, setClosedWonWizardOpen] = useState(false)
+  const [lostReasonOpen, setLostReasonOpen] = useState(false)
+  const [currentStage, setCurrentStage] = useState<string | null>(null)
   const { user } = useAuth()
   const userCanReinstate = canReinstateLead(user.role)
 
@@ -155,11 +152,6 @@ function LeadDetailPage() {
     (q) => q.leadId === lead.id
   )
 
-  // Match deals by company name
-  const relatedDeals = deals.filter(
-    (d) => d.accountName.toLowerCase().includes(lead.company.toLowerCase()) ||
-           lead.company.toLowerCase().includes(d.accountName.toLowerCase())
-  )
 
   // Material inquiries linked to this lead
   const relatedMIs = materialInquiries.filter((mi) => mi.leadId === lead.id)
@@ -168,13 +160,22 @@ function LeadDetailPage() {
     (c) => c.entityType === 'lead' && c.entityId === lead.id
   ).length
 
-  const managerInfo = MOCK_MANAGERS[lead.owner]
+  const taskCount = mockTasks.filter(
+    (t) => t.entityType === 'lead' && t.entityId === lead.id
+  ).length
 
-  // Pipeline stages (exclude Lost for visual pipeline)
-  const pipelineStages = LEAD_STAGES.filter((s) => s !== 'Lost')
-  const currentStageIndex = pipelineStages.indexOf(lead.stage as typeof pipelineStages[number])
-  const isLost = lead.stage === 'Lost'
-  const isRejected = lead.stage === 'Rejected'
+
+  const isPreQualified = PRE_QUALIFIED_STAGES.includes(lead.stage)
+  const displayOwnerName = isPreQualified ? lead.bde : (lead.accountOwner ?? lead.owner)
+  const displayOwnerRole = isPreQualified ? 'BDE' : 'Account Owner'
+  const ownerInfo = MOCK_STAFF[displayOwnerName]
+
+  // Pipeline stages (exclude Closed Lost for visual pipeline)
+  const activeStage = currentStage ?? lead.stage
+  const pipelineStages = LEAD_STAGES.filter((s) => s !== 'Closed Lost')
+  const currentStageIndex = pipelineStages.indexOf(activeStage as typeof pipelineStages[number])
+  const isLost = activeStage === 'Closed Lost'
+  const isRejected = activeStage === 'Rejected'
 
   function handleDelete() {
     setDeleteDialogOpen(false)
@@ -189,11 +190,25 @@ function LeadDetailPage() {
   }
 
   function handleReinstate() {
-    // In real app: API call to move lead to Qualified + create activity
     setReinstateDialogOpen(false)
     setReinstateNote('')
     navigate('/crm/leads')
   }
+
+  function handleStageChange(newStage: string) {
+    if (newStage === 'Closed Won') {
+      setClosedWonWizardOpen(true)
+      return
+    }
+    if (newStage === 'Closed Lost') {
+      setLostReasonOpen(true)
+      return
+    }
+    setCurrentStage(newStage)
+    toast.success(`Lead moved to "${newStage}"`)
+  }
+
+  const priorityVariant = lead.priority === 'High' ? 'destructive' : lead.priority === 'Medium' ? 'warning' : 'secondary'
 
   const overviewContent = (
     <div className="space-y-6">
@@ -207,70 +222,7 @@ function LeadDetailPage() {
         </div>
       )}
 
-      {/* Description Card */}
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Description</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{lead.description}</p>
-        </CardContent>
-      </Card>
-
-      {/* Lead Info Card */}
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Lead Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex items-start gap-2">
-              <Building2 className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Company</dt>
-                <dd className="text-sm">{lead.company}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Mail className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Email</dt>
-                <dd className="text-sm">{lead.email}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Phone className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Phone</dt>
-                <dd className="text-sm">{lead.phone}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Globe className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Source</dt>
-                <dd className="text-sm">{lead.source}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <IndianRupee className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Value</dt>
-                <dd className="text-sm font-medium">{formatCurrency(lead.value)}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <CalendarDays className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Created</dt>
-                <dd className="text-sm">{formatDate(lead.createdAt)}</dd>
-              </div>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
-
-      {/* Stage Progress */}
+      {/* Stage Progress — below categories */}
       <Card size="sm">
         <CardHeader>
           <CardTitle>Stage Progress</CardTitle>
@@ -329,6 +281,97 @@ function LeadDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Description Card */}
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>Description</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{lead.description}</p>
+        </CardContent>
+      </Card>
+
+      {/* Lead Info Card */}
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>Lead Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex items-start gap-2">
+              <Building2 className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs font-ui text-muted-foreground">Company</dt>
+                <dd className="text-sm">{lead.company}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Briefcase className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs font-ui text-muted-foreground">Company Size</dt>
+                <dd className="text-sm">{lead.companySize ?? '—'}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Users className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs font-ui text-muted-foreground">Employees</dt>
+                <dd className="text-sm">{lead.employees?.toLocaleString('en-IN') ?? '—'}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <MapPin className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs font-ui text-muted-foreground">Location</dt>
+                <dd className="text-sm">{lead.location ?? '—'}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Building2 className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs font-ui text-muted-foreground">Type</dt>
+                <dd className="text-sm">{lead.customerType ?? '—'}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Mail className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs font-ui text-muted-foreground">Email</dt>
+                <dd className="text-sm">{lead.email}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Phone className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs font-ui text-muted-foreground">Phone</dt>
+                <dd className="text-sm">{lead.phone}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Globe className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs font-ui text-muted-foreground">Source</dt>
+                <dd className="text-sm">{lead.source}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <IndianRupee className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs font-ui text-muted-foreground">Value</dt>
+                <dd className="text-sm font-medium">{formatCurrency(lead.value)}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <CalendarDays className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs font-ui text-muted-foreground">Created</dt>
+                <dd className="text-sm">{formatDate(lead.createdAt)}</dd>
+              </div>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+
       {/* Notes from lead data */}
       {lead.notes && (
         <Card size="sm">
@@ -372,9 +415,19 @@ function LeadDetailPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">{quote.accountName}</p>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-medium">{formatCurrency(quote.total)}</p>
-                <p className="text-xs text-muted-foreground">Valid until {formatDate(quote.validUntil)}</p>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-sm font-medium">{formatCurrency(quote.total)}</p>
+                  <p className="text-xs text-muted-foreground">Valid until {formatDate(quote.validUntil)}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={(e) => { e.stopPropagation(); downloadQuotePdf(quote) }}
+                  title="Download Quote PDF"
+                >
+                  <Download className="size-4" />
+                </Button>
               </div>
             </div>
           ))}
@@ -457,12 +510,6 @@ function LeadDetailPage() {
   const tabs = [
     { id: 'overview', label: 'Overview', content: overviewContent },
     {
-      id: 'activities',
-      label: 'Activities',
-      count: activityCount,
-      content: <ActivityFeed entityType="lead" entityId={lead.id} />,
-    },
-    {
       id: 'notes',
       label: 'Notes',
       count: noteCount,
@@ -481,10 +528,22 @@ function LeadDetailPage() {
       content: materialInquiriesContent,
     },
     {
+      id: 'tasks',
+      label: 'Tasks',
+      count: taskCount,
+      content: <TasksSection entityType="lead" entityId={lead.id} entityName={`${lead.name} — ${lead.company}`} />,
+    },
+    {
       id: 'comments',
       label: 'Comments',
       count: commentCount,
       content: <CommentSection entityType="lead" entityId={lead.id} />,
+    },
+    {
+      id: 'audit-trail',
+      label: 'Audit Trail',
+      count: activityCount,
+      content: <AuditTrail entityType="lead" entityId={lead.id} />,
     },
   ]
 
@@ -493,11 +552,30 @@ function LeadDetailPage() {
       <EntityHeader
         title={lead.name}
         subtitle={lead.company}
-        status={{ label: lead.stage, variant: getStageVariant(lead.stage) }}
-        owner={{ name: lead.owner, role: 'Account Manager' }}
+        status={{ label: activeStage, variant: getStageVariant(activeStage) }}
+        badges={
+          <Badge variant={priorityVariant} className="uppercase text-[10px] tracking-wider">
+            {lead.priority} Priority
+          </Badge>
+        }
+        owner={{ name: displayOwnerName, role: displayOwnerRole }}
         backHref="/crm/leads"
         actions={
           <>
+            {/* Stage Update */}
+            {!isRejected && activeStage !== 'Closed Won' && activeStage !== 'Closed Lost' && (
+              <Select value={activeStage} onValueChange={handleStageChange}>
+                <SelectTrigger className="h-8 w-40 text-xs">
+                  <SelectValue placeholder="Move stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAD_STAGES.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             <Button
               variant="outline"
               size="sm"
@@ -617,15 +695,15 @@ function LeadDetailPage() {
 
         {/* Right column - 1/3 */}
         <div className="space-y-4">
-          {/* Account Manager Card */}
+          {/* BDE / Account Owner Card */}
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Account Manager</CardTitle>
+              <CardTitle>{displayOwnerRole}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="flex items-start gap-3">
                 <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                  {lead.owner
+                  {displayOwnerName
                     .split(' ')
                     .map((p) => p[0])
                     .join('')
@@ -633,15 +711,32 @@ function LeadDetailPage() {
                     .slice(0, 2)}
                 </div>
                 <div className="min-w-0 space-y-1">
-                  <p className="text-sm font-medium">{lead.owner}</p>
-                  {managerInfo && (
+                  <p className="text-sm font-medium">{displayOwnerName}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{displayOwnerRole}</p>
+                  {ownerInfo && (
                     <>
-                      <p className="text-xs text-muted-foreground">{managerInfo.email}</p>
-                      <p className="text-xs text-muted-foreground">{managerInfo.phone}</p>
+                      <p className="text-xs text-muted-foreground">{ownerInfo.email}</p>
+                      <p className="text-xs text-muted-foreground">{ownerInfo.phone}</p>
                     </>
                   )}
                 </div>
               </div>
+              {/* Show BDE info below Account Owner for qualified+ leads */}
+              {!isPreQualified && lead.bde && (
+                <div className="border-t border-border/50 pt-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">BDE (Original)</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                      {lead.bde.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{lead.bde}</p>
+                  </div>
+                </div>
+              )}
+              {/* Show "Assigned at Qualified" hint for pre-qualified leads */}
+              {isPreQualified && (
+                <p className="text-xs text-muted-foreground/60 italic">Account Owner assigned at Qualified stage</p>
+              )}
             </CardContent>
           </Card>
 
@@ -678,31 +773,36 @@ function LeadDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Related Deals Card */}
-          <Card size="sm">
-            <CardHeader>
-              <CardTitle>Related Deals</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {relatedDeals.length > 0 ? (
-                <div className="space-y-3">
-                  {relatedDeals.map((deal) => (
-                    <div key={deal.id} className="space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-medium">{deal.name}</span>
-                        <StatusBadge variant={getDealStageVariant(deal.stage)}>{deal.stage}</StatusBadge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{formatCurrency(deal.value)}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No related deals found.</p>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
+
+      {/* Closed Won Wizard */}
+      <ClosedWonWizardDialog
+        open={closedWonWizardOpen}
+        onOpenChange={setClosedWonWizardOpen}
+        entityType="lead"
+        entityName={lead.name}
+        entityValue={lead.value}
+        entityCompany={lead.company}
+        onComplete={() => {
+          setClosedWonWizardOpen(false)
+          setCurrentStage('Closed Won')
+          toast.success(`Lead "${lead.name}" closed won — Account & Sales Order created`)
+        }}
+      />
+
+      {/* Lost Reason Dialog */}
+      <LostReasonDialog
+        open={lostReasonOpen}
+        onOpenChange={setLostReasonOpen}
+        entityType="lead"
+        entityName={lead.name}
+        onConfirm={(reason) => {
+          setLostReasonOpen(false)
+          setCurrentStage('Closed Lost')
+          toast.success(`Lead "${lead.name}" marked as lost — ${reason}`)
+        }}
+      />
     </div>
   )
 }

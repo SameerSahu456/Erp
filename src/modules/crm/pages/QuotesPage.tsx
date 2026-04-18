@@ -27,7 +27,7 @@ const quotesTab: TabConfig = {
     { key: "quoteNumber", label: "Quote #", sortable: true },
     { key: "accountName", label: "Account", sortable: true },
     { key: "total", label: "Total", sortable: true, align: "right" },
-    { key: "status", label: "Status", sortable: true },
+    { key: "status", label: "Status", sortable: true, filterable: true },
     { key: "validUntil", label: "Valid Until", sortable: true },
   ],
   data: quotes.map((q) => ({

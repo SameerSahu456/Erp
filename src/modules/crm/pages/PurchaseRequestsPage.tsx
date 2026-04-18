@@ -25,7 +25,7 @@ const statusVariant: Record<string, StatusBadgeVariant> = {
 const columns = [
   { key: 'prNumber', label: 'PR #', sortable: true },
   { key: 'salesOrderNumber', label: 'Linked SO', sortable: true },
-  { key: 'status', label: 'Status', sortable: true },
+  { key: 'status', label: 'Status', sortable: true, filterable: true },
   { key: 'pmApproval', label: 'PM Approvals' },
   { key: 'categories', label: 'Categories' },
   { key: 'itemsCount', label: 'Items', sortable: true, align: 'right' as const },

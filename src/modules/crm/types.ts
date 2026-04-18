@@ -1,13 +1,23 @@
+export type Priority = 'High' | 'Medium' | 'Low'
+export type CustomerType = 'End Customer' | 'Channel Partner'
+
 export interface Lead {
   id: string
   name: string
   company: string
   email: string
   phone: string
-  stage: 'New' | 'Contacted' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost' | 'Rejected'
+  stage: 'New' | 'Contacted' | 'Qualified' | 'Procurement' | 'Cold' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost' | 'Rejected'
   value: number
   source: string
   owner: string
+  bde: string
+  accountOwner?: string
+  priority: Priority
+  companySize?: string
+  employees?: number
+  location?: string
+  customerType?: CustomerType
   lastContact: string
   createdAt: string
   notes?: string
@@ -23,16 +33,23 @@ export interface Deal {
   name: string
   accountId: string
   accountName: string
-  stage: 'Discovery' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost'
+  stage: 'New' | 'Procurement' | 'Cold' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost'
   value: number
   probability: number
   closeDate: string
   owner: string
+  priority: Priority
+  companySize?: string
+  employees?: number
+  location?: string
+  customerType?: CustomerType
   createdAt: string
   description: string
   categories: string[]
   leadId?: string
 }
+
+export type AccountTag = 'Hunting' | 'Farming' | 'Cold'
 
 export interface Account {
   id: string
@@ -42,6 +59,9 @@ export interface Account {
   revenue: number
   owner: string
   status: 'Active' | 'Inactive' | 'Prospect'
+  tag?: AccountTag
+  categoriesInterested?: string[]
+  categoriesBuyed?: string[]
   city: string
   website?: string
   createdAt: string
@@ -163,7 +183,7 @@ export interface CrmNotification {
 
 export interface Activity {
   id: string
-  type: 'call' | 'email' | 'meeting' | 'task' | 'note' | 'stage_change' | 'rejection' | 'reinstatement'
+  type: 'call' | 'email' | 'meeting' | 'task' | 'note' | 'stage_change' | 'rejection' | 'reinstatement' | 'account_created' | 'deal_created' | 'so_created' | 'owner_change'
   title: string
   description?: string
   user: string
@@ -308,8 +328,8 @@ export const IMS_CATEGORIES = [
   'Software Licenses',
 ] as const
 
-export const LEAD_STAGES = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'] as const
-export const DEAL_STAGES = ['Discovery', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const
+export const LEAD_STAGES = ['New', 'Contacted', 'Qualified', 'Procurement', 'Cold', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const
+export const DEAL_STAGES = ['New', 'Procurement', 'Cold', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const
 
 // ── Material Inquiry ──
 
@@ -383,6 +403,51 @@ export interface Comment {
   entityType: 'lead' | 'deal' | 'account' | 'contact' | 'quote' | 'sales_order' | 'material_inquiry'
   entityId: string
   createdAt: string
+}
+
+// ── Tasks ──
+
+export type TaskStatus = 'To Do' | 'In Progress' | 'Completed' | 'Cancelled'
+export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Urgent'
+
+export interface Task {
+  id: string
+  title: string
+  description: string
+  status: TaskStatus
+  priority: TaskPriority
+  assignedTo: string
+  dueDate: string
+  entityType?: 'lead' | 'deal'
+  entityId?: string
+  entityName?: string
+  createdBy: string
+  createdAt: string
+  completedAt?: string
+}
+
+// ── Meetings ──
+
+export type MeetingStatus = 'Scheduled' | 'Completed' | 'Cancelled' | 'Rescheduled'
+export type MeetingType = 'In Person' | 'Video Call' | 'Phone Call' | 'Site Visit'
+
+export interface Meeting {
+  id: string
+  title: string
+  description: string
+  status: MeetingStatus
+  type: MeetingType
+  date: string
+  startTime: string
+  endTime: string
+  location?: string
+  attendees: string[]
+  entityType?: 'lead' | 'deal' | 'account'
+  entityId?: string
+  entityName?: string
+  organizer: string
+  createdAt: string
+  notes?: string
 }
 
 export const MOCK_USERS = [
