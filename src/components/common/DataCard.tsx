@@ -18,6 +18,7 @@ interface DataCardProps {
   className?: string
 }
 
+/* Comprint ERP KPI card */
 function DataCard({ label, value, icon: Icon, trend, onClick, className }: DataCardProps) {
   return (
     <Card
@@ -30,23 +31,14 @@ function DataCard({ label, value, icon: Icon, trend, onClick, className }: DataC
     >
       <CardContent className="flex items-start justify-between">
         <div className="space-y-1.5">
-          <p className="text-[13px] font-medium text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold font-sans tracking-tight">{value}</p>
+          <p className="text-[12px] font-[550] text-[#667085]">{label}</p>
+          <p className="text-[22px] font-[650] tracking-[-0.02em] num">{value}</p>
           {trend && (
-            <div
-              className={cn(
-                "inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-md",
-                trend.isPositive
-                  ? "text-status-success-text bg-status-success-bg"
-                  : "text-status-error-text bg-status-error-bg"
-              )}
-            >
-              {trend.isPositive ? (
-                <ArrowUpIcon className="size-3" />
-              ) : (
-                <ArrowDownIcon className="size-3" />
-              )}
-              <span>{Math.abs(trend.value)}%</span>
+            <div className="flex items-center gap-1.5 text-[12px] text-[#667085]">
+              <span className={cn("flex items-center gap-0.5", trend.isPositive ? "text-[#067647]" : "text-[#B42318]")}>
+                {trend.isPositive ? <ArrowUpIcon className="size-[11px]" /> : <ArrowDownIcon className="size-[11px]" />}
+                {Math.abs(trend.value)}%
+              </span>
             </div>
           )}
         </div>

@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils"
 
+/* Comprint ERP status badges — pill shape, semantic colors */
 const variantStyles = {
-  success: "bg-status-success-bg text-status-success-text",
-  warning: "bg-status-warning-bg text-status-warning-text",
-  error: "bg-status-error-bg text-status-error-text",
-  info: "bg-status-info-bg text-status-info-text",
-  neutral: "bg-muted text-muted-foreground",
-  "red-cell": "bg-destructive/10 text-destructive",
+  success: "bg-[#ECFDF3] text-[#067647]",
+  warning: "bg-[#FFFAEB] text-[#B54708]",
+  error: "bg-[#FEF3F2] text-[#B42318]",
+  info: "bg-[#EFF4FF] text-[#175CD3]",
+  neutral: "bg-[#EEF0F3] text-[#344054]",
+  "red-cell": "bg-[#FEF3F2] text-[#B42318]",
 } as const
 
 type StatusBadgeVariant = keyof typeof variantStyles
@@ -21,7 +22,7 @@ function StatusBadge({ variant, children, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-[5px] rounded-full px-2 py-[2px] text-[11.5px] font-[550] leading-[1.6] whitespace-nowrap",
         variantStyles[variant],
         className
       )}

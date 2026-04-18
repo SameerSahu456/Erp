@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChevronRight, PanelLeftClose, PanelLeft, LayoutDashboard } from 'lucide-react'
+import { ChevronDown, PanelLeftClose, PanelLeft, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Separator } from '@/components/ui/separator'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { SIDEBAR_NAV } from '@/components/layout/sidebar-nav-config'
 import { cn } from '@/lib/utils'
 import type { NavGroup, NavItem } from '@/types/navigation'
 
+/* ── Comprint ERP Nav Item ── */
 function NavItemLink({
   item,
   isActive,
@@ -26,14 +26,14 @@ function NavItemLink({
     <Link
       to={item.href}
       className={cn(
-        'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-ui transition-all',
-        'text-foreground/70 hover:bg-accent/70 hover:text-foreground',
-        isActive && 'bg-primary/8 text-primary font-semibold hover:bg-primary/10 hover:text-primary',
+        'flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13.5px] transition-all',
+        'text-[#344054] hover:bg-[#EEF0F3]',
+        isActive && 'bg-[#EEF1F6] text-[#0F1B2D] font-[550]',
         isCollapsed && 'justify-center px-2 py-2'
       )}
     >
-      <Icon className={cn('shrink-0', isCollapsed ? 'h-4.5 w-4.5' : 'h-4 w-4')} />
-      {!isCollapsed && <span className="truncate">{item.label}</span>}
+      <Icon className={cn('shrink-0 opacity-80', isCollapsed ? 'size-[18px]' : 'size-4', isActive && 'opacity-100')} />
+      {!isCollapsed && <span className="truncate flex-1">{item.label}</span>}
     </Link>
   )
 
@@ -51,6 +51,7 @@ function NavItemLink({
   return link
 }
 
+/* ── Comprint ERP Nav Group ── */
 function NavGroupSection({
   group,
   isCollapsed,
@@ -74,25 +75,25 @@ function NavGroupSection({
             <Link
               to={firstItem.href}
               className={cn(
-                'flex w-full items-center justify-center rounded-lg px-2 py-2 transition-all',
-                'text-foreground/70 hover:bg-accent/70 hover:text-foreground',
-                isGroupActive && 'bg-primary/8 text-primary'
+                'flex w-full items-center justify-center rounded-md px-2 py-2 transition-all',
+                'text-[#344054] hover:bg-[#EEF0F3]',
+                isGroupActive && 'bg-[#EEF1F6] text-[#0F1B2D]'
               )}
             />
           }
         >
-          <GroupIcon className="h-4.5 w-4.5" />
+          <GroupIcon className="size-[18px]" />
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={8}>
           <div className="space-y-1">
-            <p className="font-medium text-xs">{group.label}</p>
+            <p className="font-semibold text-xs">{group.label}</p>
             {group.items.map((item) => (
               <Link
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  'block text-xs hover:text-primary',
-                  pathname === item.href && 'text-primary font-medium'
+                  'block text-xs hover:text-foreground transition-colors',
+                  pathname === item.href && 'font-medium'
                 )}
               >
                 {item.label}
@@ -105,26 +106,21 @@ function NavGroupSection({
   }
 
   return (
-    <div>
+    <div className="mt-2.5">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className={cn(
-          'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-ui font-semibold uppercase tracking-widest transition-all',
-          'text-foreground/60 hover:text-foreground/80 hover:bg-accent/40',
-          isGroupActive && 'text-foreground/70'
-        )}
+        className="flex w-full items-center justify-between px-2.5 py-[6px] text-[11px] font-semibold uppercase tracking-[0.08em] text-[#98A2B3] hover:text-[#667085] transition-colors"
       >
-        <GroupIcon className="h-3.5 w-3.5 shrink-0" />
-        <span className="flex-1 text-left">{group.label}</span>
-        <ChevronRight
+        <span>{group.label}</span>
+        <ChevronDown
           className={cn(
-            'h-3 w-3 transition-transform duration-200',
-            isOpen && 'rotate-90'
+            'size-[11px] opacity-50 transition-transform duration-150',
+            !isOpen && '-rotate-90'
           )}
         />
       </button>
       {isOpen && (
-        <div className="mt-0.5 ml-3 pl-2.5 border-l border-border/40 space-y-0.5">
+        <div className="space-y-[1px] mt-0.5">
           {group.items.map((item) => (
             <NavItemLink
               key={item.href}
@@ -150,8 +146,8 @@ function SidebarNav({
 }) {
   return (
     <TooltipProvider>
-      <nav className="flex flex-col gap-1 p-2">
-        {/* Dashboard — always visible */}
+      <nav className="flex flex-col gap-0 px-2 py-2">
+        {/* Dashboard */}
         <NavItemLink
           item={{
             label: 'Dashboard',
@@ -162,19 +158,15 @@ function SidebarNav({
           isCollapsed={isCollapsed}
         />
 
-        <Separator className="my-1.5 opacity-50" />
-
         {/* Module groups */}
-        <div className="flex flex-col gap-1">
-          {filteredNav.map((group) => (
-            <NavGroupSection
-              key={group.label}
-              group={group}
-              isCollapsed={isCollapsed}
-              pathname={pathname}
-            />
-          ))}
-        </div>
+        {filteredNav.map((group) => (
+          <NavGroupSection
+            key={group.label}
+            group={group}
+            isCollapsed={isCollapsed}
+            pathname={pathname}
+          />
+        ))}
       </nav>
     </TooltipProvider>
   )
@@ -208,33 +200,30 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar — Comprint ERP */}
       <aside
         className={cn(
           'hidden md:flex flex-col sticky top-14 h-[calc(100vh-3.5rem)] z-40',
-          'bg-card/50 backdrop-blur-sm border-r border-border/50 transition-all duration-200',
-          isCollapsed ? 'w-14' : 'w-60'
+          'bg-card border-r border-[#E4E7EC] transition-all duration-200',
+          isCollapsed ? 'w-16' : 'w-[248px]'
         )}
       >
         {/* Collapse toggle */}
         <div className={cn(
-          'flex items-center h-10 px-2 border-b border-border/30',
+          'flex items-center h-9 px-2 border-b border-[#E4E7EC]',
           isCollapsed ? 'justify-center' : 'justify-end'
         )}>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-foreground/50 hover:text-foreground hover:bg-accent/50"
+            className="size-7 text-[#98A2B3] hover:text-[#344054] hover:bg-[#EEF0F3]"
             onClick={toggleCollapsed}
           >
             {isCollapsed ? (
-              <PanelLeft className="h-3.5 w-3.5" />
+              <PanelLeft className="size-3.5" />
             ) : (
-              <PanelLeftClose className="h-3.5 w-3.5" />
+              <PanelLeftClose className="size-3.5" />
             )}
-            <span className="sr-only">
-              {isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            </span>
           </Button>
         </div>
 
@@ -249,13 +238,12 @@ export function Sidebar() {
 
       {/* Mobile drawer */}
       <Sheet open={isMobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-60 p-0">
+        <SheetContent side="left" className="w-[248px] p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SheetDescription className="sr-only">Main navigation menu</SheetDescription>
-          {/* Mobile logo */}
-          <div className="flex items-center h-14 px-4 border-b border-border/50">
-            <span className="text-primary font-ui font-bold text-lg tracking-tight">comprint</span>
-            <span className="font-display font-bold text-lg text-foreground/80">tech</span>
+          <div className="flex items-center h-14 px-4 border-b border-[#E4E7EC] gap-2.5">
+            <div className="w-7 h-7 rounded-[7px] bg-[#0F1B2D] flex items-center justify-center text-white text-[13px] font-bold tracking-wide">CP</div>
+            <span className="font-[650] text-[15px] tracking-[-0.01em]">Comprint</span>
           </div>
           <ScrollArea className="h-[calc(100vh-3.5rem)]">
             <SidebarNav
