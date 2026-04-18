@@ -167,9 +167,10 @@ function KanbanBoard<T extends { id: string }>({
     >
       <div
         className={cn(
-          "flex gap-4 overflow-x-auto pb-4",
+          "grid gap-[14px] overflow-x-auto pb-2",
           className
         )}
+        style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(260px, 1fr))` }}
       >
         {columns.map((column) => (
           <KanbanColumn
@@ -209,22 +210,22 @@ function KanbanColumn<T extends { id: string }>({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex min-w-[280px] flex-col rounded-lg border bg-muted/30",
+        "cpt-kcol flex flex-col",
         isOver && "ring-2 ring-primary/30"
       )}
     >
-      {/* Column header */}
-      <div className="flex items-center justify-between border-b px-3 py-2">
-        <div className="flex items-center gap-2">
+      {/* Column header — Comprint style */}
+      <div className="cpt-kcol-h">
+        <span className="flex items-center gap-1.5">
           {column.color && (
-            <div
-              className="size-2.5 rounded-full"
+            <span
+              className="inline-block size-[7px] rounded-full"
               style={{ backgroundColor: column.color }}
             />
           )}
-          <span className="text-sm font-semibold">{column.label}</span>
-        </div>
-        <Badge variant="secondary">{items.length}</Badge>
+          {column.label}
+          <span className="count" style={{ marginLeft: 6 }}>{items.length}</span>
+        </span>
       </div>
 
       {/* Card list */}
@@ -233,7 +234,7 @@ function KanbanColumn<T extends { id: string }>({
           items={items.map((i) => i.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="flex flex-col gap-2 p-2">
+          <div className="flex flex-col gap-0 px-0">
             {items.length > 0 ? (
               items.map((item) => (
                 <SortableCard
@@ -243,7 +244,7 @@ function KanbanColumn<T extends { id: string }>({
                 />
               ))
             ) : (
-              <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
+              <div style={{ borderRadius: 8, border: '1px dashed #D0D5DD', padding: 16, textAlign: 'center', fontSize: 12.5, color: '#667085' }}>
                 No items
               </div>
             )}

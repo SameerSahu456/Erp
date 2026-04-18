@@ -2,24 +2,6 @@ import * as React from "react"
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Search, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select"
 
 interface ColumnDef {
   key: string
@@ -75,7 +57,6 @@ function BusinessMetricsTable({
 
   const activeTabConfig = tabs.find((t) => t.id === activeTab)
 
-  // Build unique values for filterable columns
   const filterOptions = React.useMemo(() => {
     if (!activeTabConfig) return {}
     const options: Record<string, string[]> = {}
@@ -92,13 +73,8 @@ function BusinessMetricsTable({
     return options
   }, [activeTabConfig])
 
-  // Reset sort, page, search, filters when switching tabs
-  const handleTabChange = (value: unknown) => {
-    const tabValue = value as string | number
-    const tab = tabs[tabValue as number] ?? tabs.find((t) => t.id === String(tabValue))
-    if (tab) {
-      setActiveTab(tab.id)
-    }
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId)
     setSortColumn(null)
     setSortDirection(null)
     setCurrentPage(0)
@@ -108,12 +84,8 @@ function BusinessMetricsTable({
 
   const handleSort = (columnKey: string) => {
     if (sortColumn === columnKey) {
-      if (sortDirection === "asc") {
-        setSortDirection("desc")
-      } else if (sortDirection === "desc") {
-        setSortColumn(null)
-        setSortDirection(null)
-      }
+      if (sortDirection === "asc") setSortDirection("desc")
+      else if (sortDirection === "desc") { setSortColumn(null); setSortDirection(null) }
     } else {
       setSortColumn(columnKey)
       setSortDirection("asc")
@@ -133,12 +105,10 @@ function BusinessMetricsTable({
     setCurrentPage(0)
   }
 
-  // Filter + search + sort
   const processedData = React.useMemo(() => {
     if (!activeTabConfig) return []
     let data = [...activeTabConfig.data]
 
-    // Apply search across all string columns
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       data = data.filter((row) =>
@@ -149,12 +119,10 @@ function BusinessMetricsTable({
       )
     }
 
-    // Apply column filters
     for (const [key, filterValue] of Object.entries(columnFilters)) {
       data = data.filter((row) => String(row[key]) === filterValue)
     }
 
-    // Apply sort
     if (sortColumn && sortDirection) {
       data.sort((a, b) => {
         const aVal = a[sortColumn]
@@ -167,257 +135,185 @@ function BusinessMetricsTable({
         }
         const aStr = String(aVal)
         const bStr = String(bVal)
-        return sortDirection === "asc"
-          ? aStr.localeCompare(bStr)
-          : bStr.localeCompare(aStr)
+        return sortDirection === "asc" ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr)
       })
     }
     return data
   }, [activeTabConfig, sortColumn, sortDirection, searchQuery, columnFilters])
 
   const totalPages = Math.max(1, Math.ceil(processedData.length / pageSize))
-  const paginatedData = processedData.slice(
-    currentPage * pageSize,
-    (currentPage + 1) * pageSize
-  )
+  const paginatedData = processedData.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
 
-  const handlePageSizeChange = (value: unknown) => {
-    setPageSize(Number(value))
-    setCurrentPage(0)
-  }
-
-  const alignClass = (align?: "left" | "center" | "right") => {
-    if (align === "center") return "text-center"
-    if (align === "right") return "text-right"
-    return "text-left"
-  }
-
-  const hasActiveFilters = searchQuery.trim() !== '' || Object.keys(columnFilters).length > 0
   const filterableColumns = activeTabConfig?.columns.filter((c) => c.filterable) ?? []
 
   if (tabs.length === 0) {
-    return (
-      <div className={cn("text-muted-foreground text-sm p-4", className)}>
-        No data available
-      </div>
-    )
+    return <div className={cn("text-muted-foreground text-sm p-4", className)}>No data available</div>
   }
 
   return (
     <div className={cn("space-y-0", className)}>
-      <Tabs defaultValue={0} onValueChange={handleTabChange}>
-        <TabsList>
-          {tabs.map((tab, index) => (
-            <TabsTrigger key={tab.id} value={index}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {/* Comprint Tabs */}
+      <div className="cpt-tabs">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={cn("cpt-tab", activeTab === tab.id && "active")}
+            onClick={() => handleTabChange(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {tabs.map((tab, index) => (
-          <TabsContent key={tab.id} value={index}>
-            {/* Search + Filters bar */}
-            {searchable && activeTab === tab.id && (
-              <div className="flex flex-wrap items-center gap-2 py-3">
-                {/* Search */}
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
-                  <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0) }}
-                    className="h-8 pl-8 pr-8 text-[13px]"
-                  />
-                  {searchQuery && (
-                    <button
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      onClick={() => setSearchQuery("")}
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Column filters */}
-                {filterableColumns.map((col) => {
-                  const options = filterOptions[col.key] ?? []
-                  if (options.length === 0) return null
-                  return (
-                    <Select
-                      key={col.key}
-                      value={columnFilters[col.key] ?? '__all__'}
-                      onValueChange={(v) => handleFilterChange(col.key, v)}
-                    >
-                      <SelectTrigger className="h-8 w-auto min-w-[120px] text-[13px]">
-                        <SelectValue placeholder={col.label} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">All {col.label}</SelectItem>
-                        {options.map((opt) => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )
-                })}
-
-                {/* Clear filters */}
-                {hasActiveFilters && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs text-muted-foreground"
-                    onClick={() => { setSearchQuery(""); setColumnFilters({}); setCurrentPage(0) }}
-                  >
-                    <X className="size-3 mr-1" />
-                    Clear
-                  </Button>
-                )}
-
-                {/* Result count */}
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {processedData.length} of {activeTabConfig?.data.length ?? 0}
-                  {hasActiveFilters && ' (filtered)'}
-                </span>
-              </div>
-            )}
-
-            <div
-              className={cn(
-                "relative overflow-x-auto rounded-md border",
-                stickyHeader && "max-h-[500px] overflow-y-auto"
+      {/* Table wrap with toolbar */}
+      <div className="cpt-table-wrap">
+        {/* Toolbar: search + filters */}
+        {searchable && (
+          <div className="cpt-table-toolbar">
+            <div className="cpt-search-field">
+              <Search className="size-[14px]" />
+              <input
+                placeholder="Search…"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0) }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} style={{ opacity: 0.5 }}>
+                  <X className="size-3.5" />
+                </button>
               )}
-            >
-              <Table>
-                <TableHeader
-                  className={cn(
-                    stickyHeader &&
-                      "sticky top-0 z-10 bg-background shadow-[0_1px_0_0_hsl(var(--border))]"
-                  )}
-                >
-                  <TableRow>
-                    {tab.columns.map((col) => (
-                      <TableHead
-                        key={col.key}
-                        className={cn(
-                          alignClass(col.align),
-                          col.sortable && "cursor-pointer select-none",
-                          col.width && `w-[${col.width}]`
-                        )}
-                        style={col.width ? { width: col.width } : undefined}
-                        onClick={
-                          col.sortable ? () => handleSort(col.key) : undefined
-                        }
-                      >
-                        <span className="inline-flex items-center gap-1">
-                          {col.label}
-                          {col.sortable && (
-                            <span className="inline-flex size-4 items-center justify-center">
-                              {sortColumn === col.key && activeTab === tab.id ? (
-                                sortDirection === "asc" ? (
-                                  <ArrowUp className="size-3.5" />
-                                ) : (
-                                  <ArrowDown className="size-3.5" />
-                                )
-                              ) : (
-                                <ArrowUpDown className="size-3.5 text-muted-foreground/50" />
-                              )}
-                            </span>
-                          )}
-                        </span>
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activeTab === tab.id && paginatedData.length > 0 ? (
-                    paginatedData.map((row, rowIdx) => (
-                      <TableRow key={rowIdx}>
-                        {tab.columns.map((col) => {
-                          const value = row[col.key]
-                          const formatted = cellFormatter
-                            ? cellFormatter(value, col.key, row)
-                            : null
-                          return (
-                            <TableCell
-                              key={col.key}
-                              className={cn(
-                                alignClass(col.align),
-                                formatted?.className
-                              )}
-                            >
-                              {formatted?.display !== undefined
-                                ? formatted.display
-                                : value != null
-                                  ? String(value)
-                                  : ""}
-                            </TableCell>
-                          )
-                        })}
-                      </TableRow>
-                    ))
-                  ) : activeTab === tab.id ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={tab.columns.length}
-                        className="py-8 text-center text-muted-foreground"
-                      >
-                        {hasActiveFilters ? 'No results match your search' : 'No data available'}
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
-                </TableBody>
-              </Table>
             </div>
 
-            {/* Pagination */}
-            {activeTab === tab.id && (
-              <div className="flex items-center justify-between gap-4 px-2 pt-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Rows per page</span>
-                  <Select
-                    value={String(pageSize)}
-                    onValueChange={handlePageSizeChange}
-                  >
-                    <SelectTrigger size="sm" className="w-16">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="25">25</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* Column filter dropdowns */}
+            {filterableColumns.map((col) => {
+              const options = filterOptions[col.key] ?? []
+              if (options.length === 0) return null
+              return (
+                <select
+                  key={col.key}
+                  className="cpt-filter-chip"
+                  value={columnFilters[col.key] ?? '__all__'}
+                  onChange={(e) => handleFilterChange(col.key, e.target.value)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <option value="__all__">All {col.label}</option>
+                  {options.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              )
+            })}
 
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    Page {currentPage + 1} of {totalPages}
-                  </span>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      disabled={currentPage === 0}
-                      onClick={() => setCurrentPage((p) => p - 1)}
-                    >
-                      <ChevronLeft className="size-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      disabled={currentPage >= totalPages - 1}
-                      onClick={() => setCurrentPage((p) => p + 1)}
-                    >
-                      <ChevronRight className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+            <div style={{ marginLeft: 'auto' }} className="cpt-row">
+              <span className="cpt-muted cpt-tiny">
+                {processedData.length} of {activeTabConfig?.data.length ?? 0}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Table */}
+        <div style={{ overflowX: 'auto' }}>
+          <table className="cpt-tbl">
+            <thead>
+              <tr>
+                {activeTabConfig?.columns.map((col) => (
+                  <th
+                    key={col.key}
+                    className={cn(col.align === "right" && "right", col.align === "center" && "text-center")}
+                    style={{ cursor: col.sortable ? 'pointer' : undefined, width: col.width }}
+                    onClick={col.sortable ? () => handleSort(col.key) : undefined}
+                  >
+                    {col.label}
+                    {col.sortable && (
+                      <span style={{ marginLeft: 4, opacity: sortColumn === col.key ? 1 : 0.3, fontSize: 10 }}>
+                        {sortColumn === col.key && sortDirection === "asc" ? "↑" :
+                         sortColumn === col.key && sortDirection === "desc" ? "↓" : "↕"}
+                      </span>
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedData.length > 0 ? (
+                paginatedData.map((row, rowIdx) => (
+                  <tr key={rowIdx}>
+                    {activeTabConfig?.columns.map((col) => {
+                      const value = row[col.key]
+                      const formatted = cellFormatter ? cellFormatter(value, col.key, row) : null
+                      return (
+                        <td
+                          key={col.key}
+                          className={cn(
+                            col.align === "right" && "right",
+                            col.align === "center" && "text-center",
+                            formatted?.className
+                          )}
+                        >
+                          {formatted?.display !== undefined
+                            ? formatted.display
+                            : value != null ? String(value) : ""}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={activeTabConfig?.columns.length ?? 1}
+                    style={{ padding: '56px 24px', textAlign: 'center', color: '#667085' }}
+                  >
+                    {searchQuery.trim() || Object.keys(columnFilters).length > 0
+                      ? 'No results match your search'
+                      : 'No data available'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination footer */}
+        <div className="cpt-table-footer">
+          <div>Showing {paginatedData.length} of {processedData.length}</div>
+          <div className="cpt-row" style={{ gap: 4 }}>
+            <button
+              className="cpt-btn cpt-btn-sm"
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
+              <ChevronLeft className="size-3" />
+            </button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              const page = totalPages <= 5 ? i : (
+                currentPage < 3 ? i :
+                currentPage > totalPages - 3 ? totalPages - 5 + i :
+                currentPage - 2 + i
+              )
+              if (page < 0 || page >= totalPages) return null
+              return (
+                <button
+                  key={page}
+                  className="cpt-btn cpt-btn-sm"
+                  style={currentPage === page ? { background: '#0F1B2D', color: '#fff', borderColor: '#0F1B2D' } : undefined}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page + 1}
+                </button>
+              )
+            })}
+            <button
+              className="cpt-btn cpt-btn-sm"
+              disabled={currentPage >= totalPages - 1}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              <ChevronRight className="size-3" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
