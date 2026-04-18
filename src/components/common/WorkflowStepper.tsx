@@ -19,67 +19,145 @@ interface WorkflowStepperProps {
 
 function WorkflowStepper({ steps, onStepClick, className }: WorkflowStepperProps) {
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-0 md:flex-row md:items-start md:gap-0",
-        className
-      )}
-    >
-      {steps.map((step, index) => {
-        const isLast = index === steps.length - 1
-
-        return (
-          <React.Fragment key={step.id}>
-            {/* Step item */}
-            <div
-              className={cn(
-                "flex items-start gap-3 md:flex-col md:items-center md:gap-2",
-                onStepClick && "cursor-pointer"
-              )}
-              onClick={() => onStepClick?.(step.id)}
-              role={onStepClick ? "button" : undefined}
-              tabIndex={onStepClick ? 0 : undefined}
-              onKeyDown={(e) => {
-                if (onStepClick && (e.key === "Enter" || e.key === " ")) {
-                  e.preventDefault()
-                  onStepClick(step.id)
-                }
-              }}
-            >
-              {/* Circle + vertical line (mobile) */}
-              <div className="flex flex-col items-center md:flex-row">
-                <StepCircle step={step} />
-              </div>
-
-              {/* Label + description */}
-              <div className="flex flex-col md:items-center md:text-center">
-                <span
+    <>
+      {/* ── Desktop: horizontal stepper ── */}
+      <div className={cn("hidden md:block", className)}>
+        {/* Top row: circles + connectors */}
+        <div className="flex items-center">
+          {steps.map((step, index) => {
+            const isLast = index === steps.length - 1
+            return (
+              <React.Fragment key={step.id}>
+                <div
                   className={cn(
-                    "text-sm font-medium",
-                    step.status === "active" && "text-primary",
-                    step.status === "completed" && "text-foreground",
-                    step.status === "pending" && "text-muted-foreground",
-                    step.status === "failed" && "text-destructive"
+                    "flex shrink-0 items-center justify-center",
+                    onStepClick && "cursor-pointer"
                   )}
+                  onClick={() => onStepClick?.(step.id)}
+                  role={onStepClick ? "button" : undefined}
+                  tabIndex={onStepClick ? 0 : undefined}
+                  onKeyDown={(e) => {
+                    if (onStepClick && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault()
+                      onStepClick(step.id)
+                    }
+                  }}
                 >
-                  {step.label}
-                </span>
-                {step.description && (
-                  <span className="text-xs text-muted-foreground max-w-[140px]">
-                    {step.description}
-                  </span>
+                  <StepCircle step={step} />
+                </div>
+                {!isLast && (
+                  <div className="flex-1 min-w-[24px]">
+                    <div
+                      className={cn(
+                        "h-0.5 w-full",
+                        steps[index + 1]!.status === "pending"
+                          ? "border-t-2 border-dashed border-muted-foreground/30 bg-transparent"
+                          : steps[index + 1]!.status === "completed"
+                            ? "bg-primary"
+                            : steps[index + 1]!.status === "active"
+                              ? "bg-primary/40"
+                              : "bg-destructive"
+                      )}
+                    />
+                  </div>
                 )}
-              </div>
-            </div>
+              </React.Fragment>
+            )
+          })}
+        </div>
+        {/* Bottom row: labels aligned under each circle */}
+        <div className="flex mt-2.5">
+          {steps.map((step, index) => {
+            const isLast = index === steps.length - 1
+            return (
+              <React.Fragment key={step.id}>
+                <div className="flex shrink-0 flex-col items-center" style={{ width: 32 }}>
+                  <span
+                    className={cn(
+                      "text-xs font-medium whitespace-nowrap",
+                      step.status === "active" && "text-primary",
+                      step.status === "completed" && "text-foreground",
+                      step.status === "pending" && "text-muted-foreground",
+                      step.status === "failed" && "text-destructive"
+                    )}
+                  >
+                    {step.label}
+                  </span>
+                  {step.description && (
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                      {step.description}
+                    </span>
+                  )}
+                </div>
+                {!isLast && <div className="flex-1 min-w-[24px]" />}
+              </React.Fragment>
+            )
+          })}
+        </div>
+      </div>
 
-            {/* Connector line */}
-            {!isLast && (
-              <StepConnector nextStatus={steps[index + 1]!.status} />
-            )}
-          </React.Fragment>
-        )
-      })}
-    </div>
+      {/* ── Mobile: vertical stepper ── */}
+      <div className={cn("flex flex-col gap-0 md:hidden", className)}>
+        {steps.map((step, index) => {
+          const isLast = index === steps.length - 1
+          return (
+            <React.Fragment key={step.id}>
+              <div
+                className={cn(
+                  "flex items-start gap-3",
+                  onStepClick && "cursor-pointer"
+                )}
+                onClick={() => onStepClick?.(step.id)}
+                role={onStepClick ? "button" : undefined}
+                tabIndex={onStepClick ? 0 : undefined}
+                onKeyDown={(e) => {
+                  if (onStepClick && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault()
+                    onStepClick(step.id)
+                  }
+                }}
+              >
+                <StepCircle step={step} />
+                <div className="flex flex-col pt-1">
+                  <span
+                    className={cn(
+                      "text-sm font-medium",
+                      step.status === "active" && "text-primary",
+                      step.status === "completed" && "text-foreground",
+                      step.status === "pending" && "text-muted-foreground",
+                      step.status === "failed" && "text-destructive"
+                    )}
+                  >
+                    {step.label}
+                  </span>
+                  {step.description && (
+                    <span className="text-xs text-muted-foreground">
+                      {step.description}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {!isLast && (
+                <div className="ml-[15px] flex h-6 items-center">
+                  <div
+                    className={cn(
+                      "w-0.5 h-full",
+                      steps[index + 1]!.status === "pending"
+                        ? "border-l-2 border-dashed border-muted-foreground/30 bg-transparent"
+                        : steps[index + 1]!.status === "completed"
+                          ? "bg-primary"
+                          : steps[index + 1]!.status === "active"
+                            ? "bg-primary/40"
+                            : "bg-destructive"
+                    )}
+                  />
+                </div>
+              )}
+            </React.Fragment>
+          )
+        })}
+      </div>
+    </>
   )
 }
 

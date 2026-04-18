@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { toast } from 'sonner'
+import { Printer, AlertCircle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,6 +21,7 @@ import {
 
 import type { RepairJob, RepairType } from '../types'
 import { mockRepairJobs } from '../data/repairs'
+import { mockDevices } from '../data/devices'
 
 const REPAIR_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta', 'Meera Joshi', 'Arjun Patel']
 
@@ -53,36 +55,84 @@ function formatDate(dateStr?: string) {
   })
 }
 
+function handlePrintBarcode(barcode: string) {
+  const printWindow = window.open('', '_blank', 'width=400,height=300')
+  if (!printWindow) {
+    toast.error('Please allow popups to print barcodes.')
+    return
+  }
+  printWindow.document.write(`
+    <html>
+      <head><title>Print Barcode</title></head>
+      <body style="font-family: monospace; text-align: center; padding: 40px;">
+        <div style="border: 2px solid #000; padding: 20px; display: inline-block;">
+          <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px;">${barcode}</div>
+        </div>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+    </html>
+  `)
+  printWindow.document.close()
+}
+
 function RepairPage() {
-  const [jobs, setJobs] = useState<RepairJob[]>(mockRepairJobs)
+  // Filter out DISPLAY and BATTERY repair jobs — those are handled separately
+  const [jobs, setJobs] = useState<RepairJob[]>(
+    mockRepairJobs.filter((j) => j.repairType !== 'DISPLAY' && j.repairType !== 'BATTERY')
+  )
   const [showAssignForm, setShowAssignForm] = useState(false)
   const [assignDeviceId, setAssignDeviceId] = useState('')
   const [assignEngineer, setAssignEngineer] = useState('')
 
+  // Check if device is ready for repair (spares fulfilled + paint done)
+  const isDeviceReadyForRepair = (deviceId: string): { ready: boolean; reason?: string } => {
+    const device = mockDevices.find((d) => d.id === deviceId)
+    if (!device) return { ready: true }
+
+    if (device.requiresSpares && !device.sparesIssued) {
+      return { ready: false, reason: 'Waiting for spares' }
+    }
+    if (device.requiresPaint && !device.paintCompleted) {
+      return { ready: false, reason: 'Waiting for paint' }
+    }
+    return { ready: true }
+  }
+
   const handleAction = (jobId: string, action: 'start' | 'complete' | 'fail') => {
+    const job = jobs.find((j) => j.id === jobId)
+    if (!job) return
+
+    if (action === 'start') {
+      const readiness = isDeviceReadyForRepair(job.deviceId)
+      if (!readiness.ready) {
+        toast.error(`Cannot start repair: ${readiness.reason}`)
+        return
+      }
+    }
+
     setJobs((prev) =>
-      prev.map((job) => {
-        if (job.id !== jobId) return job
+      prev.map((j) => {
+        if (j.id !== jobId) return j
         switch (action) {
           case 'start':
-            toast.success(`Repair started for ${job.deviceBarcode}`)
-            return { ...job, status: 'In Progress' as const, startedAt: new Date().toISOString() }
+            toast.success(`Repair started for ${j.deviceBarcode}`)
+            return { ...j, status: 'In Progress' as const, startedAt: new Date().toISOString() }
           case 'complete':
-            toast.success(`Repair completed for ${job.deviceBarcode}`)
+            toast.success(`Repair completed for ${j.deviceBarcode}`)
             return {
-              ...job,
+              ...j,
               status: 'Completed' as const,
               completedAt: new Date().toISOString(),
             }
           case 'fail':
-            toast.error(`Repair failed for ${job.deviceBarcode}`)
+            toast.error(`Repair failed for ${j.deviceBarcode}`)
             return {
-              ...job,
+              ...j,
               status: 'Failed' as const,
               completedAt: new Date().toISOString(),
             }
           default:
-            return job
+            return j
         }
       }),
     )
@@ -136,18 +186,24 @@ function RepairPage() {
 
   const buildRows = useCallback(
     (filtered: RepairJob[]) =>
-      filtered.map((job) => ({
-        id: job.id,
-        barcode: job.deviceBarcode,
-        type: job.repairType,
-        status: job.status,
-        assignedTo: job.assignedTo,
-        rework: job.isRework ? 'Yes' : 'No',
-        isRework: job.isRework,
-        started: formatDate(job.startedAt),
-        notes: job.notes ?? '-',
-        _status: job.status,
-      })),
+      filtered.map((job) => {
+        const readiness = isDeviceReadyForRepair(job.deviceId)
+        return {
+          id: job.id,
+          barcode: job.deviceBarcode,
+          type: job.repairType,
+          status: job.status,
+          assignedTo: job.assignedTo,
+          rework: job.isRework ? 'Yes' : 'No',
+          isRework: job.isRework,
+          started: formatDate(job.startedAt),
+          readiness: readiness.ready ? 'Ready' : readiness.reason ?? 'Not Ready',
+          _isReady: readiness.ready,
+          notes: job.notes ?? '-',
+          _status: job.status,
+          _deviceId: job.deviceId,
+        }
+      }),
     [],
   )
 
@@ -155,10 +211,10 @@ function RepairPage() {
     { key: 'barcode', label: 'Device Barcode', sortable: true },
     { key: 'type', label: 'Type' },
     { key: 'status', label: 'Status' },
+    { key: 'readiness', label: 'Readiness' },
     { key: 'assignedTo', label: 'Assigned To', sortable: true },
     { key: 'rework', label: 'Rework' },
     { key: 'started', label: 'Started', sortable: true },
-    { key: 'notes', label: 'Notes' },
     { key: 'actions', label: 'Actions' },
   ]
 
@@ -182,24 +238,30 @@ function RepairPage() {
         columns,
         data: buildRows(jobs.filter((j) => j.repairType === 'L3')),
       },
-      {
-        id: 'display',
-        label: 'Display',
-        columns,
-        data: buildRows(jobs.filter((j) => j.repairType === 'DISPLAY')),
-      },
-      {
-        id: 'battery',
-        label: 'Battery',
-        columns,
-        data: buildRows(jobs.filter((j) => j.repairType === 'BATTERY')),
-      },
     ],
     [jobs, buildRows],
   )
 
   const cellFormatter: CellFormatter = useCallback(
     (value, key, row) => {
+      if (key === 'barcode') {
+        return {
+          display: (
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium">{String(value)}</span>
+              <Button
+                size="xs"
+                variant="ghost"
+                className="size-6 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => handlePrintBarcode(String(value))}
+                title="Print barcode"
+              >
+                <Printer className="size-3.5" />
+              </Button>
+            </div>
+          ),
+        }
+      }
       if (key === 'type') {
         const repairType = value as RepairType
         return {
@@ -215,6 +277,23 @@ function RepairPage() {
         return {
           display: (
             <StatusBadge variant={STATUS_VARIANT[status]}>{status}</StatusBadge>
+          ),
+        }
+      }
+      if (key === 'readiness') {
+        const isReady = row._isReady as boolean
+        return {
+          display: (
+            <div className="flex items-center gap-1">
+              {isReady ? (
+                <StatusBadge variant="success">Ready</StatusBadge>
+              ) : (
+                <StatusBadge variant="warning">
+                  <AlertCircle className="size-3 mr-1" />
+                  {String(value)}
+                </StatusBadge>
+              )}
+            </div>
           ),
         }
       }
@@ -250,11 +329,18 @@ function RepairPage() {
       if (key === 'actions') {
         const status = row._status as RepairJob['status']
         const jobId = row.id as string
+        const isReady = row._isReady as boolean
         return {
           display: (
             <div className="flex gap-1">
               {status === 'Assigned' && (
-                <Button size="xs" variant="outline" onClick={() => handleAction(jobId, 'start')}>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={() => handleAction(jobId, 'start')}
+                  disabled={!isReady}
+                  title={!isReady ? 'Spare/paint must be fulfilled first' : 'Start repair'}
+                >
                   Start
                 </Button>
               )}
@@ -291,7 +377,7 @@ function RepairPage() {
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Repair Station</h1>
         <p className="text-sm text-muted-foreground">
-          Manage L2, L3, Display, and Battery repair jobs.
+          Manage L2 and L3 repair jobs. Repair starts once spares are fulfilled and paint is done.
         </p>
       </div>
 

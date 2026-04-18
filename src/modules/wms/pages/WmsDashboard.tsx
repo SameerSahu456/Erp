@@ -4,7 +4,27 @@ import {
   Wrench,
   ClipboardCheck,
   Truck,
+  Search,
+  Eye,
+  Clock,
+  Paintbrush,
+  ShieldCheck,
+  PackageCheck,
+  Warehouse,
 } from 'lucide-react'
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatsRow } from '@/components/common/StatsRow'
@@ -59,6 +79,21 @@ const REPAIR_STATUSES: DeviceStatus[] = [
   'IN_PAINT_SHOP',
 ]
 
+// Analytics stage definitions — the key pipeline stages the user tracks
+const ANALYTICS_STAGES = [
+  { key: 'assignmentPending', label: 'Assignment Pending', color: '#94a3b8', statuses: ['RECEIVED'] as DeviceStatus[] },
+  { key: 'pendingInspection', label: 'Pending Inspection', color: '#f59e0b', statuses: ['PENDING_INSPECTION', 'UNDER_INSPECTION'] as DeviceStatus[] },
+  { key: 'inspected', label: 'Inspected', color: '#6366f1', statuses: ['INSPECTED'] as DeviceStatus[] },
+  { key: 'waitingForSpares', label: 'Waiting for Spares', color: '#ef4444', statuses: ['WAITING_FOR_SPARES'] as DeviceStatus[] },
+  { key: 'inPaint', label: 'In Paint', color: '#ec4899', statuses: ['IN_PAINT_SHOP'] as DeviceStatus[] },
+  { key: 'inRepair', label: 'In Repair', color: '#8b5cf6', statuses: ['READY_FOR_REPAIR', 'UNDER_REPAIR', 'IN_L3_REPAIR', 'IN_DISPLAY_REPAIR', 'IN_BATTERY_BOOST'] as DeviceStatus[] },
+  { key: 'inQC', label: 'In QC', color: '#3b82f6', statuses: ['AWAITING_QC', 'UNDER_QC'] as DeviceStatus[] },
+  { key: 'readyForStock', label: 'Ready for Stock', color: '#14b8a6', statuses: ['READY_FOR_STOCK'] as DeviceStatus[] },
+  { key: 'inStock', label: 'In Stock', color: '#22c55e', statuses: ['IN_STOCK'] as DeviceStatus[] },
+] as const
+
+const PIE_COLORS = ['#94a3b8', '#f59e0b', '#6366f1', '#ef4444', '#ec4899', '#8b5cf6', '#3b82f6', '#14b8a6', '#22c55e']
+
 function WmsDashboard() {
   // Count devices per stage
   const stageCounts = useMemo(() => {
@@ -104,6 +139,39 @@ function WmsDashboard() {
             : 'pending' as const,
     }))
   }, [activeStageId, stageCounts])
+
+  // Analytics stage counts
+  const analyticsCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const stage of ANALYTICS_STAGES) {
+      counts[stage.key] = mockDevices.filter((d) =>
+        stage.statuses.includes(d.status)
+      ).length
+    }
+    return counts
+  }, [])
+
+  // Chart data for bar chart
+  const barChartData = useMemo(() =>
+    ANALYTICS_STAGES.map((stage) => ({
+      name: stage.label,
+      count: analyticsCounts[stage.key],
+      color: stage.color,
+    })),
+    [analyticsCounts]
+  )
+
+  // Pie chart data (exclude zero-count stages)
+  const pieChartData = useMemo(() =>
+    ANALYTICS_STAGES
+      .map((stage, i) => ({
+        name: stage.label,
+        value: analyticsCounts[stage.key],
+        color: PIE_COLORS[i],
+      }))
+      .filter((d) => d.value > 0),
+    [analyticsCounts]
+  )
 
   // Stats KPIs
   const totalDevices = mockDevices.length
@@ -205,7 +273,7 @@ function WmsDashboard() {
         </CardContent>
       </Card>
 
-      {/* KPI Stats */}
+      {/* KPI Stats — Row 1: Primary overview */}
       <StatsRow
         stats={[
           {
@@ -235,7 +303,158 @@ function WmsDashboard() {
         ]}
       />
 
-      {/* Two-column layout */}
+      {/* KPI Stats — Row 2: Pipeline analytics */}
+      <StatsRow
+        stats={[
+          {
+            label: 'Assignment Pending',
+            value: analyticsCounts.assignmentPending,
+            icon: Clock,
+            trend: { value: 3, isPositive: false },
+          },
+          {
+            label: 'Pending Inspection',
+            value: analyticsCounts.pendingInspection,
+            icon: Search,
+            trend: { value: 6, isPositive: false },
+          },
+          {
+            label: 'Inspected',
+            value: analyticsCounts.inspected,
+            icon: Eye,
+            trend: { value: 10, isPositive: true },
+          },
+          {
+            label: 'Waiting for Spares',
+            value: analyticsCounts.waitingForSpares,
+            icon: Package,
+            trend: { value: 2, isPositive: false },
+          },
+        ]}
+      />
+
+      {/* KPI Stats — Row 3: Downstream pipeline */}
+      <StatsRow
+        stats={[
+          {
+            label: 'In Paint',
+            value: analyticsCounts.inPaint,
+            icon: Paintbrush,
+          },
+          {
+            label: 'In Repair',
+            value: analyticsCounts.inRepair,
+            icon: Wrench,
+            trend: { value: 4, isPositive: false },
+          },
+          {
+            label: 'In QC',
+            value: analyticsCounts.inQC,
+            icon: ShieldCheck,
+            trend: { value: 7, isPositive: true },
+          },
+          {
+            label: 'Ready for Stock',
+            value: analyticsCounts.readyForStock,
+            icon: PackageCheck,
+            trend: { value: 9, isPositive: true },
+          },
+        ]}
+      />
+
+      {/* KPI Stats — Row 4: Stock */}
+      <StatsRow
+        stats={[
+          {
+            label: 'In Stock',
+            value: analyticsCounts.inStock,
+            icon: Warehouse,
+            trend: { value: 14, isPositive: true },
+          },
+        ]}
+        className="lg:grid-cols-4"
+      />
+
+      {/* Charts — Pipeline Bar + Distribution Pie */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Pipeline Stage Bar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Devices by Pipeline Stage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={barChartData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 12 }}
+                  className="fill-muted-foreground"
+                  allowDecimals={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={130}
+                  tick={{ fontSize: 12 }}
+                  className="fill-muted-foreground"
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: 8,
+                    fontSize: 13,
+                  }}
+                />
+                <Bar dataKey="count" name="Devices" radius={[0, 4, 4, 0]}>
+                  {barChartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Pipeline Distribution Pie Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Pipeline Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Pie
+                  data={pieChartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={70}
+                  outerRadius={120}
+                  paddingAngle={3}
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}`}
+                >
+                  {pieChartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: 8,
+                    fontSize: 13,
+                  }}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Two-column layout: Status Breakdown + Recent Activity */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Left: Device Status Breakdown */}
         <Card>

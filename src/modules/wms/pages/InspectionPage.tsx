@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { toast } from 'sonner'
-import { ChevronDown, ChevronRight, Check, X, Minus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Check, X, Minus, Camera, Upload, Printer, Plus, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +27,13 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@/components/ui/collapsible'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 
 import { mockDevices } from '../data/devices'
 import { mockInspections } from '../data/inspections'
@@ -34,7 +41,6 @@ import {
   INSPECTION_CHECKLIST_ITEMS,
   type Device,
   type InspectionResult,
-  type RepairType,
   type PaintPanelType,
 } from '../types'
 
@@ -60,20 +66,54 @@ const GROUP_ORDER = ['Panels', 'Display', 'Input', 'Audio', 'Power', 'Hardware',
 
 const INSPECTION_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta']
 
+const AVAILABLE_SPARES = [
+  'Keyboard', 'Touchpad', 'Screen Panel', 'Battery', 'SSD 256GB', 'SSD 512GB',
+  'RAM 8GB', 'RAM 16GB', 'Fan Assembly', 'Hinge Set', 'Speaker Module',
+  'USB Port Board', 'HDMI Port Board', 'Power Jack', 'Webcam Module',
+  'LCD Cable', 'Motherboard', 'Charger', 'Palm Rest',
+]
+
 type ChecklistState = Record<string, { result: InspectionResult; notes: string }>
 
+interface SpareRequest {
+  spareName: string
+  qty: number
+}
+
+function handlePrintBarcode(barcode: string, model: string, serial: string) {
+  const printWindow = window.open('', '_blank', 'width=400,height=300')
+  if (!printWindow) {
+    toast.error('Please allow popups to print barcodes.')
+    return
+  }
+  printWindow.document.write(`
+    <html>
+      <head><title>Print Barcode</title></head>
+      <body style="font-family: monospace; text-align: center; padding: 40px;">
+        <div style="border: 2px solid #000; padding: 20px; display: inline-block;">
+          <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px;">${barcode}</div>
+          <div style="font-size: 12px; margin-top: 8px; color: #555;">${model}</div>
+          <div style="font-size: 11px; margin-top: 4px; color: #777;">S/N: ${serial}</div>
+        </div>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+    </html>
+  `)
+  printWindow.document.close()
+}
+
 function InspectionPage() {
+  const [inspectionDialogOpen, setInspectionDialogOpen] = useState(false)
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
   const [checklist, setChecklist] = useState<ChecklistState>({})
-  const [requiresRepair, setRequiresRepair] = useState(false)
-  const [requiresPaint, setRequiresPaint] = useState(false)
   const [requiresSpares, setRequiresSpares] = useState(false)
-  const [repairTypes, setRepairTypes] = useState<RepairType[]>([])
+  const [spareRequests, setSpareRequests] = useState<SpareRequest[]>([])
+  const [requiresPaint, setRequiresPaint] = useState(false)
   const [paintPanels, setPaintPanels] = useState<PaintPanelType[]>([])
-  const [spareParts, setSpareParts] = useState('')
   const [overallNotes, setOverallNotes] = useState('')
   const [assignments, setAssignments] = useState<Record<string, string>>({})
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
+  const [deviceImages, setDeviceImages] = useState<File[]>([])
 
   const handleAssignEngineer = (deviceId: string, engineer: string) => {
     setAssignments((prev) => ({ ...prev, [deviceId]: engineer }))
@@ -144,6 +184,7 @@ function InspectionPage() {
         batch: d.batchNumber,
         receivedDate: formatDate(d.receivedAt),
         assignedTo: assignments[d.id] ?? '',
+        actions: '',
       })),
     [pendingDevices, assignments],
   )
@@ -182,6 +223,7 @@ function InspectionPage() {
           { key: 'batch', label: 'Batch' },
           { key: 'receivedDate', label: 'Received Date', sortable: true },
           { key: 'assignedTo', label: 'Assign' },
+          { key: 'actions', label: 'Actions' },
         ],
         data: pendingRows,
       },
@@ -203,24 +245,59 @@ function InspectionPage() {
     [pendingRows, completedRows],
   )
 
+  const handleStartInspection = (device: Device) => {
+    setSelectedDevice(device)
+    setChecklist({})
+    setRequiresSpares(false)
+    setSpareRequests([])
+    setRequiresPaint(false)
+    setPaintPanels([])
+    setOverallNotes('')
+    setCollapsedGroups({})
+    setDeviceImages([])
+    setInspectionDialogOpen(true)
+  }
+
   const cellFormatter: CellFormatter = useCallback(
     (value, key, row) => {
       if (key === 'barcode') {
         return {
           display: (
-            <button
-              className="text-primary underline-offset-4 hover:underline font-medium"
-              onClick={() => {
-                const device = mockDevices.find((d) => d.id === row.id)
-                if (device) handleSelectDevice(device)
-              }}
-            >
-              {String(value)}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium">{String(value)}</span>
+              <Button
+                size="xs"
+                variant="ghost"
+                className="size-6 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  const device = mockDevices.find((d) => d.id === row.id)
+                  if (device) handlePrintBarcode(device.barcode, device.model, device.serialNumber)
+                }}
+                title="Print barcode"
+              >
+                <Printer className="size-3.5" />
+              </Button>
+            </div>
           ),
         }
       }
-      if (key === 'assignedTo' && row.model !== undefined) {
+      if (key === 'actions' && row.batch !== undefined) {
+        // Only for pending tab rows
+        return {
+          display: (
+            <Button
+              size="xs"
+              onClick={() => {
+                const device = mockDevices.find((d) => d.id === row.id)
+                if (device) handleStartInspection(device)
+              }}
+            >
+              Start Inspection
+            </Button>
+          ),
+        }
+      }
+      if (key === 'assignedTo' && row.batch !== undefined) {
         const deviceId = row.id as string
         const currentValue = value as string
         return {
@@ -256,19 +333,6 @@ function InspectionPage() {
     [],
   )
 
-  const handleSelectDevice = (device: Device) => {
-    setSelectedDevice(device)
-    setChecklist({})
-    setRequiresRepair(false)
-    setRequiresPaint(false)
-    setRequiresSpares(false)
-    setRepairTypes([])
-    setPaintPanels([])
-    setSpareParts('')
-    setOverallNotes('')
-    setCollapsedGroups({})
-  }
-
   const handleChecklistChange = (itemId: string, result: InspectionResult) => {
     setChecklist((prev) => ({
       ...prev,
@@ -283,12 +347,6 @@ function InspectionPage() {
     }))
   }
 
-  const toggleRepairType = (type: RepairType) => {
-    setRepairTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
-    )
-  }
-
   const togglePaintPanel = (panel: PaintPanelType) => {
     setPaintPanels((prev) =>
       prev.includes(panel) ? prev.filter((p) => p !== panel) : [...prev, panel],
@@ -299,22 +357,51 @@ function InspectionPage() {
     setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }))
   }
 
+  const addSpareRequest = () => {
+    setSpareRequests((prev) => [...prev, { spareName: '', qty: 1 }])
+  }
+
+  const updateSpareRequest = (index: number, field: 'spareName' | 'qty', value: string | number) => {
+    setSpareRequests((prev) =>
+      prev.map((sr, i) => (i === index ? { ...sr, [field]: value } : sr))
+    )
+  }
+
+  const removeSpareRequest = (index: number) => {
+    setSpareRequests((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleImageUpload = (files: FileList | null) => {
+    if (!files) return
+    const newFiles = Array.from(files)
+    setDeviceImages((prev) => [...prev, ...newFiles])
+  }
+
+  const removeImage = (index: number) => {
+    setDeviceImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = () => {
+    if (deviceImages.length === 0) {
+      toast.error('Please upload at least one device image before submitting.')
+      return
+    }
     const filledCount = Object.keys(checklist).length
     if (filledCount < INSPECTION_CHECKLIST_ITEMS.length) {
       toast.error('Please complete all checklist items before submitting.')
       return
     }
-    toast.success(`Inspection completed for ${selectedDevice?.barcode}`)
+    if (requiresSpares && spareRequests.length === 0) {
+      toast.error('Please add at least one spare part.')
+      return
+    }
+    if (requiresSpares && spareRequests.some((sr) => !sr.spareName)) {
+      toast.error('Please select a spare part for all spare requests.')
+      return
+    }
+    toast.success(`Inspection completed for ${selectedDevice?.barcode}. Sent to repair section.`)
+    setInspectionDialogOpen(false)
     setSelectedDevice(null)
-    setChecklist({})
-    setRequiresRepair(false)
-    setRequiresPaint(false)
-    setRequiresSpares(false)
-    setRepairTypes([])
-    setPaintPanels([])
-    setSpareParts('')
-    setOverallNotes('')
   }
 
   return (
@@ -326,31 +413,90 @@ function InspectionPage() {
         </p>
       </div>
 
-      {/* Section A: Device Queue */}
+      {/* Device Queue */}
       <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
 
-      {/* Section B: Inspection Form */}
-      {selectedDevice && (
-        <Card>
-          <CardHeader className="border-b">
-            <CardTitle>Inspecting: {selectedDevice.barcode}</CardTitle>
-            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-              <span>
-                <span className="font-medium text-foreground">Model:</span>{' '}
-                {selectedDevice.model}
-              </span>
-              <span>
-                <span className="font-medium text-foreground">Brand:</span>{' '}
-                {selectedDevice.brand}
-              </span>
-              <span>
-                <span className="font-medium text-foreground">Serial:</span>{' '}
-                {selectedDevice.serialNumber}
-              </span>
-            </div>
-          </CardHeader>
+      {/* Inspection Dialog */}
+      <Dialog open={inspectionDialogOpen} onOpenChange={setInspectionDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Inspecting: {selectedDevice?.barcode}
+            </DialogTitle>
+            {selectedDevice && (
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                <span>
+                  <span className="font-medium text-foreground">Model:</span>{' '}
+                  {selectedDevice.model}
+                </span>
+                <span>
+                  <span className="font-medium text-foreground">Brand:</span>{' '}
+                  {selectedDevice.brand}
+                </span>
+                <span>
+                  <span className="font-medium text-foreground">Serial:</span>{' '}
+                  {selectedDevice.serialNumber}
+                </span>
+              </div>
+            )}
+          </DialogHeader>
 
-          <CardContent className="space-y-6">
+          <div className="space-y-6">
+            {/* Device Images - Mandatory */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">
+                Device Images <span className="text-destructive">*</span>
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Upload or take photos of the device (mandatory, multiple images allowed)
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {deviceImages.map((img, idx) => (
+                  <div key={idx} className="relative group">
+                    <div className="w-20 h-20 rounded-md border bg-muted flex items-center justify-center text-xs text-muted-foreground overflow-hidden">
+                      <img
+                        src={URL.createObjectURL(img)}
+                        alt={`Device ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <button
+                      className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeImage(idx)}
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </div>
+                ))}
+                <label className="w-20 h-20 rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e.target.files)}
+                  />
+                  <Camera className="size-5 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground mt-1">Add Photo</span>
+                </label>
+                <label className="w-20 h-20 rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e.target.files)}
+                  />
+                  <Upload className="size-5 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground mt-1">Upload</span>
+                </label>
+              </div>
+              {deviceImages.length === 0 && (
+                <p className="text-xs text-destructive">At least one image is required</p>
+              )}
+            </div>
+
             {/* Progress indicator */}
             <div className="rounded-lg border bg-muted/30 p-4">
               <div className="flex items-center justify-between mb-2">
@@ -386,7 +532,7 @@ function InspectionPage() {
               </Progress>
             </div>
 
-            {/* Checklist grouped by category - collapsible sections */}
+            {/* Checklist grouped by category */}
             {GROUP_ORDER.map((group) => {
               const items = CHECKLIST_GROUPS[group]
               if (!items) return null
@@ -492,102 +638,93 @@ function InspectionPage() {
               )
             })}
 
-            {/* Conditional flags */}
-            {hasFailures && (
-              <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Inspection Flags
-                </h3>
-
-                {/* Requires Repair */}
-                <div className="space-y-2">
-                  <Label className="cursor-pointer">
-                    <Checkbox
-                      checked={requiresRepair}
-                      onCheckedChange={(val) => {
-                        setRequiresRepair(val as boolean)
-                        if (!val) setRepairTypes([])
-                      }}
-                    />
-                    Requires Repair
-                  </Label>
-                  {requiresRepair && (
-                    <div className="ml-6 flex flex-wrap gap-3">
-                      {(['L2', 'L3', 'DISPLAY', 'BATTERY'] as RepairType[]).map(
-                        (type) => (
-                          <Label key={type} className="cursor-pointer">
-                            <Checkbox
-                              checked={repairTypes.includes(type)}
-                              onCheckedChange={() => toggleRepairType(type)}
-                            />
-                            {type === 'L2'
-                              ? 'L2 Repair'
-                              : type === 'L3'
-                                ? 'L3 Repair'
-                                : type === 'DISPLAY'
-                                  ? 'Display Repair'
-                                  : 'Battery Boost'}
-                          </Label>
-                        ),
-                      )}
+            {/* Requires Spares */}
+            <div className="space-y-3 rounded-lg border p-4">
+              <Label className="cursor-pointer">
+                <Checkbox
+                  checked={requiresSpares}
+                  onCheckedChange={(val) => {
+                    setRequiresSpares(val as boolean)
+                    if (!val) setSpareRequests([])
+                  }}
+                />
+                Requires Spares
+              </Label>
+              {requiresSpares && (
+                <div className="ml-6 space-y-2">
+                  {spareRequests.map((sr, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Select
+                        value={sr.spareName}
+                        onValueChange={(val) => updateSpareRequest(idx, 'spareName', val)}
+                      >
+                        <SelectTrigger className="w-48 text-sm">
+                          <SelectValue placeholder="Select spare..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AVAILABLE_SPARES.map((spare) => (
+                            <SelectItem key={spare} value={spare}>
+                              {spare}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={sr.qty}
+                        onChange={(e) => updateSpareRequest(idx, 'qty', parseInt(e.target.value) || 1)}
+                        className="w-20 h-9 text-sm"
+                        placeholder="Qty"
+                      />
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => removeSpareRequest(idx)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
                     </div>
+                  ))}
+                  <Button size="xs" variant="outline" onClick={addSpareRequest}>
+                    <Plus className="size-3.5" />
+                    Add Spare
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Paint Option */}
+            <div className="space-y-3 rounded-lg border p-4">
+              <Label className="cursor-pointer">
+                <Checkbox
+                  checked={requiresPaint}
+                  onCheckedChange={(val) => {
+                    setRequiresPaint(val as boolean)
+                    if (!val) setPaintPanels([])
+                  }}
+                />
+                Requires Paint
+              </Label>
+              {requiresPaint && (
+                <div className="ml-6 flex flex-wrap gap-3">
+                  {(['TOP_COVER', 'BOTTOM_COVER'] as PaintPanelType[]).map(
+                    (panel) => (
+                      <Label key={panel} className="cursor-pointer">
+                        <Checkbox
+                          checked={paintPanels.includes(panel)}
+                          onCheckedChange={() => togglePaintPanel(panel)}
+                        />
+                        {panel === 'TOP_COVER' ? 'Top Cover' : 'Bottom Cover'}
+                      </Label>
+                    ),
                   )}
                 </div>
+              )}
+            </div>
 
-                {/* Requires Paint */}
-                <div className="space-y-2">
-                  <Label className="cursor-pointer">
-                    <Checkbox
-                      checked={requiresPaint}
-                      onCheckedChange={(val) => {
-                        setRequiresPaint(val as boolean)
-                        if (!val) setPaintPanels([])
-                      }}
-                    />
-                    Requires Paint
-                  </Label>
-                  {requiresPaint && (
-                    <div className="ml-6 flex flex-wrap gap-3">
-                      {(['TOP_COVER', 'BOTTOM_COVER'] as PaintPanelType[]).map(
-                        (panel) => (
-                          <Label key={panel} className="cursor-pointer">
-                            <Checkbox
-                              checked={paintPanels.includes(panel)}
-                              onCheckedChange={() => togglePaintPanel(panel)}
-                            />
-                            {panel === 'TOP_COVER' ? 'Top Cover' : 'Bottom Cover'}
-                          </Label>
-                        ),
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Requires Spares */}
-                <div className="space-y-2">
-                  <Label className="cursor-pointer">
-                    <Checkbox
-                      checked={requiresSpares}
-                      onCheckedChange={(val) => {
-                        setRequiresSpares(val as boolean)
-                        if (!val) setSpareParts('')
-                      }}
-                    />
-                    Requires Spares
-                  </Label>
-                  {requiresSpares && (
-                    <Input
-                      placeholder="List spare parts needed..."
-                      value={spareParts}
-                      onChange={(e) => setSpareParts(e.target.value)}
-                      className="ml-6 max-w-md"
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Summary before submit */}
+            {/* Summary */}
             {checkedCount > 0 && (
               <div className="rounded-lg border bg-muted/30 p-4">
                 <h3 className="text-sm font-semibold mb-2">Summary</h3>
@@ -605,11 +742,6 @@ function InspectionPage() {
                     <p className="text-xs text-muted-foreground">N/A</p>
                   </div>
                 </div>
-                {failCount > 0 && (
-                  <div className="mt-3 rounded border border-[#f6c000]/30 bg-[#fff8dd] p-2 text-xs text-[#b88800] dark:border-[#f6c000]/40 dark:bg-[#b88800]/15 dark:text-[#f6c000]">
-                    {failCount} item{failCount > 1 ? 's' : ''} failed - review inspection flags below
-                  </div>
-                )}
               </div>
             )}
 
@@ -623,17 +755,16 @@ function InspectionPage() {
                 onChange={(e) => setOverallNotes(e.target.value)}
               />
             </div>
+          </div>
 
-            {/* Submit */}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setSelectedDevice(null)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSubmit}>Complete Inspection</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInspectionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit}>Complete Inspection</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

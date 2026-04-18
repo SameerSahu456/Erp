@@ -147,6 +147,8 @@ const PMAssignmentsPage = lazy(() => import('@/modules/ims/pages/PMAssignmentsPa
 
 // WMS additional pages
 const ComponentMovementHistoryPage = lazy(() => import('@/modules/wms/pages/ComponentMovementHistoryPage'))
+const SparesPage = lazy(() => import('@/modules/wms/pages/SparesPage'))
+const AssignToRackPage = lazy(() => import('@/modules/wms/pages/AssignToRackPage'))
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return (
@@ -237,6 +239,8 @@ export const router = createBrowserRouter([
       { path: '/wms/related-parts', element: <LazyRoute><RelatedPartsPage /></LazyRoute> },
       { path: '/wms/work-orders', element: <LazyRoute><WorkOrderListPage /></LazyRoute> },
       { path: '/wms/work-orders/:id', element: <LazyRoute><WorkOrderDetailPage /></LazyRoute> },
+      { path: '/wms/spares', element: <LazyRoute><SparesPage /></LazyRoute> },
+      { path: '/wms/assign-rack', element: <LazyRoute><AssignToRackPage /></LazyRoute> },
       { path: '/wms/component-history', element: <LazyRoute><ComponentMovementHistoryPage /></LazyRoute> },
 
       // IMS routes

@@ -41,6 +41,8 @@ import {
   DollarSign,
   History,
   XCircle,
+  Cpu,
+  LocateFixed,
 } from 'lucide-react'
 import type { NavGroup } from '@/types/navigation'
 
@@ -77,6 +79,8 @@ export const SIDEBAR_NAV: NavGroup[] = [
       { label: 'Repair', href: '/wms/repair', icon: Wrench, module: 'wms' },
       { label: 'Paint', href: '/wms/paint', icon: Paintbrush, module: 'wms' },
       { label: 'QC', href: '/wms/qc', icon: CheckCircle2, module: 'wms' },
+      { label: 'Assign to Rack', href: '/wms/assign-rack', icon: LocateFixed, module: 'wms' },
+      { label: 'Spares', href: '/wms/spares', icon: Cpu, module: 'wms' },
       { label: 'Outward', href: '/wms/outward', icon: Truck, module: 'wms' },
       { label: 'Dispatch', href: '/wms/dispatch', icon: Package, module: 'wms' },
       { label: 'Work Orders', href: '/wms/work-orders', icon: Hammer, module: 'wms' },

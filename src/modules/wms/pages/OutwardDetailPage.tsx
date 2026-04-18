@@ -131,6 +131,9 @@ export default function OutwardDetailPage() {
   const [qcDialogDevice, setQcDialogDevice] = useState<OutwardDevice | null>(null)
   const [qcDialogResult, setQcDialogResult] = useState<'Passed' | 'Failed'>('Passed')
 
+  // Delivery challan
+  const [deliveryChallan, setDeliveryChallan] = useState<File | null>(null)
+
   // Logistics editing
   const [editLogistics, setEditLogistics] = useState(false)
   const [logVehicle, setLogVehicle] = useState(record?.logistics.vehicleNumber ?? '')
@@ -391,24 +394,33 @@ export default function OutwardDetailPage() {
                   </StatusBadge>
                 </dd>
               </div>
-              {record.salesOrderNumber && (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Reference (SO)</dt>
-                  <dd className="mt-1 text-sm font-medium">{record.salesOrderNumber}</dd>
-                </div>
-              )}
-              {record.rentalContractId && (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Reference (Rental)</dt>
-                  <dd className="mt-1 text-sm font-medium">{record.rentalContractId}</dd>
-                </div>
-              )}
-              {record.demoRequestId && (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Reference (Demo)</dt>
-                  <dd className="mt-1 text-sm font-medium">{record.demoRequestId}</dd>
-                </div>
-              )}
+              <div>
+                <dt className="text-sm text-muted-foreground">Delivery Challan</dt>
+                <dd className="mt-1">
+                  {deliveryChallan ? (
+                    <div className="flex items-center gap-2">
+                      <StatusBadge variant="success">Uploaded</StatusBadge>
+                      <span className="text-sm text-muted-foreground">{deliveryChallan.name}</span>
+                    </div>
+                  ) : (
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-muted-foreground/40 px-3 py-1.5 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            setDeliveryChallan(file)
+                            toast.success(`Delivery challan "${file.name}" uploaded.`)
+                          }
+                        }}
+                      />
+                      Upload Challan
+                    </label>
+                  )}
+                </dd>
+              </div>
             </dl>
           </CardContent>
         </Card>

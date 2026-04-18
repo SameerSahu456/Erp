@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, Package, Tag, Layers, Send } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Package, Tag, Layers, Send, ChevronDown, ChevronRight, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -13,12 +13,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  BusinessMetricsTable,
-  type TabConfig,
-  type CellFormatter,
-} from '@/components/common/BusinessMetricsTable'
 import { EmptyState } from '@/components/common/EmptyState'
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@/components/ui/collapsible'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
 import {
   DEVICE_STATUS_LABELS,
   DEVICE_STATUS_VARIANT,
@@ -57,6 +65,28 @@ function formatDate(dateStr: string) {
   })
 }
 
+function handlePrintBarcode(barcode: string, model: string, serial: string) {
+  const printWindow = window.open('', '_blank', 'width=400,height=300')
+  if (!printWindow) {
+    toast.error('Please allow popups to print barcodes.')
+    return
+  }
+  printWindow.document.write(`
+    <html>
+      <head><title>Print Barcode</title></head>
+      <body style="font-family: monospace; text-align: center; padding: 40px;">
+        <div style="border: 2px solid #000; padding: 20px; display: inline-block;">
+          <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px;">${barcode}</div>
+          <div style="font-size: 12px; margin-top: 8px; color: #555;">${model}</div>
+          <div style="font-size: 11px; margin-top: 4px; color: #777;">S/N: ${serial}</div>
+        </div>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+    </html>
+  `)
+  printWindow.document.close()
+}
+
 function BatchDevicesPage() {
   const { id } = useParams<{ id: string }>()
 
@@ -67,6 +97,7 @@ function BatchDevicesPage() {
   )
 
   const [devices, setDevices] = useState<Device[]>(initialDevices)
+  const [collapsedModels, setCollapsedModels] = useState<Record<string, boolean>>({})
 
   if (!batch) {
     return (
@@ -77,6 +108,17 @@ function BatchDevicesPage() {
       />
     )
   }
+
+  // Group devices by model
+  const devicesByModel = useMemo(() => {
+    const groups: Record<string, Device[]> = {}
+    for (const d of devices) {
+      const key = `${d.brand} ${d.model}`
+      if (!groups[key]) groups[key] = []
+      groups[key].push(d)
+    }
+    return groups
+  }, [devices])
 
   const handleMoveToInspection = (deviceId: string) => {
     setDevices((prev) =>
@@ -114,92 +156,11 @@ function BatchDevicesPage() {
     )
   }
 
-  const hasReceivedDevices = devices.some((d) => d.status === 'RECEIVED')
-
-  const deviceColumns = [
-    { key: 'barcode', label: 'Barcode', sortable: true },
-    { key: 'model', label: 'Model', sortable: true },
-    { key: 'serialNumber', label: 'Serial Number' },
-    { key: 'status', label: 'Status' },
-    { key: 'grade', label: 'Grade', align: 'center' as const },
-    { key: 'assignedTo', label: 'Assigned To' },
-    { key: 'actions', label: 'Actions' },
-  ]
-
-  const deviceRows = devices.map((d) => ({
-    id: d.id,
-    barcode: d.barcode,
-    model: d.model,
-    serialNumber: d.serialNumber,
-    status: d.status,
-    grade: d.grade ?? '-',
-    assignedTo: d.assignedTo ?? '-',
-    _status: d.status,
-  }))
-
-  const tabs: TabConfig[] = [
-    {
-      id: 'devices',
-      label: `Devices (${devices.length})`,
-      columns: deviceColumns,
-      data: deviceRows,
-    },
-  ]
-
-  const cellFormatter: CellFormatter = (value, key, row) => {
-    if (key === 'status') {
-      const status = value as DeviceStatus
-      return {
-        display: (
-          <StatusBadge variant={DEVICE_STATUS_VARIANT[status]}>
-            {DEVICE_STATUS_LABELS[status]}
-          </StatusBadge>
-        ),
-      }
-    }
-    if (key === 'assignedTo') {
-      const deviceId = row.id as string
-      const currentValue = value as string
-      return {
-        display: (
-          <Select
-            value={currentValue === '-' ? '' : currentValue}
-            onValueChange={(val) => { if (val) handleAssignEngineer(deviceId, val) }}
-          >
-            <SelectTrigger className="h-8 w-36 text-xs">
-              <SelectValue placeholder="Assign..." />
-            </SelectTrigger>
-            <SelectContent>
-              {MOCK_ENGINEERS.map((eng) => (
-                <SelectItem key={eng} value={eng}>
-                  {eng}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ),
-      }
-    }
-    if (key === 'actions') {
-      const status = row._status as DeviceStatus
-      const deviceId = row.id as string
-      if (status === 'RECEIVED') {
-        return {
-          display: (
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={() => handleMoveToInspection(deviceId)}
-            >
-              Move to Inspection
-            </Button>
-          ),
-        }
-      }
-      return { display: <span className="text-muted-foreground text-xs">--</span> }
-    }
-    return null
+  const toggleModel = (model: string) => {
+    setCollapsedModels((prev) => ({ ...prev, [model]: !prev[model] }))
   }
+
+  const hasReceivedDevices = devices.some((d) => d.status === 'RECEIVED')
 
   const infoItems = [
     { icon: Layers, label: 'Category', value: batch.category },
@@ -265,9 +226,107 @@ function BatchDevicesPage() {
         </CardContent>
       </Card>
 
-      {/* Device List */}
+      {/* Device List grouped by Model */}
       {devices.length > 0 ? (
-        <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Devices by Model
+          </h2>
+          {Object.entries(devicesByModel).map(([modelKey, modelDevices]) => {
+            const isCollapsed = collapsedModels[modelKey] ?? false
+            return (
+              <Collapsible key={modelKey} open={!isCollapsed}>
+                <CollapsibleTrigger
+                  className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-4 py-3 text-left hover:bg-muted/60 transition-colors"
+                  onClick={() => toggleModel(modelKey)}
+                >
+                  <div className="flex items-center gap-2">
+                    {isCollapsed ? (
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="size-4 text-muted-foreground" />
+                    )}
+                    <span className="text-sm font-semibold">{modelKey}</span>
+                    <StatusBadge variant="neutral">{modelDevices.length} devices</StatusBadge>
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="overflow-x-auto rounded-b-md border border-t-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Barcode</TableHead>
+                          <TableHead>Serial Number</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Grade</TableHead>
+                          <TableHead>Assigned To</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {modelDevices.map((d) => (
+                          <TableRow key={d.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{d.barcode}</span>
+                                <Button
+                                  size="xs"
+                                  variant="ghost"
+                                  className="size-6 p-0 text-muted-foreground hover:text-foreground"
+                                  onClick={() => handlePrintBarcode(d.barcode, d.model, d.serialNumber)}
+                                  title="Print barcode"
+                                >
+                                  <Printer className="size-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{d.serialNumber}</TableCell>
+                            <TableCell>
+                              <StatusBadge variant={DEVICE_STATUS_VARIANT[d.status]}>
+                                {DEVICE_STATUS_LABELS[d.status]}
+                              </StatusBadge>
+                            </TableCell>
+                            <TableCell>{d.grade ?? '-'}</TableCell>
+                            <TableCell>
+                              <Select
+                                value={d.assignedTo === undefined ? '' : d.assignedTo}
+                                onValueChange={(val) => { if (val) handleAssignEngineer(d.id, val) }}
+                              >
+                                <SelectTrigger className="h-8 w-36 text-xs">
+                                  <SelectValue placeholder="Assign..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {MOCK_ENGINEERS.map((eng) => (
+                                    <SelectItem key={eng} value={eng}>
+                                      {eng}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              {d.status === 'RECEIVED' ? (
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  onClick={() => handleMoveToInspection(d.id)}
+                                >
+                                  Move to Inspection
+                                </Button>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">--</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )
+          })}
+        </div>
       ) : (
         <EmptyState
           title="No devices yet"
