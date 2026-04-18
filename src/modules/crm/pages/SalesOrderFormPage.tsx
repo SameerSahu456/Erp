@@ -1,7 +1,15 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CheckCircle, Loader2 } from 'lucide-react'
+import {
+  CheckCircle,
+  Loader2,
+  Save,
+  FileText,
+  ShoppingCart,
+  ClipboardList,
+  Sparkles,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +38,14 @@ import type { SalesOrder } from '../types'
 const SO_STATUSES: SalesOrder['status'][] = ['Draft', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled']
 const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
 
+const STATUS_VARIANTS: Record<SalesOrder['status'], 'neutral' | 'info' | 'success' | 'error' | 'warning'> = {
+  Draft: 'neutral',
+  Confirmed: 'info',
+  Shipped: 'warning',
+  Delivered: 'success',
+  Cancelled: 'error',
+}
+
 function SalesOrderFormPage() {
   const { id: orderId } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -38,7 +54,6 @@ function SalesOrderFormPage() {
   const existingOrder = orderId ? salesOrders.find((o) => o.id === orderId) : undefined
   const isEdit = !!existingOrder
 
-  // Pre-fill from quote
   const paramQuoteId = searchParams.get('quoteId') ?? ''
   const linkedQuote = paramQuoteId
     ? quotes.find((q) => q.id === paramQuoteId)
@@ -72,7 +87,11 @@ function SalesOrderFormPage() {
   const [shippingAddress, setShippingAddress] = useState('')
   const [notes, setNotes] = useState('')
 
-  // Approval state (local)
+  const accountName = useMemo(
+    () => accounts.find((a) => a.id === accountId)?.name ?? '',
+    [accountId],
+  )
+
   const [approvalStatus, setApprovalStatus] = useState<'Pending' | 'Approved' | 'Rejected'>(
     existingOrder?.approvalStatus ?? 'Pending'
   )
@@ -108,7 +127,10 @@ function SalesOrderFormPage() {
   const backHref = '/crm/sales-orders'
 
   function handleSave() {
-    if (!accountId) return
+    if (!accountId) {
+      toast.error('Please select an account.')
+      return
+    }
     toast.success('Sales order saved successfully')
     navigate(backHref)
   }
@@ -135,25 +157,35 @@ function SalesOrderFormPage() {
   return (
     <div className="space-y-6">
       <EntityHeader
-        title={isEdit ? `Edit Sales Order: ${existingOrder.orderNumber}` : 'Create Sales Order'}
+        title={isEdit ? orderNumber : 'Create Sales Order'}
+        subtitle={
+          isEdit
+            ? `${accountName} — ${lineItems.length} items`
+            : linkedQuote
+              ? `From Quote ${linkedQuote.quoteNumber}`
+              : 'Create a new sales order'
+        }
+        status={isEdit ? { label: status, variant: STATUS_VARIANTS[status] } : undefined}
         backHref={backHref}
         actions={
           isEdit && approvalStatus === 'Approved' ? (
             <Button size="sm" onClick={handleGeneratePR}>
+              <ClipboardList className="size-4 mr-1.5" />
               Generate Purchase Request
             </Button>
           ) : undefined
         }
       />
 
-      {/* Linked info & Approval */}
+      {/* Context badges */}
       <div className="flex flex-wrap items-center gap-3">
         {linkedQuote && (
           <div className="flex items-center gap-2">
             <span className="text-xs font-ui text-muted-foreground">Quote:</span>
-            <Link to={`/crm/quotes/${linkedQuote.id}/edit`} className="text-sm text-primary hover:underline">
+            <Link to={`/crm/quotes/${linkedQuote.id}/edit`} className="text-sm text-primary hover:underline font-medium">
               {linkedQuote.quoteNumber}
             </Link>
+            <StatusBadge variant="success">{linkedQuote.status}</StatusBadge>
           </div>
         )}
         {linkedLead && (
@@ -180,29 +212,46 @@ function SalesOrderFormPage() {
         </div>
       </div>
 
-      {/* Approval Actions */}
+      {/* Approval Banner */}
       {approvalStatus === 'Pending' && (
-        <Card size="sm">
-          <CardContent className="flex items-center gap-4 py-4">
-            <Badge variant="outline">Pending Approval</Badge>
-            <span className="text-sm text-muted-foreground">This order requires approval before processing.</span>
-            <div className="ml-auto flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleReject}>
-                Reject
-              </Button>
-              <Button size="sm" onClick={handleApprove}>
-                Approve
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-4 rounded-lg border border-[#f6c000]/30 bg-[#fff8dd] px-4 py-3 dark:border-[#f6c000]/40 dark:bg-[#b88800]/15">
+          <Badge variant="outline" className="border-[#f6c000]/50 text-[#b88800]">Pending Approval</Badge>
+          <span className="text-sm text-[#b88800] flex-1">This order requires approval before processing.</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleReject}>
+              Reject
+            </Button>
+            <Button size="sm" onClick={handleApprove}>
+              Approve
+            </Button>
+          </div>
+        </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{isEdit ? 'Edit Sales Order' : 'New Sales Order'}</CardTitle>
+      <Card className="border-t-4 border-t-primary/20">
+        <CardHeader className="border-b bg-muted/30">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ShoppingCart className="size-5 text-primary" />
+              {isEdit ? 'Sales Order Details' : 'New Sales Order'}
+            </CardTitle>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {autoSaveStatus === 'saving' && (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              )}
+              {autoSaveStatus === 'saved' && (
+                <>
+                  <CheckCircle className="size-3.5 text-emerald-600" />
+                  <span>Saved</span>
+                </>
+              )}
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-8 pt-6">
           {/* Header fields */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-4">
@@ -281,8 +330,8 @@ function SalesOrderFormPage() {
             onDiscountChange={setDiscount}
           />
 
-          {/* Full-width fields */}
-          <div className="space-y-4">
+          {/* Shipping & Notes */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="so-shipping" className="font-ui">Shipping Address</Label>
               <Textarea
@@ -290,7 +339,7 @@ function SalesOrderFormPage() {
                 placeholder="Enter shipping address..."
                 value={shippingAddress}
                 onChange={(e) => setShippingAddress(e.target.value)}
-                rows={3}
+                rows={4}
               />
             </div>
 
@@ -301,34 +350,19 @@ function SalesOrderFormPage() {
                 placeholder="Add any notes..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={3}
+                rows={4}
               />
             </div>
           </div>
         </CardContent>
-        <CardFooter className="justify-between">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {autoSaveStatus === 'saving' && (
-              <>
-                <Loader2 className="size-3.5 animate-spin" />
-                <span>Saving draft...</span>
-              </>
-            )}
-            {autoSaveStatus === 'saved' && (
-              <>
-                <CheckCircle className="size-3.5 text-green-600" />
-                <span>Draft saved</span>
-              </>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={!accountId}>
-              Save
-            </Button>
-          </div>
+        <CardFooter className="justify-between border-t bg-muted/20">
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={!accountId}>
+            <Save className="size-4 mr-1.5" />
+            Save Sales Order
+          </Button>
         </CardFooter>
       </Card>
     </div>

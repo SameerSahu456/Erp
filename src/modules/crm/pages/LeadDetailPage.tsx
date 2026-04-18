@@ -392,7 +392,7 @@ function LeadDetailPage() {
         <Button
           variant="outline"
           size="sm"
-          render={<Link to={`/crm/quotes/new?leadId=${lead.id}`} />}
+          render={<Link to={`/crm/quote-builder?leadId=${lead.id}`} />}
         >
           <Plus className="size-3.5" data-icon="inline-start" />
           Create Quote

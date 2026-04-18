@@ -405,7 +405,17 @@ function DealDetailPage() {
     <div className="space-y-6">
       {/* Linked Quotes */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Linked Quotes</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Linked Quotes</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link to={`/crm/quote-builder?dealId=${deal.id}&accountId=${deal.accountId}`} />}
+          >
+            <Plus className="size-3.5" data-icon="inline-start" />
+            Create Quote
+          </Button>
+        </div>
         {relatedQuotes.length > 0 ? (
           <div className="overflow-x-auto rounded-md border">
             <Table>

@@ -1,13 +1,7 @@
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Download,
-  Copy,
-  Send,
-  Save,
-  Eye,
   FileText,
   Building2,
   CalendarDays,
@@ -19,10 +13,24 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { QuoteBuilderPanel } from '../components/QuoteBuilderPanel'
+import { accounts } from '../data/accounts'
 
 export default function QuoteBuilderPage() {
   const navigate = useNavigate()
-  const [quoteRef] = useState(`Q-2026-${String(Math.floor(Math.random() * 9000) + 1000)}`)
+  const [searchParams] = useSearchParams()
+
+  const leadId = searchParams.get('leadId') ?? undefined
+  const dealId = searchParams.get('dealId') ?? undefined
+  const accountId = searchParams.get('accountId') ?? undefined
+  const accountName = accountId
+    ? accounts.find((a) => a.id === accountId)?.name
+    : undefined
+
+  const contextLabel = leadId
+    ? 'From Lead'
+    : dealId
+      ? 'From Deal'
+      : undefined
 
   return (
     <div className="space-y-6">
@@ -32,7 +40,7 @@ export default function QuoteBuilderPage() {
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => navigate('/crm/quotes')}
+            onClick={() => navigate(-1)}
           >
             <ArrowLeft />
           </Button>
@@ -45,6 +53,11 @@ export default function QuoteBuilderPage() {
                 <Sparkles className="size-3" />
                 Advanced
               </Badge>
+              {contextLabel && (
+                <Badge variant="outline" className="text-[10px]">
+                  {contextLabel}
+                </Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
               Build quotes with BOM configuration, IMS part selection, and PDF export
@@ -113,7 +126,12 @@ export default function QuoteBuilderPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-6">
-          <QuoteBuilderPanel />
+          <QuoteBuilderPanel
+            leadId={leadId}
+            dealId={dealId}
+            accountId={accountId}
+            accountName={accountName}
+          />
         </CardContent>
       </Card>
     </div>
