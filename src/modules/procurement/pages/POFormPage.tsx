@@ -1,6 +1,19 @@
 import { useState, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Trash2 } from 'lucide-react'
+import {
+  Plus,
+  Trash2,
+  Building2,
+  Phone,
+  Mail,
+  Star,
+  CreditCard,
+  Package,
+  CalendarDays,
+  Send,
+  Save,
+  X,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -116,48 +129,81 @@ function POFormPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-display font-semibold">Create Purchase Order</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="font-display text-2xl font-semibold tracking-tight">
+            Create Purchase Order
+          </h2>
           {sourcePR && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Pre-filled from {sourcePR.prNumber}: {sourcePR.title}
-            </p>
+            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              From {sourcePR.prNumber}
+            </span>
           )}
         </div>
-        <Button variant="outline" onClick={() => navigate('/procurement/po')}>
+        <Button variant="outline" size="sm" onClick={() => navigate('/procurement/po')}>
+          <X className="mr-1.5 size-4" />
           Cancel
         </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Vendor Selection */}
           <Card>
             <CardHeader>
-              <CardTitle>Vendor</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="size-5 text-muted-foreground" />
+                Vendor
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <Label>Select Vendor</Label>
-                <Select value={vendorId} onValueChange={(v) => setVendorId(v as string)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a vendor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockVendors
-                      .filter((v) => v.status === 'Active')
-                      .map((v) => (
-                        <SelectItem key={v.id} value={v.id}>
-                          {v.name} {'★'.repeat(Math.round(v.rating))} ({v.rating})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Select Vendor</Label>
+                  <Select value={vendorId} onValueChange={(v) => setVendorId(v as string)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a vendor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockVendors
+                        .filter((v) => v.status === 'Active')
+                        .map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.name} {'★'.repeat(Math.round(v.rating))} ({v.rating})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {selectedVendor && (
-                  <p className="text-xs text-muted-foreground">
-                    {selectedVendor.contactPerson} &middot; {selectedVendor.email} &middot; {selectedVendor.paymentTerms}
-                  </p>
+                  <div className="rounded-lg bg-muted/30 px-4 py-3">
+                    <p className="mb-2 text-sm font-medium">{selectedVendor.contactPerson}</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Phone className="size-3.5 shrink-0" />
+                        <span>{selectedVendor.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Mail className="size-3.5 shrink-0" />
+                        <span>{selectedVendor.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Star className="size-3.5 shrink-0 text-amber-500" />
+                        <span>
+                          {'★'.repeat(Math.round(selectedVendor.rating))}
+                          {'☆'.repeat(5 - Math.round(selectedVendor.rating))}{' '}
+                          ({selectedVendor.rating})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CreditCard className="size-3.5 shrink-0" />
+                        <span>{selectedVendor.paymentTerms}</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -166,44 +212,61 @@ function POFormPage() {
           {/* Line Items */}
           <Card>
             <CardHeader>
-              <CardTitle>Line Items</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="size-5 text-muted-foreground" />
+                Line Items
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto rounded-lg border">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/50">
-                      <th className="w-10 px-3 py-2 text-left font-medium text-muted-foreground">#</th>
-                      <th className="min-w-[180px] px-3 py-2 text-left font-medium text-muted-foreground">Part</th>
-                      <th className="min-w-[120px] px-3 py-2 text-left font-medium text-muted-foreground">SKU</th>
-                      <th className="w-20 px-3 py-2 text-right font-medium text-muted-foreground">Qty</th>
-                      <th className="w-32 px-3 py-2 text-right font-medium text-muted-foreground">Unit Price</th>
-                      <th className="w-20 px-3 py-2 text-right font-medium text-muted-foreground">Tax %</th>
-                      <th className="w-36 px-3 py-2 text-right font-medium text-muted-foreground">Amount</th>
-                      <th className="w-14 px-3 py-2" />
+                      <th className="w-10 px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        #
+                      </th>
+                      <th className="min-w-[180px] px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Part
+                      </th>
+                      <th className="min-w-[120px] px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        SKU
+                      </th>
+                      <th className="w-20 px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Qty
+                      </th>
+                      <th className="w-32 px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Unit Price
+                      </th>
+                      <th className="w-20 px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Tax %
+                      </th>
+                      <th className="w-36 px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Amount
+                      </th>
+                      <th className="w-14 px-3 py-2.5" />
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y">
                     {items.map((item, index) => {
                       const amount = item.qty * item.unitPrice
                       return (
-                        <tr key={item.id} className="border-b last:border-b-0">
-                          <td className="px-3 py-2 text-muted-foreground">{index + 1}</td>
-                          <td className="px-2 py-1.5">
+                        <tr key={item.id} className="transition-colors hover:bg-muted/20">
+                          <td className="px-3 py-2.5 text-muted-foreground">{index + 1}</td>
+                          <td className="px-2 py-2">
                             <Input
                               placeholder="Part name"
                               value={item.partName}
                               onChange={(e) => updateItem(item.id, 'partName', e.target.value)}
                             />
                           </td>
-                          <td className="px-2 py-1.5">
+                          <td className="px-2 py-2">
                             <Input
                               placeholder="SKU"
                               value={item.partSku}
                               onChange={(e) => updateItem(item.id, 'partSku', e.target.value)}
                             />
                           </td>
-                          <td className="px-2 py-1.5">
+                          <td className="px-2 py-2">
                             <Input
                               type="number"
                               min={1}
@@ -212,7 +275,7 @@ function POFormPage() {
                               onChange={(e) => updateItem(item.id, 'qty', Number(e.target.value) || 1)}
                             />
                           </td>
-                          <td className="px-2 py-1.5">
+                          <td className="px-2 py-2">
                             <Input
                               type="number"
                               min={0}
@@ -221,7 +284,7 @@ function POFormPage() {
                               onChange={(e) => updateItem(item.id, 'unitPrice', Number(e.target.value) || 0)}
                             />
                           </td>
-                          <td className="px-2 py-1.5">
+                          <td className="px-2 py-2">
                             <Input
                               type="number"
                               min={0}
@@ -231,10 +294,10 @@ function POFormPage() {
                               onChange={(e) => updateItem(item.id, 'taxRate', Number(e.target.value) || 0)}
                             />
                           </td>
-                          <td className="px-3 py-2 text-right font-medium tabular-nums">
+                          <td className="px-3 py-2.5 text-right font-medium tabular-nums">
                             {formatCurrency(amount)}
                           </td>
-                          <td className="px-2 py-1.5 text-center">
+                          <td className="px-2 py-2 text-center">
                             <Button
                               variant="ghost"
                               size="icon-sm"
@@ -251,7 +314,12 @@ function POFormPage() {
                   </tbody>
                 </table>
               </div>
-              <Button variant="outline" size="sm" className="mt-3" onClick={addItem}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 border-dashed"
+                onClick={addItem}
+              >
                 <Plus className="mr-1.5 size-4" />
                 Add Line Item
               </Button>
@@ -263,8 +331,8 @@ function POFormPage() {
             <CardHeader>
               <CardTitle>Terms & Notes</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Payment Terms</Label>
                   <Select value={paymentTerms} onValueChange={(v) => setPaymentTerms(v as string)}>
@@ -300,27 +368,47 @@ function POFormPage() {
                   />
                 </div>
               </div>
-              <div className="mt-4 space-y-2">
-                <Label>Notes</Label>
-                <Textarea
-                  placeholder="Additional notes for the vendor..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                />
+
+              <div className="border-t pt-5">
+                <div className="space-y-2">
+                  <Label>Notes</Label>
+                  <Textarea
+                    placeholder="Additional notes for the vendor..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right sidebar — Totals */}
+        {/* Right sidebar -- Order Summary */}
         <div className="space-y-4">
           <Card size="sm">
             <CardHeader>
               <CardTitle>Order Summary</CardTitle>
             </CardHeader>
-            <CardContent>
-              <dl className="space-y-2">
+            <CardContent className="space-y-4">
+              {/* Order info */}
+              <div className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Package className="size-3.5" />
+                  {items.length} item{items.length !== 1 ? 's' : ''}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CalendarDays className="size-3.5" />
+                  {new Date().toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+
+              {/* Totals */}
+              <dl className="space-y-2.5">
                 <div className="flex items-center justify-between text-sm">
                   <dt className="text-muted-foreground">Subtotal</dt>
                   <dd className="font-medium tabular-nums">{formatCurrency(subtotal)}</dd>
@@ -335,27 +423,36 @@ function POFormPage() {
                     <Input
                       type="number"
                       min={0}
-                      className="w-28 text-right"
+                      className="h-8 w-28 text-right text-sm"
                       value={discount}
                       onChange={(e) => setDiscount(Number(e.target.value) || 0)}
                     />
                   </dd>
                 </div>
-                <div className="flex items-center justify-between border-t pt-2 text-base font-semibold">
-                  <dt>Grand Total</dt>
-                  <dd className="tabular-nums">{formatCurrency(grandTotal)}</dd>
+                <div className="flex items-center justify-between border-t pt-3">
+                  <dt className="text-base font-semibold">Grand Total</dt>
+                  <dd className="text-lg font-bold tabular-nums text-primary">
+                    {formatCurrency(grandTotal)}
+                  </dd>
                 </div>
               </dl>
             </CardContent>
           </Card>
 
-          {/* Footer actions */}
+          {/* Action buttons */}
           <div className="space-y-2">
-            <Button className="w-full">Send to Vendor</Button>
-            <Button variant="outline" className="w-full">Save Draft</Button>
+            <Button className="w-full" size="default">
+              <Send className="mr-2 size-4" />
+              Send to Vendor
+            </Button>
+            <Button variant="outline" className="w-full" size="default">
+              <Save className="mr-2 size-4" />
+              Save Draft
+            </Button>
             <Button
               variant="ghost"
               className="w-full"
+              size="default"
               onClick={() => navigate('/procurement/po')}
             >
               Cancel

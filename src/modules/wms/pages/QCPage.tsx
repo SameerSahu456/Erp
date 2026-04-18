@@ -365,37 +365,72 @@ function QCPage() {
 
       {/* QC Dialog */}
       <Dialog open={qcDialogOpen} onOpenChange={setQcDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>QC: {selectedDevice?.barcode}</DialogTitle>
-            {selectedDevice && (
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                <span>
-                  <span className="font-medium text-foreground">Model:</span>{' '}
-                  {selectedDevice.model}
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
+          {/* Sticky Header */}
+          <div className="shrink-0 border-b px-6 py-4">
+            <DialogHeader>
+              <DialogTitle className="text-lg">QC: {selectedDevice?.barcode}</DialogTitle>
+              {selectedDevice && (
+                <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground mt-1">
+                  <span>
+                    <span className="font-medium text-foreground">Model:</span>{' '}
+                    {selectedDevice.model}
+                  </span>
+                  <span>
+                    <span className="font-medium text-foreground">Brand:</span>{' '}
+                    {selectedDevice.brand}
+                  </span>
+                  <span>
+                    <span className="font-medium text-foreground">Serial:</span>{' '}
+                    {selectedDevice.serialNumber}
+                  </span>
+                </div>
+              )}
+            </DialogHeader>
+
+            {/* Sticky progress bar */}
+            <div className="mt-3 flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <Progress
+                  value={
+                    INSPECTION_CHECKLIST_ITEMS.length > 0
+                      ? Math.round((checkedCount / INSPECTION_CHECKLIST_ITEMS.length) * 100)
+                      : 0
+                  }
+                >
+                  <ProgressLabel className="sr-only">Progress</ProgressLabel>
+                  <ProgressValue className="sr-only" />
+                </Progress>
+              </div>
+              <div className="flex shrink-0 items-center gap-3 text-xs">
+                <span className="font-medium">{checkedCount}/{INSPECTION_CHECKLIST_ITEMS.length}</span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-2 rounded-full bg-emerald-500" />
+                  {passCount}
                 </span>
-                <span>
-                  <span className="font-medium text-foreground">Brand:</span>{' '}
-                  {selectedDevice.brand}
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-2 rounded-full bg-destructive" />
+                  {failCount}
                 </span>
-                <span>
-                  <span className="font-medium text-foreground">Serial:</span>{' '}
-                  {selectedDevice.serialNumber}
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-2 rounded-full bg-muted-foreground" />
+                  {naCount}
                 </span>
               </div>
-            )}
-          </DialogHeader>
+            </div>
+          </div>
 
-          <div className="space-y-6">
+          {/* Scrollable Body */}
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
             {/* Device Images */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label className="text-sm font-semibold">
                 Device Images <span className="text-destructive">*</span>
               </Label>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2.5">
                 {deviceImages.map((img, idx) => (
                   <div key={idx} className="relative group">
-                    <div className="w-20 h-20 rounded-md border bg-muted overflow-hidden">
+                    <div className="w-16 h-16 rounded-md border bg-muted overflow-hidden">
                       <img
                         src={URL.createObjectURL(img)}
                         alt={`Device ${idx + 1}`}
@@ -410,7 +445,7 @@ function QCPage() {
                     </button>
                   </div>
                 ))}
-                <label className="w-20 h-20 rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                <label className="w-16 h-16 rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
@@ -419,10 +454,10 @@ function QCPage() {
                     className="hidden"
                     onChange={(e) => handleImageUpload(e.target.files)}
                   />
-                  <Camera className="size-5 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground mt-1">Photo</span>
+                  <Camera className="size-4 text-muted-foreground" />
+                  <span className="text-[9px] text-muted-foreground mt-0.5">Photo</span>
                 </label>
-                <label className="w-20 h-20 rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                <label className="w-16 h-16 rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
@@ -430,43 +465,10 @@ function QCPage() {
                     className="hidden"
                     onChange={(e) => handleImageUpload(e.target.files)}
                   />
-                  <Upload className="size-5 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground mt-1">Upload</span>
+                  <Upload className="size-4 text-muted-foreground" />
+                  <span className="text-[9px] text-muted-foreground mt-0.5">Upload</span>
                 </label>
               </div>
-            </div>
-
-            {/* Progress */}
-            <div className="rounded-lg border bg-muted/30 p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">
-                  {checkedCount}/{INSPECTION_CHECKLIST_ITEMS.length} items checked
-                </span>
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="flex items-center gap-1">
-                    <span className="inline-block size-2.5 rounded-full bg-emerald-500" />
-                    Pass: {passCount}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="inline-block size-2.5 rounded-full bg-destructive" />
-                    Fail: {failCount}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="inline-block size-2.5 rounded-full bg-muted-foreground" />
-                    N/A: {naCount}
-                  </span>
-                </div>
-              </div>
-              <Progress
-                value={
-                  INSPECTION_CHECKLIST_ITEMS.length > 0
-                    ? Math.round((checkedCount / INSPECTION_CHECKLIST_ITEMS.length) * 100)
-                    : 0
-                }
-              >
-                <ProgressLabel className="sr-only">Progress</ProgressLabel>
-                <ProgressValue className="sr-only" />
-              </Progress>
             </div>
 
             {/* Checklist */}
@@ -475,10 +477,12 @@ function QCPage() {
               if (!items) return null
               const isCollapsed = collapsedGroups[group] ?? false
               const groupChecked = items.filter((i) => checklist[i.id]).length
+              const groupPassed = items.filter((i) => checklist[i.id]?.result === 'PASS').length
+              const groupFailed = items.filter((i) => checklist[i.id]?.result === 'FAIL').length
               return (
                 <Collapsible key={group} open={!isCollapsed}>
                   <CollapsibleTrigger
-                    className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                    className="flex w-full items-center justify-between rounded-lg border bg-muted/40 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
                     onClick={() => toggleGroup(group)}
                   >
                     <div className="flex items-center gap-2">
@@ -489,26 +493,47 @@ function QCPage() {
                       )}
                       <span className="text-sm font-semibold">{group}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {groupChecked}/{items.length}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {groupPassed > 0 && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                          {groupPassed} pass
+                        </span>
+                      )}
+                      {groupFailed > 0 && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                          {groupFailed} fail
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {groupChecked}/{items.length}
+                      </span>
+                    </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <div className="space-y-2 pt-2">
+                    <div className="space-y-1.5 pt-2">
                       {items.map((item) => {
                         const state = checklist[item.id]
                         return (
-                          <div key={item.id} className="rounded-lg border bg-card">
-                            <div className="flex items-center justify-between gap-4 px-4 py-3">
-                              <p className="text-sm font-medium">{item.label}</p>
-                              <div className="flex shrink-0 gap-1.5">
+                          <div
+                            key={item.id}
+                            className={`rounded-lg border transition-colors ${
+                              state?.result === 'PASS'
+                                ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30'
+                                : state?.result === 'FAIL'
+                                  ? 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/30'
+                                  : 'bg-card'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                              <p className="text-sm font-medium min-w-0 flex-1">{item.label}</p>
+                              <div className="flex shrink-0 gap-1">
                                 <Button
                                   size="xs"
                                   variant="outline"
                                   className={
                                     state?.result === 'PASS'
-                                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-400'
-                                      : 'border-emerald-200 text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50 dark:border-emerald-800'
+                                      ? 'border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700'
+                                      : 'border-muted-foreground/20 text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50 dark:text-emerald-500 dark:hover:bg-emerald-950'
                                   }
                                   onClick={() => handleChecklistChange(item.id, 'PASS')}
                                 >
@@ -519,8 +544,8 @@ function QCPage() {
                                   variant="outline"
                                   className={
                                     state?.result === 'FAIL'
-                                      ? 'border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20'
-                                      : 'border-[#f1416c]/30 text-[#f1416c] hover:border-[#f1416c]/60 hover:bg-[#fff5f8]'
+                                      ? 'border-destructive bg-destructive text-white hover:bg-destructive/90'
+                                      : 'border-muted-foreground/20 text-[#f1416c] hover:border-[#f1416c]/60 hover:bg-[#fff5f8] dark:text-[#f1416c] dark:hover:bg-red-950'
                                   }
                                   onClick={() => handleChecklistChange(item.id, 'FAIL')}
                                 >
@@ -532,7 +557,7 @@ function QCPage() {
                                   className={
                                     state?.result === 'NOT_APPLICABLE'
                                       ? 'border-muted-foreground/50 bg-muted text-muted-foreground'
-                                      : 'text-muted-foreground hover:bg-muted'
+                                      : 'border-muted-foreground/20 text-muted-foreground hover:bg-muted'
                                   }
                                   onClick={() => handleChecklistChange(item.id, 'NOT_APPLICABLE')}
                                 >
@@ -541,7 +566,7 @@ function QCPage() {
                               </div>
                             </div>
                             {state?.result === 'FAIL' && (
-                              <div className="border-t px-4 py-2.5">
+                              <div className="border-t px-3 py-2">
                                 <Input
                                   placeholder="Describe the issue..."
                                   value={state.notes}
@@ -573,6 +598,7 @@ function QCPage() {
                   }
                   onClick={() => setQcResult('PASSED')}
                 >
+                  <Check className="size-4" />
                   Pass
                 </Button>
                 <Button
@@ -588,6 +614,7 @@ function QCPage() {
                     setGrade('')
                   }}
                 >
+                  <X className="size-4" />
                   Fail
                 </Button>
               </div>
@@ -595,7 +622,7 @@ function QCPage() {
 
             {/* Grade (only on pass) */}
             {qcResult === 'PASSED' && (
-              <div className="space-y-3 rounded-lg border p-4">
+              <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30 p-4">
                 <Label className="text-sm font-semibold">Grade</Label>
                 <div className="flex gap-3">
                   <Button
@@ -637,28 +664,29 @@ function QCPage() {
                 placeholder="Additional observations, comments..."
                 value={additionalNotes}
                 onChange={(e) => setAdditionalNotes(e.target.value)}
+                rows={3}
               />
             </div>
 
             {/* Attachments */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label className="text-sm font-semibold">Attachments</Label>
               <p className="text-xs text-muted-foreground">
                 JPG, PNG, or PDF files (max 5 MB each)
               </p>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {attachments.map((file, idx) => (
-                  <div key={idx} className="flex items-center gap-2 rounded border px-3 py-2 text-sm">
-                    <Paperclip className="size-4 text-muted-foreground" />
+                  <div key={idx} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <Paperclip className="size-3.5 text-muted-foreground shrink-0" />
                     <span className="flex-1 truncate">{file.name}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground shrink-0">
                       {(file.size / 1024).toFixed(0)} KB
                     </span>
                     <button
-                      className="text-destructive hover:text-destructive/80"
+                      className="text-destructive hover:text-destructive/80 shrink-0"
                       onClick={() => removeAttachment(idx)}
                     >
-                      <X className="size-4" />
+                      <X className="size-3.5" />
                     </button>
                   </div>
                 ))}
@@ -670,14 +698,15 @@ function QCPage() {
                     className="hidden"
                     onChange={(e) => handleAttachmentUpload(e.target.files)}
                   />
-                  <Paperclip className="size-4" />
+                  <Paperclip className="size-3.5" />
                   Add Attachment
                 </label>
               </div>
             </div>
           </div>
 
-          <DialogFooter>
+          {/* Sticky Footer */}
+          <DialogFooter className="shrink-0 rounded-b-xl">
             <Button variant="outline" onClick={() => setQcDialogOpen(false)}>
               Cancel
             </Button>

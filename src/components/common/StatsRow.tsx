@@ -1,6 +1,8 @@
 import { cn } from "@/lib/utils"
 import { DataCard, type DataCardProps } from "@/components/common/DataCard"
 
+export interface StatCardData extends DataCardProps {}
+
 interface StatsRowProps {
   stats: DataCardProps[]
   className?: string
@@ -8,12 +10,7 @@ interface StatsRowProps {
 
 function StatsRow({ stats, className }: StatsRowProps) {
   return (
-    <div
-      className={cn(
-        "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4",
-        className
-      )}
-    >
+    <div className={cn("cpt-kpi-grid", className)}>
       {stats.map((stat, index) => (
         <DataCard key={index} {...stat} />
       ))}

@@ -1,16 +1,37 @@
 import { Link } from 'react-router-dom'
-import { FileText, ShoppingCart, Clock, IndianRupee } from 'lucide-react'
+import {
+  FileText,
+  ShoppingCart,
+  Clock,
+  IndianRupee,
+  Star,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react'
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatsRow } from '@/components/common/StatsRow'
-import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
-import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 
 import { mockPurchaseRequests } from '@/modules/procurement/data/purchase-requests'
 import { mockPurchaseOrders } from '@/modules/procurement/data/purchase-orders'
+import { mockVendors } from '@/modules/procurement/data/vendors'
+
+// ── Formatters ──
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-IN', {
@@ -18,6 +39,14 @@ const formatCurrency = (value: number) =>
     currency: 'INR',
     maximumFractionDigits: 0,
   }).format(value)
+
+const formatShortCurrency = (value: number) => {
+  if (value >= 10000000) return `${(value / 10000000).toFixed(1)}Cr`
+  if (value >= 100000) return `${(value / 100000).toFixed(1)}L`
+  return formatCurrency(value)
+}
+
+// ── Status helpers ──
 
 function getPRStatusVariant(status: string): StatusBadgeVariant {
   switch (status) {
@@ -32,92 +61,155 @@ function getPRStatusVariant(status: string): StatusBadgeVariant {
   }
 }
 
-function getPOStatusVariant(status: string): StatusBadgeVariant {
-  switch (status) {
-    case 'Draft': return 'neutral'
-    case 'Sent to Vendor': return 'info'
-    case 'Acknowledged': return 'info'
-    case 'Partially Received': return 'warning'
-    case 'Fully Received': return 'success'
-    case 'Closed': return 'neutral'
-    case 'Cancelled': return 'error'
-    default: return 'neutral'
-  }
-}
+// ── KPI calculations ──
 
-// Stats
 const openPRs = mockPurchaseRequests.filter(
   (pr) => pr.status !== 'Rejected' && pr.status !== 'Converted to PO'
 ).length
+
 const activePOs = mockPurchaseOrders.filter(
   (po) => po.status !== 'Closed' && po.status !== 'Cancelled'
 ).length
-const pendingApprovals = mockPurchaseRequests.filter(
-  (pr) => pr.status === 'Submitted' || pr.status === 'Under Review' || pr.status === 'Partially Approved'
+
+const pendingApprovalCount = mockPurchaseRequests.filter(
+  (pr) =>
+    pr.status === 'Submitted' ||
+    pr.status === 'Under Review' ||
+    pr.status === 'Partially Approved'
 ).length
+
 const totalSpendThisMonth = mockPurchaseOrders
   .filter((po) => po.status !== 'Draft' && po.status !== 'Cancelled')
   .reduce((sum, po) => sum + po.grandTotal, 0)
 
-// Recent PRs
+// ── Chart data ──
+
+const prStatusColors: Record<string, string> = {
+  Draft: '#94a3b8',
+  Submitted: '#6366f1',
+  'Under Review': '#f59e0b',
+  Approved: '#22c55e',
+  'Partially Approved': '#eab308',
+  Rejected: '#ef4444',
+  'Converted to PO': '#10b981',
+}
+
+const prStatusData = Object.entries(
+  mockPurchaseRequests.reduce<Record<string, number>>((acc, pr) => {
+    acc[pr.status] = (acc[pr.status] || 0) + 1
+    return acc
+  }, {})
+).map(([name, value]) => ({ name, value }))
+
+const poSpendByVendor = Object.values(
+  mockPurchaseOrders.reduce<Record<string, { name: string; spend: number }>>(
+    (acc, po) => {
+      if (!acc[po.vendorName]) acc[po.vendorName] = { name: po.vendorName, spend: 0 }
+      acc[po.vendorName].spend += po.grandTotal
+      return acc
+    },
+    {}
+  )
+)
+  .sort((a, b) => b.spend - a.spend)
+  .slice(0, 8)
+
+// ── Lists ──
+
 const recentPRs = [...mockPurchaseRequests]
   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   .slice(0, 5)
 
-// PO Status Table
-const poTableData = mockPurchaseOrders.map((po) => ({
-  id: po.id,
-  poNumber: po.poNumber,
-  vendor: po.vendorName,
-  status: po.status,
-  amount: po.grandTotal,
-  expectedDelivery: po.expectedDelivery,
-}))
-
-const poTab: TabConfig = {
-  id: 'po-overview',
-  label: 'Purchase Orders',
-  columns: [
-    { key: 'poNumber', label: 'PO#', sortable: true },
-    { key: 'vendor', label: 'Vendor', sortable: true },
-    { key: 'status', label: 'Status' },
-    { key: 'amount', label: 'Amount', sortable: true, align: 'right' },
-    { key: 'expectedDelivery', label: 'Expected Delivery', sortable: true },
-  ],
-  data: poTableData,
-}
-
-const poCellFormatter: CellFormatter = (value, key, row) => {
-  if (key === 'poNumber' && typeof value === 'string') {
-    return {
-      display: (
-        <Link to={`/procurement/po/${row['id']}`} className="text-primary hover:underline font-medium">
-          {value}
-        </Link>
-      ),
-    }
-  }
-  if (key === 'status' && typeof value === 'string') {
-    return {
-      display: <StatusBadge variant={getPOStatusVariant(value)}>{value}</StatusBadge>,
-    }
-  }
-  if (key === 'amount' && typeof value === 'number') {
-    return { display: formatCurrency(value) }
-  }
-  return null
-}
-
-// Pending approvals
 const pendingPRs = mockPurchaseRequests.filter(
-  (pr) => pr.status === 'Submitted' || pr.status === 'Under Review' || pr.status === 'Partially Approved'
+  (pr) =>
+    pr.status === 'Submitted' ||
+    pr.status === 'Under Review' ||
+    pr.status === 'Partially Approved'
 )
+
+const topVendors = [...mockVendors]
+  .sort((a, b) => b.totalSpend - a.totalSpend)
+  .slice(0, 5)
+
+// ── Recharts tooltip style ──
+
+const tooltipStyle = {
+  backgroundColor: 'hsl(var(--popover))',
+  border: '1px solid hsl(var(--border))',
+  borderRadius: 8,
+  fontSize: 13,
+}
+
+// ── Custom label for pie chart ──
+
+const renderPieLabel = ({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+}: {
+  cx: number
+  cy: number
+  midAngle: number
+  innerRadius: number
+  outerRadius: number
+  percent: number
+}) => {
+  if (percent < 0.08) return null
+  const RADIAN = Math.PI / 180
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+  const x = cx + radius * Math.cos(-midAngle * RADIAN)
+  const y = cy + radius * Math.sin(-midAngle * RADIAN)
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="white"
+      textAnchor="middle"
+      dominantBaseline="central"
+      className="text-xs font-medium"
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  )
+}
+
+// ── Star rating renderer ──
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`size-3.5 ${
+            star <= Math.round(rating)
+              ? 'fill-amber-400 text-amber-400'
+              : 'fill-muted text-muted'
+          }`}
+        />
+      ))}
+      <span className="ml-1 text-xs text-muted-foreground">{rating.toFixed(1)}</span>
+    </div>
+  )
+}
+
+// ── Component ──
 
 function ProcurementDashboard() {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">Procurement Dashboard</h2>
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-display font-semibold">Procurement Dashboard</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Overview of purchase requests, orders, vendor performance, and spend analytics.
+        </p>
+      </div>
 
+      {/* KPI Stats Row */}
       <StatsRow
         stats={[
           {
@@ -134,38 +226,150 @@ function ProcurementDashboard() {
           },
           {
             label: 'Pending Approvals',
-            value: pendingApprovals,
+            value: pendingApprovalCount,
             icon: Clock,
           },
           {
             label: 'Total Spend This Month',
-            value: formatCurrency(totalSpendThisMonth),
+            value: formatShortCurrency(totalSpendThisMonth),
             icon: IndianRupee,
             trend: { value: 8, isPositive: true },
           },
         ]}
       />
 
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* PR Status Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display">PR Status Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={prStatusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={3}
+                    dataKey="value"
+                    labelLine={false}
+                    label={renderPieLabel}
+                  >
+                    {prStatusData.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={prStatusColors[entry.name] || '#94a3b8'}
+                        strokeWidth={0}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(value: number, name: string) => [
+                      `${value} request${value !== 1 ? 's' : ''}`,
+                      name,
+                    ]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Legend */}
+            <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1.5">
+              {prStatusData.map((entry) => (
+                <div key={entry.name} className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block size-2.5 rounded-full"
+                    style={{ backgroundColor: prStatusColors[entry.name] }}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {entry.name} ({entry.value})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* PO Spend by Vendor */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display">PO Spend by Vendor</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={poSpendByVendor}
+                  layout="vertical"
+                  margin={{ top: 0, right: 24, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
+                  <XAxis
+                    type="number"
+                    tickFormatter={(v: number) => formatShortCurrency(v)}
+                    tick={{ fontSize: 12 }}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={140}
+                    tick={{ fontSize: 12 }}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(value: number) => [formatCurrency(value), 'Spend']}
+                  />
+                  <Bar
+                    dataKey="spend"
+                    fill="hsl(var(--primary))"
+                    radius={[0, 4, 4, 0]}
+                    barSize={20}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent PRs & Top Vendors */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Purchase Requests */}
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Purchase Requests</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-display">Recent Purchase Requests</CardTitle>
+            <Link
+              to="/procurement/pr"
+              className="text-sm text-primary hover:underline"
+            >
+              View all
+            </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {recentPRs.map((pr) => (
                 <Link
                   key={pr.id}
                   to={`/procurement/pr/${pr.id}`}
                   className="flex items-center justify-between rounded-lg border bg-card p-3 transition-colors hover:bg-muted/50"
                 >
-                  <div className="space-y-1">
+                  <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-primary">{pr.prNumber}</span>
-                      <StatusBadge variant={getPRStatusVariant(pr.status)}>{pr.status}</StatusBadge>
+                      <span className="text-sm font-medium text-primary">
+                        {pr.prNumber}
+                      </span>
+                      <StatusBadge variant={getPRStatusVariant(pr.status)}>
+                        {pr.status}
+                      </StatusBadge>
                     </div>
-                    <p className="text-sm">{pr.title}</p>
+                    <p className="truncate text-sm">{pr.title}</p>
                     <p className="text-xs text-muted-foreground">
                       {pr.requestedBy} &middot; {pr.requestedDate}
                     </p>
@@ -176,17 +380,49 @@ function ProcurementDashboard() {
           </CardContent>
         </Card>
 
-        {/* PO Status Overview */}
+        {/* Top Vendors */}
         <Card>
-          <CardHeader>
-            <CardTitle>PO Status Overview</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-display">Top Vendors</CardTitle>
+            <Link
+              to="/procurement/vendors"
+              className="text-sm text-primary hover:underline"
+            >
+              View all
+            </Link>
           </CardHeader>
           <CardContent>
-            <BusinessMetricsTable
-              tabs={[poTab]}
-              cellFormatter={poCellFormatter}
-              pageSize={5}
-            />
+            <div className="space-y-4">
+              {topVendors.map((vendor) => (
+                <div key={vendor.id} className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <Link
+                        to={`/procurement/vendors/${vendor.id}`}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        {vendor.name}
+                      </Link>
+                      <StarRating rating={vendor.rating} />
+                    </div>
+                    <span className="shrink-0 text-sm font-semibold font-sans">
+                      {formatShortCurrency(vendor.totalSpend)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      On-time {vendor.onTimeDeliveryRate}%
+                    </span>
+                    <div className="h-1.5 flex-1 rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${vendor.onTimeDeliveryRate}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -195,17 +431,17 @@ function ProcurementDashboard() {
       {pendingPRs.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Pending Approvals</CardTitle>
+            <CardTitle className="font-display">Pending Approvals</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {pendingPRs.map((pr) => (
                 <div
                   key={pr.id}
-                  className="flex items-center justify-between rounded-lg border p-4"
+                  className="flex flex-col justify-between rounded-lg border p-4 transition-colors hover:bg-muted/30"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
                       <Link
                         to={`/procurement/pr/${pr.id}`}
                         className="text-sm font-medium text-primary hover:underline"
@@ -216,16 +452,23 @@ function ProcurementDashboard() {
                         {pr.status}
                       </StatusBadge>
                     </div>
-                    <p className="text-sm">{pr.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {pr.requestedBy} &middot; {pr.department} &middot; {formatCurrency(pr.totalEstimated)}
-                    </p>
+                    <p className="text-sm font-medium">{pr.title}</p>
+                    <div className="space-y-0.5 text-xs text-muted-foreground">
+                      <p>{pr.requestedBy} &middot; {pr.department}</p>
+                      <p className="font-sans font-semibold text-foreground">
+                        {formatCurrency(pr.totalEstimated)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
+                  <div className="mt-3 flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 gap-1.5">
+                      <XCircle className="size-3.5" />
                       Reject
                     </Button>
-                    <Button size="sm">Approve</Button>
+                    <Button size="sm" className="flex-1 gap-1.5">
+                      <CheckCircle2 className="size-3.5" />
+                      Approve
+                    </Button>
                   </div>
                 </div>
               ))}

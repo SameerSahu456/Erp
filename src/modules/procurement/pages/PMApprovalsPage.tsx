@@ -7,6 +7,10 @@ import {
   AlertCircle,
   User,
   ChevronDown,
+  Tag,
+  FileText,
+  Package,
+  MapPin,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -98,10 +102,10 @@ function PMApprovalsPage() {
 
   // Stats
   const stats: StatCardData[] = [
-    { label: 'Pending PR Approvals', value: pendingPRApprovals.length, variant: pendingPRApprovals.length > 0 ? 'warning' : undefined },
-    { label: 'Pending Demo Approvals', value: pendingDemos.length, variant: pendingDemos.length > 0 ? 'warning' : undefined },
-    { label: 'My Categories', value: myCategories.length },
-    { label: 'Total PRs (mine)', value: myPRApprovals.length },
+    { label: 'Pending PR Approvals', value: pendingPRApprovals.length, icon: Clock, variant: pendingPRApprovals.length > 0 ? 'warning' : undefined },
+    { label: 'Pending Demo Approvals', value: pendingDemos.length, icon: Clock, variant: pendingDemos.length > 0 ? 'warning' : undefined },
+    { label: 'My Categories', value: myCategories.length, icon: Tag },
+    { label: 'Total PRs (mine)', value: myPRApprovals.length, icon: FileText },
   ]
 
   // ── Approve / Reject handlers ──
@@ -193,7 +197,10 @@ function PMApprovalsPage() {
         <span className="text-sm text-muted-foreground">Your categories:</span>
         <div className="flex flex-wrap gap-1.5">
           {myCategories.map((cat) => (
-            <span key={cat} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <span
+              key={cat}
+              className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+            >
               {cat}
             </span>
           ))}
@@ -202,16 +209,17 @@ function PMApprovalsPage() {
 
       <StatsRow stats={stats} />
 
-      {/* ── Pending PR Approvals ── */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">
-          Purchase Request Approvals
+      {/* ── Purchase Request Approvals ── */}
+      <section>
+        <div className="mb-4 flex items-center gap-2 border-b pb-3">
+          <FileText className="size-4.5 text-primary" />
+          <h2 className="text-lg font-semibold">Purchase Request Approvals</h2>
           {pendingPRApprovals.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-[#f6c000]">
-              ({pendingPRApprovals.length} pending)
+            <span className="rounded-full bg-status-warning-bg px-2.5 py-0.5 text-xs font-medium text-status-warning-text">
+              {pendingPRApprovals.length} pending
             </span>
           )}
-        </h2>
+        </div>
 
         {pendingPRApprovals.length === 0 && completedPRApprovals.length === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -244,18 +252,19 @@ function PMApprovalsPage() {
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* ── Pending Demo Approvals ── */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">
-          Demo Request Approvals
+      {/* ── Demo Request Approvals ── */}
+      <section>
+        <div className="mb-4 flex items-center gap-2 border-b pb-3">
+          <Package className="size-4.5 text-primary" />
+          <h2 className="text-lg font-semibold">Demo Request Approvals</h2>
           {pendingDemos.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-[#f6c000]">
-              ({pendingDemos.length} pending)
+            <span className="rounded-full bg-status-warning-bg px-2.5 py-0.5 text-xs font-medium text-status-warning-text">
+              {pendingDemos.length} pending
             </span>
           )}
-        </h2>
+        </div>
 
         {myDemoApprovals.length === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -283,7 +292,7 @@ function PMApprovalsPage() {
               ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   )
 }
@@ -305,18 +314,21 @@ function PRApprovalCard({
   const [remarks, setRemarks] = useState<Record<string, string>>({})
 
   return (
-    <div className="rounded-lg border bg-card">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-5 py-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">{pr.prNumber}</span>
+    <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+      {/* Card header */}
+      <div className="flex items-center justify-between border-b bg-muted/30 px-5 py-3.5">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2.5">
+            <span className="text-sm font-semibold">{pr.prNumber}</span>
             {pr.salesOrderNumber && (
-              <span className="text-xs text-muted-foreground">→ {pr.salesOrderNumber}</span>
+              <span className="text-xs text-muted-foreground">
+                <span className="mr-1 text-muted-foreground/50">&rarr;</span>
+                {pr.salesOrderNumber}
+              </span>
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            By {pr.requestedBy} · {formatDate(pr.createdAt)}
+            By {pr.requestedBy} &middot; {formatDate(pr.createdAt)}
           </p>
         </div>
         <StatusBadge
@@ -341,53 +353,61 @@ function PRApprovalCard({
         )
 
         return (
-          <div key={approval.id} className="border-b last:border-0">
-            {/* Category header */}
-            <div className={`flex items-center justify-between px-5 py-3 ${
-              isPending ? 'bg-[#fff8dd]/60' : ''
-            }`}>
-              <div className="flex items-center gap-2">
+          <div key={approval.id} className="border-b last:border-b-0">
+            {/* Category header with left accent */}
+            <div
+              className={`flex items-center justify-between border-l-[3px] px-5 py-3 ${
+                isPending
+                  ? 'border-l-status-warning-text bg-status-warning-bg/40'
+                  : approval.status === 'Approved'
+                    ? 'border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/10'
+                    : 'border-l-destructive bg-destructive/5'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                   {approval.category}
                 </span>
                 <span className="text-sm text-muted-foreground">
                   {categoryItems.length} item{categoryItems.length !== 1 ? 's' : ''}
-                  {estimatedTotal > 0 && ` · ${formatCurrency(estimatedTotal)}`}
+                  {estimatedTotal > 0 && (
+                    <span className="ml-1">&middot; {formatCurrency(estimatedTotal)}</span>
+                  )}
                 </span>
               </div>
               {!isPending && (
                 <StatusBadge variant={approval.status === 'Approved' ? 'success' : 'error'}>
                   {approval.status === 'Approved' ? (
-                    <><CheckCircle2 className="size-3 mr-1" /> Approved</>
+                    <><CheckCircle2 className="mr-1 size-3" /> Approved</>
                   ) : (
-                    <><XCircle className="size-3 mr-1" /> Rejected</>
+                    <><XCircle className="mr-1 size-3" /> Rejected</>
                   )}
                 </StatusBadge>
               )}
             </div>
 
-            {/* Items in this category */}
-            <div className="px-5 pb-3">
+            {/* Items table */}
+            <div className="px-5 pb-4 pt-2">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-xs text-muted-foreground">
-                    <th className="pb-1.5 text-left font-medium">Item</th>
-                    <th className="pb-1.5 text-left font-medium">Description</th>
-                    <th className="pb-1.5 text-right font-medium">Qty</th>
-                    <th className="pb-1.5 text-right font-medium">Est. Rate</th>
-                    <th className="pb-1.5 text-right font-medium">Est. Total</th>
+                  <tr className="border-b text-xs text-muted-foreground">
+                    <th className="pb-2 text-left font-medium">Item</th>
+                    <th className="pb-2 text-left font-medium">Description</th>
+                    <th className="pb-2 text-right font-medium">Qty</th>
+                    <th className="pb-2 text-right font-medium">Est. Rate</th>
+                    <th className="pb-2 text-right font-medium">Est. Total</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border/50">
                   {categoryItems.map((item) => (
-                    <tr key={item.id} className="border-t">
-                      <td className="py-2 font-medium">{item.item}</td>
-                      <td className="py-2 text-muted-foreground text-xs">{item.description}</td>
-                      <td className="py-2 text-right">{item.qty}</td>
-                      <td className="py-2 text-right">
+                    <tr key={item.id}>
+                      <td className="py-2.5 font-medium">{item.item}</td>
+                      <td className="py-2.5 text-xs text-muted-foreground">{item.description}</td>
+                      <td className="py-2.5 text-right tabular-nums">{item.qty}</td>
+                      <td className="py-2.5 text-right tabular-nums">
                         {item.estimatedRate ? formatCurrency(item.estimatedRate) : '—'}
                       </td>
-                      <td className="py-2 text-right font-medium">
+                      <td className="py-2.5 text-right font-medium tabular-nums">
                         {item.estimatedRate ? formatCurrency(item.qty * item.estimatedRate) : '—'}
                       </td>
                     </tr>
@@ -397,9 +417,9 @@ function PRApprovalCard({
 
               {/* Approval actions */}
               {isPending && (
-                <div className="mt-3 flex items-end gap-3 rounded-md bg-muted/30 p-3">
+                <div className="mt-4 flex items-end gap-3 rounded-lg border border-dashed bg-muted/20 p-4">
                   <div className="flex-1">
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                    <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
                       Remarks (optional)
                     </label>
                     <Input
@@ -413,17 +433,17 @@ function PRApprovalCard({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-[#f1416c] border-[#f1416c]/30 hover:bg-[#fff5f8]"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/5"
                     onClick={() => onApprove(pr.id, approval.category, 'Rejected', catRemarks)}
                   >
-                    <XCircle className="mr-1 size-3.5" />
+                    <XCircle className="mr-1.5 size-3.5" />
                     Reject
                   </Button>
                   <Button
                     size="sm"
                     onClick={() => onApprove(pr.id, approval.category, 'Approved', catRemarks)}
                   >
-                    <CheckCircle2 className="mr-1 size-3.5" />
+                    <CheckCircle2 className="mr-1.5 size-3.5" />
                     Approve
                   </Button>
                 </div>
@@ -431,8 +451,9 @@ function PRApprovalCard({
 
               {/* Show remarks if already actioned */}
               {!isPending && approval.remarks && (
-                <div className="mt-2 rounded-md bg-muted/30 p-2.5 text-xs italic text-muted-foreground">
-                  <span className="font-medium not-italic">Remarks:</span> {approval.remarks}
+                <div className="mt-3 rounded-md bg-muted px-3.5 py-2.5 text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground/70">Remarks:</span>{' '}
+                  <span className="italic">{approval.remarks}</span>
                 </div>
               )}
             </div>
@@ -442,7 +463,7 @@ function PRApprovalCard({
 
       {/* PR notes */}
       {pr.notes && (
-        <div className="border-t px-5 py-2.5">
+        <div className="border-t bg-muted/20 px-5 py-2.5">
           <p className="text-xs text-muted-foreground">{pr.notes}</p>
         </div>
       )}
@@ -463,17 +484,22 @@ function DemoApprovalCard({
   const totalItems = demo.items.reduce((s, i) => s + i.qty, 0)
 
   return (
-    <div className="rounded-lg border bg-card">
-      <div className="flex items-center justify-between border-b px-5 py-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <Link to={`/crm/demo-requests/${demo.id}`} className="font-semibold text-primary hover:underline">
+    <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+      {/* Card header */}
+      <div className="flex items-center justify-between border-b bg-muted/30 px-5 py-3.5">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2.5">
+            <Link
+              to={`/crm/demo-requests/${demo.id}`}
+              className="text-sm font-semibold text-primary hover:underline"
+            >
               {demo.demoNumber}
             </Link>
-            <span className="text-sm text-muted-foreground">· {demo.accountName}</span>
+            <span className="text-sm text-muted-foreground">&middot; {demo.accountName}</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            By {demo.requestedBy} · {formatDate(demo.createdAt)} · Return by {formatDate(demo.expectedReturnDate)}
+            By {demo.requestedBy} &middot; {formatDate(demo.createdAt)} &middot; Return by{' '}
+            {formatDate(demo.expectedReturnDate)}
           </p>
         </div>
         <StatusBadge
@@ -488,28 +514,36 @@ function DemoApprovalCard({
       </div>
 
       {/* Demo items */}
-      <div className="px-5 py-3">
-        <div className="divide-y">
+      <div className="px-5 py-4">
+        <div className="divide-y divide-border/50">
           {demo.items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between py-2">
-              <div>
+            <div key={item.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+              <div className="space-y-0.5">
                 <p className="text-sm font-medium">{item.partName}</p>
-                <p className="text-xs text-muted-foreground">{item.brand} · {item.partSku} · {item.category}</p>
+                <p className="text-xs text-muted-foreground">
+                  {item.brand} &middot; {item.partSku} &middot; {item.category}
+                </p>
               </div>
-              <span className="text-sm font-semibold">&times;{item.qty}</span>
+              <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-semibold tabular-nums">
+                &times;{item.qty}
+              </span>
             </div>
           ))}
         </div>
 
-        <div className="mt-2 text-xs text-muted-foreground">
-          Ship to: {demo.shippingAddress}
+        {/* Shipping address info box */}
+        <div className="mt-3 flex items-start gap-2 rounded-md bg-muted/50 px-3 py-2.5">
+          <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium">Ship to:</span> {demo.shippingAddress}
+          </p>
         </div>
 
         {/* Approval actions */}
         {isPending && (
-          <div className="mt-3 flex items-end gap-3 rounded-md bg-muted/30 p-3">
+          <div className="mt-4 flex items-end gap-3 rounded-lg border border-dashed bg-muted/20 p-4">
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
                 Remarks (optional)
               </label>
               <Input
@@ -521,17 +555,17 @@ function DemoApprovalCard({
             <Button
               size="sm"
               variant="outline"
-              className="text-[#f1416c] border-[#f1416c]/30 hover:bg-[#fff5f8]"
+              className="text-destructive border-destructive/30 hover:bg-destructive/5"
               onClick={() => onApprove(demo.id, 'PM Rejected', remarks)}
             >
-              <XCircle className="mr-1 size-3.5" />
+              <XCircle className="mr-1.5 size-3.5" />
               Reject
             </Button>
             <Button
               size="sm"
               onClick={() => onApprove(demo.id, 'PM Approved', remarks)}
             >
-              <CheckCircle2 className="mr-1 size-3.5" />
+              <CheckCircle2 className="mr-1.5 size-3.5" />
               Approve
             </Button>
           </div>
@@ -539,14 +573,15 @@ function DemoApprovalCard({
 
         {/* Show remarks if already actioned */}
         {!isPending && demo.pmRemarks && (
-          <div className="mt-2 rounded-md bg-muted/30 p-2.5 text-xs italic text-muted-foreground">
-            <span className="font-medium not-italic">PM Remarks:</span> {demo.pmRemarks}
+          <div className="mt-3 rounded-md bg-muted px-3.5 py-2.5 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground/70">PM Remarks:</span>{' '}
+            <span className="italic">{demo.pmRemarks}</span>
           </div>
         )}
       </div>
 
       {demo.notes && (
-        <div className="border-t px-5 py-2.5">
+        <div className="border-t bg-muted/20 px-5 py-2.5">
           <p className="text-xs text-muted-foreground">{demo.notes}</p>
         </div>
       )}

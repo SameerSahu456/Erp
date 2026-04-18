@@ -1,11 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, ShoppingCart, Truck, PackageCheck, IndianRupee } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { StatsRow } from '@/components/common/StatsRow'
 
 import { mockPurchaseOrders } from '@/modules/procurement/data/purchase-orders'
 import type { POStatus } from '@/modules/procurement/types'
@@ -16,6 +18,13 @@ const formatCurrency = (value: number) =>
     currency: 'INR',
     maximumFractionDigits: 0,
   }).format(value)
+
+const formatShort = (v: number) => {
+  if (v >= 10000000) return `${(v / 10000000).toFixed(1)}Cr`
+  if (v >= 100000) return `${(v / 100000).toFixed(1)}L`
+  if (v >= 1000) return `${(v / 1000).toFixed(0)}K`
+  return String(v)
+}
 
 function getPOStatusVariant(status: string): StatusBadgeVariant {
   switch (status) {
@@ -97,24 +106,53 @@ const cellFormatter: CellFormatter = (value, key, row) => {
   return null
 }
 
+/* ---------- computed stats ---------- */
+const totalPOs = mockPurchaseOrders.length
+
+const inTransitStatuses: POStatus[] = ['Sent to Vendor', 'Acknowledged', 'Partially Received']
+const inTransitCount = mockPurchaseOrders.filter((po) => inTransitStatuses.includes(po.status)).length
+
+const fullyReceivedCount = mockPurchaseOrders.filter((po) => po.status === 'Fully Received').length
+
+const totalOrderValue = mockPurchaseOrders.reduce((sum, po) => sum + po.grandTotal, 0)
+
 function PurchaseOrdersPage() {
   const navigate = useNavigate()
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Purchase Orders</h2>
+        <div>
+          <h2 className="font-display text-2xl font-semibold tracking-tight">Purchase Orders</h2>
+          <p className="text-sm text-muted-foreground">Track and manage vendor purchase orders</p>
+        </div>
         <Button onClick={() => navigate('/procurement/po/new')}>
           <Plus className="mr-1 size-4" />
           Create PO
         </Button>
       </div>
 
-      <BusinessMetricsTable
-        tabs={tabs}
-        cellFormatter={cellFormatter}
-        pageSize={10}
+      {/* Summary Stats */}
+      <StatsRow
+        stats={[
+          { label: 'Total POs', value: totalPOs, icon: ShoppingCart },
+          { label: 'In Transit', value: inTransitCount, icon: Truck },
+          { label: 'Fully Received', value: fullyReceivedCount, icon: PackageCheck },
+          { label: 'Total Order Value', value: formatShort(totalOrderValue), icon: IndianRupee },
+        ]}
       />
+
+      {/* Table */}
+      <Card>
+        <CardContent>
+          <BusinessMetricsTable
+            tabs={tabs}
+            cellFormatter={cellFormatter}
+            pageSize={10}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Comprint ERP — Print</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    @page { size: 1440px 1020px; margin: 0; }
+    html, body { background: #E9ECF0; }
+    body { padding: 0; margin: 0; }
+    .print-page {
+      width: 1440px;
+      height: 1020px;
+      background: #F6F7F9;
+      position: relative;
+      overflow: hidden;
+      break-after: page;
+      page-break-after: always;
+      margin: 0 auto 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .print-page:last-child { break-after: auto; page-break-after: auto; margin-bottom: 0; }
+    .print-label {
+      position: absolute;
+      top: 10px; right: 16px;
+      font-size: 11px; color: #98A2B3;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      z-index: 100;
+    }
+    .print-frame {
+      width: 1440px;
+      height: 1020px;
+      overflow: hidden;
+    }
+    .print-frame .app { min-height: 1020px; height: 1020px; }
+    .print-frame .sidebar { position: relative !important; height: 1020px !important; top: 0; }
+    .print-frame .content { padding: 20px 28px 24px; }
+    /* Login screen takes full frame */
+    .print-frame .login-shell { min-height: 1020px; height: 1020px; }
+
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .skeleton { animation: none !important; background: #EEF0F3 !important; }
+
+    @media print {
+      html, body { background: #fff; }
+      .print-page {
+        margin: 0 auto;
+        box-shadow: none;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+    @media screen {
+      body { padding: 24px 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script src="data.js"></script>
+  <script type="text/babel" data-presets="react" src="icons.jsx"></script>
+  <script type="text/babel" data-presets="react" src="shell.jsx"></script>
+  <script type="text/babel" data-presets="react" src="pages/login.jsx"></script>
+  <script type="text/babel" data-presets="react" src="pages/dashboard.jsx"></script>
+  <script type="text/babel" data-presets="react" src="pages/inventory.jsx"></script>
+  <script type="text/babel" data-presets="react" src="pages/sales.jsx"></script>
+  <script type="text/babel" data-presets="react" src="pages/reports.jsx"></script>
+  <script type="text/babel" data-presets="react" src="pages/settings.jsx"></script>
+  <script type="text/babel" data-presets="react" src="app-print.jsx"></script>
+</body>
+</html>

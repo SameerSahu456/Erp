@@ -1,4 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
+import { ShoppingCart, IndianRupee, Truck, Award, Star, FileText } from 'lucide-react'
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -70,80 +72,91 @@ function VendorDetailPage() {
     ? vendorPOs.reduce((sum, po) => sum + po.grandTotal, 0) / vendorPOs.length
     : 0
 
+  // Quick info strip data
+  const quickInfoItems = [
+    { label: 'Total Orders', value: vendor.totalOrders.toString(), icon: ShoppingCart },
+    { label: 'Total Spend', value: formatCurrency(vendor.totalSpend), icon: IndianRupee },
+    { label: 'On-Time Delivery', value: `${vendor.onTimeDeliveryRate}%`, icon: Truck },
+    { label: 'Quality Score', value: `${vendor.qualityScore}%`, icon: Award },
+    { label: 'Rating', value: `${vendor.rating}/5`, icon: Star },
+  ]
+
+  // Performance chart data
+  const performanceData = [
+    { month: 'Oct', orders: 8, onTime: 85 },
+    { month: 'Nov', orders: 12, onTime: 90 },
+    { month: 'Dec', orders: 10, onTime: 88 },
+    { month: 'Jan', orders: 15, onTime: 92 },
+    { month: 'Feb', orders: 11, onTime: 94 },
+    { month: 'Mar', orders: 14, onTime: vendor.onTimeDeliveryRate },
+  ]
+
   // Overview tab
   const overviewContent = (
     <div className="space-y-6">
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Contact Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-muted-foreground">Contact Person</dt>
-              <dd className="text-sm">{vendor.contactPerson}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Email</dt>
-              <dd className="text-sm">{vendor.email}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Phone</dt>
-              <dd className="text-sm">{vendor.phone}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">City</dt>
-              <dd className="text-sm">{vendor.city}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs text-muted-foreground">Address</dt>
-              <dd className="text-sm">{vendor.address}</dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
+      <div className="rounded-lg border p-4">
+        <h3 className="mb-4 text-sm font-semibold">Contact Information</h3>
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <dt className="text-xs text-muted-foreground">Contact Person</dt>
+            <dd className="mt-0.5 text-sm">{vendor.contactPerson}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Email</dt>
+            <dd className="mt-0.5 text-sm">{vendor.email}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Phone</dt>
+            <dd className="mt-0.5 text-sm">{vendor.phone}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">City</dt>
+            <dd className="mt-0.5 text-sm">{vendor.city}</dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt className="text-xs text-muted-foreground">Address</dt>
+            <dd className="mt-0.5 text-sm">{vendor.address}</dd>
+          </div>
+        </dl>
+      </div>
 
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Tax & Banking</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-muted-foreground">GST Number</dt>
-              <dd className="text-sm">{vendor.gstNumber ?? '-'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">PAN Number</dt>
-              <dd className="text-sm">{vendor.panNumber ?? '-'}</dd>
-            </div>
-            {vendor.bankDetails && (
-              <>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Bank</dt>
-                  <dd className="text-sm">{vendor.bankDetails.bankName}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Account</dt>
-                  <dd className="text-sm">{vendor.bankDetails.accountNumber}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">IFSC</dt>
-                  <dd className="text-sm">{vendor.bankDetails.ifscCode}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Account Name</dt>
-                  <dd className="text-sm">{vendor.bankDetails.accountName}</dd>
-                </div>
-              </>
-            )}
-            <div>
-              <dt className="text-xs text-muted-foreground">Payment Terms</dt>
-              <dd className="text-sm">{vendor.paymentTerms}</dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
+      <div className="rounded-lg border p-4">
+        <h3 className="mb-4 text-sm font-semibold">Tax & Banking</h3>
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <dt className="text-xs text-muted-foreground">GST Number</dt>
+            <dd className="mt-0.5 text-sm">{vendor.gstNumber ?? '-'}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">PAN Number</dt>
+            <dd className="mt-0.5 text-sm">{vendor.panNumber ?? '-'}</dd>
+          </div>
+          {vendor.bankDetails && (
+            <>
+              <div>
+                <dt className="text-xs text-muted-foreground">Bank</dt>
+                <dd className="mt-0.5 text-sm">{vendor.bankDetails.bankName}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Account</dt>
+                <dd className="mt-0.5 text-sm">{vendor.bankDetails.accountNumber}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">IFSC</dt>
+                <dd className="mt-0.5 text-sm">{vendor.bankDetails.ifscCode}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Account Name</dt>
+                <dd className="mt-0.5 text-sm">{vendor.bankDetails.accountName}</dd>
+              </div>
+            </>
+          )}
+          <div>
+            <dt className="text-xs text-muted-foreground">Payment Terms</dt>
+            <dd className="mt-0.5 text-sm">{vendor.paymentTerms}</dd>
+          </div>
+        </dl>
+      </div>
     </div>
   )
 
@@ -155,7 +168,7 @@ function VendorDetailPage() {
           <CardContent>
             <p className="text-xs text-muted-foreground">Rating</p>
             <p className="text-2xl font-bold tabular-nums">{vendor.rating}/5</p>
-            <p className="text-sm">{'★'.repeat(Math.round(vendor.rating))}{'☆'.repeat(5 - Math.round(vendor.rating))}</p>
+            <p className="text-sm text-amber-500">{'★'.repeat(Math.round(vendor.rating))}{'☆'.repeat(5 - Math.round(vendor.rating))}</p>
           </CardContent>
         </Card>
         <Card size="sm">
@@ -180,14 +193,28 @@ function VendorDetailPage() {
 
       <Card size="sm">
         <CardHeader>
-          <CardTitle>Performance Charts</CardTitle>
+          <CardTitle>Monthly Performance Trend</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border border-dashed p-12 text-center">
-            <p className="text-sm text-muted-foreground">Performance charts coming soon</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Delivery trends, quality history, and spend analysis.
-            </p>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={performanceData} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                <YAxis yAxisId="left" tick={{ fontSize: 12 }} className="text-muted-foreground" label={{ value: 'Orders', angle: -90, position: 'insideLeft', offset: 20, style: { fontSize: 11, fill: 'hsl(var(--muted-foreground))' } }} />
+                <YAxis yAxisId="right" orientation="right" domain={[70, 100]} tick={{ fontSize: 12 }} className="text-muted-foreground" label={{ value: 'On-Time %', angle: 90, position: 'insideRight', offset: 20, style: { fontSize: 11, fill: 'hsl(var(--muted-foreground))' } }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: 8,
+                    fontSize: 13,
+                  }}
+                />
+                <Bar yAxisId="left" dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={32} name="Orders" />
+                <Line yAxisId="right" type="monotone" dataKey="onTime" stroke="hsl(var(--chart-2, #10b981))" strokeWidth={2} dot={{ r: 4 }} name="On-Time %" />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
@@ -251,6 +278,9 @@ function VendorDetailPage() {
   // Invoices tab
   const invoicesContent = (
     <div className="rounded-lg border border-dashed p-8 text-center">
+      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+        <FileText className="h-5 w-5 text-muted-foreground" />
+      </div>
       <p className="text-sm text-muted-foreground">No purchase invoices available</p>
       <p className="mt-1 text-xs text-muted-foreground">
         Purchase invoices from this vendor will appear here.
@@ -273,6 +303,21 @@ function VendorDetailPage() {
         status={{ label: vendor.status, variant: getVendorStatusVariant(vendor.status) }}
         backHref="/procurement/vendors"
       />
+
+      {/* Quick info strip */}
+      <div className="flex flex-wrap gap-2">
+        {quickInfoItems.map((item) => (
+          <div key={item.label} className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/8">
+              <item.icon className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{item.label}</p>
+              <p className="text-sm font-semibold tabular-nums">{item.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Main content */}
@@ -321,7 +366,7 @@ function VendorDetailPage() {
                 {vendor.categories.map((cat) => (
                   <span
                     key={cat}
-                    className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium"
+                    className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
                   >
                     {cat}
                   </span>

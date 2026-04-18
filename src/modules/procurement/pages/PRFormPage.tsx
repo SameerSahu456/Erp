@@ -222,21 +222,26 @@ function PRFormPage() {
   // Step 1: Request Info
   function RequestInfoStep(_props: WizardStepProps) {
     return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Request Information</h3>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="space-y-6 px-6 pb-6">
+        <div>
+          <h3 className="text-lg font-semibold tracking-tight">Request Information</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Fill in the basic request information</p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Title</Label>
+            <Label htmlFor="pr-title">Title</Label>
             <Input
+              id="pr-title"
               placeholder="PR title"
               value={form.title}
               onChange={(e) => updateField('title', e.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <Label>Department</Label>
+            <Label htmlFor="pr-department">Department</Label>
             <Select value={form.department} onValueChange={(v) => updateField('department', v as string)}>
-              <SelectTrigger>
+              <SelectTrigger id="pr-department">
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
@@ -246,27 +251,37 @@ function PRFormPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label>Justification</Label>
-            <Textarea
-              placeholder="Why is this purchase needed?"
-              value={form.justification}
-              onChange={(e) => updateField('justification', e.target.value)}
-              rows={3}
-            />
-          </div>
+        </div>
+
+        <div className="border-b" />
+
+        <div className="space-y-2">
+          <Label htmlFor="pr-justification">Justification</Label>
+          <Textarea
+            id="pr-justification"
+            placeholder="Why is this purchase needed?"
+            value={form.justification}
+            onChange={(e) => updateField('justification', e.target.value)}
+            rows={3}
+          />
+        </div>
+
+        <div className="border-b" />
+
+        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Required By Date</Label>
+            <Label htmlFor="pr-date">Required By Date</Label>
             <Input
+              id="pr-date"
               type="date"
               value={form.requiredByDate}
               onChange={(e) => updateField('requiredByDate', e.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <Label>Urgency</Label>
+            <Label htmlFor="pr-urgency">Urgency</Label>
             <Select value={form.urgency} onValueChange={(v) => updateField('urgency', v as string)}>
-              <SelectTrigger>
+              <SelectTrigger id="pr-urgency">
                 <SelectValue placeholder="Select urgency" />
               </SelectTrigger>
               <SelectContent>
@@ -284,27 +299,31 @@ function PRFormPage() {
   // Step 2: Line Items
   function LineItemsStep(_props: WizardStepProps) {
     return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Line Items</h3>
+      <div className="space-y-5 px-6 pb-6">
+        <div>
+          <h3 className="text-lg font-semibold tracking-tight">Line Items</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Add the parts you need to purchase</p>
+        </div>
+
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="w-10 px-3 py-2 text-left font-medium text-muted-foreground">#</th>
-                <th className="min-w-[200px] px-3 py-2 text-left font-medium text-muted-foreground">Part</th>
-                <th className="px-3 py-2 text-left font-medium text-muted-foreground">SKU</th>
-                <th className="px-3 py-2 text-left font-medium text-muted-foreground">Category</th>
-                <th className="w-24 px-3 py-2 text-right font-medium text-muted-foreground">Qty</th>
-                <th className="w-32 px-3 py-2 text-right font-medium text-muted-foreground">Est. Unit Cost</th>
-                <th className="min-w-[120px] px-3 py-2 text-left font-medium text-muted-foreground">Notes</th>
-                <th className="w-14 px-3 py-2" />
+                <th className="w-10 px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">#</th>
+                <th className="min-w-[200px] px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Part</th>
+                <th className="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">SKU</th>
+                <th className="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Category</th>
+                <th className="w-24 px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Qty</th>
+                <th className="w-32 px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Est. Unit Cost</th>
+                <th className="min-w-[120px] px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Notes</th>
+                <th className="w-14 px-3 py-2.5" />
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y">
               {form.items.map((item, index) => (
-                <tr key={item.id} className="border-b last:border-b-0">
-                  <td className="px-3 py-2 text-muted-foreground">{index + 1}</td>
-                  <td className="px-2 py-1.5">
+                <tr key={item.id} className="transition-colors hover:bg-muted/30">
+                  <td className="px-3 py-2.5 text-muted-foreground">{index + 1}</td>
+                  <td className="px-2 py-2">
                     <Select value={item.partId} onValueChange={(v) => updateItem(item.id, 'partId', v as string)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select part" />
@@ -316,9 +335,9 @@ function PRFormPage() {
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{item.partSku || '-'}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{item.category || '-'}</td>
-                  <td className="px-2 py-1.5">
+                  <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{item.partSku || '-'}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground">{item.category || '-'}</td>
+                  <td className="px-2 py-2">
                     <Input
                       type="number"
                       min={1}
@@ -327,17 +346,17 @@ function PRFormPage() {
                       onChange={(e) => updateItem(item.id, 'qty', Number(e.target.value) || 1)}
                     />
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
+                  <td className="px-3 py-2.5 text-right tabular-nums font-medium">
                     {formatCurrency(item.estimatedUnitCost)}
                   </td>
-                  <td className="px-2 py-1.5">
+                  <td className="px-2 py-2">
                     <Input
                       placeholder="Notes"
                       value={item.notes}
                       onChange={(e) => updateItem(item.id, 'notes', e.target.value)}
                     />
                   </td>
-                  <td className="px-2 py-1.5 text-center">
+                  <td className="px-2 py-2 text-center">
                     <Button
                       variant="ghost"
                       size="icon-sm"
@@ -353,13 +372,21 @@ function PRFormPage() {
             </tbody>
           </table>
         </div>
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={addItem}>
+
+        <div className="flex items-center justify-between gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={addItem}
+            className="border-dashed"
+          >
             <Plus className="mr-1.5 size-4" />
             Add Item
           </Button>
-          <div className="text-sm font-medium">
-            Total: {formatCurrency(totalEstimated)}
+
+          <div className="rounded-lg bg-muted/50 px-4 py-2.5">
+            <span className="text-sm text-muted-foreground">Estimated Total</span>
+            <span className="ml-3 text-base font-semibold tabular-nums">{formatCurrency(totalEstimated)}</span>
           </div>
         </div>
       </div>
@@ -369,25 +396,27 @@ function PRFormPage() {
   // Step 3: PM Approval
   function ApprovalChainStep(_props: WizardStepProps) {
     return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">PM Approval</h3>
-        <p className="text-sm text-muted-foreground">
-          Based on the line items selected, the following Product Manager(s) will review this PR:
-        </p>
+      <div className="space-y-5 px-6 pb-6">
+        <div>
+          <h3 className="text-lg font-semibold tracking-tight">PM Approval</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Based on the line items selected, the following Product Manager(s) will review this PR:
+          </p>
+        </div>
 
         {isAutoApproved && (
-          <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3">
-            <CheckCircle2 className="size-4 text-green-600" />
+          <div className="flex items-start gap-3 rounded-lg border bg-status-success-bg p-4">
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-green-600" />
             <p className="text-sm font-medium text-green-800">This PR will be auto-approved as you are the assigned PM for all items.</p>
           </div>
         )}
 
         {hasUnassignedItems && (
-          <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-            <AlertTriangle className="size-4 text-amber-600" />
+          <div className="flex items-start gap-3 rounded-lg border bg-status-warning-bg p-4">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
             <p className="text-sm text-amber-800">
               Some items have no PM assigned.{' '}
-              <Link to="/ims/pm-assignments" className="font-medium underline">Configure PM Assignments</Link>
+              <Link to="/ims/pm-assignments" className="font-medium underline underline-offset-2">Configure PM Assignments</Link>
             </p>
           </div>
         )}
@@ -395,12 +424,12 @@ function PRFormPage() {
         {resolvedApprovers.length > 0 ? (
           <div className="space-y-3">
             {resolvedApprovers.map((approver) => (
-              <Card key={approver.pmAssignment.id} size="sm">
-                <CardContent className="pt-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium">{approver.pmAssignment.pmName}</p>
-                      <p className="text-sm text-muted-foreground">
+              <Card key={approver.pmAssignment.id} size="sm" className="overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="flex items-center justify-between gap-4 px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="font-medium leading-tight">{approver.pmAssignment.pmName}</p>
+                      <p className="mt-0.5 text-sm text-muted-foreground">
                         {approver.pmAssignment.categoryName}
                         {approver.pmAssignment.oemName ? ` / ${approver.pmAssignment.oemName}` : ' / All OEMs'}
                         {approver.pmAssignment.variant ? ` / ${approver.pmAssignment.variant === 'new' ? 'New' : 'Refurbished'}` : ' / All Variants'}
@@ -408,11 +437,14 @@ function PRFormPage() {
                     </div>
                     <StatusBadge variant="warning">Pending</StatusBadge>
                   </div>
-                  <div className="mt-2 border-t pt-2">
-                    <p className="text-xs text-muted-foreground">Items under this PM:</p>
-                    <ul className="mt-1 space-y-0.5">
+                  <div className="border-t bg-muted/30 px-4 py-2.5">
+                    <p className="text-xs font-medium text-muted-foreground">Items under this PM:</p>
+                    <ul className="mt-1.5 space-y-1">
                       {approver.items.map((item) => (
-                        <li key={item.id} className="text-sm">{item.partName} x {item.qty}</li>
+                        <li key={item.id} className="flex items-center gap-2 text-sm">
+                          <span className="size-1 shrink-0 rounded-full bg-muted-foreground/40" />
+                          {item.partName} x {item.qty}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -428,8 +460,8 @@ function PRFormPage() {
           </Card>
         )}
 
-        <div className="rounded-lg border border-dashed p-4">
-          <p className="text-xs text-muted-foreground">
+        <div className="rounded-lg bg-muted/40 px-4 py-3">
+          <p className="text-xs leading-relaxed text-muted-foreground">
             Approval is routed by Category x OEM. If items span multiple categories/OEMs, each relevant PM must approve. Any rejection cancels the entire PR.
           </p>
         </div>
@@ -440,52 +472,57 @@ function PRFormPage() {
   // Step 4: Review & Submit
   function ReviewStep(_props: WizardStepProps) {
     return (
-      <div className="space-y-6">
-        <h3 className="text-lg font-semibold">Review & Submit</h3>
+      <div className="space-y-6 px-6 pb-6">
+        <div>
+          <h3 className="text-lg font-semibold tracking-tight">Review & Submit</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Verify the details below before submitting your purchase request</p>
+        </div>
 
         <Card size="sm">
-          <CardHeader>
-            <CardTitle>Request Info</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Request Info</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
               <div>
                 <dt className="text-xs text-muted-foreground">Title</dt>
-                <dd className="text-sm font-medium">{form.title || '-'}</dd>
+                <dd className="mt-0.5 text-sm font-medium">{form.title || '-'}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Department</dt>
-                <dd className="text-sm">{form.department || '-'}</dd>
+                <dd className="mt-0.5 text-sm">{form.department || '-'}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Required By</dt>
-                <dd className="text-sm">{form.requiredByDate || '-'}</dd>
+                <dd className="mt-0.5 text-sm">{form.requiredByDate || '-'}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Urgency</dt>
-                <dd><StatusBadge variant={form.urgency === 'Critical' ? 'error' : form.urgency === 'High' ? 'warning' : 'info'}>{form.urgency}</StatusBadge></dd>
+                <dd className="mt-1"><StatusBadge variant={form.urgency === 'Critical' ? 'error' : form.urgency === 'High' ? 'warning' : 'info'}>{form.urgency}</StatusBadge></dd>
               </div>
               <div className="sm:col-span-2">
                 <dt className="text-xs text-muted-foreground">Justification</dt>
-                <dd className="text-sm">{form.justification || '-'}</dd>
+                <dd className="mt-0.5 text-sm leading-relaxed">{form.justification || '-'}</dd>
               </div>
             </dl>
           </CardContent>
         </Card>
 
         <Card size="sm">
-          <CardHeader>
-            <CardTitle>Items ({form.items.filter((i) => i.partId).length})</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              Items ({form.items.filter((i) => i.partId).length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {form.items.filter((i) => i.partId).map((item) => (
-                <div key={item.id} className="flex items-center justify-between text-sm">
+                <div key={item.id} className="flex items-center justify-between rounded-md px-3 py-2 text-sm odd:bg-muted/30">
                   <span>{item.partName} x {item.qty}</span>
                   <span className="font-medium tabular-nums">{formatCurrency(item.qty * item.estimatedUnitCost)}</span>
                 </div>
               ))}
-              <div className="flex items-center justify-between border-t pt-2 font-semibold">
+              <div className="mt-2 flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2.5 font-semibold">
                 <span>Total</span>
                 <span className="tabular-nums">{formatCurrency(totalEstimated)}</span>
               </div>
@@ -494,8 +531,8 @@ function PRFormPage() {
         </Card>
 
         <Card size="sm">
-          <CardHeader>
-            <CardTitle>Approval Chain</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Approval Chain</CardTitle>
           </CardHeader>
           <CardContent>
             <WorkflowStepper steps={approvalSteps} />
@@ -515,14 +552,14 @@ function PRFormPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Create Purchase Request</h2>
+        <h2 className="font-display text-2xl font-semibold tracking-tight">Create Purchase Request</h2>
         <Button variant="outline" onClick={() => navigate('/procurement/pr')}>
           Cancel
         </Button>
       </div>
 
       <Card>
-        <CardContent>
+        <CardContent className="p-0">
           <MultiStepWizard
             steps={wizardSteps}
             onComplete={() => navigate('/procurement/pr')}

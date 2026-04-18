@@ -1,0 +1,61 @@
+// Minimal icon set — stroke 1.5, 16px
+const Icon = ({ name, size = 16, className = "" }) => {
+  const s = size;
+  const common = { width: s, height: s, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", className };
+  switch (name) {
+    case "home": return <svg {...common}><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>;
+    case "box": return <svg {...common}><path d="M3 7 12 3l9 4v10l-9 4-9-4V7z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>;
+    case "truck": return <svg {...common}><path d="M3 6h11v10H3zM14 9h5l2 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>;
+    case "users": return <svg {...common}><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="7" r="2.5"/><path d="M22 19c0-2.5-2-4.5-5-4.5"/></svg>;
+    case "cart": return <svg {...common}><path d="M3 4h2l2.6 11.3a2 2 0 0 0 2 1.7h7.2a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>;
+    case "chart": return <svg {...common}><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>;
+    case "pie": return <svg {...common}><path d="M21 12A9 9 0 1 1 12 3v9h9z"/></svg>;
+    case "gear": return <svg {...common}><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.8a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.5a7 7 0 0 0-2 1.2L5 6l-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.8a7 7 0 0 0 2 1.2L10 21h4l.6-2.5a7 7 0 0 0 2-1.2l2.3.8 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>;
+    case "shield": return <svg {...common}><path d="M12 3 4 6v6c0 5 3.5 8.5 8 9 4.5-.5 8-4 8-9V6l-8-3z"/></svg>;
+    case "plug": return <svg {...common}><path d="M9 3v4M15 3v4M6 7h12v3a6 6 0 1 1-12 0V7zM12 16v5"/></svg>;
+    case "file": return <svg {...common}><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5"/></svg>;
+    case "book": return <svg {...common}><path d="M4 4h10a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4V4zM4 16a4 4 0 0 1 4-4h10"/></svg>;
+    case "cash": return <svg {...common}><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 10v4M18 10v4"/></svg>;
+    case "building": return <svg {...common}><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2M10 21v-3h4v3"/></svg>;
+    case "layers": return <svg {...common}><path d="m12 3 9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 18l9 5 9-5"/></svg>;
+    case "search": return <svg {...common}><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>;
+    case "bell": return <svg {...common}><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7zM10 19a2 2 0 0 0 4 0"/></svg>;
+    case "help": return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7M12 17h.01"/></svg>;
+    case "chev-r": return <svg {...common}><path d="m9 6 6 6-6 6"/></svg>;
+    case "chev-d": return <svg {...common}><path d="m6 9 6 6 6-6"/></svg>;
+    case "chev-l": return <svg {...common}><path d="m15 6-6 6 6 6"/></svg>;
+    case "chev-u": return <svg {...common}><path d="m6 15 6-6 6 6"/></svg>;
+    case "plus": return <svg {...common}><path d="M12 5v14M5 12h14"/></svg>;
+    case "minus": return <svg {...common}><path d="M5 12h14"/></svg>;
+    case "x": return <svg {...common}><path d="M6 6l12 12M6 18 18 6"/></svg>;
+    case "check": return <svg {...common}><path d="m5 12 5 5 9-11"/></svg>;
+    case "filter": return <svg {...common}><path d="M3 5h18l-7 9v5l-4 2v-7L3 5z"/></svg>;
+    case "sort": return <svg {...common}><path d="M8 4v16M4 8l4-4 4 4M16 20V4M20 16l-4 4-4-4"/></svg>;
+    case "edit": return <svg {...common}><path d="M16 4 20 8l-12 12H4v-4L16 4z"/></svg>;
+    case "trash": return <svg {...common}><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>;
+    case "download": return <svg {...common}><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></svg>;
+    case "upload": return <svg {...common}><path d="M12 21V9M6 13l6-6 6 6M4 3h16"/></svg>;
+    case "arrow-up": return <svg {...common}><path d="M12 19V5M5 12l7-7 7 7"/></svg>;
+    case "arrow-down": return <svg {...common}><path d="M12 5v14M5 12l7 7 7-7"/></svg>;
+    case "arrow-right": return <svg {...common}><path d="M5 12h14M12 5l7 7-7 7"/></svg>;
+    case "warn": return <svg {...common}><path d="M12 3 2 20h20L12 3zM12 10v5M12 18h.01"/></svg>;
+    case "info": return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>;
+    case "inbox": return <svg {...common}><path d="M22 13h-7l-2 3h-2l-2-3H2M5 3h14l3 10v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-6l3-10z"/></svg>;
+    case "calendar": return <svg {...common}><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>;
+    case "clock": return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>;
+    case "star": return <svg {...common}><path d="m12 3 2.7 6 6.3.6-5 4.3 1.5 6.1L12 17l-5.5 3 1.5-6.1-5-4.3L9.3 9 12 3z"/></svg>;
+    case "star-f": return <svg {...common} fill="currentColor" stroke="none"><path d="m12 3 2.7 6 6.3.6-5 4.3 1.5 6.1L12 17l-5.5 3 1.5-6.1-5-4.3L9.3 9 12 3z"/></svg>;
+    case "pin": return <svg {...common}><path d="M12 3 8 7v4l-4 4h6v5l2 1 2-1v-5h6l-4-4V7l-4-4z"/></svg>;
+    case "menu": return <svg {...common}><path d="M4 6h16M4 12h16M4 18h16"/></svg>;
+    case "grid": return <svg {...common}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>;
+    case "dots": return <svg {...common}><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>;
+    case "ext": return <svg {...common}><path d="M14 4h6v6M10 14 20 4M18 14v6H4V6h6"/></svg>;
+    case "link": return <svg {...common}><path d="M10 13a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7L11 6M14 11a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7L13 18"/></svg>;
+    case "mail": return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 7 9-7"/></svg>;
+    case "phone": return <svg {...common}><path d="M5 4h4l2 5-2 1a12 12 0 0 0 5 5l1-2 5 2v4a2 2 0 0 1-2 2C9 21 3 15 3 6a2 2 0 0 1 2-2z"/></svg>;
+    case "briefcase": return <svg {...common}><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
+    default: return <svg {...common}/>;
+  }
+};
+
+window.Icon = Icon;

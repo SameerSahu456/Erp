@@ -1,5 +1,14 @@
 import { useParams, Link } from 'react-router-dom'
-import { Printer } from 'lucide-react'
+import {
+  Printer,
+  Truck,
+  Calendar,
+  CreditCard,
+  User,
+  Building2,
+  Package,
+  FileText,
+} from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -71,6 +80,9 @@ function PODetailPage() {
   if (!po) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <div className="rounded-full bg-muted p-4">
+          <Package className="size-8 text-muted-foreground" />
+        </div>
         <h2 className="font-display text-xl font-semibold">Purchase Order not found</h2>
         <p className="text-sm text-muted-foreground">
           The purchase order you are looking for does not exist.
@@ -85,87 +97,117 @@ function PODetailPage() {
   const vendor = mockVendors.find((v) => v.id === po.vendorId)
   const grnEntries = mockGRNMatches.filter((g) => g.poId === po.id)
 
+  // Fulfilment progress
+  const totalOrdered = po.items.reduce((s, i) => s + i.qtyOrdered, 0)
+  const totalReceived = po.items.reduce((s, i) => s + i.qtyReceived, 0)
+  const fulfilmentPct = totalOrdered > 0 ? Math.round((totalReceived / totalOrdered) * 100) : 0
+
   // Items tab
   const itemsContent = (
-    <div className="overflow-x-auto rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Part</TableHead>
-            <TableHead>SKU</TableHead>
-            <TableHead className="text-right">Qty Ordered</TableHead>
-            <TableHead className="text-right">Qty Received</TableHead>
-            <TableHead className="text-right">Unit Price</TableHead>
-            <TableHead className="text-right">Tax (%)</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {po.items.map((item) => {
-            const shortReceived = item.qtyReceived < item.qtyOrdered
-            return (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.partName}</TableCell>
-                <TableCell className="text-muted-foreground">{item.partSku}</TableCell>
-                <TableCell className="text-right tabular-nums">{item.qtyOrdered}</TableCell>
-                <TableCell
-                  className={cn(
-                    'text-right tabular-nums',
-                    shortReceived && 'bg-destructive/10 text-destructive font-medium'
-                  )}
-                >
-                  {item.qtyReceived}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">{formatCurrency(item.unitPrice)}</TableCell>
-                <TableCell className="text-right tabular-nums">{item.taxRate}%</TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{formatCurrency(item.amount)}</TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
+    <div className="space-y-4">
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10">#</TableHead>
+              <TableHead>Part</TableHead>
+              <TableHead>SKU</TableHead>
+              <TableHead className="text-right">Ordered</TableHead>
+              <TableHead className="text-right">Received</TableHead>
+              <TableHead className="text-right">Unit Price</TableHead>
+              <TableHead className="text-right">Tax</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {po.items.map((item, idx) => {
+              const shortReceived = item.qtyReceived < item.qtyOrdered
+              const pct = item.qtyOrdered > 0 ? Math.round((item.qtyReceived / item.qtyOrdered) * 100) : 0
+              return (
+                <TableRow key={item.id}>
+                  <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
+                  <TableCell>
+                    <div>
+                      <span className="font-medium">{item.partName}</span>
+                      <span className="ml-2 inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+                        {item.category}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-xs">{item.partSku}</TableCell>
+                  <TableCell className="text-right tabular-nums">{item.qtyOrdered}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className={cn(
+                        'tabular-nums',
+                        shortReceived && 'text-status-warning-text font-medium'
+                      )}>
+                        {item.qtyReceived}
+                      </span>
+                      <div className="hidden h-1.5 w-12 overflow-hidden rounded-full bg-muted sm:block">
+                        <div
+                          className={cn(
+                            'h-full rounded-full transition-all',
+                            pct >= 100 ? 'bg-status-success-text' : pct > 0 ? 'bg-status-warning-text' : 'bg-muted-foreground/30'
+                          )}
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{formatCurrency(item.unitPrice)}</TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">{item.taxRate}%</TableCell>
+                  <TableCell className="text-right tabular-nums font-medium">{formatCurrency(item.amount)}</TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 
   // Vendor tab
   const vendorContent = vendor ? (
-    <Card size="sm">
-      <CardHeader>
-        <CardTitle>{vendor.name}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-xs text-muted-foreground">Contact Person</dt>
-            <dd className="text-sm">{vendor.contactPerson}</dd>
+    <div className="space-y-4">
+      <div className="flex items-start gap-4 rounded-lg border p-4">
+        <div className="flex size-12 items-center justify-center rounded-lg bg-primary/8">
+          <Building2 className="size-6 text-primary" />
+        </div>
+        <div className="flex-1">
+          <Link to={`/procurement/vendors/${vendor.id}`} className="text-base font-semibold text-primary hover:underline">
+            {vendor.name}
+          </Link>
+          <p className="text-sm text-muted-foreground">{vendor.contactPerson} &middot; {vendor.email}</p>
+          <div className="mt-2 flex items-center gap-3">
+            <span className="text-sm text-yellow-500">
+              {'★'.repeat(Math.round(vendor.rating))}{'☆'.repeat(5 - Math.round(vendor.rating))}
+            </span>
+            <span className="text-xs text-muted-foreground">({vendor.rating}/5)</span>
+            <span className="text-xs text-muted-foreground">&middot;</span>
+            <span className="text-xs text-muted-foreground">{vendor.onTimeDeliveryRate}% on-time</span>
           </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Email</dt>
-            <dd className="text-sm">{vendor.email}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Phone</dt>
-            <dd className="text-sm">{vendor.phone}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Address</dt>
-            <dd className="text-sm">{vendor.address}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">GST Number</dt>
-            <dd className="text-sm">{vendor.gstNumber ?? '-'}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Payment Terms</dt>
-            <dd className="text-sm">{vendor.paymentTerms}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Rating</dt>
-            <dd className="text-sm">{'★'.repeat(Math.round(vendor.rating))}{'☆'.repeat(5 - Math.round(vendor.rating))} ({vendor.rating})</dd>
-          </div>
-        </dl>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border p-3">
+          <dt className="text-xs text-muted-foreground mb-1">Phone</dt>
+          <dd className="text-sm">{vendor.phone}</dd>
+        </div>
+        <div className="rounded-lg border p-3">
+          <dt className="text-xs text-muted-foreground mb-1">Address</dt>
+          <dd className="text-sm">{vendor.address}</dd>
+        </div>
+        <div className="rounded-lg border p-3">
+          <dt className="text-xs text-muted-foreground mb-1">GST Number</dt>
+          <dd className="text-sm font-mono">{vendor.gstNumber ?? '-'}</dd>
+        </div>
+        <div className="rounded-lg border p-3">
+          <dt className="text-xs text-muted-foreground mb-1">Payment Terms</dt>
+          <dd className="text-sm">{vendor.paymentTerms}</dd>
+        </div>
+      </dl>
+    </div>
   ) : (
     <p className="text-sm text-muted-foreground">Vendor details not available.</p>
   )
@@ -174,14 +216,14 @@ function PODetailPage() {
   const grnContent = (
     <div className="space-y-4">
       {grnEntries.length > 0 ? (
-        <div className="overflow-x-auto rounded-md border">
+        <div className="overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Part</TableHead>
-                <TableHead className="text-right">Qty Ordered</TableHead>
-                <TableHead className="text-right">Qty Received</TableHead>
-                <TableHead className="text-right">Qty Pending</TableHead>
+                <TableHead className="text-right">Ordered</TableHead>
+                <TableHead className="text-right">Received</TableHead>
+                <TableHead className="text-right">Pending</TableHead>
                 <TableHead>Batch#</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Notes</TableHead>
@@ -193,12 +235,12 @@ function PODetailPage() {
                   <TableCell className="font-medium">{entry.partName}</TableCell>
                   <TableCell className="text-right tabular-nums">{entry.qtyOrdered}</TableCell>
                   <TableCell className="text-right tabular-nums">{entry.qtyReceived}</TableCell>
-                  <TableCell className="text-right tabular-nums">{entry.qtyPending}</TableCell>
-                  <TableCell className="text-muted-foreground">{entry.batchNumber ?? '-'}</TableCell>
+                  <TableCell className="text-right tabular-nums font-medium">{entry.qtyPending}</TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-xs">{entry.batchNumber ?? '-'}</TableCell>
                   <TableCell>
                     <StatusBadge variant={getGRNStatusVariant(entry.status)}>{entry.status}</StatusBadge>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate text-muted-foreground">
+                  <TableCell className="max-w-[200px] truncate text-muted-foreground text-xs">
                     {entry.discrepancyNotes ?? '-'}
                   </TableCell>
                 </TableRow>
@@ -207,7 +249,8 @@ function PODetailPage() {
           </Table>
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+          <Package className="size-8 text-muted-foreground/40 mb-3" />
           <p className="text-sm text-muted-foreground">No GRN entries for this purchase order</p>
         </div>
       )}
@@ -216,7 +259,8 @@ function PODetailPage() {
 
   // Documents tab
   const documentsContent = (
-    <div className="rounded-lg border border-dashed p-8 text-center">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+      <FileText className="size-8 text-muted-foreground/40 mb-3" />
       <p className="text-sm text-muted-foreground">No documents attached</p>
       <p className="mt-1 text-xs text-muted-foreground">
         Attach PO documents, invoices, and delivery receipts.
@@ -258,6 +302,66 @@ function PODetailPage() {
         actions={actionButtons}
       />
 
+      {/* Quick info strip */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
+          <div className="rounded-md bg-primary/8 p-1.5">
+            <Building2 className="size-3.5 text-primary" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground">Vendor</p>
+            <p className="text-sm font-medium truncate">{po.vendorName}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
+          <div className="rounded-md bg-primary/8 p-1.5">
+            <Calendar className="size-3.5 text-primary" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground">Expected Delivery</p>
+            <p className="text-sm font-medium">{formatDate(po.expectedDelivery)}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
+          <div className="rounded-md bg-primary/8 p-1.5">
+            <CreditCard className="size-3.5 text-primary" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground">Payment</p>
+            <p className="text-sm font-medium">{po.paymentTerms}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
+          <div className="rounded-md bg-primary/8 p-1.5">
+            <User className="size-3.5 text-primary" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground">Created By</p>
+            <p className="text-sm font-medium">{po.createdBy}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
+          <div className="rounded-md bg-primary/8 p-1.5">
+            <Truck className="size-3.5 text-primary" />
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground">Fulfilment</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold">{fulfilmentPct}%</p>
+              <div className="h-1.5 w-14 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all',
+                    fulfilmentPct >= 100 ? 'bg-status-success-text' : fulfilmentPct > 0 ? 'bg-primary' : 'bg-muted-foreground/30'
+                  )}
+                  style={{ width: `${fulfilmentPct}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Main content */}
         <div className="lg:col-span-2">
@@ -287,7 +391,7 @@ function PODetailPage() {
                   <p className="text-muted-foreground">{po.vendorAddress}</p>
                   <p className="text-muted-foreground">{po.vendorEmail}</p>
                 </div>
-                <div className="overflow-x-auto rounded-md border">
+                <div className="overflow-x-auto rounded-lg border">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/50">
@@ -312,20 +416,20 @@ function PODetailPage() {
                   </table>
                 </div>
                 <div className="flex justify-end">
-                  <div className="w-full max-w-xs space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtotal</span>
+                  <div className="w-full max-w-xs space-y-1.5">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Subtotal</span>
                       <span className="tabular-nums">{formatCurrencyDecimal(po.subtotal)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Tax</span>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Tax</span>
                       <span className="tabular-nums">{formatCurrencyDecimal(po.taxAmount)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Discount</span>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Discount</span>
                       <span className="tabular-nums">-{formatCurrencyDecimal(po.discount)}</span>
                     </div>
-                    <div className="flex justify-between border-t pt-1 font-semibold">
+                    <div className="flex justify-between border-t pt-1.5 font-semibold text-base">
                       <span>Grand Total</span>
                       <span className="tabular-nums">{formatCurrencyDecimal(po.grandTotal)}</span>
                     </div>
@@ -340,59 +444,10 @@ function PODetailPage() {
         <div className="space-y-4">
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Order Details</CardTitle>
+              <CardTitle>Order Summary</CardTitle>
             </CardHeader>
             <CardContent>
-              <dl className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Vendor</dt>
-                  <dd className="text-sm">{po.vendorName}</dd>
-                </div>
-                {po.prNumber && (
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs font-ui text-muted-foreground">PR Ref</dt>
-                    <dd>
-                      <Link
-                        to={`/procurement/pr/${po.prId}`}
-                        className="text-sm text-primary hover:underline"
-                      >
-                        {po.prNumber}
-                      </Link>
-                    </dd>
-                  </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Payment Terms</dt>
-                  <dd className="text-sm">{po.paymentTerms}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Delivery Terms</dt>
-                  <dd className="text-sm">{po.deliveryTerms}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Expected Delivery</dt>
-                  <dd className="text-sm">{formatDate(po.expectedDelivery)}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Created By</dt>
-                  <dd className="text-sm">{po.createdBy}</dd>
-                </div>
-                {po.approvedBy && (
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs font-ui text-muted-foreground">Approved By</dt>
-                    <dd className="text-sm">{po.approvedBy}</dd>
-                  </div>
-                )}
-              </dl>
-            </CardContent>
-          </Card>
-
-          <Card size="sm">
-            <CardHeader>
-              <CardTitle>Totals</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="space-y-2">
+              <dl className="space-y-2.5">
                 <div className="flex items-center justify-between text-sm">
                   <dt className="text-muted-foreground">Subtotal</dt>
                   <dd className="tabular-nums">{formatCurrency(po.subtotal)}</dd>
@@ -403,13 +458,102 @@ function PODetailPage() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <dt className="text-muted-foreground">Discount</dt>
-                  <dd className="tabular-nums">-{formatCurrency(po.discount)}</dd>
+                  <dd className="tabular-nums text-status-success-text">-{formatCurrency(po.discount)}</dd>
                 </div>
-                <div className="flex items-center justify-between border-t pt-2 font-semibold">
-                  <dt>Grand Total</dt>
-                  <dd className="tabular-nums">{formatCurrency(po.grandTotal)}</dd>
+                <div className="flex items-center justify-between border-t pt-2.5">
+                  <dt className="font-semibold">Grand Total</dt>
+                  <dd className="text-lg font-bold tabular-nums">{formatCurrency(po.grandTotal)}</dd>
                 </div>
               </dl>
+            </CardContent>
+          </Card>
+
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>Order Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="space-y-3">
+                {po.prNumber && (
+                  <div className="flex items-center justify-between">
+                    <dt className="text-xs font-ui text-muted-foreground">PR Ref</dt>
+                    <dd>
+                      <Link
+                        to={`/procurement/pr/${po.prId}`}
+                        className="text-sm text-primary hover:underline font-medium"
+                      >
+                        {po.prNumber}
+                      </Link>
+                    </dd>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <dt className="text-xs font-ui text-muted-foreground">Delivery Terms</dt>
+                  <dd className="text-sm">{po.deliveryTerms}</dd>
+                </div>
+                {po.sentDate && (
+                  <div className="flex items-center justify-between">
+                    <dt className="text-xs font-ui text-muted-foreground">Sent Date</dt>
+                    <dd className="text-sm">{formatDate(po.sentDate)}</dd>
+                  </div>
+                )}
+                {po.approvedBy && (
+                  <div className="flex items-center justify-between">
+                    <dt className="text-xs font-ui text-muted-foreground">Approved By</dt>
+                    <dd className="text-sm">{po.approvedBy}</dd>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <dt className="text-xs font-ui text-muted-foreground">Created</dt>
+                  <dd className="text-sm">{formatDate(po.createdAt)}</dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+
+          {/* Fulfilment progress card */}
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>Fulfilment Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold tabular-nums">{fulfilmentPct}%</span>
+                  <span className="text-xs text-muted-foreground">{totalReceived}/{totalOrdered} units</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all',
+                      fulfilmentPct >= 100 ? 'bg-status-success-text' : 'bg-primary'
+                    )}
+                    style={{ width: `${fulfilmentPct}%` }}
+                  />
+                </div>
+                <div className="space-y-2 pt-1">
+                  {po.items.map((item) => {
+                    const pct = item.qtyOrdered > 0 ? Math.round((item.qtyReceived / item.qtyOrdered) * 100) : 0
+                    return (
+                      <div key={item.id}>
+                        <div className="flex items-center justify-between text-xs mb-0.5">
+                          <span className="truncate max-w-[140px]">{item.partName}</span>
+                          <span className="text-muted-foreground tabular-nums">{item.qtyReceived}/{item.qtyOrdered}</span>
+                        </div>
+                        <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                          <div
+                            className={cn(
+                              'h-full rounded-full',
+                              pct >= 100 ? 'bg-status-success-text' : pct > 0 ? 'bg-status-warning-text' : 'bg-muted-foreground/20'
+                            )}
+                            style={{ width: `${Math.min(pct, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -419,7 +563,7 @@ function PODetailPage() {
                 <CardTitle>Notes</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{po.notes}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{po.notes}</p>
               </CardContent>
             </Card>
           )}

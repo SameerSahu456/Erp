@@ -209,50 +209,6 @@ function StepCircle({ step }: { step: StepConfig }) {
   }
 }
 
-function StepConnector({
-  nextStatus,
-}: {
-  nextStatus: StepConfig["status"]
-}) {
-  const lineColor = (() => {
-    switch (nextStatus) {
-      case "completed":
-        return "bg-primary"
-      case "active":
-        return "bg-primary/40"
-      case "failed":
-        return "bg-destructive"
-      case "pending":
-        return "bg-muted-foreground/30"
-    }
-  })()
-
-  const isDashed = nextStatus === "pending"
-
-  return (
-    <>
-      {/* Horizontal connector (md+) */}
-      <div className="hidden flex-1 md:flex md:items-center md:self-center md:mt-4 md:min-w-[32px]">
-        <div
-          className={cn(
-            "h-0.5 w-full",
-            isDashed ? "border-t-2 border-dashed border-muted-foreground/30 bg-transparent" : lineColor
-          )}
-        />
-      </div>
-
-      {/* Vertical connector (mobile) */}
-      <div className="ml-[15px] flex h-6 items-center md:hidden">
-        <div
-          className={cn(
-            "w-0.5 h-full",
-            isDashed ? "border-l-2 border-dashed border-muted-foreground/30 bg-transparent" : lineColor
-          )}
-        />
-      </div>
-    </>
-  )
-}
 
 export { WorkflowStepper }
 export type { WorkflowStepperProps, StepConfig }

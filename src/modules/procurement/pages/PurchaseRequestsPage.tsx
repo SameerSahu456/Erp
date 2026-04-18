@@ -1,11 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, FileText, Clock, CheckCircle, IndianRupee } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { StatsRow } from '@/components/common/StatsRow'
 
 import { mockPurchaseRequests } from '@/modules/procurement/data/purchase-requests'
 import type { PRStatus } from '@/modules/procurement/types'
@@ -16,6 +18,13 @@ const formatCurrency = (value: number) =>
     currency: 'INR',
     maximumFractionDigits: 0,
   }).format(value)
+
+const formatShort = (v: number) => {
+  if (v >= 10000000) return `${(v / 10000000).toFixed(1)}Cr`
+  if (v >= 100000) return `${(v / 100000).toFixed(1)}L`
+  if (v >= 1000) return `${(v / 1000).toFixed(0)}K`
+  return String(v)
+}
 
 function getPRStatusVariant(status: string): StatusBadgeVariant {
   switch (status) {
@@ -92,21 +101,72 @@ const cellFormatter: CellFormatter = (value, key, row) => {
 function PurchaseRequestsPage() {
   const navigate = useNavigate()
 
+  const totalPRs = mockPurchaseRequests.length
+  const pendingCount = mockPurchaseRequests.filter((pr) =>
+    ['Submitted', 'Under Review', 'Partially Approved'].includes(pr.status)
+  ).length
+  const approvedCount = mockPurchaseRequests.filter((pr) =>
+    ['Approved', 'Converted to PO'].includes(pr.status)
+  ).length
+  const totalValue = mockPurchaseRequests.reduce((sum, pr) => sum + pr.totalEstimated, 0)
+
+  const stats = [
+    {
+      label: 'Total PRs',
+      value: totalPRs,
+      icon: FileText,
+    },
+    {
+      label: 'Pending Approval',
+      value: pendingCount,
+      icon: Clock,
+      ...(pendingCount > 0 && {
+        className: 'border-status-warning-text/20 bg-status-warning-bg/30',
+      }),
+    },
+    {
+      label: 'Approved',
+      value: approvedCount,
+      icon: CheckCircle,
+    },
+    {
+      label: 'Total Value',
+      value: `₹${formatShort(totalValue)}`,
+      icon: IndianRupee,
+    },
+  ]
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Purchase Requests</h2>
+        <div>
+          <h2 className="font-display text-2xl font-semibold tracking-tight">
+            Purchase Requests
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Manage and track purchase requisitions
+          </p>
+        </div>
         <Button onClick={() => navigate('/procurement/pr/new')}>
           <Plus className="mr-1 size-4" />
           Create PR
         </Button>
       </div>
 
-      <BusinessMetricsTable
-        tabs={tabs}
-        cellFormatter={cellFormatter}
-        pageSize={10}
-      />
+      {/* Summary Stats */}
+      <StatsRow stats={stats} />
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <BusinessMetricsTable
+            tabs={tabs}
+            cellFormatter={cellFormatter}
+            pageSize={10}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }

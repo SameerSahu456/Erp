@@ -1,13 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus } from 'lucide-react'
-
+import { Plus, Store, ShoppingCart, Star, IndianRupee } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { StatsRow } from '@/components/common/StatsRow'
 import { Badge } from '@/components/ui/badge'
-
 import { mockVendors } from '@/modules/procurement/data/vendors'
 
 const formatCurrency = (value: number) =>
@@ -16,6 +16,13 @@ const formatCurrency = (value: number) =>
     currency: 'INR',
     maximumFractionDigits: 0,
   }).format(value)
+
+const formatShort = (v: number) => {
+  if (v >= 10000000) return `${(v / 10000000).toFixed(1)}Cr`
+  if (v >= 100000) return `${(v / 100000).toFixed(1)}L`
+  if (v >= 1000) return `${(v / 1000).toFixed(0)}K`
+  return String(v)
+}
 
 function getVendorStatusVariant(status: string): StatusBadgeVariant {
   switch (status) {
@@ -118,21 +125,45 @@ const cellFormatter: CellFormatter = (value, key, row) => {
 function VendorsPage() {
   const navigate = useNavigate()
 
+  const activeVendors = mockVendors.filter((v) => v.status === 'Active')
+  const activeCount = activeVendors.length
+  const totalOrders = mockVendors.reduce((sum, v) => sum + v.totalOrders, 0)
+  const avgRating = activeVendors.length > 0
+    ? (activeVendors.reduce((sum, v) => sum + v.rating, 0) / activeVendors.length).toFixed(1)
+    : '0.0'
+  const totalSpend = mockVendors.reduce((sum, v) => sum + v.totalSpend, 0)
+
+  const stats = [
+    { label: 'Active Vendors', value: activeCount, icon: Store },
+    { label: 'Total Orders', value: totalOrders, icon: ShoppingCart },
+    { label: 'Avg Rating', value: `${avgRating}/5`, icon: Star },
+    { label: 'Total Spend', value: formatShort(totalSpend), icon: IndianRupee },
+  ]
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Vendors</h2>
+        <div>
+          <h2 className="font-display text-2xl font-semibold tracking-tight">Vendors</h2>
+          <p className="text-sm text-muted-foreground">Manage vendor relationships and performance</p>
+        </div>
         <Button onClick={() => navigate('/procurement/vendors/new')}>
           <Plus className="mr-1 size-4" />
           Add Vendor
         </Button>
       </div>
 
-      <BusinessMetricsTable
-        tabs={tabs}
-        cellFormatter={cellFormatter}
-        pageSize={10}
-      />
+      <StatsRow stats={stats} />
+
+      <Card>
+        <CardContent className="p-0">
+          <BusinessMetricsTable
+            tabs={tabs}
+            cellFormatter={cellFormatter}
+            pageSize={10}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }
