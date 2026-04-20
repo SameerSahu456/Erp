@@ -124,6 +124,7 @@ const RentalContractFormPage = lazy(() => import('@/modules/rentals/pages/Rental
 const RentalContractDetailPage = lazy(() => import('@/modules/rentals/pages/RentalContractDetailPage'))
 const DeviceTrackingPage = lazy(() => import('@/modules/rentals/pages/DeviceTrackingPage'))
 const RentalReturnsPage = lazy(() => import('@/modules/rentals/pages/RentalReturnsPage'))
+const RentalOrdersPage = lazy(() => import('@/modules/rentals/pages/RentalOrdersPage'))
 const AssetRegistryPage = lazy(() => import('@/modules/rentals/pages/AssetRegistryPage'))
 const SupportTicketsPage = lazy(() => import('@/modules/rentals/pages/SupportTicketsPage'))
 const PartnersPage = lazy(() => import('@/modules/rentals/pages/PartnersPage'))
@@ -323,6 +324,7 @@ export const router = createBrowserRouter([
       { path: '/rentals/contracts/:id', element: <LazyRoute><RentalContractDetailPage /></LazyRoute> },
       { path: '/rentals/tracking', element: <LazyRoute><DeviceTrackingPage /></LazyRoute> },
       { path: '/rentals/returns', element: <LazyRoute><RentalReturnsPage /></LazyRoute> },
+      { path: '/rentals/orders', element: <LazyRoute><RentalOrdersPage /></LazyRoute> },
       { path: '/rentals/assets', element: <LazyRoute><AssetRegistryPage /></LazyRoute> },
       { path: '/rentals/support', element: <LazyRoute><SupportTicketsPage /></LazyRoute> },
       { path: '/rentals/partners', element: <LazyRoute><PartnersPage /></LazyRoute> },
