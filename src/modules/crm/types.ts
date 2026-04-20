@@ -1,5 +1,6 @@
 export type Priority = 'High' | 'Medium' | 'Low'
 export type CustomerType = 'End Customer' | 'Channel Partner'
+export type OrderType = 'New' | 'Refurb' | 'Rental'
 
 export interface Lead {
   id: string
@@ -13,11 +14,15 @@ export interface Lead {
   owner: string
   bde: string
   accountOwner?: string
+  assignedTo?: string
+  presalesManager?: string
   priority: Priority
   companySize?: string
   employees?: number
   location?: string
+  website?: string
   customerType?: CustomerType
+  orderType?: OrderType
   lastContact: string
   createdAt: string
   notes?: string
@@ -38,11 +43,16 @@ export interface Deal {
   probability: number
   closeDate: string
   owner: string
+  owners?: string[]
+  assignedTo?: string
+  presalesManager?: string
   priority: Priority
   companySize?: string
   employees?: number
   location?: string
+  website?: string
   customerType?: CustomerType
+  orderType?: OrderType
   createdAt: string
   description: string
   categories: string[]
@@ -51,6 +61,18 @@ export interface Deal {
 
 export type AccountTag = 'Hunting' | 'Farming' | 'Cold'
 
+export interface AccountAddress {
+  id: string
+  type: 'Billing' | 'Shipping'
+  label: string
+  line1: string
+  line2?: string
+  city: string
+  state: string
+  pincode: string
+  isDefault?: boolean
+}
+
 export interface Account {
   id: string
   name: string
@@ -58,12 +80,19 @@ export interface Account {
   type: 'Enterprise' | 'SMB' | 'Startup' | 'Government'
   revenue: number
   owner: string
+  owners?: string[]
   status: 'Active' | 'Inactive' | 'Prospect'
   tag?: AccountTag
   categoriesInterested?: string[]
   categoriesBuyed?: string[]
   city: string
   website?: string
+  companySize?: string
+  employees?: number
+  location?: string
+  parentAccountId?: string
+  parentAccountName?: string
+  addresses?: AccountAddress[]
   createdAt: string
 }
 
@@ -74,7 +103,11 @@ export interface Contact {
   phone: string
   accountId: string
   accountName: string
-  title: string
+  accountIds?: string[]
+  accountNames?: string[]
+  designation: string
+  department?: string
+  preferredContact?: boolean
   lastContact: string
   createdAt: string
 }
@@ -330,6 +363,7 @@ export const IMS_CATEGORIES = [
 
 export const LEAD_STAGES = ['New', 'Contacted', 'Qualified', 'Procurement', 'Cold', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const
 export const DEAL_STAGES = ['New', 'Procurement', 'Cold', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const
+export const ORDER_TYPES: OrderType[] = ['New', 'Refurb', 'Rental']
 
 // ── Material Inquiry ──
 

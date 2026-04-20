@@ -8,8 +8,10 @@ import {
   Building2,
   CalendarDays,
   User,
+  Users,
 } from 'lucide-react'
 
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
@@ -24,6 +26,7 @@ import {
 import { EntityHeader } from '../components/EntityHeader'
 import { DetailTabs } from '../components/DetailTabs'
 import { ActivityFeed } from '../components/ActivityFeed'
+import { MeetingsSection } from '../components/MeetingsSection'
 import { NotesSection } from '../components/NotesSection'
 import { contacts } from '../data/contacts'
 import { accounts } from '../data/accounts'
@@ -32,6 +35,20 @@ import { mockNotes } from '../data/notes'
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+
+const MOCK_MANAGERS: Record<string, { email: string; phone: string; role: string }> = {
+  'Amit Patel': { email: 'amit.patel@comprint.in', phone: '+91 98200 11111', role: 'Senior Account Manager' },
+  'Sneha Desai': { email: 'sneha.desai@comprint.in', phone: '+91 98200 22222', role: 'Account Manager' },
+  'Rahul Verma': { email: 'rahul.verma@comprint.in', phone: '+91 98200 33333', role: 'Account Manager' },
+}
+
+const AVATAR_COLORS = [
+  'bg-primary/10 text-primary',
+  'bg-emerald-500/10 text-emerald-600',
+  'bg-amber-500/10 text-amber-600',
+  'bg-violet-500/10 text-violet-600',
+  'bg-rose-500/10 text-rose-600',
+]
 
 function ContactDetailPage() {
   const { id: contactId } = useParams<{ id: string }>()
@@ -56,6 +73,14 @@ function ContactDetailPage() {
 
   const account = accounts.find((a) => a.id === contact.accountId)
 
+  // Gather owners across all linked accounts
+  const linkedAccounts = contact.accountIds
+    ? contact.accountIds.map((aid) => accounts.find((a) => a.id === aid)).filter(Boolean)
+    : account ? [account] : []
+  const accountOwners = linkedAccounts.flatMap((a) => a!.owners ?? [a!.owner])
+  // Deduplicate
+  const uniqueOwners = [...new Set(accountOwners)]
+
   const activityCount = mockActivities.filter(
     (a) => a.entityType === 'contact' && a.entityId === contact.id
   ).length
@@ -69,7 +94,7 @@ function ContactDetailPage() {
     navigate('/crm/contacts')
   }
 
-  const subtitle = `${contact.title} at ${contact.accountName}`
+  const subtitle = `${contact.designation} at ${contact.accountName}`
 
   const overviewContent = (
     <div className="space-y-6">
@@ -110,8 +135,8 @@ function ContactDetailPage() {
             <div className="flex items-start gap-2">
               <User className="mt-0.5 size-4 text-muted-foreground" />
               <div>
-                <dt className="text-xs font-ui text-muted-foreground">Title</dt>
-                <dd className="text-sm">{contact.title}</dd>
+                <dt className="text-xs font-ui text-muted-foreground">Designation</dt>
+                <dd className="text-sm">{contact.designation}</dd>
               </div>
             </div>
             <div className="flex items-start gap-2">
@@ -155,6 +180,11 @@ function ContactDetailPage() {
       label: 'Activities',
       count: activityCount,
       content: <ActivityFeed entityType="contact" entityId={contact.id} />,
+    },
+    {
+      id: 'meetings',
+      label: 'Meetings',
+      content: <MeetingsSection entityType="contact" entityId={contact.id} entityName={contact.name} />,
     },
     {
       id: 'notes',
@@ -246,6 +276,64 @@ function ContactDetailPage() {
                     <dd className="text-sm">{account.city}</dd>
                   </div>
                 </dl>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Account Team */}
+          {uniqueOwners.length > 0 && (
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="size-4" />
+                  Account Team
+                  <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+                    {uniqueOwners.length}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {uniqueOwners.map((ownerName, idx) => {
+                    const info = MOCK_MANAGERS[ownerName]
+                    const isPrimary = idx === 0
+                    return (
+                      <div key={ownerName} className={cn('flex items-start gap-3', idx > 0 && 'border-t pt-3')}>
+                        <div
+                          className={cn(
+                            'flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-medium',
+                            AVATAR_COLORS[idx % AVATAR_COLORS.length]
+                          )}
+                        >
+                          {ownerName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium">{ownerName}</p>
+                            {isPrimary && (
+                              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                                Primary
+                              </span>
+                            )}
+                          </div>
+                          {info && (
+                            <>
+                              <p className="text-xs text-muted-foreground">{info.role}</p>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Mail className="size-3 shrink-0" />
+                                <span className="truncate">{info.email}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Phone className="size-3 shrink-0" />
+                                <span>{info.phone}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </CardContent>
             </Card>
           )}

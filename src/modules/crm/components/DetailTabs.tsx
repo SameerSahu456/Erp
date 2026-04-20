@@ -32,9 +32,14 @@ function DetailTabs({ tabs, defaultTab, className }: DetailTabsProps) {
             className={cn('cpt-tab', activeIndex === index && 'active')}
             onClick={() => setActiveIndex(index)}
           >
-            {tab.label}
-            {tab.count != null && (
-              <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-secondary text-muted-foreground text-[11px] font-semibold px-[5px]">
+            <span>{tab.label}</span>
+            {tab.count != null && tab.count > 0 && (
+              <span
+                className={cn(
+                  'cpt-tab-count',
+                  activeIndex === index && 'active'
+                )}
+              >
                 {tab.count}
               </span>
             )}

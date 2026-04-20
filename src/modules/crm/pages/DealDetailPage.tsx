@@ -130,9 +130,17 @@ function getMIStatusVariant(status: string): StatusBadgeVariant {
 
 const MOCK_MANAGERS: Record<string, { email: string; phone: string; role: string }> = {
   'Amit Patel': { email: 'amit.patel@comprint.in', phone: '+91 98200 11111', role: 'Senior Account Manager' },
-  'Sneha Desai': { email: 'sneha.desai@comprint.in', phone: '+91 98200 22222', role: 'Account Owner' },
-  'Rahul Verma': { email: 'rahul.verma@comprint.in', phone: '+91 98200 33333', role: 'Account Owner' },
+  'Sneha Desai': { email: 'sneha.desai@comprint.in', phone: '+91 98200 22222', role: 'Account Manager' },
+  'Rahul Verma': { email: 'rahul.verma@comprint.in', phone: '+91 98200 33333', role: 'Account Manager' },
 }
+
+const AVATAR_COLORS = [
+  'bg-primary/10 text-primary',
+  'bg-emerald-500/10 text-emerald-600',
+  'bg-amber-500/10 text-amber-600',
+  'bg-violet-500/10 text-violet-600',
+  'bg-rose-500/10 text-rose-600',
+]
 
 function DealDetailPage() {
   const { id: dealId } = useParams<{ id: string }>()
@@ -185,6 +193,7 @@ function DealDetailPage() {
     (t) => t.entityType === 'deal' && t.entityId === deal.id
   ).length
 
+  const dealOwners = deal.owners ?? [deal.owner]
   const managerInfo = MOCK_MANAGERS[deal.owner]
 
   // Stage progress
@@ -613,7 +622,7 @@ function DealDetailPage() {
             {deal.priority} Priority
           </Badge>
         ) : undefined}
-        owner={{ name: deal.owner, role: 'Account Owner' }}
+        owners={dealOwners.map((name, i) => ({ name, role: i === 0 ? 'Primary Owner' : 'Co-Owner' }))}
         backHref="/crm/deals"
         actions={
           <>
@@ -673,37 +682,58 @@ function DealDetailPage() {
 
         {/* Right column - 1/3 */}
         <div className="space-y-4">
-          {/* Account Owner Card */}
+          {/* Account Team Card */}
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Account Owner</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="size-4" />
+                Account Team
+                <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+                  {dealOwners.length}
+                </span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-start gap-3">
-                <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                  {deal.owner
-                    .split(' ')
-                    .map((p) => p[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2)}
-                </div>
-                <div className="min-w-0 space-y-1">
-                  <p className="text-sm font-medium">{deal.owner}</p>
-                  {managerInfo && (
-                    <>
-                      <p className="text-xs text-muted-foreground">{managerInfo.role}</p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Mail className="size-3" />
-                        <span>{managerInfo.email}</span>
+              <div className="space-y-3">
+                {dealOwners.map((ownerName, idx) => {
+                  const info = MOCK_MANAGERS[ownerName]
+                  const isPrimary = idx === 0
+                  return (
+                    <div key={ownerName} className={cn('flex items-start gap-3', idx > 0 && 'border-t pt-3')}>
+                      <div
+                        className={cn(
+                          'flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-medium',
+                          AVATAR_COLORS[idx % AVATAR_COLORS.length]
+                        )}
+                      >
+                        {ownerName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Phone className="size-3" />
-                        <span>{managerInfo.phone}</span>
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{ownerName}</p>
+                          {isPrimary && (
+                            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                              Primary
+                            </span>
+                          )}
+                        </div>
+                        {info && (
+                          <>
+                            <p className="text-xs text-muted-foreground">{info.role}</p>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Mail className="size-3 shrink-0" />
+                              <span className="truncate">{info.email}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Phone className="size-3 shrink-0" />
+                              <span>{info.phone}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

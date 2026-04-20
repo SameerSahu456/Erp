@@ -1,18 +1,9 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import {
-  ArrowLeft,
-  Download,
-  FileText,
-  Building2,
-  CalendarDays,
-  Hash,
-  Sparkles,
-} from 'lucide-react'
-
+import { ArrowLeft, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { QuoteBuilderPanel } from '../components/QuoteBuilderPanel'
+import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
+import { leads } from '../data/leads'
+import { deals } from '../data/deals'
 import { accounts } from '../data/accounts'
 
 export default function QuoteBuilderPage() {
@@ -22,49 +13,31 @@ export default function QuoteBuilderPage() {
   const leadId = searchParams.get('leadId') ?? undefined
   const dealId = searchParams.get('dealId') ?? undefined
   const accountId = searchParams.get('accountId') ?? undefined
-  const accountName = accountId
-    ? accounts.find((a) => a.id === accountId)?.name
-    : undefined
 
-  const contextLabel = leadId
-    ? 'From Lead'
-    : dealId
-      ? 'From Deal'
-      : undefined
+  const lead = leadId ? leads.find((l) => l.id === leadId) : undefined
+  const deal = dealId ? deals.find((d) => d.id === dealId) : undefined
+  const account = accountId ? accounts.find((a) => a.id === accountId) : undefined
+
+  const accountName = account?.name ?? deal?.accountName ?? undefined
 
   return (
-    <div className="space-y-6">
-      {/* Modern header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="cpt-page-title">
-                Quote Builder
-              </h1>
-              <Badge className="bg-gradient-to-r from-primary/80 to-primary text-primary-foreground text-[10px] gap-1">
-                <Sparkles className="size-3" />
-                Advanced
-              </Badge>
-              {contextLabel && (
-                <Badge variant="outline" className="text-[10px]">
-                  {contextLabel}
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Build quotes with BOM configuration, IMS part selection, and PDF export
-            </p>
-          </div>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft />
+        </Button>
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">BOM Quote Builder</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
+            Build server quotes with hierarchical BOM, inline pricing, and margin visibility
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ml-auto">
           <Button variant="outline" size="sm" onClick={() => navigate('/crm/quotes')}>
             <FileText className="size-4 mr-1.5" />
             All Quotes
@@ -72,68 +45,15 @@ export default function QuoteBuilderPage() {
         </div>
       </div>
 
-      {/* Feature highlights */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Hash className="size-4" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">IMS Integration</p>
-            <p className="text-sm font-medium">Part Catalog</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
-            <Building2 className="size-4" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">BOM Support</p>
-            <p className="text-sm font-medium">Component Config</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
-            <CalendarDays className="size-4" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Auto-Save</p>
-            <p className="text-sm font-medium">Draft Recovery</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-orange-500/10 text-orange-600">
-            <Download className="size-4" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Export</p>
-            <p className="text-sm font-medium">PDF Download</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Quote Builder Panel */}
-      <Card className="border-t-4 border-t-primary/20">
-        <CardHeader className="border-b bg-muted/30">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="size-5 text-primary" />
-              New Quote
-            </CardTitle>
-            <Badge variant="outline" className="text-xs">
-              Draft
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <QuoteBuilderPanel
-            leadId={leadId}
-            dealId={dealId}
-            accountId={accountId}
-            accountName={accountName}
-          />
-        </CardContent>
-      </Card>
+      {/* BOM Builder */}
+      <BOMQuoteBuilder
+        leadId={leadId}
+        leadName={lead?.name}
+        dealId={dealId}
+        dealName={deal?.name}
+        accountId={accountId}
+        accountName={accountName}
+      />
     </div>
   )
 }

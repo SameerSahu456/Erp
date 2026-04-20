@@ -1,7 +1,9 @@
+import { useMemo } from "react"
 import { Plus } from "lucide-react"
 import { useNavigate, Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
 import type { TabConfig, CellFormatter } from "@/components/common/BusinessMetricsTable"
 
@@ -14,8 +16,10 @@ const contactsTab: TabConfig = {
     { key: "name", label: "Name", sortable: true },
     { key: "email", label: "Email", sortable: true },
     { key: "phone", label: "Phone" },
-    { key: "accountName", label: "Account", sortable: true },
-    { key: "title", label: "Title", sortable: true },
+    { key: "accounts", label: "Accounts", sortable: true },
+    { key: "designation", label: "Designation", sortable: true },
+    { key: "department", label: "Department", sortable: true, filterable: true },
+    { key: "preferred", label: "Preferred", sortable: true },
     { key: "lastContact", label: "Last Contact", sortable: true },
   ],
   data: contacts.map((c) => ({
@@ -23,16 +27,37 @@ const contactsTab: TabConfig = {
     name: c.name,
     email: c.email,
     phone: c.phone,
-    accountName: c.accountName,
-    title: c.title,
+    accounts: (c.accountNames ?? [c.accountName]).join(', '),
+    designation: c.designation,
+    department: c.department ?? '',
+    preferred: c.preferredContact ? 'Yes' : 'No',
     lastContact: c.lastContact,
   })),
 }
 
 const contactCellFormatter: CellFormatter = (value, key, row) => {
-  if (key === "name" && typeof value === "string") {
+  if (key === "accounts" && typeof value === "string" && value) {
+    const names = value.split(', ')
+    if (names.length > 1) {
+      return {
+        display: (
+          <div className="flex flex-wrap gap-1">
+            {names.map((name) => (
+              <Badge key={name} variant="outline" size="sm" className="text-[10px]">{name}</Badge>
+            ))}
+          </div>
+        ),
+      }
+    }
+  }
+  if (key === "preferred" && value === "Yes") {
     return {
-      display: <Link to={`/crm/contacts/${row["id"]}`} className="text-primary hover:underline font-medium">{value}</Link>,
+      display: <Badge variant="success-soft" size="sm">Preferred</Badge>,
+    }
+  }
+  if (key === "preferred" && value === "No") {
+    return {
+      display: <span className="text-muted-foreground text-xs">—</span>,
     }
   }
   return null
@@ -54,6 +79,7 @@ function ContactsPage() {
         tabs={[contactsTab]}
         cellFormatter={contactCellFormatter}
         pageSize={10}
+        onRowClick={(row) => navigate(`/crm/contacts/${row.id}`)}
       />
     </div>
   )

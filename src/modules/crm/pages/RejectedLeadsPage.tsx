@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { XCircle, Search, X } from 'lucide-react'
 
 import { Input } from '@/components/ui/input'
@@ -25,6 +25,7 @@ const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 
 function RejectedLeadsPage() {
+  const navigate = useNavigate()
   const [reasonFilter, setReasonFilter] = useState('')
   const [ownerFilter, setOwnerFilter] = useState<string>('all')
   const [dateFrom, setDateFrom] = useState('')
@@ -179,6 +180,7 @@ function RejectedLeadsPage() {
         tabs={[tab]}
         cellFormatter={cellFormatter}
         pageSize={10}
+        onRowClick={(row) => navigate(`/crm/leads/${row.id}`)}
       />
     </div>
   )

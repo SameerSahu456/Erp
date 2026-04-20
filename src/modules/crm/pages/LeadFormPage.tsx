@@ -14,14 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { EntityHeader } from '../components/EntityHeader'
+import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
 import { leads } from '../data/leads'
-import { LEAD_STAGES, IMS_CATEGORIES } from '../types'
-import type { Lead } from '../types'
+import { LEAD_STAGES, IMS_CATEGORIES, ORDER_TYPES, MOCK_USERS } from '../types'
+import type { Lead, OrderType, CustomerType } from '../types'
 
 const LEAD_SOURCES = ['Website', 'Referral', 'LinkedIn', 'Trade Show', 'Cold Call'] as const
-const MOCK_OWNERS = ['Amit Patel', 'Sneha Desai', 'Rahul Verma'] as const
+const COMPANY_SIZES = ['Startup', 'SMB', 'Mid-Market', 'Large Enterprise'] as const
 
 function LeadFormPage() {
   const { id: leadId } = useParams<{ id: string }>()
@@ -37,18 +38,24 @@ function LeadFormPage() {
   const [stage, setStage] = useState<Lead['stage']>(existingLead?.stage ?? 'New')
   const [value, setValue] = useState(existingLead?.value?.toString() ?? '')
   const [source, setSource] = useState(existingLead?.source ?? 'Website')
-  const [owner, setOwner] = useState(existingLead?.owner ?? MOCK_OWNERS[0])
   const [notes, setNotes] = useState(existingLead?.notes ?? '')
   const [description, setDescription] = useState(existingLead?.description ?? '')
   const [categories, setCategories] = useState<string[]>(existingLead?.categories ?? [])
 
-  const backHref = isEdit ? `/crm/leads/${leadId}` : '/crm/leads'
+  // New fields
+  const [location, setLocation] = useState(existingLead?.location ?? '')
+  const [companySize, setCompanySize] = useState(existingLead?.companySize ?? '')
+  const [website, setWebsite] = useState(existingLead?.website ?? '')
+  const [employees, setEmployees] = useState(existingLead?.employees?.toString() ?? '')
+  const [assignedTo, setAssignedTo] = useState(existingLead?.assignedTo ?? MOCK_USERS[0])
+  const [presalesManager, setPresalesManager] = useState(existingLead?.presalesManager ?? '')
+  const [priority, setPriority] = useState(existingLead?.priority ?? 'Medium')
+  const [customerType, setCustomerType] = useState<CustomerType>(existingLead?.customerType ?? 'End Customer')
+  const [orderType, setOrderType] = useState<OrderType | ''>(existingLead?.orderType ?? '')
+  const [bde, setBde] = useState(existingLead?.bde ?? '')
+  const [showQuoteBuilder, setShowQuoteBuilder] = useState(true)
 
-  function toggleCategory(cat: string) {
-    setCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    )
-  }
+  const backHref = isEdit ? `/crm/leads/${leadId}` : '/crm/leads'
 
   function handleSave() {
     if (!name.trim() || !company.trim() || !description.trim()) return
@@ -73,8 +80,8 @@ function LeadFormPage() {
           <CardTitle>{isEdit ? 'Edit Lead Details' : 'New Lead Details'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {/* Left column */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Column 1 */}
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="lead-name" className="font-ui">
@@ -85,6 +92,19 @@ function LeadFormPage() {
                   placeholder="Contact name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="lead-company" className="font-ui">
+                  Company <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="lead-company"
+                  placeholder="Company name"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
                   required
                 />
               </div>
@@ -111,21 +131,53 @@ function LeadFormPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="lead-company" className="font-ui">
-                  Company <span className="text-destructive">*</span>
-                </Label>
+                <Label htmlFor="lead-website" className="font-ui">Website</Label>
                 <Input
-                  id="lead-company"
-                  placeholder="Company name"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  required
+                  id="lead-website"
+                  placeholder="https://www.example.com"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="lead-location" className="font-ui">Location</Label>
+                <Input
+                  id="lead-location"
+                  placeholder="City, State"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
                 />
               </div>
             </div>
 
-            {/* Right column */}
+            {/* Column 2 */}
             <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="font-ui">Company Size</Label>
+                <Select value={companySize} onValueChange={setCompanySize}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMPANY_SIZES.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="lead-employees" className="font-ui">Employees</Label>
+                <Input
+                  id="lead-employees"
+                  type="number"
+                  placeholder="Number of employees"
+                  value={employees}
+                  onChange={(e) => setEmployees(e.target.value)}
+                />
+              </div>
+
               <div className="space-y-1.5">
                 <Label className="font-ui">Stage</Label>
                 <Select value={stage} onValueChange={(val) => setStage(val as Lead['stage'])}>
@@ -134,9 +186,7 @@ function LeadFormPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {LEAD_STAGES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -160,6 +210,20 @@ function LeadFormPage() {
               </div>
 
               <div className="space-y-1.5">
+                <Label className="font-ui">Priority</Label>
+                <Select value={priority} onValueChange={(val) => setPriority(val as Lead['priority'])}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="Low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
                 <Label className="font-ui">Source</Label>
                 <Select value={source} onValueChange={(val) => { if (val) setSource(val) }}>
                   <SelectTrigger className="w-full">
@@ -167,25 +231,79 @@ function LeadFormPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {LEAD_SOURCES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Column 3 */}
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="font-ui">Assigned To</Label>
+                <Select value={assignedTo} onValueChange={setAssignedTo}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOCK_USERS.map((u) => (
+                      <SelectItem key={u} value={u}>{u}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="font-ui">Owner</Label>
-                <Select value={owner} onValueChange={(val) => { if (val) setOwner(val) }}>
+                <Label className="font-ui">Presales Manager</Label>
+                <Select value={presalesManager} onValueChange={setPresalesManager}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select presales manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOCK_USERS.map((u) => (
+                      <SelectItem key={u} value={u}>{u}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="font-ui">BDE</Label>
+                <Select value={bde} onValueChange={setBde}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select BDE" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOCK_USERS.map((u) => (
+                      <SelectItem key={u} value={u}>{u}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="font-ui">Type</Label>
+                <Select value={customerType} onValueChange={(val) => setCustomerType(val as CustomerType)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {MOCK_OWNERS.map((o) => (
-                      <SelectItem key={o} value={o}>
-                        {o}
-                      </SelectItem>
+                    <SelectItem value="End Customer">End Customer</SelectItem>
+                    <SelectItem value="Channel Partner">Channel Partner</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="font-ui">Order Type</Label>
+                <Select value={orderType} onValueChange={(val) => setOrderType(val as OrderType)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select order type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ORDER_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -211,20 +329,12 @@ function LeadFormPage() {
           {/* Categories */}
           <div className="mt-6 space-y-1.5">
             <Label className="font-ui">Categories</Label>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-              {IMS_CATEGORIES.map((cat) => (
-                <label
-                  key={cat}
-                  className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer hover:bg-accent"
-                >
-                  <Checkbox
-                    checked={categories.includes(cat)}
-                    onCheckedChange={() => toggleCategory(cat)}
-                  />
-                  {cat}
-                </label>
-              ))}
-            </div>
+            <MultiSelect
+              options={IMS_CATEGORIES}
+              value={categories}
+              onValueChange={setCategories}
+              placeholder="Select categories..."
+            />
           </div>
 
           {/* Full width notes */}
@@ -239,15 +349,30 @@ function LeadFormPage() {
             />
           </div>
         </CardContent>
-        <CardFooter className="justify-end gap-2">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
+        <CardFooter className="justify-between">
+          <Button variant="outline" onClick={() => setShowQuoteBuilder(!showQuoteBuilder)}>
+            {showQuoteBuilder ? 'Hide Quote Builder' : 'Open Quote Builder'}
           </Button>
-          <Button onClick={handleSave} disabled={!name.trim() || !company.trim() || !description.trim()}>
-            {isEdit ? 'Save Changes' : 'Create Lead'}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={!name.trim() || !company.trim() || !description.trim()}>
+              {isEdit ? 'Save Changes' : 'Create Lead'}
+            </Button>
+          </div>
         </CardFooter>
       </Card>
+
+      {/* Quote Builder */}
+      {showQuoteBuilder && (
+        <BOMQuoteBuilder
+          leadId={leadId}
+          leadName={name || undefined}
+          accountName={company || undefined}
+          initialEmpty={!isEdit}
+        />
+      )}
     </div>
   )
 }

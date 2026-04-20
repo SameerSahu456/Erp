@@ -349,6 +349,7 @@ function QuotesPage() {
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
+        onRowClick={(row) => navigate(`/crm/quotes/${row.id}/edit`)}
       />
     </div>
   )

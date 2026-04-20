@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from "react"
-import { Plus, LayoutGrid, List, Search, X } from "lucide-react"
+import { Plus, LayoutGrid, List, Search, X, TrendingUp, Users, Target, DollarSign } from "lucide-react"
 import { useNavigate, Link } from "react-router-dom"
 import { toast } from "sonner"
 import { parseISO } from "date-fns"
@@ -42,6 +42,9 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value)
 
+const formatCurrencyShort = (value: number) =>
+  `\u20B9${(value / 100000).toFixed(1)}L`
+
 const stageVariant: Record<string, StatusBadgeVariant> = {
   New: "info",
   Procurement: "info",
@@ -79,60 +82,6 @@ function groupDealsByStage(dealList: Deal[]): Record<string, Deal[]> {
   return grouped
 }
 
-// List view config
-const listTab: TabConfig = {
-  id: "deals",
-  label: "All Deals",
-  columns: [
-    { key: "deal", label: "Deal", sortable: true },
-    { key: "account", label: "Account", sortable: true },
-    { key: "stage", label: "Stage", sortable: true, filterable: true },
-    { key: "value", label: "Value", sortable: true, align: "right" },
-    { key: "probability", label: "Probability", sortable: true, align: "right" },
-    { key: "closeDate", label: "Close Date", sortable: true },
-    { key: "owner", label: "Owner", sortable: true, filterable: true },
-  ],
-  data: deals.map((d) => ({
-    id: d.id,
-    deal: d.name,
-    account: d.accountName,
-    stage: d.stage,
-    value: d.value,
-    probability: d.probability,
-    closeDate: d.closeDate,
-    owner: d.owner,
-  })),
-}
-
-const listCellFormatter: CellFormatter = (value, key, row) => {
-  if (key === "deal" && typeof value === "string") {
-    return {
-      display: <Link to={`/crm/deals/${row["id"]}`} className="text-primary hover:underline font-medium">{value}</Link>,
-    }
-  }
-  if (key === "value" && typeof value === "number") {
-    return { display: formatCurrency(value) }
-  }
-  if (key === "probability" && typeof value === "number") {
-    return { display: `${value}%` }
-  }
-  if (key === "stage" && typeof value === "string") {
-    const variant = stageVariant[value] ?? "neutral"
-    return {
-      display: <StatusBadge variant={variant}>{value}</StatusBadge>,
-    }
-  }
-  const stage = row["stage"]
-  const probability = row["probability"]
-  if (
-    stage === "Closed Lost" ||
-    (typeof probability === "number" && probability < 30)
-  ) {
-    return { className: "text-destructive" }
-  }
-  return null
-}
-
 function DealsPage() {
   const navigate = useNavigate()
   const [view, setView] = useState<"kanban" | "list">("kanban")
@@ -144,6 +93,8 @@ function DealsPage() {
   const [selectedUser, setSelectedUser] = useState<string>(
     IS_SUPERADMIN ? "__all__" : CURRENT_USER
   )
+  const [selectedStage, setSelectedStage] = useState<string>("__all__")
+  const [selectedPriority, setSelectedPriority] = useState<string>("__all__")
 
   const dateRange: DateRange = useMemo(() => {
     if (preset === "custom" && customFrom && customTo) {
@@ -155,14 +106,30 @@ function DealsPage() {
   const isMyData = (owner: string) =>
     selectedUser === "__all__" || owner === selectedUser
 
-  // Apply date + user filter to source data, then group for kanban
+  // Apply all filters
   const filteredDeals = useMemo(
     () =>
       deals.filter(
-        (d) => isMyData(d.owner) && isDateInRange(d.createdAt, dateRange)
+        (d) =>
+          isMyData(d.owner) &&
+          isDateInRange(d.createdAt, dateRange) &&
+          (selectedStage === "__all__" || d.stage === selectedStage) &&
+          (selectedPriority === "__all__" || d.priority === selectedPriority)
       ),
-    [selectedUser, dateRange]
+    [selectedUser, dateRange, selectedStage, selectedPriority]
   )
+
+  // Summary cards data
+  const summaryStats = useMemo(() => {
+    const activeDeals = filteredDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost')
+    const totalValue = filteredDeals.reduce((s, d) => s + d.value, 0)
+    const wonDeals = filteredDeals.filter(d => d.stage === 'Closed Won')
+    const wonValue = wonDeals.reduce((s, d) => s + d.value, 0)
+    const closedDeals = filteredDeals.filter(d => d.stage === 'Closed Won' || d.stage === 'Closed Lost')
+    const convRate = closedDeals.length > 0 ? (wonDeals.length / closedDeals.length) * 100 : 0
+    return { total: filteredDeals.length, active: activeDeals.length, totalValue, wonValue, convRate }
+  }, [filteredDeals])
+
 
   const [kanbanItems, setKanbanItems] = useState(() =>
     groupDealsByStage(deals)
@@ -196,7 +163,6 @@ function DealsPage() {
 
   const handleMoveAcross = useCallback(
     (itemId: string, fromColumn: string, toColumn: string) => {
-      // Intercept Closed Won — navigate to full-page form
       if (toColumn === 'Closed Won') {
         const deal = (kanbanItemsRef.current[fromColumn] ?? []).find((i) => i.id === itemId)
         if (deal) {
@@ -205,7 +171,6 @@ function DealsPage() {
         return
       }
 
-      // Intercept Closed Lost — open lost reason dialog
       if (toColumn === 'Closed Lost') {
         const deal = (kanbanItemsRef.current[fromColumn] ?? []).find((i) => i.id === itemId)
         if (deal) {
@@ -254,8 +219,8 @@ function DealsPage() {
     <Card size="sm">
       <CardContent className="space-y-2">
         <div>
+          <p className="text-xs text-muted-foreground font-medium">{deal.accountName}</p>
           <p className="font-medium text-sm">{deal.name}</p>
-          <p className="text-xs text-muted-foreground">{deal.accountName}</p>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold font-sans">
@@ -266,11 +231,154 @@ function DealsPage() {
           </Badge>
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          {deal.customerType && <span>{deal.customerType}</span>}
+          <span>{deal.assignedTo ?? deal.owner}</span>
           <span>{deal.closeDate}</span>
         </div>
       </CardContent>
     </Card>
+    </div>
+  )
+
+  // Search-filtered deals for list view
+  const searchFilteredDeals = useMemo(() => {
+    if (!kanbanSearch.trim()) return filteredDeals
+    const q = kanbanSearch.toLowerCase()
+    return filteredDeals.filter(
+      (d) => d.name.toLowerCase().includes(q) || d.accountName.toLowerCase().includes(q) || (d.assignedTo ?? d.owner).toLowerCase().includes(q)
+    )
+  }, [filteredDeals, kanbanSearch])
+
+  // List view config — account name first, rename deal to Name, remove probability
+  const listTab: TabConfig = useMemo(() => ({
+    id: "deals",
+    label: "All Deals",
+    columns: [
+      { key: "account", label: "Account Name", sortable: true },
+      { key: "name", label: "Name", sortable: true },
+      { key: "stage", label: "Stage", sortable: true, filterable: true },
+      { key: "value", label: "Value", sortable: true, align: "right" },
+      { key: "priority", label: "Priority", sortable: true, filterable: true },
+      { key: "assignedTo", label: "Assigned To", sortable: true, filterable: true },
+      { key: "closeDate", label: "Close Date", sortable: true },
+    ],
+    data: searchFilteredDeals.map((d) => ({
+      id: d.id,
+      account: d.accountName,
+      name: d.name,
+      stage: d.stage,
+      value: d.value,
+      priority: d.priority,
+      assignedTo: d.assignedTo ?? d.owner,
+      closeDate: d.closeDate,
+    })),
+  }), [searchFilteredDeals])
+
+  const listCellFormatter: CellFormatter = (value, key, row) => {
+    if (key === "value" && typeof value === "number") {
+      return { display: formatCurrency(value) }
+    }
+    if (key === "stage" && typeof value === "string") {
+      const variant = stageVariant[value] ?? "neutral"
+      return {
+        display: <StatusBadge variant={variant}>{value}</StatusBadge>,
+      }
+    }
+    if (key === "priority" && typeof value === "string") {
+      return {
+        display: <Badge variant={priorityVariant(value)} className="text-[10px]">{value}</Badge>,
+      }
+    }
+    const stage = row["stage"]
+    if (stage === "Closed Lost") {
+      return { className: "text-destructive" }
+    }
+    return null
+  }
+
+  // Filter bar (shared between views)
+  const filterBar = (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="relative max-w-sm flex-1 min-w-[200px]">
+        <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search deals..."
+          value={kanbanSearch}
+          onChange={(e) => setKanbanSearch(e.target.value)}
+          className="h-8 pl-8 pr-8 text-[13px]"
+        />
+        {kanbanSearch && (
+          <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setKanbanSearch("")}>
+            <X className="size-3.5" />
+          </button>
+        )}
+      </div>
+      <Select value={selectedStage} onValueChange={setSelectedStage}>
+        <SelectTrigger className="w-[140px] h-8 text-[13px]">
+          <SelectValue placeholder="All Stages" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__all__">All Stages</SelectItem>
+          {DEAL_STAGES.map((s) => (
+            <SelectItem key={s} value={s}>{s}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+        <SelectTrigger className="w-[130px] h-8 text-[13px]">
+          <SelectValue placeholder="All Priority" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__all__">All Priority</SelectItem>
+          <SelectItem value="High">High</SelectItem>
+          <SelectItem value="Medium">Medium</SelectItem>
+          <SelectItem value="Low">Low</SelectItem>
+        </SelectContent>
+      </Select>
+      {IS_SUPERADMIN && (
+        <Select value={selectedUser} onValueChange={setSelectedUser}>
+          <SelectTrigger className="w-[170px] h-8 text-[13px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Users</SelectItem>
+            {MOCK_USERS.map((u) => (
+              <SelectItem key={u} value={u}>{u}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      <Select
+        value={preset}
+        onValueChange={(v) => setPreset(v as DateFilterPreset)}
+      >
+        <SelectTrigger className="w-[140px] h-8 text-[13px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="today">Today</SelectItem>
+          <SelectItem value="monthly">This Month</SelectItem>
+          <SelectItem value="quarterly">This Quarter</SelectItem>
+          <SelectItem value="yearly">This Year</SelectItem>
+          <SelectItem value="custom">Custom</SelectItem>
+        </SelectContent>
+      </Select>
+      {preset === "custom" && (
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            value={customFrom}
+            onChange={(e) => setCustomFrom(e.target.value)}
+            className="w-[140px] h-8 text-[13px]"
+          />
+          <span className="text-muted-foreground text-xs">to</span>
+          <Input
+            type="date"
+            value={customTo}
+            onChange={(e) => setCustomTo(e.target.value)}
+            className="w-[140px] h-8 text-[13px]"
+          />
+        </div>
+      )}
     </div>
   )
 
@@ -305,73 +413,59 @@ function DealsPage() {
         </div>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <Card size="sm">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <Users className="size-4 text-primary" />
+              <p className="text-xs font-ui text-muted-foreground">Total Deals</p>
+            </div>
+            <p className="mt-1 text-2xl font-semibold">{summaryStats.total}</p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <Target className="size-4 text-blue-600" />
+              <p className="text-xs font-ui text-muted-foreground">Active</p>
+            </div>
+            <p className="mt-1 text-2xl font-semibold">{summaryStats.active}</p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <DollarSign className="size-4 text-emerald-600" />
+              <p className="text-xs font-ui text-muted-foreground">Pipeline Value</p>
+            </div>
+            <p className="mt-1 text-2xl font-semibold">{formatCurrencyShort(summaryStats.totalValue)}</p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <DollarSign className="size-4 text-green-600" />
+              <p className="text-xs font-ui text-muted-foreground">Won Value</p>
+            </div>
+            <p className="mt-1 text-2xl font-semibold text-status-success-text">{formatCurrencyShort(summaryStats.wonValue)}</p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="size-4 text-purple-600" />
+              <p className="text-xs font-ui text-muted-foreground">Win Rate</p>
+            </div>
+            <p className="mt-1 text-2xl font-semibold">{summaryStats.convRate.toFixed(0)}%</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Content */}
       {view === "kanban" ? (
         <div className="space-y-3">
-          {/* Filter bar */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative max-w-sm flex-1 min-w-[200px]">
-              <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search deals..."
-                value={kanbanSearch}
-                onChange={(e) => setKanbanSearch(e.target.value)}
-                className="h-8 pl-8 pr-8 text-[13px]"
-              />
-              {kanbanSearch && (
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setKanbanSearch("")}>
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-            <Select
-              value={preset}
-              onValueChange={(v) => setPreset(v as DateFilterPreset)}
-            >
-              <SelectTrigger className="w-[140px] h-8 text-[13px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="monthly">This Month</SelectItem>
-                <SelectItem value="quarterly">This Quarter</SelectItem>
-                <SelectItem value="yearly">This Year</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
-              </SelectContent>
-            </Select>
-            {preset === "custom" && (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
-                  className="w-[140px] h-8 text-[13px]"
-                />
-                <span className="text-muted-foreground text-xs">to</span>
-                <Input
-                  type="date"
-                  value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
-                  className="w-[140px] h-8 text-[13px]"
-                />
-              </div>
-            )}
-            {IS_SUPERADMIN && (
-              <Select value={selectedUser} onValueChange={setSelectedUser}>
-                <SelectTrigger className="w-[170px] h-8 text-[13px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All Users</SelectItem>
-                  {MOCK_USERS.map((u) => (
-                    <SelectItem key={u} value={u}>
-                      {u}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+          {filterBar}
           <KanbanBoard<Deal>
             columns={kanbanColumns}
             items={filteredKanbanItems}
@@ -380,11 +474,15 @@ function DealsPage() {
           />
         </div>
       ) : (
-        <BusinessMetricsTable
-          tabs={[listTab]}
-          cellFormatter={listCellFormatter}
-          pageSize={10}
-        />
+        <div className="space-y-3">
+          {filterBar}
+          <BusinessMetricsTable
+            tabs={[listTab]}
+            cellFormatter={listCellFormatter}
+            pageSize={10}
+            onRowClick={(row) => navigate(`/crm/deals/${row.id}`)}
+          />
+        </div>
       )}
       {/* Closed Lost Reason */}
       {pendingClosedLost && (

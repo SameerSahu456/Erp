@@ -35,6 +35,7 @@ interface BusinessMetricsTableProps {
   stickyHeader?: boolean
   searchable?: boolean
   className?: string
+  onRowClick?: (row: Record<string, unknown>) => void
 }
 
 type SortDirection = "asc" | "desc" | null
@@ -46,6 +47,7 @@ function BusinessMetricsTable({
   stickyHeader = true,
   searchable = true,
   className,
+  onRowClick,
 }: BusinessMetricsTableProps) {
   const [activeTab, setActiveTab] = React.useState(tabs[0]?.id ?? "")
   const [sortColumn, setSortColumn] = React.useState<string | null>(null)
@@ -236,7 +238,7 @@ function BusinessMetricsTable({
             <tbody>
               {paginatedData.length > 0 ? (
                 paginatedData.map((row, rowIdx) => (
-                  <tr key={rowIdx}>
+                  <tr key={rowIdx} onClick={onRowClick ? () => onRowClick(row) : undefined} style={onRowClick ? { cursor: 'pointer' } : undefined} className={onRowClick ? 'hover:bg-accent/50 transition-colors' : undefined}>
                     {activeTabConfig?.columns.map((col) => {
                       const value = row[col.key]
                       const formatted = cellFormatter ? cellFormatter(value, col.key, row) : null

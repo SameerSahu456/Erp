@@ -274,6 +274,7 @@ function InvoicesPage() {
         tabs={[invoicesTab]}
         cellFormatter={invoiceCellFormatter}
         pageSize={10}
+        onRowClick={(row) => navigate(`/crm/invoices/${row.id}/edit`)}
       />
 
       <InvoiceDetailDialog

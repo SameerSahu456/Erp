@@ -28,6 +28,7 @@ import { IMS_CATEGORIES } from '../types'
 import { PartPickerDialog } from './PartPickerDialog'
 import type { PartPickerResult } from './PartPickerDialog'
 import { mockBOMs } from '@/modules/wms/data/boms'
+import { BOMQuoteBuilder } from './BOMQuoteBuilder'
 
 // ── Types ──
 
@@ -684,162 +685,18 @@ function ClosedWonWizardDialog({
                   </div>
                 </Section>
 
-                {/* ── Line Items Section (always open) ── */}
-                <Section title="Quote / Line Items" defaultOpen>
-                  {/* Table header */}
-                  <div className="rounded-lg border border-border/60 overflow-hidden">
-                    <div className="grid grid-cols-[1fr_2.5fr_70px_100px_100px_32px] gap-0 bg-muted/50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground border-b">
-                      <span>Type</span>
-                      <span>Item / Part</span>
-                      <span className="text-right">Qty</span>
-                      <span className="text-right">Rate</span>
-                      <span className="text-right">Amount</span>
-                      <span />
-                    </div>
-
-                    {/* Table rows */}
-                    {lineItems.map((li) => (
-                      <div key={li.id} className="border-b last:border-b-0 hover:bg-muted/20 transition-colors">
-                        <div className="grid grid-cols-[1fr_2.5fr_70px_100px_100px_32px] gap-0 items-center px-3 py-2">
-                          {/* Type toggle */}
-                          <div>
-                            <div className="flex shrink-0 rounded-md border p-0.5 w-fit">
-                              <button
-                                type="button"
-                                onClick={() => switchLineItemType(li.id, 'ims_part')}
-                                title="IMS Part"
-                                className={cn(
-                                  'flex items-center justify-center rounded p-1 transition-colors',
-                                  li.type === 'ims_part' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                                )}
-                              >
-                                <Package className="size-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => switchLineItemType(li.id, 'description')}
-                                title="Manual entry"
-                                className={cn(
-                                  'flex items-center justify-center rounded p-1 transition-colors',
-                                  li.type === 'description' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                                )}
-                              >
-                                <FileText className="size-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Item / Part */}
-                          <div className="min-w-0">
-                            {li.type === 'ims_part' ? (
-                              li.partId ? (
-                                <button
-                                  type="button"
-                                  onClick={() => openPartPicker(li.id)}
-                                  className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left transition-colors hover:bg-muted/50 min-w-0"
-                                >
-                                  <Package className="size-3 shrink-0 text-primary" />
-                                  <div className="min-w-0 flex-1">
-                                    <div className="text-[12px] font-medium truncate">{li.partName}</div>
-                                    <div className="text-[10px] text-muted-foreground truncate">{li.partSku} &middot; {li.brand}</div>
-                                  </div>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    {li.variantType && (
-                                      <Badge className={cn('text-[9px] px-1 py-0', VARIANT_COLORS[li.variantType] ?? 'bg-muted text-muted-foreground')}>
-                                        {li.variantType}
-                                      </Badge>
-                                    )}
-                                    {li.bomId && (
-                                      <Badge className="text-[9px] px-1 py-0 bg-[#f1f0ff] text-[#7239ea]">BOM</Badge>
-                                    )}
-                                  </div>
-                                </button>
-                              ) : (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-full justify-start gap-1.5 font-normal text-muted-foreground h-7 text-[12px] px-2"
-                                  onClick={() => openPartPicker(li.id)}
-                                >
-                                  <Search className="size-3" />
-                                  Search parts...
-                                </Button>
-                              )
-                            ) : (
-                              <div className="flex gap-1.5">
-                                <Input placeholder="Item" value={li.item} onChange={(e) => updateLineItem(li.id, { item: e.target.value })} className="h-7 text-[12px] flex-1" />
-                                <Input placeholder="Desc" value={li.description} onChange={(e) => updateLineItem(li.id, { description: e.target.value })} className="h-7 text-[12px] flex-1" />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Qty */}
-                          <Input
-                            type="number"
-                            min={1}
-                            value={li.qty}
-                            onChange={(e) => updateLineItem(li.id, { qty: Number(e.target.value) || 0 })}
-                            className="h-7 text-[12px] text-right"
-                          />
-
-                          {/* Rate */}
-                          <Input
-                            type="number"
-                            min={0}
-                            value={li.rate}
-                            onChange={(e) => updateLineItem(li.id, { rate: Number(e.target.value) || 0 })}
-                            className="h-7 text-[12px] text-right"
-                          />
-
-                          {/* Amount */}
-                          <span className="text-[12px] font-medium tabular-nums text-right pr-1">
-                            &#8377;{fmtCurrency(li.qty * li.rate)}
-                          </span>
-
-                          {/* Delete */}
-                          <Button
-                            variant="ghost"
-                            size="icon-xs"
-                            onClick={() => {
-                              if (lineItems.length <= 1) return
-                              setLineItems((prev) => prev.filter((x) => x.id !== li.id))
-                            }}
-                            disabled={lineItems.length <= 1}
-                            className="text-muted-foreground hover:text-destructive size-6"
-                          >
-                            <Trash2 className="size-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button variant="outline" size="sm" className="mt-2 h-7 text-[12px]" onClick={() => setLineItems((prev) => [...prev, createEmptySOItem()])}>
-                    <Plus className="mr-1 size-3" />
-                    Add Item
-                  </Button>
-
-                  {/* Totals — inline below table */}
-                  <div className="mt-3 ml-auto w-64 space-y-1 text-[12px]">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span className="font-medium tabular-nums">&#8377;{fmtCurrency(subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">CGST (9%)</span>
-                      <span className="tabular-nums">&#8377;{fmtCurrency(gst / 2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">SGST (9%)</span>
-                      <span className="tabular-nums">&#8377;{fmtCurrency(gst / 2)}</span>
-                    </div>
-                    <Separator className="my-1" />
-                    <div className="flex justify-between text-[13px] font-semibold">
-                      <span>Grand Total</span>
-                      <span className="tabular-nums">&#8377;{fmtCurrency(grandTotal)}</span>
-                    </div>
-                  </div>
+                {/* ── BOM Quote Builder (compact) ── */}
+                <Section title="Quote / BOM Builder" defaultOpen>
+                  <BOMQuoteBuilder
+                    leadId={entityType === 'lead' ? entityName : undefined}
+                    leadName={entityType === 'lead' ? entityName : undefined}
+                    dealId={entityType === 'deal' ? entityName : undefined}
+                    dealName={entityType === 'deal' ? entityName : undefined}
+                    accountName={isLead ? accountName : existingAccountName}
+                    compact
+                  />
                 </Section>
+
 
                 {/* ── Billing & Shipping ── */}
                 <Section title="Billing Address" defaultOpen={false}>

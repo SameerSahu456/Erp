@@ -21,6 +21,7 @@ import { IMS_CATEGORIES } from '../types'
 import { PartPickerDialog } from '../components/PartPickerDialog'
 import type { PartPickerResult } from '../components/PartPickerDialog'
 import { mockBOMs } from '@/modules/wms/data/boms'
+import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
 import { deals } from '../data/deals'
 import { leads } from '../data/leads'
 
@@ -568,171 +569,16 @@ function ClosedWonPage() {
 
               <Separator className="my-8" />
 
-              {/* ── Quote / Line Items ── */}
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-base font-semibold">Quote / Line Items</h3>
-                <Button variant="outline" onClick={() => setLineItems((prev) => [...prev, createEmptySOItem()])}>
-                  <Plus className="mr-2 size-4" />
-                  Add Item
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                {lineItems.map((li, idx) => (
-                  <div key={li.id} className="rounded-xl border bg-muted/20 p-5">
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div className="flex items-center gap-3">
-                        <span className="flex size-8 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
-                          {idx + 1}
-                        </span>
-                        <div className="flex rounded-lg border p-0.5">
-                          <button
-                            type="button"
-                            onClick={() => switchLineItemType(li.id, 'ims_part')}
-                            title="IMS Part"
-                            className={cn(
-                              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                              li.type === 'ims_part' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                            )}
-                          >
-                            <Package className="size-4" />
-                            IMS Part
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => switchLineItemType(li.id, 'description')}
-                            title="Manual entry"
-                            className={cn(
-                              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                              li.type === 'description' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                            )}
-                          >
-                            <FileText className="size-4" />
-                            Manual
-                          </button>
-                        </div>
-                        {li.type === 'ims_part' && li.partId && (
-                          <div className="flex items-center gap-1.5">
-                            {li.variantType && (
-                              <Badge className={cn('text-xs px-2 py-0.5', VARIANT_COLORS[li.variantType] ?? 'bg-muted text-muted-foreground')}>
-                                <Tag className="size-3 mr-1" />{li.variantType}
-                              </Badge>
-                            )}
-                            {li.bomId && (
-                              <Badge className="text-xs px-2 py-0.5 bg-[#f1f0ff] text-[#7239ea]">
-                                <Cpu className="size-3 mr-1" />BOM
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => {
-                          if (lineItems.length <= 1) return
-                          setLineItems((prev) => prev.filter((x) => x.id !== li.id))
-                        }}
-                        disabled={lineItems.length <= 1}
-                        className="text-muted-foreground hover:text-destructive shrink-0"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-
-                    {li.type === 'ims_part' ? (
-                      li.partId ? (
-                        <button
-                          type="button"
-                          onClick={() => openPartPicker(li.id)}
-                          className="flex w-full items-center gap-3 rounded-lg border bg-background px-4 py-3 text-left transition-colors hover:bg-muted/50 mb-4"
-                        >
-                          <Package className="size-5 shrink-0 text-primary" />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium truncate">{li.partName}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">{li.partSku} &middot; {li.brand}</div>
-                          </div>
-                          <Search className="size-4 shrink-0 text-muted-foreground" />
-                        </button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start gap-2 font-normal text-muted-foreground h-11 mb-4"
-                          onClick={() => openPartPicker(li.id)}
-                        >
-                          <Search className="size-4" />
-                          Search IMS part catalog...
-                        </Button>
-                      )
-                    ) : (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm text-muted-foreground">Item Name</Label>
-                          <Input placeholder="Enter item name" value={li.item} onChange={(e) => updateLineItem(li.id, { item: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-sm text-muted-foreground">Description</Label>
-                          <Input placeholder="Brief description" value={li.description} onChange={(e) => updateLineItem(li.id, { description: e.target.value })} />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-3 gap-5">
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Quantity</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={li.qty}
-                          onChange={(e) => updateLineItem(li.id, { qty: Number(e.target.value) || 0 })}
-                          className="text-right"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Rate (&#8377;)</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={li.rate}
-                          onChange={(e) => updateLineItem(li.id, { rate: Number(e.target.value) || 0 })}
-                          className="text-right"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Amount</Label>
-                        <div className="flex h-9 items-center justify-end rounded-md border bg-muted/40 px-3 text-sm font-semibold tabular-nums">
-                          &#8377;{fmtCurrency(li.qty * li.rate)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Totals */}
-              <div className="mt-8 ml-auto w-80">
-                <div className="rounded-xl border bg-muted/20 p-5">
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span className="font-medium tabular-nums">&#8377;{fmtCurrency(subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">CGST (9%)</span>
-                      <span className="tabular-nums">&#8377;{fmtCurrency(gst / 2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">SGST (9%)</span>
-                      <span className="tabular-nums">&#8377;{fmtCurrency(gst / 2)}</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between text-base font-semibold pt-1">
-                      <span>Grand Total</span>
-                      <span className="tabular-nums">&#8377;{fmtCurrency(grandTotal)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* ── Quote / BOM Builder ── */}
+              <h3 className="text-base font-semibold mb-4">Quote / BOM Builder</h3>
+              <BOMQuoteBuilder
+                leadId={isLead ? id : undefined}
+                leadName={isLead ? entityName : undefined}
+                dealId={!isLead ? id : undefined}
+                dealName={!isLead ? entityName : undefined}
+                accountName={isLead ? accountName : existingAccountName}
+                compact
+              />
 
               <Separator className="my-8" />
 

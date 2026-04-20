@@ -18,6 +18,12 @@ import { EntityHeader } from '../components/EntityHeader'
 import { contacts } from '../data/contacts'
 import { accounts } from '../data/accounts'
 
+const DEPARTMENTS = [
+  'Executive', 'Technology', 'Engineering', 'IT', 'Procurement',
+  'Finance', 'Sales', 'Marketing', 'Operations', 'Infrastructure',
+  'Network Engineering', 'HR', 'Legal', 'Other',
+] as const
+
 function ContactFormPage() {
   const { id: contactId } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -29,7 +35,9 @@ function ContactFormPage() {
   const [email, setEmail] = useState(existingContact?.email ?? '')
   const [phone, setPhone] = useState(existingContact?.phone ?? '')
   const [accountId, setAccountId] = useState(existingContact?.accountId ?? '')
-  const [title, setTitle] = useState(existingContact?.title ?? '')
+  const [designation, setDesignation] = useState(existingContact?.designation ?? '')
+  const [department, setDepartment] = useState(existingContact?.department ?? '')
+  const [preferredContact, setPreferredContact] = useState(existingContact?.preferredContact ? 'yes' : 'no')
   const [notes, setNotes] = useState('')
 
   const backHref = isEdit ? `/crm/contacts/${contactId}` : '/crm/contacts'
@@ -96,6 +104,16 @@ function ContactFormPage() {
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="contact-designation" className="font-ui">Designation</Label>
+                <Input
+                  id="contact-designation"
+                  placeholder="e.g. CTO, VP Engineering"
+                  value={designation}
+                  onChange={(e) => setDesignation(e.target.value)}
+                />
+              </div>
             </div>
 
             {/* Right column */}
@@ -117,13 +135,33 @@ function ContactFormPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="contact-title" className="font-ui">Title / Designation</Label>
-                <Input
-                  id="contact-title"
-                  placeholder="e.g. Marketing Manager"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
+                <Label className="font-ui">Department</Label>
+                <Select value={department} onValueChange={setDepartment}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="font-ui">Preferred Contact</Label>
+                <Select value={preferredContact} onValueChange={setPreferredContact}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Only one preferred contact per account. Setting this will remove preferred from other contacts.
+                </p>
               </div>
             </div>
           </div>

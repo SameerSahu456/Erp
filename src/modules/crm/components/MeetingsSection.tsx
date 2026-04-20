@@ -33,7 +33,7 @@ import type { Meeting, MeetingType, MeetingStatus } from '../types'
 import { MOCK_USERS } from '../types'
 
 interface MeetingsSectionProps {
-  entityType: 'lead' | 'deal' | 'account'
+  entityType: 'lead' | 'deal' | 'account' | 'contact'
   entityId: string
   entityName: string
 }

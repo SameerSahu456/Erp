@@ -3,18 +3,16 @@ import {
   History,
   ArrowRight,
   Copy,
-  FileText,
-  Sparkles,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { EntityHeader } from '../components/EntityHeader'
-import { QuoteBuilderPanel } from '../components/QuoteBuilderPanel'
+import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
 import { quotes } from '../data/quotes'
 import { leads } from '../data/leads'
+import { deals } from '../data/deals'
 import { accounts } from '../data/accounts'
 import type { Quote } from '../types'
 import { toast } from 'sonner'
@@ -36,6 +34,8 @@ function QuoteFormPage() {
   const isEdit = !!existingQuote
 
   const paramLeadId = searchParams.get('leadId') ?? undefined
+  const paramDealId = searchParams.get('dealId') ?? undefined
+  const paramAccountId = searchParams.get('accountId') ?? existingQuote?.accountId ?? undefined
   const paramParentQuoteId = searchParams.get('parentQuoteId') ?? ''
 
   const prefilledLead = paramLeadId
@@ -43,6 +43,10 @@ function QuoteFormPage() {
     : existingQuote?.leadId
       ? leads.find((l) => l.id === existingQuote.leadId)
       : undefined
+
+  const prefilledDeal = paramDealId
+    ? deals.find((d) => d.id === paramDealId)
+    : undefined
 
   const parentQuote = paramParentQuoteId
     ? quotes.find((q) => q.id === paramParentQuoteId)
@@ -53,9 +57,10 @@ function QuoteFormPage() {
     : existingQuote?.version ?? 1
 
   const status = existingQuote?.status ?? 'Draft'
-  const accountName = existingQuote?.accountId
-    ? accounts.find((a) => a.id === existingQuote.accountId)?.name
-    : undefined
+
+  const resolvedAccountName = paramAccountId
+    ? accounts.find((a) => a.id === paramAccountId)?.name
+    : prefilledDeal?.accountName ?? undefined
 
   const backHref = '/crm/quotes'
 
@@ -75,13 +80,13 @@ function QuoteFormPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <EntityHeader
         title={isEdit ? existingQuote.quoteNumber : 'Create Quote'}
         subtitle={
           isEdit
-            ? `${accountName ?? ''} — ${existingQuote?.lineItems?.length ?? 0} items`
-            : 'Create a new quotation with advanced BOM configuration'
+            ? `${resolvedAccountName ?? ''} — ${existingQuote?.lineItems?.length ?? 0} items`
+            : 'Build a new quote with BOM configuration and margin visibility'
         }
         status={isEdit ? { label: status, variant: STATUS_VARIANTS[status] } : undefined}
         backHref={backHref}
@@ -109,13 +114,19 @@ function QuoteFormPage() {
         }
       />
 
-      {/* Lead & Version Info */}
-      {(prefilledLead || version > 1) && (
+      {/* Lead/Deal & Version Info */}
+      {(prefilledLead || prefilledDeal || version > 1) && (
         <div className="flex flex-wrap items-center gap-3">
           {prefilledLead && (
             <div className="flex items-center gap-2">
               <span className="text-xs font-ui text-muted-foreground">Lead:</span>
               <StatusBadge variant="info">{prefilledLead.name} ({prefilledLead.company})</StatusBadge>
+            </div>
+          )}
+          {prefilledDeal && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-ui text-muted-foreground">Deal:</span>
+              <StatusBadge variant="info">{prefilledDeal.name}</StatusBadge>
             </div>
           )}
           <Badge variant="outline" className="gap-1">
@@ -130,33 +141,15 @@ function QuoteFormPage() {
         </div>
       )}
 
-      {/* Quote Builder Card */}
-      <Card className="border-t-4 border-t-primary/20">
-        <CardHeader className="border-b bg-muted/30">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="size-5 text-primary" />
-              {isEdit ? 'Quote Details' : 'New Quote'}
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-gradient-to-r from-primary/80 to-primary text-primary-foreground text-[10px] gap-1">
-                <Sparkles className="size-3" />
-                Advanced Builder
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {status}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <QuoteBuilderPanel
-            leadId={paramLeadId ?? existingQuote?.leadId}
-            accountId={existingQuote?.accountId}
-            accountName={accountName}
-          />
-        </CardContent>
-      </Card>
+      {/* BOM Quote Builder */}
+      <BOMQuoteBuilder
+        leadId={paramLeadId}
+        leadName={prefilledLead?.name}
+        dealId={paramDealId}
+        dealName={prefilledDeal?.name}
+        accountId={paramAccountId}
+        accountName={resolvedAccountName}
+      />
     </div>
   )
 }
