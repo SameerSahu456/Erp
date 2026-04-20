@@ -1,14 +1,15 @@
 import { useState, useRef } from 'react'
-import { Check, Plus, Trash2, Building2, ShoppingCart, Upload, FileText, X, Package, Search, Tag, Cpu } from 'lucide-react'
+import { Check, Plus, Trash2, Building2, ShoppingCart, Upload, FileText, X, Package, Search, Tag, Cpu, ChevronDown, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -21,12 +22,12 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 import { IMS_CATEGORIES } from '../types'
 import { PartPickerDialog } from './PartPickerDialog'
 import type { PartPickerResult } from './PartPickerDialog'
 import { mockBOMs } from '@/modules/wms/data/boms'
-import type { BOMItem } from '@/modules/wms/types'
 
 // ── Types ──
 
@@ -159,6 +160,34 @@ const VARIANT_COLORS: Record<string, string> = {
   New: 'bg-[#dfffea] text-[#17c653]',
   Refurbished: 'bg-[#fff8dd] text-[#f6b100]',
   'New Pool': 'bg-[#f1f0ff] text-[#7239ea]',
+}
+
+// ── Collapsible Section ──
+
+function Section({
+  title,
+  defaultOpen = true,
+  children,
+}: {
+  title: string
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex w-full items-center gap-2 py-2 group cursor-pointer">
+        {open ? <ChevronDown className="size-3.5 text-muted-foreground" /> : <ChevronRight className="size-3.5 text-muted-foreground" />}
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors">
+          {title}
+        </span>
+        <div className="flex-1 h-px bg-border ml-2" />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="pt-2 pb-4">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
+  )
 }
 
 // ── Main Component ──
@@ -384,57 +413,60 @@ function ClosedWonWizardDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-3xl p-0 gap-0 max-h-[90vh] flex flex-col">
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" showCloseButton={false} className="sm:max-w-2xl w-full flex flex-col p-0">
           {/* Header */}
-          <DialogHeader className="px-6 pt-6 pb-4">
-            <DialogTitle className="text-lg">
-              Close Won &mdash; {entityName}
-            </DialogTitle>
-            <p className="text-[13px] text-muted-foreground mt-1">
-              {isLead
-                ? 'Create an account and sales order to close this lead.'
-                : `Create a sales order for ${existingAccountName ?? 'this deal'}.`}
-            </p>
-          </DialogHeader>
+          <SheetHeader className="px-6 pt-5 pb-4 border-b shrink-0">
+            <div className="flex items-start justify-between">
+              <div>
+                <SheetTitle className="text-base">
+                  Close Won &mdash; {entityName}
+                </SheetTitle>
+                <SheetDescription className="text-[13px] mt-1">
+                  {isLead
+                    ? 'Create an account and sales order to close this lead.'
+                    : `Create a sales order for ${existingAccountName ?? 'this deal'}.`}
+                </SheetDescription>
+              </div>
+              <Button variant="ghost" size="icon-sm" onClick={handleCancel}>
+                <X className="size-4" />
+              </Button>
+            </div>
 
-          {/* Step Indicator */}
-          <div className="px-6 pb-4">
-            <div className="flex items-center gap-3">
+            {/* Step Indicator */}
+            <div className="flex items-center gap-3 mt-3">
               {isLead && (
                 <>
-                  <div className={cn(
-                    'flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
-                    currentStep === 1 ? 'bg-primary/10 text-primary' : 'bg-[#dfffea] text-[#17c653]'
-                  )}>
+                  <button
+                    type="button"
+                    onClick={() => currentStep > 1 && setCurrentStep(1)}
+                    className={cn(
+                      'flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors',
+                      currentStep === 1 ? 'bg-primary/10 text-primary' : 'bg-[#dfffea] text-[#17c653] cursor-pointer hover:bg-[#d0f5dd]'
+                    )}
+                  >
                     {currentStep > 1 ? <Check className="size-3.5" /> : <Building2 className="size-3.5" />}
                     <span>1. Account</span>
-                  </div>
-                  <div className={cn('h-0.5 w-8', currentStep > 1 ? 'bg-primary' : 'bg-border')} />
+                  </button>
+                  <div className={cn('h-0.5 w-6', currentStep > 1 ? 'bg-primary' : 'bg-border')} />
                 </>
               )}
               <div className={cn(
-                'flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
+                'flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors',
                 isOnSOStep ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
               )}>
                 <ShoppingCart className="size-3.5" />
                 <span>{isLead ? '2' : '1'}. Sales Order</span>
               </div>
             </div>
-          </div>
-
-          <Separator />
+          </SheetHeader>
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-6 py-5">
             {/* ── Step 1: Account Creation (leads only) ── */}
             {isLead && currentStep === 1 && (
-              <div className="space-y-6">
-                {/* Account Details */}
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                    Account Details
-                  </h4>
+              <div className="space-y-1">
+                <Section title="Account Details" defaultOpen>
                   <div className="space-y-4">
                     <div className="space-y-1.5">
                       <Label className="text-[13px]">
@@ -486,13 +518,9 @@ function ClosedWonWizardDialog({
                       <Input value={accountOwner} onChange={(e) => setAccountOwner(e.target.value)} placeholder="Owner name" />
                     </div>
                   </div>
-                </div>
+                </Section>
 
-                <Separator />
-
-                {/* Contact Details */}
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Contact Details</h4>
+                <Section title="Contact Details" defaultOpen>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
@@ -525,13 +553,9 @@ function ClosedWonWizardDialog({
                       </div>
                     </div>
                   </div>
-                </div>
+                </Section>
 
-                <Separator />
-
-                {/* Document Upload */}
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Document Upload</h4>
+                <Section title="Document Upload" defaultOpen={false}>
                   <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFileSelect} />
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {DOCUMENT_TYPES.map((docType) => {
@@ -558,251 +582,245 @@ function ClosedWonWizardDialog({
                       )
                     })}
                   </div>
-                </div>
+                </Section>
               </div>
             )}
 
             {/* ── Sales Order Step ── */}
             {isOnSOStep && (
-              <div className="space-y-5">
+              <div className="space-y-1">
                 {/* Account reference banner */}
-                <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
+                <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-4 py-2.5 mb-4">
                   <Building2 className="size-4 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
-                    <p className="text-sm font-medium">{isLead ? accountName : existingAccountName ?? 'N/A'}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
+                    <p className="text-[13px] font-medium">{isLead ? accountName : existingAccountName ?? 'N/A'}</p>
                   </div>
                   <div className="ml-auto text-right">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Deal Value</p>
-                    <p className="text-sm font-medium">&#8377;{fmtCurrency(entityValue)}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deal Value</p>
+                    <p className="text-[13px] font-medium">&#8377;{fmtCurrency(entityValue)}</p>
                   </div>
                 </div>
 
-                {/* Categories Interested */}
-                <div className="space-y-2">
-                  <Label className="text-[13px]">Categories Interested</Label>
-                  <Select onValueChange={(val) => toggleCategory(val)} value="">
-                    <SelectTrigger>
-                      <SelectValue placeholder={categoriesInterested.length > 0 ? `${categoriesInterested.length} selected` : 'Select categories'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {IMS_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          <span className="flex items-center gap-2">
-                            {categoriesInterested.includes(cat) && <Check className="size-3.5 text-primary" />}
-                            {cat}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {categoriesInterested.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {categoriesInterested.map((cat) => (
-                        <Badge key={cat} variant="secondary" className="text-[11px] cursor-pointer" onClick={() => toggleCategory(cat)}>
-                          {cat}<X className="ml-1 size-3" />
-                        </Badge>
-                      ))}
+                {/* ── Order Details Section ── */}
+                <Section title="Order Details" defaultOpen>
+                  <div className="space-y-4">
+                    {/* Categories Interested */}
+                    <div className="space-y-2">
+                      <Label className="text-[13px]">Categories Interested</Label>
+                      <Select onValueChange={(val) => toggleCategory(val)} value="">
+                        <SelectTrigger>
+                          <SelectValue placeholder={categoriesInterested.length > 0 ? `${categoriesInterested.length} selected` : 'Select categories'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {IMS_CATEGORIES.map((cat) => (
+                            <SelectItem key={cat} value={cat}>
+                              <span className="flex items-center gap-2">
+                                {categoriesInterested.includes(cat) && <Check className="size-3.5 text-primary" />}
+                                {cat}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {categoriesInterested.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {categoriesInterested.map((cat) => (
+                            <Badge key={cat} variant="secondary" className="text-[11px] cursor-pointer" onClick={() => toggleCategory(cat)}>
+                              {cat}<X className="ml-1 size-3" />
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Order Date + Order Type + Warranty */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px]">Order Date</Label>
-                    <Input type="date" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px]">Order Type</Label>
-                    <Select value={orderType} onValueChange={(v) => { setOrderType(v); setWarranty('') }}>
-                      <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                      <SelectContent>
-                        {ORDER_TYPES.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px]">Warranty</Label>
-                    <Select value={warranty} onValueChange={setWarranty} disabled={!orderType || (WARRANTY_OPTIONS[orderType]?.length ?? 0) === 0}>
-                      <SelectTrigger><SelectValue placeholder={orderType === 'Rental' ? 'N/A' : 'Select'} /></SelectTrigger>
-                      <SelectContent>
-                        {(WARRANTY_OPTIONS[orderType] ?? []).map((w) => (<SelectItem key={w} value={w}>{w}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Dispatch + Payment Terms */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px]">Dispatch Method</Label>
-                    <Select value={dispatchMethod} onValueChange={setDispatchMethod}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        {DISPATCH_METHODS.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px]">Payment Terms</Label>
-                    <Select value={paymentTerms} onValueChange={setPaymentTerms}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        {PAYMENT_TERMS.map((p) => (<SelectItem key={p} value={p}>{p}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Billing Address */}
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Billing Address</p>
-                  <div className="space-y-3">
-                    <Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Street address" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input value={billCity} onChange={(e) => setBillCity(e.target.value)} placeholder="City" />
-                      <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" />
+                    {/* Order Date + Order Type + Warranty */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-[13px]">Order Date</Label>
+                        <Input type="date" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[13px]">Order Type</Label>
+                        <Select value={orderType} onValueChange={(v) => { setOrderType(v); setWarranty('') }}>
+                          <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                          <SelectContent>
+                            {ORDER_TYPES.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[13px]">Warranty</Label>
+                        <Select value={warranty} onValueChange={setWarranty} disabled={!orderType || (WARRANTY_OPTIONS[orderType]?.length ?? 0) === 0}>
+                          <SelectTrigger><SelectValue placeholder={orderType === 'Rental' ? 'N/A' : 'Select'} /></SelectTrigger>
+                          <SelectContent>
+                            {(WARRANTY_OPTIONS[orderType] ?? []).map((w) => (<SelectItem key={w} value={w}>{w}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input value={zipCode} onChange={(e) => setZipCode(e.target.value)} placeholder="PIN code" />
-                      <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" />
+
+                    {/* Dispatch + Payment Terms */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-[13px]">Dispatch Method</Label>
+                        <Select value={dispatchMethod} onValueChange={setDispatchMethod}>
+                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent>
+                            {DISPATCH_METHODS.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[13px]">Payment Terms</Label>
+                        <Select value={paymentTerms} onValueChange={setPaymentTerms}>
+                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent>
+                            {PAYMENT_TERMS.map((p) => (<SelectItem key={p} value={p}>{p}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Section>
 
-                <Separator />
+                {/* ── Line Items Section (always open) ── */}
+                <Section title="Quote / Line Items" defaultOpen>
+                  {/* Table header */}
+                  <div className="rounded-lg border border-border/60 overflow-hidden">
+                    <div className="grid grid-cols-[1fr_2.5fr_70px_100px_100px_32px] gap-0 bg-muted/50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground border-b">
+                      <span>Type</span>
+                      <span>Item / Part</span>
+                      <span className="text-right">Qty</span>
+                      <span className="text-right">Rate</span>
+                      <span className="text-right">Amount</span>
+                      <span />
+                    </div>
 
-                {/* ── Quote / Line Items — IMS Part Picker integrated ── */}
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                    Quote / Line Items
-                  </p>
-                  <div className="space-y-2">
-                    {lineItems.map((li, idx) => (
-                      <div key={li.id} className="rounded-lg border border-border/60 bg-background p-3">
-                        <div className="flex items-start gap-3">
-                          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground mt-0.5">
-                            {idx + 1}
-                          </span>
-                          <div className="flex-1 space-y-2">
-                            {/* Type toggle */}
-                            <div className="flex items-center gap-2">
-                              <div className="flex shrink-0 rounded-md border p-0.5">
-                                <button
-                                  type="button"
-                                  onClick={() => switchLineItemType(li.id, 'ims_part')}
-                                  className={cn(
-                                    'flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition-colors',
-                                    li.type === 'ims_part' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                                  )}
-                                >
-                                  <Package className="size-3" />
-                                  IMS Part
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => switchLineItemType(li.id, 'description')}
-                                  className={cn(
-                                    'flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition-colors',
-                                    li.type === 'description' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                                  )}
-                                >
-                                  <FileText className="size-3" />
-                                  Manual
-                                </button>
-                              </div>
-
-                              {/* IMS Part badges */}
-                              {li.type === 'ims_part' && li.partId && (
-                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                  {li.variantType && (
-                                    <Badge className={cn('text-[10px] shrink-0', VARIANT_COLORS[li.variantType] ?? 'bg-muted text-muted-foreground')}>
-                                      <Tag className="size-2.5 mr-0.5" />{li.variantType}
-                                    </Badge>
-                                  )}
-                                  {li.bomId && (
-                                    <Badge className="text-[10px] bg-[#f1f0ff] text-[#7239ea] shrink-0">
-                                      <Cpu className="size-2.5 mr-0.5" />BOM
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
+                    {/* Table rows */}
+                    {lineItems.map((li) => (
+                      <div key={li.id} className="border-b last:border-b-0 hover:bg-muted/20 transition-colors">
+                        <div className="grid grid-cols-[1fr_2.5fr_70px_100px_100px_32px] gap-0 items-center px-3 py-2">
+                          {/* Type toggle */}
+                          <div>
+                            <div className="flex shrink-0 rounded-md border p-0.5 w-fit">
+                              <button
+                                type="button"
+                                onClick={() => switchLineItemType(li.id, 'ims_part')}
+                                title="IMS Part"
+                                className={cn(
+                                  'flex items-center justify-center rounded p-1 transition-colors',
+                                  li.type === 'ims_part' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                                )}
+                              >
+                                <Package className="size-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => switchLineItemType(li.id, 'description')}
+                                title="Manual entry"
+                                className={cn(
+                                  'flex items-center justify-center rounded p-1 transition-colors',
+                                  li.type === 'description' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                                )}
+                              >
+                                <FileText className="size-3.5" />
+                              </button>
                             </div>
+                          </div>
 
-                            {/* Item selector */}
+                          {/* Item / Part */}
+                          <div className="min-w-0">
                             {li.type === 'ims_part' ? (
                               li.partId ? (
                                 <button
                                   type="button"
                                   onClick={() => openPartPicker(li.id)}
-                                  className="flex w-full items-center gap-2 rounded-md border bg-background px-3 py-2 text-left transition-colors hover:bg-muted/50"
+                                  className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left transition-colors hover:bg-muted/50 min-w-0"
                                 >
-                                  <Package className="size-3.5 shrink-0 text-primary" />
+                                  <Package className="size-3 shrink-0 text-primary" />
                                   <div className="min-w-0 flex-1">
-                                    <div className="text-[13px] font-medium truncate">{li.partName}</div>
-                                    <div className="text-[11px] text-muted-foreground">{li.partSku} &middot; {li.brand}</div>
+                                    <div className="text-[12px] font-medium truncate">{li.partName}</div>
+                                    <div className="text-[10px] text-muted-foreground truncate">{li.partSku} &middot; {li.brand}</div>
                                   </div>
-                                  <Search className="size-3 shrink-0 text-muted-foreground" />
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    {li.variantType && (
+                                      <Badge className={cn('text-[9px] px-1 py-0', VARIANT_COLORS[li.variantType] ?? 'bg-muted text-muted-foreground')}>
+                                        {li.variantType}
+                                      </Badge>
+                                    )}
+                                    {li.bomId && (
+                                      <Badge className="text-[9px] px-1 py-0 bg-[#f1f0ff] text-[#7239ea]">BOM</Badge>
+                                    )}
+                                  </div>
                                 </button>
                               ) : (
                                 <Button
-                                  variant="outline"
+                                  variant="ghost"
                                   size="sm"
-                                  className="w-full justify-start gap-2 font-normal text-muted-foreground h-9"
+                                  className="w-full justify-start gap-1.5 font-normal text-muted-foreground h-7 text-[12px] px-2"
                                   onClick={() => openPartPicker(li.id)}
                                 >
-                                  <Search className="size-3.5" />
-                                  Search IMS part catalog...
+                                  <Search className="size-3" />
+                                  Search parts...
                                 </Button>
                               )
                             ) : (
-                              <div className="grid grid-cols-2 gap-2">
-                                <Input placeholder="Item name" value={li.item} onChange={(e) => updateLineItem(li.id, { item: e.target.value })} className="h-8 text-[13px]" />
-                                <Input placeholder="Description" value={li.description} onChange={(e) => updateLineItem(li.id, { description: e.target.value })} className="h-8 text-[13px]" />
+                              <div className="flex gap-1.5">
+                                <Input placeholder="Item" value={li.item} onChange={(e) => updateLineItem(li.id, { item: e.target.value })} className="h-7 text-[12px] flex-1" />
+                                <Input placeholder="Desc" value={li.description} onChange={(e) => updateLineItem(li.id, { description: e.target.value })} className="h-7 text-[12px] flex-1" />
                               </div>
                             )}
-
-                            {/* Qty × Rate = Amount */}
-                            <div className="flex items-center gap-2">
-                              <div className="w-20">
-                                <Input type="number" min={1} placeholder="Qty" value={li.qty} onChange={(e) => updateLineItem(li.id, { qty: Number(e.target.value) || 0 })} className="h-8 text-[13px] text-right" />
-                              </div>
-                              <span className="text-xs text-muted-foreground">&times;</span>
-                              <div className="w-28">
-                                <Input type="number" min={0} placeholder="Rate" value={li.rate} onChange={(e) => updateLineItem(li.id, { rate: Number(e.target.value) || 0 })} className="h-8 text-[13px] text-right" />
-                              </div>
-                              <span className="text-xs text-muted-foreground">=</span>
-                              <span className="text-[13px] font-semibold tabular-nums min-w-[80px] text-right">
-                                &#8377;{fmtCurrency(li.qty * li.rate)}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="icon-xs"
-                                onClick={() => {
-                                  if (lineItems.length <= 1) return
-                                  setLineItems((prev) => prev.filter((x) => x.id !== li.id))
-                                }}
-                                disabled={lineItems.length <= 1}
-                                className="ml-auto text-muted-foreground hover:text-destructive"
-                              >
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            </div>
                           </div>
+
+                          {/* Qty */}
+                          <Input
+                            type="number"
+                            min={1}
+                            value={li.qty}
+                            onChange={(e) => updateLineItem(li.id, { qty: Number(e.target.value) || 0 })}
+                            className="h-7 text-[12px] text-right"
+                          />
+
+                          {/* Rate */}
+                          <Input
+                            type="number"
+                            min={0}
+                            value={li.rate}
+                            onChange={(e) => updateLineItem(li.id, { rate: Number(e.target.value) || 0 })}
+                            className="h-7 text-[12px] text-right"
+                          />
+
+                          {/* Amount */}
+                          <span className="text-[12px] font-medium tabular-nums text-right pr-1">
+                            &#8377;{fmtCurrency(li.qty * li.rate)}
+                          </span>
+
+                          {/* Delete */}
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => {
+                              if (lineItems.length <= 1) return
+                              setLineItems((prev) => prev.filter((x) => x.id !== li.id))
+                            }}
+                            disabled={lineItems.length <= 1}
+                            className="text-muted-foreground hover:text-destructive size-6"
+                          >
+                            <Trash2 className="size-3" />
+                          </Button>
                         </div>
                       </div>
                     ))}
                   </div>
-                  <Button variant="outline" size="sm" className="mt-2" onClick={() => setLineItems((prev) => [...prev, createEmptySOItem()])}>
-                    <Plus className="mr-1 size-3.5" />
+
+                  <Button variant="outline" size="sm" className="mt-2 h-7 text-[12px]" onClick={() => setLineItems((prev) => [...prev, createEmptySOItem()])}>
+                    <Plus className="mr-1 size-3" />
                     Add Item
                   </Button>
-                </div>
 
-                {/* Totals */}
-                <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
-                  <div className="space-y-1.5 text-[13px]">
+                  {/* Totals — inline below table */}
+                  <div className="mt-3 ml-auto w-64 space-y-1 text-[12px]">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="font-medium tabular-nums">&#8377;{fmtCurrency(subtotal)}</span>
@@ -815,25 +833,39 @@ function ClosedWonWizardDialog({
                       <span className="text-muted-foreground">SGST (9%)</span>
                       <span className="tabular-nums">&#8377;{fmtCurrency(gst / 2)}</span>
                     </div>
-                    <Separator className="my-1.5" />
-                    <div className="flex justify-between text-sm font-semibold">
+                    <Separator className="my-1" />
+                    <div className="flex justify-between text-[13px] font-semibold">
                       <span>Grand Total</span>
                       <span className="tabular-nums">&#8377;{fmtCurrency(grandTotal)}</span>
                     </div>
                   </div>
-                </div>
+                </Section>
 
-                {/* Notes */}
-                <div className="space-y-1.5">
-                  <Label className="text-[13px]">Notes</Label>
+                {/* ── Billing & Shipping ── */}
+                <Section title="Billing Address" defaultOpen={false}>
+                  <div className="space-y-3">
+                    <Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Street address" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input value={billCity} onChange={(e) => setBillCity(e.target.value)} placeholder="City" />
+                      <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input value={zipCode} onChange={(e) => setZipCode(e.target.value)} placeholder="PIN code" />
+                      <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" />
+                    </div>
+                  </div>
+                </Section>
+
+                {/* ── Notes ── */}
+                <Section title="Notes" defaultOpen={false}>
                   <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Additional notes..." rows={2} className="text-[13px]" />
-                </div>
+                </Section>
               </div>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-2 border-t px-6 py-4">
+          {/* Footer — sticky at bottom */}
+          <div className="flex items-center justify-end gap-2 border-t px-6 py-3 shrink-0 bg-background">
             {isLead && currentStep === 2 && (
               <Button variant="outline" size="sm" onClick={() => setCurrentStep(1)}>Back</Button>
             )}
@@ -847,8 +879,8 @@ function ClosedWonWizardDialog({
               <Button size="sm" onClick={handleNext}>Next</Button>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* IMS Part Picker Dialog */}
       <PartPickerDialog

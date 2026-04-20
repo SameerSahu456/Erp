@@ -274,13 +274,13 @@ function BusinessMetricsTable({
         {/* Pagination footer */}
         <div className="cpt-table-footer">
           <div>Showing {paginatedData.length} of {processedData.length}</div>
-          <div className="cpt-row" style={{ gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <button
-              className="cpt-btn cpt-btn-sm"
+              className="cpt-pg-btn"
               disabled={currentPage === 0}
               onClick={() => setCurrentPage((p) => p - 1)}
             >
-              <ChevronLeft className="size-3" />
+              <ChevronLeft className="size-3.5" />
             </button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               const page = totalPages <= 5 ? i : (
@@ -292,8 +292,7 @@ function BusinessMetricsTable({
               return (
                 <button
                   key={page}
-                  className="cpt-btn cpt-btn-sm"
-                  style={currentPage === page ? { background: '#0F1B2D', color: '#fff', borderColor: '#0F1B2D' } : undefined}
+                  className={cn("cpt-pg-btn", currentPage === page && "active")}
                   onClick={() => setCurrentPage(page)}
                 >
                   {page + 1}
@@ -301,11 +300,11 @@ function BusinessMetricsTable({
               )
             })}
             <button
-              className="cpt-btn cpt-btn-sm"
+              className="cpt-pg-btn"
               disabled={currentPage >= totalPages - 1}
               onClick={() => setCurrentPage((p) => p + 1)}
             >
-              <ChevronRight className="size-3" />
+              <ChevronRight className="size-3.5" />
             </button>
           </div>
         </div>

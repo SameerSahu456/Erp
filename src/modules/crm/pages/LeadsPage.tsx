@@ -21,8 +21,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
-import { ClosedWonWizardDialog } from "../components/ClosedWonWizardDialog"
-import type { ClosedWonResult } from "../components/ClosedWonWizardDialog"
 import { LostReasonDialog } from "../components/LostReasonDialog"
 
 import { leads } from "@/modules/crm/data/leads"
@@ -191,10 +189,6 @@ function LeadsPage() {
     return filtered
   }, [kanbanItems, kanbanSearch])
 
-  // Closed Won wizard state
-  const [wizardOpen, setWizardOpen] = useState(false)
-  const [pendingClosedWon, setPendingClosedWon] = useState<{ lead: Lead; fromColumn: string } | null>(null)
-
   // Closed Lost reason state
   const [lostReasonOpen, setLostReasonOpen] = useState(false)
   const [pendingClosedLost, setPendingClosedLost] = useState<{ lead: Lead; fromColumn: string } | null>(null)
@@ -205,12 +199,11 @@ function LeadsPage() {
 
   const handleMoveAcross = useCallback(
     (itemId: string, fromColumn: string, toColumn: string) => {
-      // Intercept Closed Won — open wizard instead of immediate move
+      // Intercept Closed Won — navigate to full-page form
       if (toColumn === 'Closed Won') {
         const lead = (kanbanItemsRef.current[fromColumn] ?? []).find((i) => i.id === itemId)
         if (lead) {
-          setPendingClosedWon({ lead, fromColumn })
-          setWizardOpen(true)
+          navigate(`/crm/leads/${lead.id}/close-won?type=lead`)
         }
         return
       }
@@ -255,22 +248,6 @@ function LeadsPage() {
     toast.success(`Lead "${lead.name}" marked as lost — ${reason}`)
     setPendingClosedLost(null)
     setLostReasonOpen(false)
-  }
-
-  function handleClosedWonComplete(_result: ClosedWonResult) {
-    if (!pendingClosedWon) return
-    const { lead, fromColumn } = pendingClosedWon
-
-    setKanbanItems((prev) => {
-      const fromItems = (prev[fromColumn] ?? []).filter((i) => i.id !== lead.id)
-      const updated = { ...lead, stage: 'Closed Won' as Lead['stage'] }
-      const toItems = [...(prev['Closed Won'] ?? []), updated]
-      return { ...prev, [fromColumn]: fromItems, 'Closed Won': toItems }
-    })
-
-    toast.success(`Lead "${lead.name}" closed won — Account & Sales Order created`)
-    setPendingClosedWon(null)
-    setWizardOpen(false)
   }
 
   const priorityVariant = (p: string) => p === 'High' ? 'destructive' as const : p === 'Medium' ? 'warning' as const : 'secondary' as const
@@ -412,21 +389,6 @@ function LeadsPage() {
           tabs={[listTab]}
           cellFormatter={listCellFormatter}
           pageSize={10}
-        />
-      )}
-      {/* Closed Won Wizard */}
-      {pendingClosedWon && (
-        <ClosedWonWizardDialog
-          open={wizardOpen}
-          onOpenChange={(open) => {
-            setWizardOpen(open)
-            if (!open) setPendingClosedWon(null)
-          }}
-          entityType="lead"
-          entityName={pendingClosedWon.lead.name}
-          entityValue={pendingClosedWon.lead.value}
-          entityCompany={pendingClosedWon.lead.company}
-          onComplete={handleClosedWonComplete}
         />
       )}
       {/* Closed Lost Reason */}

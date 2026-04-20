@@ -21,8 +21,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
-import { ClosedWonWizardDialog } from "../components/ClosedWonWizardDialog"
-import type { ClosedWonResult } from "../components/ClosedWonWizardDialog"
 import { LostReasonDialog } from "../components/LostReasonDialog"
 
 import { deals } from "@/modules/crm/data/deals"
@@ -189,10 +187,6 @@ function DealsPage() {
     return filtered
   }, [kanbanItems, kanbanSearch])
 
-  // Closed Won wizard state
-  const [wizardOpen, setWizardOpen] = useState(false)
-  const [pendingClosedWon, setPendingClosedWon] = useState<{ deal: Deal; fromColumn: string } | null>(null)
-
   // Closed Lost reason state
   const [lostReasonOpen, setLostReasonOpen] = useState(false)
   const [pendingClosedLost, setPendingClosedLost] = useState<{ deal: Deal; fromColumn: string } | null>(null)
@@ -202,12 +196,11 @@ function DealsPage() {
 
   const handleMoveAcross = useCallback(
     (itemId: string, fromColumn: string, toColumn: string) => {
-      // Intercept Closed Won — open wizard (SO form only, account already exists)
+      // Intercept Closed Won — navigate to full-page form
       if (toColumn === 'Closed Won') {
         const deal = (kanbanItemsRef.current[fromColumn] ?? []).find((i) => i.id === itemId)
         if (deal) {
-          setPendingClosedWon({ deal, fromColumn })
-          setWizardOpen(true)
+          navigate(`/crm/deals/${deal.id}/close-won`)
         }
         return
       }
@@ -252,25 +245,6 @@ function DealsPage() {
     toast.success(`Deal "${deal.name}" marked as lost — ${reason}`)
     setPendingClosedLost(null)
     setLostReasonOpen(false)
-  }
-
-  function handleClosedWonComplete(result: ClosedWonResult) {
-    if (!pendingClosedWon) return
-    const { deal, fromColumn } = pendingClosedWon
-
-    // Update deal value to match the SO line items total
-    const soTotal = result.salesOrder.lineItems.reduce((sum, li) => sum + li.qty * li.rate, 0)
-
-    setKanbanItems((prev) => {
-      const fromItems = (prev[fromColumn] ?? []).filter((i) => i.id !== deal.id)
-      const updated = { ...deal, stage: 'Closed Won' as Deal['stage'], value: soTotal, probability: 100 }
-      const toItems = [...(prev['Closed Won'] ?? []), updated]
-      return { ...prev, [fromColumn]: fromItems, 'Closed Won': toItems }
-    })
-
-    toast.success(`Deal "${deal.name}" closed won — ${formatCurrency(soTotal)}`)
-    setPendingClosedWon(null)
-    setWizardOpen(false)
   }
 
   const priorityVariant = (p: string) => p === 'High' ? 'destructive' as const : p === 'Medium' ? 'warning' as const : 'secondary' as const
@@ -410,22 +384,6 @@ function DealsPage() {
           tabs={[listTab]}
           cellFormatter={listCellFormatter}
           pageSize={10}
-        />
-      )}
-      {/* Closed Won Wizard */}
-      {pendingClosedWon && (
-        <ClosedWonWizardDialog
-          open={wizardOpen}
-          onOpenChange={(open) => {
-            setWizardOpen(open)
-            if (!open) setPendingClosedWon(null)
-          }}
-          entityType="deal"
-          entityName={pendingClosedWon.deal.name}
-          entityValue={pendingClosedWon.deal.value}
-          existingAccountId={pendingClosedWon.deal.accountId}
-          existingAccountName={pendingClosedWon.deal.accountName}
-          onComplete={handleClosedWonComplete}
         />
       )}
       {/* Closed Lost Reason */}

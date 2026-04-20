@@ -33,7 +33,6 @@ import { LEAD_STAGES } from '../types'
 import { CommentSection } from '../components/CommentSection'
 import { TasksSection } from '../components/TasksSection'
 import { AuditTrail } from '../components/AuditTrail'
-import { ClosedWonWizardDialog } from '../components/ClosedWonWizardDialog'
 import { LostReasonDialog } from '../components/LostReasonDialog'
 import { mockTasks } from '../data/tasks'
 import { downloadQuotePdf } from '../utils/download-quote-pdf'
@@ -117,7 +116,6 @@ function LeadDetailPage() {
   const [rejectionReason, setRejectionReason] = useState('')
   const [reinstateDialogOpen, setReinstateDialogOpen] = useState(false)
   const [reinstateNote, setReinstateNote] = useState('')
-  const [closedWonWizardOpen, setClosedWonWizardOpen] = useState(false)
   const [lostReasonOpen, setLostReasonOpen] = useState(false)
   const [currentStage, setCurrentStage] = useState<string | null>(null)
   const { user } = useAuth()
@@ -197,7 +195,7 @@ function LeadDetailPage() {
 
   function handleStageChange(newStage: string) {
     if (newStage === 'Closed Won') {
-      setClosedWonWizardOpen(true)
+      navigate(`/crm/leads/${leadId}/close-won?type=lead`)
       return
     }
     if (newStage === 'Closed Lost') {
@@ -775,21 +773,6 @@ function LeadDetailPage() {
 
         </div>
       </div>
-
-      {/* Closed Won Wizard */}
-      <ClosedWonWizardDialog
-        open={closedWonWizardOpen}
-        onOpenChange={setClosedWonWizardOpen}
-        entityType="lead"
-        entityName={lead.name}
-        entityValue={lead.value}
-        entityCompany={lead.company}
-        onComplete={() => {
-          setClosedWonWizardOpen(false)
-          setCurrentStage('Closed Won')
-          toast.success(`Lead "${lead.name}" closed won — Account & Sales Order created`)
-        }}
-      />
 
       {/* Lost Reason Dialog */}
       <LostReasonDialog

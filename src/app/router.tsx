@@ -35,6 +35,7 @@ const SalesOrderDetailPage = lazy(() => import('@/modules/crm/pages/SalesOrderDe
 const PMApprovalsPage = lazy(() => import('@/modules/procurement/pages/PMApprovalsPage'))
 const QuoteBuilderPage = lazy(() => import('@/modules/crm/pages/QuoteBuilderPage'))
 const RejectedLeadsPage = lazy(() => import('@/modules/crm/pages/RejectedLeadsPage'))
+const ClosedWonPage = lazy(() => import('@/modules/crm/pages/ClosedWonPage'))
 const TasksPage = lazy(() => import('@/modules/crm/pages/TasksPage'))
 const MeetingsPage = lazy(() => import('@/modules/crm/pages/MeetingsPage'))
 const CalendarPage = lazy(() => import('@/modules/crm/pages/CalendarPage'))
@@ -181,11 +182,13 @@ export const router = createBrowserRouter([
       { path: '/crm/leads/new', element: <LazyRoute><LeadFormPage /></LazyRoute> },
       { path: '/crm/leads/:id/edit', element: <LazyRoute><LeadFormPage /></LazyRoute> },
       { path: '/crm/leads/:id', element: <LazyRoute><LeadDetailPage /></LazyRoute> },
+      { path: '/crm/leads/:id/close-won', element: <LazyRoute><ClosedWonPage /></LazyRoute> },
       { path: '/crm/rejected-leads', element: <LazyRoute><RejectedLeadsPage /></LazyRoute> },
       { path: '/crm/deals', element: <LazyRoute><DealsPage /></LazyRoute> },
       { path: '/crm/deals/new', element: <LazyRoute><DealFormPage /></LazyRoute> },
       { path: '/crm/deals/:id/edit', element: <LazyRoute><DealFormPage /></LazyRoute> },
       { path: '/crm/deals/:id', element: <LazyRoute><DealDetailPage /></LazyRoute> },
+      { path: '/crm/deals/:id/close-won', element: <LazyRoute><ClosedWonPage /></LazyRoute> },
       { path: '/crm/accounts', element: <LazyRoute><AccountsPage /></LazyRoute> },
       { path: '/crm/accounts/new', element: <LazyRoute><AccountFormPage /></LazyRoute> },
       { path: '/crm/accounts/:id/edit', element: <LazyRoute><AccountFormPage /></LazyRoute> },

@@ -57,7 +57,6 @@ import { DEAL_STAGES } from '../types'
 import { CommentSection } from '../components/CommentSection'
 import { TasksSection } from '../components/TasksSection'
 import { AuditTrail } from '../components/AuditTrail'
-import { ClosedWonWizardDialog } from '../components/ClosedWonWizardDialog'
 import { LostReasonDialog } from '../components/LostReasonDialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { mockTasks } from '../data/tasks'
@@ -139,7 +138,6 @@ function DealDetailPage() {
   const { id: dealId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [closedWonWizardOpen, setClosedWonWizardOpen] = useState(false)
   const [lostReasonOpen, setLostReasonOpen] = useState(false)
   const [currentStage, setCurrentStage] = useState<string | null>(null)
   const [updatedDealValue, setUpdatedDealValue] = useState<number | null>(null)
@@ -206,7 +204,7 @@ function DealDetailPage() {
 
   function handleStageChange(newStage: string) {
     if (newStage === 'Closed Won') {
-      setClosedWonWizardOpen(true)
+      navigate(`/crm/deals/${dealId}/close-won`)
       return
     }
     if (newStage === 'Closed Lost') {
@@ -781,24 +779,6 @@ function DealDetailPage() {
           )}
         </div>
       </div>
-
-      {/* Closed Won Wizard */}
-      <ClosedWonWizardDialog
-        open={closedWonWizardOpen}
-        onOpenChange={setClosedWonWizardOpen}
-        entityType="deal"
-        entityName={deal.name}
-        entityValue={displayValue}
-        existingAccountId={deal.accountId}
-        existingAccountName={deal.accountName}
-        onComplete={(result) => {
-          const soTotal = result.salesOrder.lineItems.reduce((sum, li) => sum + li.qty * li.rate, 0)
-          setUpdatedDealValue(soTotal)
-          setClosedWonWizardOpen(false)
-          setCurrentStage('Closed Won')
-          toast.success(`Deal "${deal.name}" closed won — ${formatCurrency(soTotal)}`)
-        }}
-      />
 
       {/* Lost Reason Dialog */}
       <LostReasonDialog
