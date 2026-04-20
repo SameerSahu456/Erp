@@ -46,12 +46,12 @@ function WorkflowStepper({ steps, onStepClick, className }: WorkflowStepperProps
                   <StepCircle step={step} />
                 </div>
                 {!isLast && (
-                  <div className="flex-1 min-w-[24px]">
+                  <div className="flex-1 min-w-[28px]">
                     <div
                       className={cn(
-                        "h-0.5 w-full",
+                        "h-0.5 w-full rounded-full",
                         steps[index + 1]!.status === "pending"
-                          ? "border-t-2 border-dashed border-muted-foreground/30 bg-transparent"
+                          ? "border-t-2 border-dashed border-border bg-transparent"
                           : steps[index + 1]!.status === "completed"
                             ? "bg-primary"
                             : steps[index + 1]!.status === "active"
@@ -66,16 +66,16 @@ function WorkflowStepper({ steps, onStepClick, className }: WorkflowStepperProps
           })}
         </div>
         {/* Bottom row: labels aligned under each circle */}
-        <div className="flex mt-2.5">
+        <div className="flex mt-3">
           {steps.map((step, index) => {
             const isLast = index === steps.length - 1
             return (
               <React.Fragment key={step.id}>
-                <div className="flex shrink-0 flex-col items-center" style={{ width: 32 }}>
+                <div className="flex shrink-0 flex-col items-center" style={{ width: 36 }}>
                   <span
                     className={cn(
                       "text-xs font-medium whitespace-nowrap",
-                      step.status === "active" && "text-primary",
+                      step.status === "active" && "text-primary font-semibold",
                       step.status === "completed" && "text-foreground",
                       step.status === "pending" && "text-muted-foreground",
                       step.status === "failed" && "text-destructive"
@@ -84,12 +84,12 @@ function WorkflowStepper({ steps, onStepClick, className }: WorkflowStepperProps
                     {step.label}
                   </span>
                   {step.description && (
-                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                    <span className="text-[11px] text-muted-foreground/80 whitespace-nowrap mt-0.5">
                       {step.description}
                     </span>
                   )}
                 </div>
-                {!isLast && <div className="flex-1 min-w-[24px]" />}
+                {!isLast && <div className="flex-1 min-w-[28px]" />}
               </React.Fragment>
             )
           })}
@@ -122,7 +122,7 @@ function WorkflowStepper({ steps, onStepClick, className }: WorkflowStepperProps
                   <span
                     className={cn(
                       "text-sm font-medium",
-                      step.status === "active" && "text-primary",
+                      step.status === "active" && "text-primary font-semibold",
                       step.status === "completed" && "text-foreground",
                       step.status === "pending" && "text-muted-foreground",
                       step.status === "failed" && "text-destructive"
@@ -131,7 +131,7 @@ function WorkflowStepper({ steps, onStepClick, className }: WorkflowStepperProps
                     {step.label}
                   </span>
                   {step.description && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground/80 mt-0.5">
                       {step.description}
                     </span>
                   )}
@@ -141,9 +141,9 @@ function WorkflowStepper({ steps, onStepClick, className }: WorkflowStepperProps
                 <div className="ml-[15px] flex h-6 items-center">
                   <div
                     className={cn(
-                      "w-0.5 h-full",
+                      "w-0.5 h-full rounded-full",
                       steps[index + 1]!.status === "pending"
-                        ? "border-l-2 border-dashed border-muted-foreground/30 bg-transparent"
+                        ? "border-l-2 border-dashed border-border bg-transparent"
                         : steps[index + 1]!.status === "completed"
                           ? "bg-primary"
                           : steps[index + 1]!.status === "active"
@@ -170,7 +170,7 @@ function StepCircle({ step }: { step: StepConfig }) {
   switch (step.status) {
     case "completed":
       return (
-        <div className={cn(baseClasses, "bg-primary text-primary-foreground")}>
+        <div className={cn(baseClasses, "bg-primary text-primary-foreground shadow-sm")}>
           {Icon ? <Icon className="size-4" /> : <Check className="size-4" />}
         </div>
       )
@@ -179,7 +179,7 @@ function StepCircle({ step }: { step: StepConfig }) {
         <div
           className={cn(
             baseClasses,
-            "border-2 border-primary bg-background ring-4 ring-primary/20"
+            "border-2 border-primary bg-card ring-4 ring-primary/15"
           )}
         >
           {Icon ? (
@@ -194,7 +194,7 @@ function StepCircle({ step }: { step: StepConfig }) {
         <div
           className={cn(
             baseClasses,
-            "border-2 border-muted-foreground/30 bg-muted text-muted-foreground"
+            "border-2 border-border bg-secondary text-muted-foreground"
           )}
         >
           {Icon && <Icon className="size-4" />}
@@ -202,7 +202,7 @@ function StepCircle({ step }: { step: StepConfig }) {
       )
     case "failed":
       return (
-        <div className={cn(baseClasses, "bg-destructive text-white")}>
+        <div className={cn(baseClasses, "bg-destructive text-white shadow-sm")}>
           {Icon ? <Icon className="size-4" /> : <X className="size-4" />}
         </div>
       )

@@ -25,7 +25,7 @@ const badgeVariants = cva(
         "danger-soft": "bg-[#FEF3F2] text-[#B42318]",
         "warning-soft": "bg-[#FFFAEB] text-[#B54708]",
         "info-soft": "bg-[#EFF4FF] text-[#175CD3]",
-        "grey-soft": "bg-[#FAFBFC] text-[#667085]",
+        "grey-soft": "bg-[#FAFBFC] text-muted-foreground",
       },
       size: {
         sm: "h-5 px-1.5 text-[10px]",

@@ -9,7 +9,7 @@ export function AppShell() {
       <Header />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 min-w-0 p-6 lg:p-8 animate-fade-in">
+        <main className="flex-1 min-w-0 p-5 lg:p-7 animate-fade-in">
           <div className="max-w-[1600px] mx-auto w-full">
             <Outlet />
           </div>

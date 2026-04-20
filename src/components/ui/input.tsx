@@ -10,9 +10,9 @@ const inputVariants = cva(
     variants: {
       variant: {
         outline:
-          "rounded-[7px] border border-[#D0D5DD] bg-[var(--card,#fff)] px-[10px] text-[13.5px] focus-visible:border-[#0F1B2D] focus-visible:ring-3 focus-visible:ring-[rgba(15,27,45,0.12)]",
+          "rounded-lg border border-border bg-card px-3 text-[13.5px] focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/8",
         solid:
-          "rounded-[7px] border border-transparent bg-[#EEF0F3] px-[10px] text-[13.5px] focus-visible:border-[#0F1B2D] focus-visible:ring-3 focus-visible:ring-[rgba(15,27,45,0.12)] dark:bg-[#2d2d3f]",
+          "rounded-lg border border-transparent bg-secondary px-3 text-[13.5px] focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/8 dark:bg-[#2d2d3f]",
         tertiary:
           "rounded-md border border-transparent bg-transparent px-3 focus-visible:bg-[#f1f1f2] focus-visible:border-ring dark:focus-visible:bg-[#2d2d3f]",
         white:

@@ -192,39 +192,39 @@ const teamMembers = [
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/8 via-primary/4 to-transparent border border-primary/10 p-6 lg:p-8">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/6 via-primary/3 to-transparent border border-border p-6 lg:p-8">
         <div className="relative z-10">
-          <div className="flex items-center gap-2 text-primary mb-1">
-            <Activity className="size-4" />
+          <div className="flex items-center gap-2 text-primary/80 mb-1.5">
+            <Activity className="size-3.5" />
             <span className="text-[11px] font-semibold uppercase tracking-widest">Overview</span>
           </div>
-          <h2 className="font-sans text-2xl lg:text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground mt-1.5 text-[14px] max-w-lg">
+          <h2 className="font-sans text-2xl lg:text-[28px] font-bold tracking-tight text-foreground">Dashboard</h2>
+          <p className="text-muted-foreground mt-1.5 text-[14px] max-w-lg leading-relaxed">
             Real-time insights across CRM, warehouse, inventory, and procurement modules.
           </p>
         </div>
-        <div className="absolute -right-8 -top-8 size-48 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -right-4 -bottom-12 size-32 rounded-full bg-primary/3 blur-2xl" />
+        <div className="absolute -right-8 -top-8 size-48 rounded-full bg-primary/4 blur-3xl" />
+        <div className="absolute -right-4 -bottom-12 size-32 rounded-full bg-primary/2 blur-2xl" />
       </div>
 
       {/* Section 1: KPI Stats */}
-      <section className="space-y-4">
+      <section className="space-y-3">
         <SectionHeader title="Key Performance Indicators" />
         <StatsRow stats={kpiStats} />
       </section>
 
       {/* Section 2: Workflow Stepper */}
-      <section className="space-y-4">
+      <section className="space-y-3">
         <SectionHeader title="WMS Device Lifecycle" />
-        <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm shadow-black/[0.02]">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
           <WorkflowStepper steps={workflowSteps} />
         </div>
       </section>
 
       {/* Section 3: Business Metrics Table */}
-      <section className="space-y-4">
+      <section className="space-y-3">
         <SectionHeader title="Business Metrics" />
         <BusinessMetricsTable
           tabs={metricsTabs}
@@ -236,28 +236,28 @@ export default function DashboardPage() {
       {/* Section 4: Two-column layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Left: Timeline */}
-        <section className="space-y-4">
+        <section className="space-y-3">
           <SectionHeader title="Recent Activity" />
-          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm shadow-black/[0.02]">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-card">
             <Timeline entries={timelineEntries} />
           </div>
         </section>
 
         {/* Right: AvatarGroup + StatusBadge */}
-        <section className="space-y-6">
+        <section className="space-y-5">
           {/* Avatar Group */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <SectionHeader title="Team Members" />
-            <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm shadow-black/[0.02]">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-card">
               <AvatarGroup users={teamMembers} max={4} />
             </div>
           </div>
 
           {/* Status Badge Examples */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <SectionHeader title="Status Badges" />
-            <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm shadow-black/[0.02]">
-              <div className="flex flex-wrap gap-3">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+              <div className="flex flex-wrap gap-2.5">
                 <StatusBadge variant="success">Active</StatusBadge>
                 <StatusBadge variant="warning">Pending Review</StatusBadge>
                 <StatusBadge variant="error">Failed</StatusBadge>
@@ -269,18 +269,18 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Stats */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <SectionHeader title="Quick Stats" />
-            <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm shadow-black/[0.02] space-y-4">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-card space-y-0">
               {[
                 { label: "Devices repaired this week", value: "127" },
                 { label: "Avg repair turnaround", value: "3.2 days" },
                 { label: "Warehouse utilization", value: "78%" },
                 { label: "Pending inspections", value: "19" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between py-0.5">
+              ].map((item, i) => (
+                <div key={item.label} className={`flex items-center justify-between py-3 ${i > 0 ? 'border-t border-border' : ''}`}>
                   <span className="text-[13px] text-muted-foreground">{item.label}</span>
-                  <span className="text-[13px] font-semibold">{item.value}</span>
+                  <span className="text-[13px] font-semibold text-foreground tabular-nums">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -288,14 +288,14 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      <div className="h-20" />
+      <div className="h-16" />
     </div>
   )
 }
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <h3 className="text-[13px] font-sans font-semibold text-muted-foreground uppercase tracking-wider">
+    <h3 className="text-[12px] font-sans font-semibold text-muted-foreground uppercase tracking-wider">
       {title}
     </h3>
   )

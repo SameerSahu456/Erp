@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Search, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -152,7 +152,7 @@ function BusinessMetricsTable({
 
   return (
     <div className={cn("space-y-0", className)}>
-      {/* Comprint Tabs */}
+      {/* Tabs */}
       <div className="cpt-tabs">
         {tabs.map((tab) => (
           <button
@@ -166,19 +166,19 @@ function BusinessMetricsTable({
       </div>
 
       {/* Table wrap with toolbar */}
-      <div className="cpt-table-wrap">
+      <div className="cpt-table-wrap" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
         {/* Toolbar: search + filters */}
         {searchable && (
           <div className="cpt-table-toolbar">
             <div className="cpt-search-field">
-              <Search className="size-[14px]" />
+              <Search className="size-[14px] opacity-60" />
               <input
                 placeholder="Search…"
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0) }}
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery("")} style={{ opacity: 0.5 }}>
+                <button onClick={() => setSearchQuery("")} className="opacity-40 hover:opacity-70 transition-opacity">
                   <X className="size-3.5" />
                 </button>
               )}
@@ -194,7 +194,6 @@ function BusinessMetricsTable({
                   className="cpt-filter-chip"
                   value={columnFilters[col.key] ?? '__all__'}
                   onChange={(e) => handleFilterChange(col.key, e.target.value)}
-                  style={{ cursor: 'pointer' }}
                 >
                   <option value="__all__">All {col.label}</option>
                   {options.map((opt) => (
@@ -222,7 +221,10 @@ function BusinessMetricsTable({
                   >
                     {col.label}
                     {col.sortable && (
-                      <span style={{ marginLeft: 4, opacity: sortColumn === col.key ? 1 : 0.3, fontSize: 10 }}>
+                      <span className={cn(
+                        "ml-1 text-[10px] transition-opacity",
+                        sortColumn === col.key ? "opacity-80" : "opacity-30"
+                      )}>
                         {sortColumn === col.key && sortDirection === "asc" ? "↑" :
                          sortColumn === col.key && sortDirection === "desc" ? "↓" : "↕"}
                       </span>
@@ -259,7 +261,8 @@ function BusinessMetricsTable({
                 <tr>
                   <td
                     colSpan={activeTabConfig?.columns.length ?? 1}
-                    style={{ padding: '56px 24px', textAlign: 'center', color: '#667085' }}
+                    className="text-center text-muted-foreground"
+                    style={{ padding: '56px 24px' }}
                   >
                     {searchQuery.trim() || Object.keys(columnFilters).length > 0
                       ? 'No results match your search'
@@ -273,8 +276,8 @@ function BusinessMetricsTable({
 
         {/* Pagination footer */}
         <div className="cpt-table-footer">
-          <div>Showing {paginatedData.length} of {processedData.length}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <div className="tabular-nums">Showing {paginatedData.length} of {processedData.length}</div>
+          <div className="flex items-center gap-1">
             <button
               className="cpt-pg-btn"
               disabled={currentPage === 0}

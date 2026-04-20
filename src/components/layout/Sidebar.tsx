@@ -11,7 +11,7 @@ import { SIDEBAR_NAV } from '@/components/layout/sidebar-nav-config'
 import { cn } from '@/lib/utils'
 import type { NavGroup, NavItem } from '@/types/navigation'
 
-/* ── Comprint ERP Nav Item ── */
+/* ── Nav Item ── */
 function NavItemLink({
   item,
   isActive,
@@ -26,13 +26,13 @@ function NavItemLink({
     <Link
       to={item.href}
       className={cn(
-        'flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13.5px] transition-all',
-        'text-[#344054] hover:bg-[#EEF0F3]',
-        isActive && 'bg-[#EEF1F6] text-[#0F1B2D] font-[550]',
+        'flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-[13px] transition-all',
+        'text-muted-foreground hover:text-foreground hover:bg-secondary',
+        isActive && 'bg-accent text-foreground font-[550]',
         isCollapsed && 'justify-center px-2 py-2'
       )}
     >
-      <Icon className={cn('shrink-0 opacity-80', isCollapsed ? 'size-[18px]' : 'size-4', isActive && 'opacity-100')} />
+      <Icon className={cn('shrink-0', isCollapsed ? 'size-[18px]' : 'size-4', isActive ? 'opacity-100' : 'opacity-70')} />
       {!isCollapsed && <span className="truncate flex-1">{item.label}</span>}
     </Link>
   )
@@ -51,7 +51,7 @@ function NavItemLink({
   return link
 }
 
-/* ── Comprint ERP Nav Group ── */
+/* ── Nav Group ── */
 function NavGroupSection({
   group,
   isCollapsed,
@@ -75,9 +75,9 @@ function NavGroupSection({
             <Link
               to={firstItem.href}
               className={cn(
-                'flex w-full items-center justify-center rounded-md px-2 py-2 transition-all',
-                'text-[#344054] hover:bg-[#EEF0F3]',
-                isGroupActive && 'bg-[#EEF1F6] text-[#0F1B2D]'
+                'flex w-full items-center justify-center rounded-lg px-2 py-2 transition-all',
+                'text-muted-foreground hover:text-foreground hover:bg-secondary',
+                isGroupActive && 'bg-accent text-foreground'
               )}
             />
           }
@@ -106,31 +106,34 @@ function NavGroupSection({
   }
 
   return (
-    <div className="mt-2.5">
+    <div className="mt-3">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between px-2.5 py-[6px] text-[11px] font-semibold uppercase tracking-[0.08em] text-[#98A2B3] hover:text-[#667085] transition-colors"
+        className="flex w-full items-center justify-between px-2.5 py-[6px] text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
       >
         <span>{group.label}</span>
         <ChevronDown
           className={cn(
-            'size-[11px] opacity-50 transition-transform duration-150',
+            'size-[11px] opacity-50 transition-transform duration-200',
             !isOpen && '-rotate-90'
           )}
         />
       </button>
-      {isOpen && (
-        <div className="space-y-[1px] mt-0.5">
-          {group.items.map((item) => (
-            <NavItemLink
-              key={item.href}
-              item={item}
-              isActive={pathname === item.href}
-              isCollapsed={false}
-            />
-          ))}
-        </div>
-      )}
+      <div
+        className={cn(
+          'space-y-[1px] mt-0.5 overflow-hidden transition-all duration-200',
+          isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+        )}
+      >
+        {group.items.map((item) => (
+          <NavItemLink
+            key={item.href}
+            item={item}
+            isActive={pathname === item.href}
+            isCollapsed={false}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -146,7 +149,7 @@ function SidebarNav({
 }) {
   return (
     <TooltipProvider>
-      <nav className="flex flex-col gap-0 px-2 py-2">
+      <nav className="flex flex-col gap-0 px-2.5 py-2.5">
         {/* Dashboard */}
         <NavItemLink
           item={{
@@ -200,23 +203,23 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Desktop sidebar — Comprint ERP */}
+      {/* Desktop sidebar */}
       <aside
         className={cn(
           'hidden md:flex flex-col sticky top-14 h-[calc(100vh-3.5rem)] z-40',
-          'bg-card border-r border-[#E4E7EC] transition-all duration-200',
+          'bg-card border-r border-border transition-all duration-200',
           isCollapsed ? 'w-16' : 'w-[248px]'
         )}
       >
         {/* Collapse toggle */}
         <div className={cn(
-          'flex items-center h-9 px-2 border-b border-[#E4E7EC]',
+          'flex items-center h-10 px-2.5 border-b border-border',
           isCollapsed ? 'justify-center' : 'justify-end'
         )}>
           <Button
             variant="ghost"
             size="icon"
-            className="size-7 text-[#98A2B3] hover:text-[#344054] hover:bg-[#EEF0F3]"
+            className="size-7 text-muted-foreground hover:text-foreground hover:bg-secondary"
             onClick={toggleCollapsed}
           >
             {isCollapsed ? (
@@ -238,12 +241,12 @@ export function Sidebar() {
 
       {/* Mobile drawer */}
       <Sheet open={isMobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-[248px] p-0">
+        <SheetContent side="left" className="w-[260px] p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SheetDescription className="sr-only">Main navigation menu</SheetDescription>
-          <div className="flex items-center h-14 px-4 border-b border-[#E4E7EC] gap-2.5">
-            <div className="w-7 h-7 rounded-[7px] bg-[#0F1B2D] flex items-center justify-center text-white text-[13px] font-bold tracking-wide">CP</div>
-            <span className="font-[650] text-[15px] tracking-[-0.01em]">Comprint</span>
+          <div className="flex items-center h-14 px-4 border-b border-border gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground text-[12px] font-bold tracking-wide">CP</div>
+            <span className="font-[650] text-[15px] tracking-[-0.01em] text-foreground">Comprint</span>
           </div>
           <ScrollArea className="h-[calc(100vh-3.5rem)]">
             <SidebarNav

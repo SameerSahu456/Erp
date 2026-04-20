@@ -244,7 +244,7 @@ function KanbanColumn<T extends { id: string }>({
                 />
               ))
             ) : (
-              <div style={{ borderRadius: 8, border: '1px dashed #D0D5DD', padding: 16, textAlign: 'center', fontSize: 12.5, color: '#667085' }}>
+              <div className="rounded-lg border border-dashed border-border p-4 text-center text-[12.5px] text-muted-foreground">
                 No items
               </div>
             )}

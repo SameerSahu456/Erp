@@ -20,7 +20,7 @@ interface TimelineProps {
 }
 
 const variantCircleStyles: Record<TimelineVariant, string> = {
-  default: "bg-muted-foreground",
+  default: "bg-muted-foreground/80",
   success: "bg-status-success-text",
   error: "bg-status-error-text",
   warning: "bg-status-warning-text",
@@ -28,20 +28,20 @@ const variantCircleStyles: Record<TimelineVariant, string> = {
 
 function Timeline({ entries, className }: TimelineProps) {
   return (
-    <div className={cn("relative space-y-6 pl-6", className)}>
+    <div className={cn("relative space-y-5 pl-7", className)}>
       {/* Vertical line */}
-      <div className="absolute top-0 bottom-0 left-[7px] w-px bg-border" />
+      <div className="absolute top-1 bottom-1 left-[8px] w-px bg-border" />
 
       {entries.map((entry) => {
         const variant = entry.variant ?? "default"
         const Icon = entry.icon
 
         return (
-          <div key={entry.id} className="relative flex gap-3">
+          <div key={entry.id} className="relative flex gap-3 group">
             {/* Circle */}
             <div
               className={cn(
-                "absolute -left-6 top-1 flex size-4 items-center justify-center rounded-full",
+                "absolute -left-7 top-0.5 flex size-[17px] items-center justify-center rounded-full ring-[3px] ring-card",
                 variantCircleStyles[variant]
               )}
             >
@@ -50,15 +50,15 @@ function Timeline({ entries, className }: TimelineProps) {
 
             {/* Content */}
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{entry.title}</p>
+              <p className="text-[13px] font-medium text-foreground leading-snug">{entry.title}</p>
               {entry.description && (
-                <p className="mt-0.5 text-sm text-muted-foreground">
+                <p className="mt-1 text-[13px] text-muted-foreground leading-relaxed">
                   {entry.description}
                 </p>
               )}
-              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                {entry.user && <span>{entry.user}</span>}
-                {entry.user && <span>·</span>}
+              <div className="mt-1.5 flex items-center gap-2 text-[12px] text-muted-foreground/80">
+                {entry.user && <span className="font-medium">{entry.user}</span>}
+                {entry.user && <span className="opacity-40">·</span>}
                 <span>{entry.timestamp}</span>
               </div>
             </div>

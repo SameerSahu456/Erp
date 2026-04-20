@@ -34,11 +34,7 @@ function DetailTabs({ tabs, defaultTab, className }: DetailTabsProps) {
           >
             {tab.label}
             {tab.count != null && (
-              <span style={{
-                marginLeft: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                minWidth: 20, height: 20, borderRadius: 10, background: '#EEF0F3',
-                fontSize: 11, fontWeight: 600, color: '#667085', padding: '0 5px',
-              }}>
+              <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-secondary text-muted-foreground text-[11px] font-semibold px-[5px]">
                 {tab.count}
               </span>
             )}
