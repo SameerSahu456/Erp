@@ -137,8 +137,13 @@ export const SIDEBAR_NAV: NavGroup[] = [
     items: [
       { label: 'Dashboard', href: '/rentals', icon: LayoutDashboard, module: 'rentals' },
       { label: 'Contracts', href: '/rentals/contracts', icon: FileText, module: 'rentals' },
+      { label: 'Asset Registry', href: '/rentals/assets', icon: Tags, module: 'rentals' },
       { label: 'Device Tracking', href: '/rentals/tracking', icon: MapPin, module: 'rentals' },
+      { label: 'Billing', href: '/rentals/billing', icon: DollarSign, module: 'rentals' },
       { label: 'Returns', href: '/rentals/returns', icon: RotateCcw, module: 'rentals' },
+      { label: 'Support Tickets', href: '/rentals/support', icon: ClipboardList, module: 'rentals' },
+      { label: 'Partners', href: '/rentals/partners', icon: Building2, module: 'rentals' },
+      { label: 'Analytics', href: '/rentals/analytics', icon: BarChart3, module: 'rentals' },
     ],
   },
   {
