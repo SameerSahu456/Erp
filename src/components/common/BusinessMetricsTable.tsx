@@ -204,11 +204,7 @@ function BusinessMetricsTable({
               )
             })}
 
-            <div style={{ marginLeft: 'auto' }} className="cpt-row">
-              <span className="cpt-muted cpt-tiny">
-                {processedData.length} of {activeTabConfig?.data.length ?? 0}
-              </span>
-            </div>
+            <div style={{ marginLeft: 'auto' }} />
           </div>
         )}
 
