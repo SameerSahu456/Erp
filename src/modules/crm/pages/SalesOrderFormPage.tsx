@@ -444,10 +444,11 @@ function SalesOrderFormPage() {
         </CardContent>
       </Card>
 
-      {/* BOM Quote Builder — same as Quotes page */}
+      {/* BOM Quote Builder — empty by default, prefilled only when linked to a quote */}
       <BOMQuoteBuilder
         accountId={accountId || undefined}
         accountName={selectedAccount?.name}
+        initialEmpty={!linkedQuote}
       />
 
       {/* Save/Cancel footer */}
