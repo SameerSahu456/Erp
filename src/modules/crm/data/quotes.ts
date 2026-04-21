@@ -14,6 +14,7 @@ export const quotes: Quote[] = [
     leadName: 'Rajesh Sharma',
     version: 2,
     parentQuoteId: 'QT-001-V1',
+    quoteType: 'item-based',
     lineItems: [
       { id: 'QLI-001', item: 'Dell PowerEdge R750', description: '2U Rack Server, Xeon Gold 6330, 128GB RAM', category: 'Servers', qty: 50, rate: 145000, amount: 7250000 },
       { id: 'QLI-002', item: 'APC Smart-UPS 3000VA', description: 'Online UPS for server rack protection', category: 'UPS & Power', qty: 25, rate: 35000, amount: 875000 },
@@ -32,6 +33,7 @@ export const quotes: Quote[] = [
     leadId: 'LEAD-001',
     leadName: 'Rajesh Sharma',
     version: 1,
+    quoteType: 'item-based',
     lineItems: [
       { id: 'QLI-004', item: 'Dell PowerEdge R750xs', description: '2U Rack Server, Xeon Gold 6338, 256GB RAM', category: 'Servers', qty: 50, rate: 165000, amount: 8250000 },
       { id: 'QLI-005', item: 'APC Smart-UPS 5000VA', description: 'Online UPS with extended battery', category: 'UPS & Power', qty: 25, rate: 38000, amount: 950000 },
@@ -49,6 +51,7 @@ export const quotes: Quote[] = [
     leadId: 'LEAD-002',
     leadName: 'Priya Nair',
     version: 1,
+    quoteType: 'item-based',
     lineItems: [
       { id: 'QLI-006', item: 'Cisco Catalyst 9300-48P', description: '48-port managed PoE+ switch', category: 'Networking', qty: 25, rate: 180000, amount: 4500000 },
       { id: 'QLI-007', item: 'Palo Alto PA-450', description: 'Next-gen firewall for branch office', category: 'Networking', qty: 5, rate: 240000, amount: 1200000 },
@@ -67,6 +70,7 @@ export const quotes: Quote[] = [
     leadId: 'LEAD-003',
     leadName: 'Vikram Reddy',
     version: 1,
+    quoteType: 'description-based',
     lineItems: [
       { id: 'QLI-009', item: 'HP EliteBook 860 G10', description: 'i7-1365U, 16GB RAM, 512GB SSD', category: 'Laptops', qty: 200, rate: 42000, amount: 8400000 },
       { id: 'QLI-010', item: 'HP USB-C Dock G5', description: 'Universal docking station', category: 'Cables & Accessories', qty: 200, rate: 5500, amount: 1100000 },
@@ -86,6 +90,7 @@ export const quotes: Quote[] = [
     leadName: 'Rohit Kapoor',
     version: 2,
     parentQuoteId: 'QT-004-V1',
+    quoteType: 'item-based',
     lineItems: [
       { id: 'QLI-012', item: 'HPE ProLiant DL380 Gen10', description: '2U Rack Server, Xeon Silver 4314, 64GB RAM', category: 'Servers', qty: 30, rate: 185000, amount: 5550000 },
       { id: 'QLI-013', item: 'NetApp AFF A250', description: 'All-flash storage array, 24TB raw', category: 'Storage', qty: 3, rate: 650000, amount: 1950000 },
@@ -103,6 +108,7 @@ export const quotes: Quote[] = [
     leadId: 'LEAD-011',
     leadName: 'Rohit Kapoor',
     version: 1,
+    quoteType: 'item-based',
     lineItems: [
       { id: 'QLI-014', item: 'HPE ProLiant DL380 Gen10 Plus', description: '2U Rack Server, Xeon Gold 5318Y, 128GB RAM', category: 'Servers', qty: 30, rate: 210000, amount: 6300000 },
       { id: 'QLI-015', item: 'NetApp AFF A400', description: 'All-flash storage array, 48TB raw', category: 'Storage', qty: 3, rate: 600000, amount: 1800000 },
@@ -120,6 +126,7 @@ export const quotes: Quote[] = [
     leadId: '',
     leadName: '',
     version: 1,
+    quoteType: 'description-based',
     lineItems: [
       { id: 'QLI-016', item: 'Microsoft 365 E5', description: 'Annual license per user', category: 'Software Licenses', qty: 200, rate: 12000, amount: 2400000 },
       { id: 'QLI-017', item: 'Azure Reserved Instances', description: 'D4s v3 VM, 1-year reservation', category: 'Software Licenses', qty: 10, rate: 40000, amount: 400000 },
@@ -137,6 +144,7 @@ export const quotes: Quote[] = [
     leadId: '',
     leadName: '',
     version: 1,
+    quoteType: 'item-based',
     lineItems: [
       { id: 'QLI-018', item: 'Dell PowerEdge R650', description: '1U Server, Xeon Silver 4314, 64GB', category: 'Servers', qty: 10, rate: 125000, amount: 1250000 },
       { id: 'QLI-019', item: 'Dell PowerVault ME5024', description: 'SAN Storage, 24x 1.2TB SAS', category: 'Storage', qty: 2, rate: 850000, amount: 1700000 },
@@ -155,6 +163,7 @@ export const quotes: Quote[] = [
     leadId: 'LEAD-010',
     leadName: 'Neha Joshi',
     version: 1,
+    quoteType: 'item-based',
     lineItems: [
       { id: 'QLI-021', item: 'Fortinet FortiGate 100F', description: 'Next-gen firewall, 20Gbps throughput', category: 'Networking', qty: 8, rate: 275000, amount: 2200000 },
       { id: 'QLI-022', item: 'Cisco SG350-28P', description: '28-port managed PoE switch', category: 'Networking', qty: 16, rate: 62500, amount: 1000000 },
@@ -172,6 +181,7 @@ export const quotes: Quote[] = [
     leadId: '',
     leadName: '',
     version: 1,
+    quoteType: 'item-based',
     lineItems: [
       { id: 'QLI-023', item: 'Cisco IE-4010-4S24P', description: 'Industrial Ethernet switch, 24-port', category: 'Networking', qty: 20, rate: 145000, amount: 2900000 },
       { id: 'QLI-024', item: 'Dell PowerEdge R450', description: '1U Industrial server, Xeon 4310, 32GB', category: 'Servers', qty: 10, rate: 95000, amount: 950000 },

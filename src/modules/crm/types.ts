@@ -166,6 +166,8 @@ export interface QuoteLineItem {
   amount: number
 }
 
+export type QuoteType = 'item-based' | 'description-based'
+
 export interface Quote {
   id: string
   quoteNumber: string
@@ -179,6 +181,7 @@ export interface Quote {
   leadName: string
   version: number
   parentQuoteId?: string
+  quoteType: QuoteType
   lineItems: QuoteLineItem[]
 }
 

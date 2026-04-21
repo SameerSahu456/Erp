@@ -1,20 +1,25 @@
+import { useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   History,
   ArrowRight,
   Copy,
+  Package,
+  FileText,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { EntityHeader } from '../components/EntityHeader'
 import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
+import { DescriptionQuoteBuilder } from '../components/DescriptionQuoteBuilder'
 import { quotes } from '../data/quotes'
 import { leads } from '../data/leads'
 import { deals } from '../data/deals'
 import { accounts } from '../data/accounts'
-import type { Quote } from '../types'
+import type { Quote, QuoteType } from '../types'
 import { toast } from 'sonner'
 
 const STATUS_VARIANTS: Record<Quote['status'], 'neutral' | 'info' | 'success' | 'error' | 'warning'> = {
@@ -62,6 +67,10 @@ function QuoteFormPage() {
     ? accounts.find((a) => a.id === paramAccountId)?.name
     : prefilledDeal?.accountName ?? undefined
 
+  // Quote type: use existing quote's type when editing, or default for new quotes
+  const defaultQuoteType: QuoteType = existingQuote?.quoteType ?? 'item-based'
+  const [quoteType, setQuoteType] = useState<QuoteType>(defaultQuoteType)
+
   const backHref = '/crm/quotes'
 
   function handleAmendQuote() {
@@ -79,6 +88,15 @@ function QuoteFormPage() {
     navigate('/crm/quotes/new')
   }
 
+  const builderProps = {
+    leadId: paramLeadId,
+    leadName: prefilledLead?.name,
+    dealId: paramDealId,
+    dealName: prefilledDeal?.name,
+    accountId: paramAccountId,
+    accountName: resolvedAccountName,
+  }
+
   return (
     <div className="space-y-5">
       <EntityHeader
@@ -86,7 +104,7 @@ function QuoteFormPage() {
         subtitle={
           isEdit
             ? `${resolvedAccountName ?? ''} — ${existingQuote?.lineItems?.length ?? 0} items`
-            : 'Build a new quote with BOM configuration and margin visibility'
+            : 'Build a new quote — select items from inventory or add descriptions manually'
         }
         status={isEdit ? { label: status, variant: STATUS_VARIANTS[status] } : undefined}
         backHref={backHref}
@@ -141,15 +159,33 @@ function QuoteFormPage() {
         </div>
       )}
 
-      {/* BOM Quote Builder */}
-      <BOMQuoteBuilder
-        leadId={paramLeadId}
-        leadName={prefilledLead?.name}
-        dealId={paramDealId}
-        dealName={prefilledDeal?.name}
-        accountId={paramAccountId}
-        accountName={resolvedAccountName}
-      />
+      {/* Quote Type Tabs */}
+      <Tabs
+        defaultValue={quoteType}
+        onValueChange={(val) => setQuoteType(val as QuoteType)}
+      >
+        <TabsList>
+          <TabsTrigger value="item-based">
+            <Package className="size-4" data-icon="inline-start" />
+            Item-based (Inventory)
+          </TabsTrigger>
+          <TabsTrigger value="description-based">
+            <FileText className="size-4" data-icon="inline-start" />
+            Description-based
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="item-based">
+          <BOMQuoteBuilder
+            {...builderProps}
+            initialEmpty={!isEdit}
+          />
+        </TabsContent>
+
+        <TabsContent value="description-based">
+          <DescriptionQuoteBuilder {...builderProps} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

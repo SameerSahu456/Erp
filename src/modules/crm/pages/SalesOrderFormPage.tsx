@@ -11,6 +11,7 @@ import {
   History,
   ArrowRight,
   Copy,
+  Package,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -25,18 +26,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { EntityHeader } from '../components/EntityHeader'
 import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
+import { DescriptionQuoteBuilder } from '../components/DescriptionQuoteBuilder'
 import { TotalsSection } from '../components/TotalsSection'
 import { salesOrders } from '../data/sales-orders'
 import { quotes } from '../data/quotes'
 import { leads } from '../data/leads'
 import { accounts } from '../data/accounts'
 import { IMS_CATEGORIES, ORDER_TYPES } from '../types'
-import type { SalesOrder, OrderType } from '../types'
+import type { SalesOrder, OrderType, QuoteType } from '../types'
 
 const SO_STATUSES: SalesOrder['status'][] = ['Draft', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled']
 const DISPATCH_METHODS = ['Standard Shipping', 'Express Shipping', 'Hand Delivery', 'Pickup', 'Third-Party Logistics'] as const
@@ -124,12 +127,6 @@ function SalesOrderFormPage() {
   useEffect(() => { return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) } }, [])
 
   const backHref = '/crm/sales-orders'
-
-  function toggleCategory(cat: string) {
-    setCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    )
-  }
 
   function handleSave() {
     if (!accountId) {
@@ -414,20 +411,12 @@ function SalesOrderFormPage() {
           {/* Categories Interested */}
           <div className="mt-5 space-y-1.5">
             <Label className="font-ui">Categories Interested</Label>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-              {IMS_CATEGORIES.map((cat) => (
-                <label
-                  key={cat}
-                  className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer hover:bg-accent"
-                >
-                  <Checkbox
-                    checked={categories.includes(cat)}
-                    onCheckedChange={() => toggleCategory(cat)}
-                  />
-                  {cat}
-                </label>
-              ))}
-            </div>
+            <MultiSelect
+              options={IMS_CATEGORIES}
+              value={categories}
+              onValueChange={setCategories}
+              placeholder="Select categories..."
+            />
           </div>
 
           {/* Notes */}
@@ -444,12 +433,34 @@ function SalesOrderFormPage() {
         </CardContent>
       </Card>
 
-      {/* BOM Quote Builder — empty by default, prefilled only when linked to a quote */}
-      <BOMQuoteBuilder
-        accountId={accountId || undefined}
-        accountName={selectedAccount?.name}
-        initialEmpty={!linkedQuote}
-      />
+      {/* Quote Builder — supports both item-based and description-based modes */}
+      <Tabs defaultValue={linkedQuote?.quoteType ?? 'item-based'}>
+        <TabsList>
+          <TabsTrigger value="item-based">
+            <Package className="size-4" data-icon="inline-start" />
+            Item-based (Inventory)
+          </TabsTrigger>
+          <TabsTrigger value="description-based">
+            <FileText className="size-4" data-icon="inline-start" />
+            Description-based
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="item-based">
+          <BOMQuoteBuilder
+            accountId={accountId || undefined}
+            accountName={selectedAccount?.name}
+            initialEmpty={!linkedQuote}
+          />
+        </TabsContent>
+
+        <TabsContent value="description-based">
+          <DescriptionQuoteBuilder
+            accountId={accountId || undefined}
+            accountName={selectedAccount?.name}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Save/Cancel footer */}
       <div className="flex items-center justify-between rounded-lg border bg-card p-4">

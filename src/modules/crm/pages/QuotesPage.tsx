@@ -79,6 +79,7 @@ function QuotesPage() {
         quoteNumber: q.quoteNumber,
         accountName: q.accountName,
         leadName: q.leadName || '-',
+        quoteType: q.quoteType ?? 'item-based',
         total: q.total,
         status: q.status,
         version: q.version ?? 1,
@@ -94,6 +95,7 @@ function QuotesPage() {
     { key: 'quoteNumber', label: 'Quote #', sortable: true },
     { key: 'accountName', label: 'Account', sortable: true },
     { key: 'leadName', label: 'Lead' },
+    { key: 'quoteType', label: 'Type' },
     { key: 'items', label: 'Items', align: 'center' as const },
     { key: 'total', label: 'Total', sortable: true, align: 'right' as const },
     { key: 'status', label: 'Status', sortable: true },
@@ -149,6 +151,15 @@ function QuotesPage() {
           >
             {value}
           </Link>
+        ),
+      }
+    }
+    if (key === 'quoteType' && typeof value === 'string') {
+      return {
+        display: (
+          <Badge variant="outline" className="text-xs">
+            {value === 'item-based' ? 'Item' : 'Description'}
+          </Badge>
         ),
       }
     }
