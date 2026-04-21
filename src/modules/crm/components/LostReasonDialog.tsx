@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AlertTriangle, ThumbsDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -61,32 +62,40 @@ export function LostReasonDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Mark as Closed Lost</DialogTitle>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      onOpenChange(isOpen)
+      if (!isOpen) { setReason(''); setNotes('') }
+    }}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader className="items-center text-center">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10">
+            <AlertTriangle className="size-6 text-destructive" />
+          </div>
+          <DialogTitle className="text-lg">Mark as Closed Lost</DialogTitle>
           <DialogDescription>
-            Why is "{entityName}" being marked as lost? This helps track win/loss patterns.
+            Why is <span className="font-medium text-foreground">"{entityName}"</span> being marked as lost?
+            This helps track win/loss patterns.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>
+
+        <div className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">
               Lost Reason <span className="text-destructive">*</span>
             </Label>
             <Select value={reason} onValueChange={setReason}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent align="start" sideOffset={4}>
                 {LOST_REASONS.map((r) => (
                   <SelectItem key={r} value={r}>{r}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Additional Notes</Label>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Additional Notes</Label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -95,6 +104,7 @@ export function LostReasonDialog({
             />
           </div>
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel}>
             Cancel
@@ -104,6 +114,7 @@ export function LostReasonDialog({
             onClick={handleConfirm}
             disabled={!reason}
           >
+            <ThumbsDown className="size-3.5" data-icon="inline-start" />
             Mark as Lost
           </Button>
         </DialogFooter>

@@ -12,8 +12,11 @@ import {
   ArrowRight,
   Copy,
   Package,
+  MapPin,
+  Plus,
 } from 'lucide-react'
 
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -31,15 +34,17 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { EntityHeader } from '../components/EntityHeader'
+import { AddAddressDialog } from '../components/AddAddressDialog'
 import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
 import { DescriptionQuoteBuilder } from '../components/DescriptionQuoteBuilder'
 import { TotalsSection } from '../components/TotalsSection'
 import { salesOrders } from '../data/sales-orders'
 import { quotes } from '../data/quotes'
 import { leads } from '../data/leads'
+import { deals } from '../data/deals'
 import { accounts } from '../data/accounts'
 import { IMS_CATEGORIES, ORDER_TYPES } from '../types'
-import type { SalesOrder, OrderType, QuoteType } from '../types'
+import type { SalesOrder, OrderType, QuoteType, AccountAddress } from '../types'
 
 const SO_STATUSES: SalesOrder['status'][] = ['Draft', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled']
 const DISPATCH_METHODS = ['Standard Shipping', 'Express Shipping', 'Hand Delivery', 'Pickup', 'Third-Party Logistics'] as const
@@ -76,6 +81,14 @@ function SalesOrderFormPage() {
     ? leads.find((l) => l.id === linkedQuote.leadId)
     : undefined
 
+  // Look up deal linked to quote or via search params
+  const paramDealId = searchParams.get('dealId') ?? ''
+  const linkedDeal = paramDealId
+    ? deals.find((d) => d.id === paramDealId)
+    : linkedQuote?.accountId
+      ? deals.find((d) => d.accountId === linkedQuote.accountId && d.leadId === linkedQuote.leadId)
+      : undefined
+
   const [orderNumber] = useState(
     existingOrder?.orderNumber ?? `SO-2026-${String(salesOrders.length + 1).padStart(4, '0')}`
   )
@@ -90,14 +103,48 @@ function SalesOrderFormPage() {
   const [orderType, setOrderType] = useState<OrderType | ''>('')
   const [dispatchMethod, setDispatchMethod] = useState('')
   const [paymentTerms, setPaymentTerms] = useState('')
-  const [billingAddress, setBillingAddress] = useState('')
-  const [shippingAddress, setShippingAddress] = useState('')
+  const [selectedBillingIds, setSelectedBillingIds] = useState<string[]>([])
+  const [selectedShippingIds, setSelectedShippingIds] = useState<string[]>([])
+  const [manualBillingAddress, setManualBillingAddress] = useState('')
+  const [manualShippingAddress, setManualShippingAddress] = useState('')
+  const [addAddressOpen, setAddAddressOpen] = useState(false)
+  const [addAddressType, setAddAddressType] = useState<'Billing' | 'Shipping'>('Billing')
+  const [localAddresses, setLocalAddresses] = useState<AccountAddress[]>([])
   const [notes, setNotes] = useState('')
 
   const selectedAccount = accounts.find((a) => a.id === accountId)
-  const accountAddresses = selectedAccount?.addresses ?? []
-  const billingAddressOptions = accountAddresses.filter((a) => a.type === 'Billing')
-  const shippingAddressOptions = accountAddresses.filter((a) => a.type === 'Shipping')
+
+  // Aggregate addresses from account, lead, deal, and locally added — each tagged with source
+  type TaggedAddress = AccountAddress & { source: string }
+  const allAddresses = useMemo<TaggedAddress[]>(() => {
+    const result: TaggedAddress[] = []
+    // Account addresses
+    for (const a of selectedAccount?.addresses ?? []) {
+      result.push({ ...a, source: 'Account' })
+    }
+    // Lead addresses
+    for (const a of linkedLead?.addresses ?? []) {
+      if (!result.some((r) => r.id === a.id)) {
+        result.push({ ...a, source: 'Lead' })
+      }
+    }
+    // Deal addresses
+    for (const a of linkedDeal?.addresses ?? []) {
+      if (!result.some((r) => r.id === a.id)) {
+        result.push({ ...a, source: 'Deal' })
+      }
+    }
+    // Locally added addresses
+    for (const a of localAddresses) {
+      if (!result.some((r) => r.id === a.id)) {
+        result.push({ ...a, source: 'New' })
+      }
+    }
+    return result
+  }, [selectedAccount, linkedLead, linkedDeal, localAddresses])
+
+  const billingAddressOptions = allAddresses.filter((a) => a.type === 'Billing')
+  const shippingAddressOptions = allAddresses.filter((a) => a.type === 'Shipping')
 
   const [approvalStatus, setApprovalStatus] = useState<'Pending' | 'Approved' | 'Rejected'>(
     existingOrder?.approvalStatus ?? 'Pending'
@@ -123,7 +170,12 @@ function SalesOrderFormPage() {
     }, 1500)
   }, [])
 
-  useEffect(() => { triggerAutoSave() }, [accountId, orderDate, status, categories, orderType, dispatchMethod, paymentTerms, billingAddress, shippingAddress, notes, triggerAutoSave])
+  function toggleSOAddress(id: string, type: 'billing' | 'shipping') {
+    const setter = type === 'billing' ? setSelectedBillingIds : setSelectedShippingIds
+    setter((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
+  }
+
+  useEffect(() => { triggerAutoSave() }, [accountId, orderDate, status, categories, orderType, dispatchMethod, paymentTerms, selectedBillingIds, selectedShippingIds, notes, triggerAutoSave])
   useEffect(() => { return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) } }, [])
 
   const backHref = '/crm/sales-orders'
@@ -192,6 +244,14 @@ function SalesOrderFormPage() {
               {linkedQuote.quoteNumber}
             </Link>
             <StatusBadge variant="success">{linkedQuote.status}</StatusBadge>
+          </div>
+        )}
+        {linkedDeal && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-ui text-muted-foreground">Deal:</span>
+            <Link to={`/crm/deals/${linkedDeal.id}`} className="text-sm text-primary hover:underline font-medium">
+              {linkedDeal.name}
+            </Link>
           </div>
         )}
         {linkedLead && (
@@ -356,55 +416,92 @@ function SalesOrderFormPage() {
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-ui">Billing Address</Label>
-                {billingAddressOptions.length > 0 ? (
-                  <Select value={billingAddress} onValueChange={setBillingAddress}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select billing address" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {billingAddressOptions.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.label} — {a.line1}, {a.city}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Textarea
-                    placeholder="Enter billing address..."
-                    value={billingAddress}
-                    onChange={(e) => setBillingAddress(e.target.value)}
-                    rows={2}
-                  />
-                )}
-              </div>
+            </div>
+          </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-ui">Shipping Address</Label>
-                {shippingAddressOptions.length > 0 ? (
-                  <Select value={shippingAddress} onValueChange={setShippingAddress}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select shipping address" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {shippingAddressOptions.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.label} — {a.line1}, {a.city}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Textarea
-                    placeholder="Enter shipping address..."
-                    value={shippingAddress}
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    rows={2}
-                  />
-                )}
+          {/* Addresses — billing & shipping with multi-select */}
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="font-ui">Billing Addresses</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => { setAddAddressType('Billing'); setAddAddressOpen(true) }}
+                >
+                  <Plus className="size-3 mr-1" />
+                  Add Billing
+                </Button>
               </div>
+              {billingAddressOptions.length > 0 ? (
+                <div className="space-y-2">
+                  {billingAddressOptions.map((addr) => {
+                    const checked = selectedBillingIds.includes(addr.id)
+                    return (
+                      <label key={addr.id} className={cn('flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors', checked ? 'border-primary bg-primary/5' : 'hover:bg-muted/50')}>
+                        <input type="checkbox" checked={checked} onChange={() => toggleSOAddress(addr.id, 'billing')} className="mt-0.5 size-4 accent-primary" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-medium">{addr.label}</span>
+                            <Badge variant="outline" className="text-[10px]">{addr.source}</Badge>
+                            {addr.isDefault && <Badge variant="secondary" className="text-[10px]">Default</Badge>}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
+                          <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed p-4 text-center">
+                  <MapPin className="size-5 mx-auto text-muted-foreground mb-1.5" />
+                  <p className="text-xs text-muted-foreground">No billing addresses available.</p>
+                  <p className="text-xs text-muted-foreground">Click "Add Address" to create one.</p>
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="font-ui">Shipping Addresses</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => { setAddAddressType('Shipping'); setAddAddressOpen(true) }}
+                >
+                  <Plus className="size-3 mr-1" />
+                  Add Shipping
+                </Button>
+              </div>
+              {shippingAddressOptions.length > 0 ? (
+                <div className="space-y-2">
+                  {shippingAddressOptions.map((addr) => {
+                    const checked = selectedShippingIds.includes(addr.id)
+                    return (
+                      <label key={addr.id} className={cn('flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors', checked ? 'border-primary bg-primary/5' : 'hover:bg-muted/50')}>
+                        <input type="checkbox" checked={checked} onChange={() => toggleSOAddress(addr.id, 'shipping')} className="mt-0.5 size-4 accent-primary" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-medium">{addr.label}</span>
+                            <Badge variant="outline" className="text-[10px]">{addr.source}</Badge>
+                            {addr.isDefault && <Badge variant="secondary" className="text-[10px]">Default</Badge>}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
+                          <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed p-4 text-center">
+                  <MapPin className="size-5 mx-auto text-muted-foreground mb-1.5" />
+                  <p className="text-xs text-muted-foreground">No shipping addresses available.</p>
+                  <p className="text-xs text-muted-foreground">Click "Add Address" to create one.</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -472,6 +569,19 @@ function SalesOrderFormPage() {
           Save Sales Order
         </Button>
       </div>
+
+      {/* Add Address Dialog — pick from account or enter manually */}
+      <AddAddressDialog
+        open={addAddressOpen}
+        onOpenChange={setAddAddressOpen}
+        accountAddresses={selectedAccount?.addresses}
+        existingIds={allAddresses.map((a) => a.id)}
+        defaultType={addAddressType}
+        onAdd={(addr) => {
+          setLocalAddresses((prev) => [...prev, addr])
+          toast.success(`Address "${addr.label}" added`)
+        }}
+      />
     </div>
   )
 }

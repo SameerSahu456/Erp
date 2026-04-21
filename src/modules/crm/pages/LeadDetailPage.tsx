@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Pencil, Trash2, Mail, Phone, Building2, Globe, IndianRupee, CalendarDays, Plus, XCircle, RotateCcw, MapPin, Users, Briefcase, Download } from 'lucide-react'
+import { Pencil, Trash2, Mail, Phone, Building2, Globe, IndianRupee, CalendarDays, Plus, XCircle, RotateCcw, MapPin, Users, Briefcase, Download, AlertTriangle } from 'lucide-react'
 
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -29,15 +29,29 @@ import { mockActivities } from '../data/activities'
 import { mockNotes } from '../data/notes'
 import { materialInquiries } from '../data/material-inquiries'
 import { mockComments } from '../data/comments'
-import { LEAD_STAGES } from '../types'
+import { LEAD_STAGES, type Activity } from '../types'
 import { CommentSection } from '../components/CommentSection'
 import { TasksSection } from '../components/TasksSection'
 import { AuditTrail } from '../components/AuditTrail'
 import { LostReasonDialog } from '../components/LostReasonDialog'
+import { AddAddressDialog } from '../components/AddAddressDialog'
+import type { AccountAddress } from '../types'
 import { mockTasks } from '../data/tasks'
 import { downloadQuotePdf } from '../utils/download-quote-pdf'
 import { useAuth } from '@/contexts/AuthContext'
 import { canReinstateLead } from '@/modules/crm/crm-roles'
+
+const REJECTION_REASONS = [
+  'Budget below threshold',
+  'Consumer segment — not enterprise',
+  'Duplicate lead',
+  'Non-standard configuration',
+  'Not a genuine enquiry',
+  'Competitor relationship',
+  'Outside service area',
+  'Unresponsive / No engagement',
+  'Other',
+] as const
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
@@ -114,10 +128,15 @@ function LeadDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [rejectionReason, setRejectionReason] = useState('')
+  const [rejectionNotes, setRejectionNotes] = useState('')
   const [reinstateDialogOpen, setReinstateDialogOpen] = useState(false)
   const [reinstateNote, setReinstateNote] = useState('')
   const [lostReasonOpen, setLostReasonOpen] = useState(false)
+  const [lostReason, setLostReason] = useState<{ reason: string; notes: string } | null>(null)
   const [currentStage, setCurrentStage] = useState<string | null>(null)
+  const [addAddressOpen, setAddAddressOpen] = useState(false)
+  const [localAddresses, setLocalAddresses] = useState<AccountAddress[]>([])
+  const [addressesInitialized, setAddressesInitialized] = useState(false)
   const { user } = useAuth()
   const userCanReinstate = canReinstateLead(user.role)
 
@@ -136,6 +155,14 @@ function LeadDetailPage() {
       </div>
     )
   }
+
+  // Initialize addresses from lead data once
+  if (!addressesInitialized && lead.addresses) {
+    setLocalAddresses(lead.addresses)
+    setAddressesInitialized(true)
+  }
+
+  const allAddresses = localAddresses.length > 0 ? localAddresses : (lead.addresses ?? [])
 
   const activityCount = mockActivities.filter(
     (a) => a.entityType === 'lead' && a.entityId === lead.id
@@ -182,8 +209,10 @@ function LeadDetailPage() {
 
   function handleReject() {
     // In real app: API call to update lead stage + create activity
+    toast.success(`Lead "${lead.name}" rejected — ${rejectionReason}`)
     setRejectDialogOpen(false)
     setRejectionReason('')
+    setRejectionNotes('')
     navigate('/crm/leads')
   }
 
@@ -227,25 +256,50 @@ function LeadDetailPage() {
         </CardHeader>
         <CardContent>
           {isLost ? (
-            <div className="flex items-center gap-2">
-              <StatusBadge variant="error">Lost</StatusBadge>
-              <span className="text-sm text-muted-foreground">This lead has been marked as lost.</span>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <StatusBadge variant="error">Closed Lost</StatusBadge>
+                <span className="text-sm text-muted-foreground">This lead has been marked as lost.</span>
+              </div>
+              {lostReason && (
+                <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2.5 space-y-1.5">
+                  <p className="text-sm">
+                    <span className="font-medium text-foreground">Lost Reason:</span>{' '}
+                    <span className="text-muted-foreground">{lostReason.reason}</span>
+                  </p>
+                  {lostReason.notes && (
+                    <p className="text-sm">
+                      <span className="font-medium text-foreground">Notes:</span>{' '}
+                      <span className="text-muted-foreground">{lostReason.notes}</span>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           ) : isRejected ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <StatusBadge variant="error">Rejected</StatusBadge>
                 <span className="text-sm text-muted-foreground">This lead has been rejected.</span>
               </div>
               {lead.rejectionReason && (
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">Reason:</span> {lead.rejectionReason}
-                </p>
-              )}
-              {lead.rejectedBy && lead.rejectedAt && (
-                <p className="text-xs text-muted-foreground">
-                  By {lead.rejectedBy} on {formatDate(lead.rejectedAt)}
-                </p>
+                <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2.5 space-y-1.5">
+                  <p className="text-sm">
+                    <span className="font-medium text-foreground">Reason:</span>{' '}
+                    <span className="text-muted-foreground">{lead.rejectionReason}</span>
+                  </p>
+                  {lead.rejectionNotes && (
+                    <p className="text-sm">
+                      <span className="font-medium text-foreground">Notes:</span>{' '}
+                      <span className="text-muted-foreground">{lead.rejectionNotes}</span>
+                    </p>
+                  )}
+                  {lead.rejectedBy && lead.rejectedAt && (
+                    <p className="text-xs text-muted-foreground pt-1 border-t border-destructive/10">
+                      By {lead.rejectedBy} on {formatDate(lead.rejectedAt)}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           ) : (
@@ -540,8 +594,17 @@ function LeadDetailPage() {
     {
       id: 'audit-trail',
       label: 'Audit Trail',
-      count: activityCount,
-      content: <AuditTrail entityType="lead" entityId={lead.id} />,
+      count: activityCount + (lostReason ? 1 : 0),
+      content: <AuditTrail entityType="lead" entityId={lead.id} extraEntries={lostReason ? [{
+        id: `lost-${lead.id}`,
+        type: 'closed_lost' as Activity['type'],
+        title: `Lead marked as Closed Lost`,
+        user: user.name,
+        timestamp: new Date().toISOString(),
+        entityType: 'lead',
+        entityId: lead.id,
+        metadata: { reason: lostReason.reason, notes: lostReason.notes },
+      }] : []} />,
     },
   ]
 
@@ -585,37 +648,63 @@ function LeadDetailPage() {
 
             {/* Reject — only for New/Contacted leads */}
             {(lead.stage === 'New' || lead.stage === 'Contacted') && (
-              <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+              <Dialog open={rejectDialogOpen} onOpenChange={(open) => {
+                setRejectDialogOpen(open)
+                if (!open) { setRejectionReason(''); setRejectionNotes('') }
+              }}>
                 <DialogTrigger render={<Button variant="outline" size="sm" className="text-destructive border-destructive/50 hover:bg-destructive/10" />}>
                   <XCircle className="size-3.5" data-icon="inline-start" />
                   Reject
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Reject Lead</DialogTitle>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader className="items-center text-center">
+                    <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10">
+                      <AlertTriangle className="size-6 text-destructive" />
+                    </div>
+                    <DialogTitle className="text-lg">Reject Lead</DialogTitle>
                     <DialogDescription>
-                      Mark "{lead.name}" as rejected. This will move the lead out of the active pipeline.
+                      Mark <span className="font-medium text-foreground">"{lead.name}"</span> as rejected.
+                      This will move the lead out of the active pipeline.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-2">
-                    <Label htmlFor="rejection-reason">Rejection Reason *</Label>
-                    <Textarea
-                      id="rejection-reason"
-                      placeholder="Enter the reason for rejection..."
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      rows={3}
-                    />
+
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">
+                        Rejection Reason <span className="text-destructive">*</span>
+                      </Label>
+                      <Select value={rejectionReason} onValueChange={setRejectionReason}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a reason" />
+                        </SelectTrigger>
+                        <SelectContent align="start" sideOffset={4}>
+                          {REJECTION_REASONS.map((r) => (
+                            <SelectItem key={r} value={r}>{r}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Additional Notes</Label>
+                      <Textarea
+                        value={rejectionNotes}
+                        onChange={(e) => setRejectionNotes(e.target.value)}
+                        placeholder="Any additional context about why this lead is being rejected..."
+                        rows={3}
+                      />
+                    </div>
                   </div>
+
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+                    <Button variant="outline" onClick={() => { setRejectDialogOpen(false); setRejectionReason(''); setRejectionNotes('') }}>
                       Cancel
                     </Button>
                     <Button
                       variant="destructive"
                       onClick={handleReject}
-                      disabled={!rejectionReason.trim()}
+                      disabled={!rejectionReason}
                     >
+                      <XCircle className="size-3.5" data-icon="inline-start" />
                       Reject Lead
                     </Button>
                   </DialogFooter>
@@ -731,6 +820,18 @@ function LeadDetailPage() {
                   </div>
                 </div>
               )}
+              {/* Pre-Sales Manager */}
+              {lead.presalesManager && (
+                <div className="border-t border-border/50 pt-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pre-Sales Manager</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                      {lead.presalesManager.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{lead.presalesManager}</p>
+                  </div>
+                </div>
+              )}
               {/* Show "Assigned at Qualified" hint for pre-qualified leads */}
               {isPreQualified && (
                 <p className="text-xs text-muted-foreground/60 italic">Account Owner assigned at Qualified stage</p>
@@ -771,6 +872,52 @@ function LeadDetailPage() {
             </CardContent>
           </Card>
 
+          {/* Addresses Card */}
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="size-4" />
+                Addresses
+                {allAddresses.length > 0 && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+                    {allAddresses.length}
+                  </span>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto h-7 text-xs"
+                  onClick={() => setAddAddressOpen(true)}
+                >
+                  <Plus className="size-3 mr-1" />
+                  Add
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {allAddresses.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  No addresses yet. Add one to get started.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {allAddresses.map((addr, idx) => (
+                    <div key={addr.id} className={cn('space-y-1', idx > 0 && 'border-t pt-3')}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{addr.label}</span>
+                        <Badge variant="outline" className="text-[10px]">{addr.type}</Badge>
+                        {addr.isDefault && <Badge variant="secondary" className="text-[10px]">Default</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{addr.line1}</p>
+                      {addr.line2 && <p className="text-xs text-muted-foreground">{addr.line2}</p>}
+                      <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
         </div>
       </div>
 
@@ -780,10 +927,21 @@ function LeadDetailPage() {
         onOpenChange={setLostReasonOpen}
         entityType="lead"
         entityName={lead.name}
-        onConfirm={(reason) => {
+        onConfirm={(reason, notes) => {
           setLostReasonOpen(false)
+          setLostReason({ reason, notes })
           setCurrentStage('Closed Lost')
           toast.success(`Lead "${lead.name}" marked as lost — ${reason}`)
+        }}
+      />
+
+      {/* Add Address Dialog — manual entry only (no account yet) */}
+      <AddAddressDialog
+        open={addAddressOpen}
+        onOpenChange={setAddAddressOpen}
+        onAdd={(addr) => {
+          setLocalAddresses((prev) => [...prev, addr])
+          toast.success(`Address "${addr.label}" added`)
         }}
       />
     </div>

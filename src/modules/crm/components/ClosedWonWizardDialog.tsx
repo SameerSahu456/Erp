@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Check, Plus, Trash2, Building2, ShoppingCart, Upload, FileText, X, Package, Search, Tag, Cpu, ChevronDown, ChevronRight } from 'lucide-react'
+import { Check, Plus, Trash2, Building2, ShoppingCart, Upload, FileText, X, Package, Search, Tag, Cpu, ChevronDown, ChevronRight, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -25,10 +25,15 @@ import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 import { IMS_CATEGORIES } from '../types'
+import type { AccountAddress } from '../types'
 import { PartPickerDialog } from './PartPickerDialog'
 import type { PartPickerResult } from './PartPickerDialog'
 import { mockBOMs } from '@/modules/wms/data/boms'
 import { BOMQuoteBuilder } from './BOMQuoteBuilder'
+import { AddAddressDialog } from './AddAddressDialog'
+import { accounts } from '../data/accounts'
+import { leads } from '../data/leads'
+import { deals } from '../data/deals'
 
 // ── Types ──
 
@@ -57,7 +62,10 @@ interface ClosedWonResult {
     categoriesInterested: string[]
     dispatchMethod: string
     paymentTerms: string
-    billingAddress: { street: string; city: string; state: string; zipCode: string; country: string }
+    billingAddressIds: string[]
+    shippingAddressIds: string[]
+    manualBillingAddress: string
+    manualShippingAddress: string
     orderType: string
     warranty: string
   }
@@ -79,6 +87,8 @@ interface ClosedWonWizardDialogProps {
   entityCompany?: string
   existingAccountId?: string
   existingAccountName?: string
+  leadId?: string
+  dealId?: string
   onComplete: (result: ClosedWonResult) => void
 }
 
@@ -202,6 +212,8 @@ function ClosedWonWizardDialog({
   entityCompany,
   existingAccountId,
   existingAccountName,
+  leadId,
+  dealId,
   onComplete,
 }: ClosedWonWizardDialogProps) {
   const isLead = entityType === 'lead'
@@ -239,12 +251,40 @@ function ClosedWonWizardDialog({
   const [orderType, setOrderType] = useState('')
   const [warranty, setWarranty] = useState('')
 
-  // Billing address
-  const [street, setStreet] = useState('')
-  const [billCity, setBillCity] = useState('')
-  const [state, setState] = useState('')
-  const [zipCode, setZipCode] = useState('')
-  const [country, setCountry] = useState('India')
+  // Addresses — aggregate from lead/deal/account + locally added
+  const [localAddresses, setLocalAddresses] = useState<AccountAddress[]>([])
+  const [addAddressOpen, setAddAddressOpen] = useState(false)
+  const [addAddressType, setAddAddressType] = useState<'Billing' | 'Shipping'>('Billing')
+
+  type TaggedAddress = AccountAddress & { source: string }
+  const accountObj = existingAccountId ? accounts.find((a) => a.id === existingAccountId) : undefined
+  const allAddresses: TaggedAddress[] = (() => {
+    const result: TaggedAddress[] = []
+    for (const a of accountObj?.addresses ?? []) result.push({ ...a, source: 'Account' })
+    const ld = leadId ? leads.find((l) => l.id === leadId) : undefined
+    for (const a of ld?.addresses ?? []) if (!result.some((r) => r.id === a.id)) result.push({ ...a, source: 'Lead' })
+    const dl = dealId ? deals.find((d) => d.id === dealId) : undefined
+    for (const a of dl?.addresses ?? []) if (!result.some((r) => r.id === a.id)) result.push({ ...a, source: 'Deal' })
+    for (const a of localAddresses) if (!result.some((r) => r.id === a.id)) result.push({ ...a, source: 'New' })
+    return result
+  })()
+
+  const billingAddressPool = allAddresses.filter((a) => a.type === 'Billing')
+  const shippingAddressPool = allAddresses.filter((a) => a.type === 'Shipping')
+
+  const [selectedBillingIds, setSelectedBillingIds] = useState<string[]>(
+    () => billingAddressPool.filter((a) => a.isDefault).map((a) => a.id)
+  )
+  const [selectedShippingIds, setSelectedShippingIds] = useState<string[]>(
+    () => shippingAddressPool.filter((a) => a.isDefault).map((a) => a.id)
+  )
+  const [manualBillingAddress, setManualBillingAddress] = useState('')
+  const [manualShippingAddress, setManualShippingAddress] = useState('')
+
+  function toggleAddr(id: string, type: 'billing' | 'shipping') {
+    const setter = type === 'billing' ? setSelectedBillingIds : setSelectedShippingIds
+    setter((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
+  }
 
   // Part picker
   const [partPickerOpen, setPartPickerOpen] = useState(false)
@@ -354,7 +394,10 @@ function ClosedWonWizardDialog({
         categoriesInterested,
         dispatchMethod,
         paymentTerms,
-        billingAddress: { street, city: billCity, state, zipCode, country },
+        billingAddressIds: selectedBillingIds,
+        shippingAddressIds: selectedShippingIds,
+        manualBillingAddress,
+        manualShippingAddress,
         orderType,
         warranty,
       },
@@ -400,11 +443,11 @@ function ClosedWonWizardDialog({
     setPaymentTerms('')
     setOrderType('')
     setWarranty('')
-    setStreet('')
-    setBillCity('')
-    setState('')
-    setZipCode('')
-    setCountry('India')
+    setSelectedBillingIds([])
+    setSelectedShippingIds([])
+    setManualBillingAddress('')
+    setManualShippingAddress('')
+    setLocalAddresses([])
   }
 
   function handleCancel() {
@@ -698,17 +741,91 @@ function ClosedWonWizardDialog({
                 </Section>
 
 
-                {/* ── Billing & Shipping ── */}
-                <Section title="Billing Address" defaultOpen={false}>
-                  <div className="space-y-3">
-                    <Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Street address" />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input value={billCity} onChange={(e) => setBillCity(e.target.value)} placeholder="City" />
-                      <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" />
+                {/* ── Addresses ── */}
+                <Section title="Addresses" defaultOpen>
+                  <div className="space-y-4">
+                    {/* Billing */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[13px] text-muted-foreground">Billing</Label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[11px]"
+                          onClick={() => { setAddAddressType('Billing'); setAddAddressOpen(true) }}
+                        >
+                          <Plus className="size-3 mr-1" />
+                          Add Billing
+                        </Button>
+                      </div>
+                      {billingAddressPool.length > 0 ? (
+                        <div className="space-y-2">
+                          {billingAddressPool.map((addr) => {
+                            const checked = selectedBillingIds.includes(addr.id)
+                            return (
+                              <label key={addr.id} className={cn('flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors', checked ? 'border-primary bg-primary/5' : 'hover:bg-muted/50')}>
+                                <input type="checkbox" checked={checked} onChange={() => toggleAddr(addr.id, 'billing')} className="mt-0.5 size-4 accent-primary" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[13px] font-medium">{addr.label}</span>
+                                    <Badge variant="outline" className="text-[10px]">{addr.source}</Badge>
+                                    {addr.isDefault && <Badge variant="secondary" className="text-[10px]">Default</Badge>}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
+                                  <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
+                                </div>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-dashed p-3 text-center">
+                          <MapPin className="size-4 mx-auto text-muted-foreground mb-1" />
+                          <p className="text-[11px] text-muted-foreground">No billing addresses. Click "Add Billing" to create one.</p>
+                        </div>
+                      )}
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input value={zipCode} onChange={(e) => setZipCode(e.target.value)} placeholder="PIN code" />
-                      <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" />
+
+                    {/* Shipping */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[13px] text-muted-foreground">Shipping</Label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[11px]"
+                          onClick={() => { setAddAddressType('Shipping'); setAddAddressOpen(true) }}
+                        >
+                          <Plus className="size-3 mr-1" />
+                          Add Shipping
+                        </Button>
+                      </div>
+                      {shippingAddressPool.length > 0 ? (
+                        <div className="space-y-2">
+                          {shippingAddressPool.map((addr) => {
+                            const checked = selectedShippingIds.includes(addr.id)
+                            return (
+                              <label key={addr.id} className={cn('flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors', checked ? 'border-primary bg-primary/5' : 'hover:bg-muted/50')}>
+                                <input type="checkbox" checked={checked} onChange={() => toggleAddr(addr.id, 'shipping')} className="mt-0.5 size-4 accent-primary" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[13px] font-medium">{addr.label}</span>
+                                    <Badge variant="outline" className="text-[10px]">{addr.source}</Badge>
+                                    {addr.isDefault && <Badge variant="secondary" className="text-[10px]">Default</Badge>}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
+                                  <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
+                                </div>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-dashed p-3 text-center">
+                          <MapPin className="size-4 mx-auto text-muted-foreground mb-1" />
+                          <p className="text-[11px] text-muted-foreground">No shipping addresses. Click "Add Shipping" to create one.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Section>
@@ -745,6 +862,19 @@ function ClosedWonWizardDialog({
         onOpenChange={setPartPickerOpen}
         onSelect={handlePartPickerSelect}
         title="Select Part from IMS"
+      />
+
+      {/* Add Address Dialog */}
+      <AddAddressDialog
+        open={addAddressOpen}
+        onOpenChange={setAddAddressOpen}
+        accountAddresses={accountObj?.addresses}
+        existingIds={allAddresses.map((a) => a.id)}
+        defaultType={addAddressType}
+        onAdd={(addr) => {
+          setLocalAddresses((prev) => [...prev, addr])
+          toast.success(`Address "${addr.label}" added`)
+        }}
       />
     </>
   )

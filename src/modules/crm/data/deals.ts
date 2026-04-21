@@ -1,4 +1,4 @@
-import type { Deal } from '../types'
+import type { Deal, AccountAddress } from '../types'
 
 export const deals: Deal[] = [
   {
@@ -25,6 +25,10 @@ export const deals: Deal[] = [
     description: 'Complete data center infrastructure upgrade including 50 rack servers, storage arrays, and network switches for the Pune campus.',
     categories: ['Servers', 'Storage', 'Networking'],
     leadId: 'LEAD-001',
+    addresses: [
+      { id: 'DADDR-001', type: 'Billing', label: 'TCS Pune Finance', line1: 'TCS Sahyadri Park, Rajiv Gandhi Infotech Park', line2: 'Phase I, Hinjewadi', city: 'Pune', state: 'Maharashtra', pincode: '411057', isDefault: true },
+      { id: 'DADDR-002', type: 'Shipping', label: 'TCS Pune DC', line1: 'TCS Sahyadri Park, Data Center Wing', line2: 'Phase I, Hinjewadi', city: 'Pune', state: 'Maharashtra', pincode: '411057', isDefault: true },
+    ],
   },
   {
     id: 'DEAL-002',
@@ -111,6 +115,11 @@ export const deals: Deal[] = [
     description: 'Server and storage procurement for new cloud POP locations with HPE ProLiant servers and NetApp storage.',
     categories: ['Servers', 'Storage'],
     leadId: 'LEAD-011',
+    addresses: [
+      { id: 'DADDR-003', type: 'Billing', label: 'Airtel Center, Delhi', line1: 'Bharti Crescent, 1 Nelson Mandela Road', city: 'New Delhi', state: 'Delhi', pincode: '110070', isDefault: true },
+      { id: 'DADDR-004', type: 'Shipping', label: 'Airtel NOC, Manesar', line1: 'Airtel Network Operations Center', line2: 'IMT Manesar, Sector 8', city: 'Manesar', state: 'Haryana', pincode: '122052', isDefault: true },
+      { id: 'DADDR-005', type: 'Shipping', label: 'Airtel POP, Noida', line1: 'C-131, Sector 2, Noida', city: 'Noida', state: 'Uttar Pradesh', pincode: '201301' },
+    ],
   },
   {
     id: 'DEAL-006',
@@ -131,6 +140,11 @@ export const deals: Deal[] = [
     description: 'Branch IT refresh covering desktops, monitors, and printers for 50 branches in Western India.',
     categories: ['Desktops', 'Monitors', 'Printers'],
     leadId: 'LEAD-013',
+    addresses: [
+      { id: 'DADDR-006', type: 'Billing', label: 'HDFC Worli HQ', line1: 'HDFC Bank House, Senapati Bapat Marg', line2: 'Lower Parel', city: 'Mumbai', state: 'Maharashtra', pincode: '400013', isDefault: true },
+      { id: 'DADDR-007', type: 'Shipping', label: 'HDFC Andheri Branch', line1: 'HDFC Bank, Andheri West', line2: 'Lokhandwala Complex', city: 'Mumbai', state: 'Maharashtra', pincode: '400053', isDefault: true },
+      { id: 'DADDR-008', type: 'Shipping', label: 'HDFC Thane Branch', line1: 'HDFC Bank, Hiranandani Estate', city: 'Thane', state: 'Maharashtra', pincode: '400607' },
+    ],
   },
   {
     id: 'DEAL-007',

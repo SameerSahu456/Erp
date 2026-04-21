@@ -12,6 +12,7 @@ import {
   Handshake,
   ShoppingCart,
   UserPlus,
+  ThumbsDown,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -24,6 +25,7 @@ import type { Activity } from '../types'
 interface AuditTrailProps {
   entityType: 'lead' | 'deal'
   entityId: string
+  extraEntries?: Activity[]
 }
 
 type FilterKey = 'all' | 'stage_changes' | 'assignments' | 'documents' | 'activities'
@@ -32,7 +34,7 @@ const FILTER_CONFIG: Record<FilterKey, { label: string; types: Activity['type'][
   all: { label: 'All', types: [] },
   stage_changes: {
     label: 'Stage Changes',
-    types: ['stage_change', 'rejection', 'reinstatement'],
+    types: ['stage_change', 'rejection', 'reinstatement', 'closed_lost'],
   },
   assignments: {
     label: 'Assignments',
@@ -60,6 +62,7 @@ const activityTypeConfig: Record<
   stage_change: { icon: ArrowRight, dotColor: 'bg-[#1379f0]', label: 'Stage Change' },
   rejection: { icon: XCircle, dotColor: 'bg-[#f1416c]', label: 'Rejection' },
   reinstatement: { icon: RotateCcw, dotColor: 'bg-[#50cd89]', label: 'Reinstatement' },
+  closed_lost: { icon: ThumbsDown, dotColor: 'bg-[#f1416c]', label: 'Closed Lost' },
   account_created: { icon: Building2, dotColor: 'bg-[#50cd89]', label: 'Account Created' },
   deal_created: { icon: Handshake, dotColor: 'bg-[#50cd89]', label: 'Deal Created' },
   so_created: { icon: ShoppingCart, dotColor: 'bg-[#50cd89]', label: 'SO Created' },
@@ -89,12 +92,13 @@ function stageBadgeVariant(stage: string): 'success' | 'destructive' | 'warning'
   return 'default'
 }
 
-function AuditTrail({ entityType, entityId }: AuditTrailProps) {
+function AuditTrail({ entityType, entityId, extraEntries = [] }: AuditTrailProps) {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all')
 
-  const allEntries = mockActivities
-    .filter((a) => a.entityType === entityType && a.entityId === entityId)
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+  const allEntries = [
+    ...mockActivities.filter((a) => a.entityType === entityType && a.entityId === entityId),
+    ...extraEntries,
+  ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
 
   const filtered =
     activeFilter === 'all'
@@ -132,6 +136,7 @@ function AuditTrail({ entityType, entityId }: AuditTrailProps) {
             const Icon = config.icon
             const isSuccess = ['account_created', 'deal_created', 'so_created', 'reinstatement'].includes(activity.type)
             const isRejection = activity.type === 'rejection'
+            const isClosedLost = activity.type === 'closed_lost'
             const isStageChange = activity.type === 'stage_change'
 
             return (
@@ -149,12 +154,12 @@ function AuditTrail({ entityType, entityId }: AuditTrailProps) {
                   className={cn(
                     'min-w-0 flex-1 rounded-lg border p-3',
                     isSuccess && 'border-[#50cd89]/30 bg-[#e8fff3]/50',
-                    isRejection && 'border-[#f1416c]/30 bg-[#fff5f8]/50',
-                    !isSuccess && !isRejection && 'bg-muted/30'
+                    (isRejection || isClosedLost) && 'border-[#f1416c]/30 bg-[#fff5f8]/50',
+                    !isSuccess && !isRejection && !isClosedLost && 'bg-muted/30'
                   )}
                 >
                   <div className="flex items-start gap-2">
-                    <Icon className={cn('mt-0.5 size-4 shrink-0', isRejection ? 'text-[#f1416c]' : isSuccess ? 'text-[#50cd89]' : 'text-muted-foreground')} />
+                    <Icon className={cn('mt-0.5 size-4 shrink-0', (isRejection || isClosedLost) ? 'text-[#f1416c]' : isSuccess ? 'text-[#50cd89]' : 'text-muted-foreground')} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">{activity.title}</p>
 
@@ -178,8 +183,20 @@ function AuditTrail({ entityType, entityId }: AuditTrailProps) {
                         </div>
                       )}
 
+                      {/* Closed Lost: reason + notes */}
+                      {isClosedLost && activity.metadata?.reason && (
+                        <div className="mt-1.5 space-y-1">
+                          <div className="rounded-md border border-[#f1416c]/30 bg-[#fff5f8] px-3 py-2 text-xs text-[#f1416c]">
+                            <span className="font-medium">Lost Reason:</span> {activity.metadata.reason}
+                          </div>
+                          {activity.metadata.notes && (
+                            <p className="text-xs text-muted-foreground italic">{activity.metadata.notes}</p>
+                          )}
+                        </div>
+                      )}
+
                       {/* Description */}
-                      {activity.description && !isRejection && (
+                      {activity.description && !isRejection && !isClosedLost && (
                         <p className="mt-0.5 text-sm text-muted-foreground">
                           {activity.description}
                         </p>

@@ -1,4 +1,4 @@
-import type { Lead } from '../types'
+import type { Lead, AccountAddress } from '../types'
 
 export const leads: Lead[] = [
   {
@@ -26,6 +26,11 @@ export const leads: Lead[] = [
     notes: 'Interested in server infrastructure upgrade',
     description: 'Looking for 50 rack servers for new data center expansion. Need Dell PowerEdge R750 or equivalent. Budget approved by CTO.',
     categories: ['Servers'],
+    addresses: [
+      { id: 'LADDR-001', type: 'Billing', label: 'TCS Andheri HQ', line1: 'TCS House, Ravindra Annexe', line2: 'Western Express Highway', city: 'Mumbai', state: 'Maharashtra', pincode: '400093', isDefault: true },
+      { id: 'LADDR-002', type: 'Shipping', label: 'TCS Siruseri Campus', line1: 'Siruseri IT Park, Plot No. 1', city: 'Chennai', state: 'Tamil Nadu', pincode: '603103', isDefault: true },
+      { id: 'LADDR-003', type: 'Shipping', label: 'TCS Hinjewadi', line1: 'Phase III, Hinjewadi IT Park', city: 'Pune', state: 'Maharashtra', pincode: '411057' },
+    ],
   },
   {
     id: 'LEAD-002',
@@ -74,6 +79,10 @@ export const leads: Lead[] = [
     notes: 'Needs bulk laptop procurement for new hires',
     description: 'Procuring 200 business laptops for new campus hires. Prefer HP EliteBook or Lenovo ThinkPad T-series with 16GB RAM.',
     categories: ['Laptops'],
+    addresses: [
+      { id: 'LADDR-004', type: 'Billing', label: 'Infosys Electronics City', line1: 'Plot No. 44, Electronics City', line2: 'Hosur Road', city: 'Bangalore', state: 'Karnataka', pincode: '560100', isDefault: true },
+      { id: 'LADDR-005', type: 'Shipping', label: 'Infosys Mysore DC', line1: 'Infosys Development Center', line2: 'Hebbal Industrial Area', city: 'Mysore', state: 'Karnataka', pincode: '570027', isDefault: true },
+    ],
   },
   {
     id: 'LEAD-004',
@@ -119,6 +128,11 @@ export const leads: Lead[] = [
     notes: 'Finalizing pricing on network equipment',
     description: 'Network infrastructure refresh for 3 data centers. Need Cisco Catalyst 9300 switches and Palo Alto firewalls.',
     categories: ['Networking'],
+    addresses: [
+      { id: 'LADDR-006', type: 'Billing', label: 'HCL Noida SEZ', line1: 'A-9, Sector 3, Noida SEZ', city: 'Noida', state: 'Uttar Pradesh', pincode: '201301', isDefault: true },
+      { id: 'LADDR-007', type: 'Shipping', label: 'HCL Chennai DC', line1: 'IT Corridor, OMR Road', line2: 'Sholinganallur', city: 'Chennai', state: 'Tamil Nadu', pincode: '600119', isDefault: true },
+      { id: 'LADDR-008', type: 'Shipping', label: 'HCL Lucknow Campus', line1: 'Vibhuti Khand, Gomti Nagar', city: 'Lucknow', state: 'Uttar Pradesh', pincode: '226010' },
+    ],
   },
   {
     id: 'LEAD-006',
@@ -251,6 +265,10 @@ export const leads: Lead[] = [
     createdAt: '2026-02-28',
     description: 'Large-scale server and storage procurement for new cloud POP locations. Need HPE ProLiant DL380 servers and NetApp storage.',
     categories: ['Servers', 'Storage'],
+    addresses: [
+      { id: 'LADDR-009', type: 'Billing', label: 'Airtel Center, Gurgaon', line1: 'Plot No. 16, Udyog Vihar', line2: 'Phase IV', city: 'Gurgaon', state: 'Haryana', pincode: '122015', isDefault: true },
+      { id: 'LADDR-010', type: 'Shipping', label: 'Airtel Data Center, Manesar', line1: 'IMT Manesar, Sector 8', city: 'Manesar', state: 'Haryana', pincode: '122052', isDefault: true },
+    ],
   },
   {
     id: 'LEAD-012',
@@ -295,6 +313,11 @@ export const leads: Lead[] = [
     createdAt: '2026-01-25',
     description: 'Branch IT refresh program covering desktops, monitors, and printers for 50 branches in Western India.',
     categories: ['Desktops', 'Monitors', 'Printers'],
+    addresses: [
+      { id: 'LADDR-011', type: 'Billing', label: 'HDFC Bank House, BKC', line1: 'Bandra Kurla Complex', line2: 'Senapati Bapat Marg', city: 'Mumbai', state: 'Maharashtra', pincode: '400051', isDefault: true },
+      { id: 'LADDR-012', type: 'Shipping', label: 'HDFC Tech Hub, BKC', line1: 'HDFC Bank Tech Hub, BKC', city: 'Mumbai', state: 'Maharashtra', pincode: '400051', isDefault: true },
+      { id: 'LADDR-013', type: 'Shipping', label: 'HDFC Pune Branch', line1: 'Hinjewadi IT Park', line2: 'Phase II', city: 'Pune', state: 'Maharashtra', pincode: '411057' },
+    ],
   },
   {
     id: 'LEAD-014',
@@ -360,7 +383,8 @@ export const leads: Lead[] = [
     categories: ['Servers'],
     rejectedAt: '2026-04-10',
     rejectedBy: 'Amit Patel',
-    rejectionReason: 'Budget below minimum order threshold. Client looking for refurbished equipment only.',
+    rejectionReason: 'Budget below threshold',
+    rejectionNotes: 'Client looking for refurbished equipment only. Budget well under our ₹5L minimum order value.',
   },
   {
     id: 'LEAD-017',
@@ -384,7 +408,8 @@ export const leads: Lead[] = [
     categories: ['Laptops'],
     rejectedAt: '2026-04-07',
     rejectedBy: 'Sneha Desai',
-    rejectionReason: 'Consumer segment — not enterprise. Referred to retail partner.',
+    rejectionReason: 'Consumer segment — not enterprise',
+    rejectionNotes: 'Referred to retail partner. Client needs consumer-grade laptops, not enterprise.',
   },
   {
     id: 'LEAD-018',
@@ -408,6 +433,7 @@ export const leads: Lead[] = [
     categories: ['Servers', 'Storage'],
     rejectedAt: '2026-04-12',
     rejectedBy: 'Rahul Verma',
-    rejectionReason: 'Non-standard configuration requirements. Cannot fulfill custom build requests.',
+    rejectionReason: 'Non-standard configuration',
+    rejectionNotes: 'Cannot fulfill custom build requests. Client wants proprietary hardware modifications we do not support.',
   },
 ]

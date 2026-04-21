@@ -26,6 +26,7 @@ interface BOMLine {
   cost: number
   price: number
   qty: number
+  discount: number
   condition: 'new' | 'refurb'
   desc?: string
   socket?: string
@@ -58,6 +59,7 @@ function catalogLine(
     cost: item.cost,
     price: item.price,
     qty: qtyOverride ?? item.qty,
+    discount: 0,
     condition: item.condition,
     desc: item.desc,
     socket: item.socket,
@@ -165,8 +167,6 @@ export function BOMQuoteBuilder({
     query: string
     anchor: DOMRect
   } | null>(null)
-  const [discountPct, setDiscountPct] = useState(5)
-
   const swapAnchorRef = useRef<HTMLElement | null>(null)
 
   /* ---- mutations ---- */
@@ -262,21 +262,23 @@ export function BOMQuoteBuilder({
   }
 
   function lineTotal(line: BOMLine): number {
-    return line.price * effectiveQty(line)
+    const gross = line.price * effectiveQty(line)
+    return gross - (gross * line.discount / 100)
   }
 
   function lineCost(line: BOMLine): number {
     return line.cost * effectiveQty(line)
   }
 
+  const grossTotal = lines.reduce((s, l) => s + l.price * effectiveQty(l), 0)
   const subtotal = lines.reduce((s, l) => s + lineTotal(l), 0)
+  const totalDiscount = grossTotal - subtotal
+  const discountPct = grossTotal > 0 ? Math.round((totalDiscount / grossTotal) * 100 * 100) / 100 : 0
   const totalCost = lines.reduce((s, l) => s + lineCost(l), 0)
-  const discount = subtotal * discountPct / 100
-  const afterDisc = subtotal - discount
-  const gst = afterDisc * 0.18
-  const grandTotal = afterDisc + gst
-  const overallMargin = marginPct(totalCost, afterDisc)
-  const grossProfit = afterDisc - totalCost
+  const gst = subtotal * 0.18
+  const grandTotal = subtotal + gst
+  const overallMargin = marginPct(totalCost, subtotal)
+  const grossProfit = subtotal - totalCost
 
   const lineCount = lines.length
 
@@ -392,9 +394,11 @@ export function BOMQuoteBuilder({
           <table className="cpt-tbl" style={{ tableLayout: 'auto' }}>
             <thead>
               <tr>
-                <th style={{ minWidth: 320 }}>Item</th>
+                <th style={{ minWidth: 280 }}>Item</th>
+                <th style={{ width: 80, textAlign: 'center' }}>Qty</th>
                 <th style={{ width: 100, textAlign: 'right' }}>Unit cost</th>
                 <th style={{ width: 100, textAlign: 'right' }}>Unit price</th>
+                <th style={{ width: 70, textAlign: 'center' }}>Disc %</th>
                 <th style={{ width: 70, textAlign: 'center' }}>Margin</th>
                 <th style={{ width: 110, textAlign: 'right' }}>Line total</th>
                 <th style={{ width: 36 }} />
@@ -431,35 +435,19 @@ export function BOMQuoteBuilder({
           <div className="rounded-lg border border-[var(--border,#E4E7EC)] bg-[var(--card,#fff)] p-5">
             <div className="text-[14px] font-semibold mb-4">Pricing Summary</div>
             <div className="space-y-3 text-[13px]">
-              <SummaryRow label="Subtotal" value={fmtINR(subtotal)} />
+              <SummaryRow label="Gross total" value={fmtINR(grossTotal)} />
               <SummaryRow
                 label="Total cost (internal)"
                 value={fmtINR(totalCost)}
                 muted
               />
               <div className="flex items-center justify-between">
-                <span className="cpt-muted">Discount</span>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    className="qty-inp"
-                    style={{ width: 48, textAlign: 'right' }}
-                    value={discountPct}
-                    min={0}
-                    max={100}
-                    onChange={(e) =>
-                      setDiscountPct(
-                        Math.max(0, Math.min(100, Number(e.target.value) || 0)),
-                      )
-                    }
-                  />
-                  <span className="cpt-muted">%</span>
-                  <span className="text-[#B42318] ml-1 font-medium tabular-nums">
-                    &minus;{fmtINR(discount)}
-                  </span>
-                </div>
+                <span className="cpt-muted">Discount ({discountPct}%)</span>
+                <span className={`font-medium tabular-nums ${totalDiscount > 0 ? 'text-[#B42318]' : 'cpt-muted'}`}>
+                  {totalDiscount > 0 ? <>&minus;{fmtINR(totalDiscount)}</> : fmtINR(0)}
+                </span>
               </div>
-              <SummaryRow label="After discount" value={fmtINR(afterDisc)} bold />
+              <SummaryRow label="Subtotal" value={fmtINR(subtotal)} bold />
               <SummaryRow label="GST @18%" value={fmtINR(gst)} />
               <div className="border-t border-[var(--border,#E4E7EC)] pt-3 flex items-center justify-between font-semibold text-[14px]">
                 <span>Grand total</span>
@@ -723,7 +711,7 @@ function SectionBlock({
     <>
       {/* Group header */}
       <tr className="bom-row bom-group-head">
-        <td colSpan={6}>{section.label}</td>
+        <td colSpan={8}>{section.label}</td>
       </tr>
 
       {rows.map((line) => {
@@ -779,7 +767,7 @@ function SectionBlock({
             ))}
             {/* Add component buttons */}
             <tr className="bom-row depth-1">
-              <td colSpan={6} style={{ paddingLeft: 36 }}>
+              <td colSpan={8} style={{ paddingLeft: 36 }}>
                 <div className="flex items-center gap-2 flex-wrap">
                   {PER_SERVER_SECTIONS.map((sk) => (
                     <button
@@ -801,7 +789,7 @@ function SectionBlock({
       {/* Add button row for this section */}
       {!isServerSection && (
         <tr className="bom-row">
-          <td colSpan={6} style={{ padding: '8px 16px' }}>
+          <td colSpan={8} style={{ padding: '8px 16px' }}>
             <button
               className="inline-flex items-center gap-1 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => onAdd(section.key, null)}
@@ -882,26 +870,6 @@ function LineRow({
               </span>
               <CondBadge condition={line.condition} />
               <StockPill sku={line.sku} need={eQty} />
-              {/* Inline Qty */}
-              <span className="qty-inline">
-                <span className="cpt-muted cpt-tiny">Qty</span>
-                <input
-                  className="qty-inp"
-                  type="number"
-                  min={1}
-                  value={line.qty}
-                  onChange={(e) =>
-                    updateLine(line.uid, {
-                      qty: Math.max(1, Number(e.target.value) || 1),
-                    })
-                  }
-                />
-                {isChild && parentQtyFn(line.parent) > 1 && (
-                  <span className="cpt-muted cpt-tiny">
-                    &times;{parentQtyFn(line.parent)} = {eQty}
-                  </span>
-                )}
-              </span>
               {isChild && (
                 <button
                   className="change-link"
@@ -924,21 +892,53 @@ function LineRow({
         </div>
       </td>
 
+      {/* Qty */}
+      <td className="text-center">
+        <input
+          className="qty-inp"
+          type="number"
+          min={1}
+          value={line.qty}
+          onChange={(e) =>
+            updateLine(line.uid, {
+              qty: Math.max(1, Number(e.target.value) || 1),
+            })
+          }
+        />
+      </td>
+
       {/* Unit cost */}
       <td className="text-right tabular-nums cpt-muted text-[12.5px]">
         {fmtINR(line.cost)}
       </td>
 
       {/* Unit price (editable) */}
-      <td className="text-right">
+      <td className="text-right tabular-nums text-[12.5px]">
         <input
           className="qty-inp"
           type="number"
-          style={{ width: 86, textAlign: 'right' }}
+          style={{ width: 90, textAlign: 'right' }}
           value={line.price}
           onChange={(e) =>
             updateLine(line.uid, {
               price: Math.max(0, Number(e.target.value) || 0),
+            })
+          }
+        />
+      </td>
+
+      {/* Discount % */}
+      <td className="text-center">
+        <input
+          className="qty-inp"
+          type="number"
+          style={{ width: 52, textAlign: 'right' }}
+          min={0}
+          max={100}
+          value={line.discount}
+          onChange={(e) =>
+            updateLine(line.uid, {
+              discount: Math.max(0, Math.min(100, Number(e.target.value) || 0)),
             })
           }
         />

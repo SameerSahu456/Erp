@@ -53,14 +53,17 @@ import { mockActivities } from '../data/activities'
 import { mockNotes } from '../data/notes'
 import { materialInquiries } from '../data/material-inquiries'
 import { mockComments } from '../data/comments'
-import { DEAL_STAGES } from '../types'
+import { DEAL_STAGES, type Activity } from '../types'
 import { CommentSection } from '../components/CommentSection'
 import { TasksSection } from '../components/TasksSection'
 import { AuditTrail } from '../components/AuditTrail'
 import { LostReasonDialog } from '../components/LostReasonDialog'
+import { AddAddressDialog } from '../components/AddAddressDialog'
+import type { AccountAddress } from '../types'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { mockTasks } from '../data/tasks'
 import { downloadQuotePdf } from '../utils/download-quote-pdf'
+import { useAuth } from '@/contexts/AuthContext'
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
@@ -147,9 +150,14 @@ function DealDetailPage() {
   const navigate = useNavigate()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [lostReasonOpen, setLostReasonOpen] = useState(false)
+  const [lostReason, setLostReason] = useState<{ reason: string; notes: string } | null>(null)
   const [currentStage, setCurrentStage] = useState<string | null>(null)
   const [updatedDealValue, setUpdatedDealValue] = useState<number | null>(null)
+  const [addAddressOpen, setAddAddressOpen] = useState(false)
+  const [localAddresses, setLocalAddresses] = useState<AccountAddress[]>([])
+  const [addressesInitialized, setAddressesInitialized] = useState(false)
 
+  const { user } = useAuth()
   const deal = deals.find((d) => d.id === dealId)
 
   if (!deal) {
@@ -169,6 +177,14 @@ function DealDetailPage() {
   const account = accounts.find((a) => a.id === deal.accountId)
   const contactSpoc = contacts.find((c) => c.accountId === deal.accountId)
   const parentLead = deal.leadId ? leads.find((l) => l.id === deal.leadId) : undefined
+
+  // Initialize addresses from deal data once
+  if (!addressesInitialized && deal.addresses) {
+    setLocalAddresses(deal.addresses)
+    setAddressesInitialized(true)
+  }
+
+  const allAddresses = localAddresses.length > 0 ? localAddresses : (deal.addresses ?? [])
 
   const activityCount = mockActivities.filter(
     (a) => a.entityType === 'deal' && a.entityId === deal.id
@@ -250,9 +266,25 @@ function DealDetailPage() {
         </CardHeader>
         <CardContent>
           {isClosedLost ? (
-            <div className="flex items-center gap-2">
-              <StatusBadge variant="error">Closed Lost</StatusBadge>
-              <span className="text-sm text-muted-foreground">This deal has been closed as lost.</span>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <StatusBadge variant="error">Closed Lost</StatusBadge>
+                <span className="text-sm text-muted-foreground">This deal has been closed as lost.</span>
+              </div>
+              {lostReason && (
+                <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2.5 space-y-1.5">
+                  <p className="text-sm">
+                    <span className="font-medium text-foreground">Lost Reason:</span>{' '}
+                    <span className="text-muted-foreground">{lostReason.reason}</span>
+                  </p>
+                  {lostReason.notes && (
+                    <p className="text-sm">
+                      <span className="font-medium text-foreground">Notes:</span>{' '}
+                      <span className="text-muted-foreground">{lostReason.notes}</span>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-1">
@@ -408,102 +440,111 @@ function DealDetailPage() {
     </div>
   )
 
-  const relatedContent = (
-    <div className="space-y-6">
-      {/* Linked Quotes */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Linked Quotes</h3>
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link to={`/crm/quote-builder?dealId=${deal.id}&accountId=${deal.accountId}`} />}
-          >
-            <Plus className="size-3.5" data-icon="inline-start" />
-            Create Quote
-          </Button>
+  const quotesContent = (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {relatedQuotes.length} quote{relatedQuotes.length !== 1 ? 's' : ''} linked to this deal
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link to={`/crm/quote-builder?dealId=${deal.id}&accountId=${deal.accountId}`} />}
+        >
+          <Plus className="size-3.5" data-icon="inline-start" />
+          Create Quote
+        </Button>
+      </div>
+      {relatedQuotes.length > 0 ? (
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Quote #</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Valid Until</TableHead>
+                <TableHead className="w-12" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {relatedQuotes.map((quote) => (
+                <TableRow key={quote.id}>
+                  <TableCell>
+                    <Link to={`/crm/quotes/${quote.id}/edit`} className="text-sm font-medium text-primary hover:underline">
+                      {quote.quoteNumber}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-right">{formatCurrency(quote.total)}</TableCell>
+                  <TableCell>
+                    <StatusBadge variant={getQuoteStatusVariant(quote.status)}>{quote.status}</StatusBadge>
+                  </TableCell>
+                  <TableCell>{formatDate(quote.validUntil)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => downloadQuotePdf(quote)}
+                      title="Download Quote PDF"
+                    >
+                      <Download className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
-        {relatedQuotes.length > 0 ? (
-          <div className="overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quote #</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Valid Until</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {relatedQuotes.map((quote) => (
-                  <TableRow key={quote.id}>
-                    <TableCell className="font-medium">{quote.quoteNumber}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(quote.total)}</TableCell>
-                    <TableCell>
-                      <StatusBadge variant={getQuoteStatusVariant(quote.status)}>{quote.status}</StatusBadge>
-                    </TableCell>
-                    <TableCell>{formatDate(quote.validUntil)}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => downloadQuotePdf(quote)}
-                        title="Download Quote PDF"
-                      >
-                        <Download className="size-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-dashed p-6 text-center">
-            <p className="text-sm text-muted-foreground">No quotes linked to this deal</p>
-          </div>
-        )}
-      </div>
+      ) : (
+        <div className="rounded-lg border border-dashed p-8 text-center">
+          <p className="text-sm text-muted-foreground">No quotes linked to this deal</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Create a quote to start building a proposal.
+          </p>
+        </div>
+      )}
+    </div>
+  )
 
-      {/* Linked Invoices */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Linked Invoices</h3>
-        {relatedInvoices.length > 0 ? (
-          <div className="overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Due Date</TableHead>
+  const invoicesContent = (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        {relatedInvoices.length} invoice{relatedInvoices.length !== 1 ? 's' : ''} linked to this deal
+      </p>
+      {relatedInvoices.length > 0 ? (
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Invoice #</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Due Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {relatedInvoices.map((invoice) => (
+                <TableRow key={invoice.id}>
+                  <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(invoice.amount)}</TableCell>
+                  <TableCell>
+                    <StatusBadge variant={getInvoiceStatusVariant(invoice.status)}>
+                      {invoice.status}
+                    </StatusBadge>
+                  </TableCell>
+                  <TableCell className={cn(invoice.status === 'Overdue' && 'text-destructive')}>
+                    {formatDate(invoice.dueDate)}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {relatedInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(invoice.amount)}</TableCell>
-                    <TableCell>
-                      <StatusBadge variant={getInvoiceStatusVariant(invoice.status)}>
-                        {invoice.status}
-                      </StatusBadge>
-                    </TableCell>
-                    <TableCell className={cn(invoice.status === 'Overdue' && 'text-destructive')}>
-                      {formatDate(invoice.dueDate)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-dashed p-6 text-center">
-            <p className="text-sm text-muted-foreground">No invoices linked to this deal</p>
-          </div>
-        )}
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed p-6 text-center">
+          <p className="text-sm text-muted-foreground">No invoices linked to this deal</p>
+        </div>
+      )}
     </div>
   )
 
@@ -574,16 +615,22 @@ function DealDetailPage() {
   const tabs = [
     { id: 'overview', label: 'Overview', content: overviewContent },
     {
+      id: 'quotes',
+      label: 'Quotes',
+      count: relatedQuotes.length,
+      content: quotesContent,
+    },
+    {
+      id: 'invoices',
+      label: 'Invoices',
+      count: relatedInvoices.length,
+      content: invoicesContent,
+    },
+    {
       id: 'notes',
       label: 'Notes',
       count: noteCount,
       content: <NotesSection entityType="deal" entityId={deal.id} />,
-    },
-    {
-      id: 'related',
-      label: 'Related',
-      count: relatedQuotes.length + relatedInvoices.length,
-      content: relatedContent,
     },
     {
       id: 'material-inquiries',
@@ -606,8 +653,17 @@ function DealDetailPage() {
     {
       id: 'audit-trail',
       label: 'Audit Trail',
-      count: activityCount,
-      content: <AuditTrail entityType="deal" entityId={deal.id} />,
+      count: activityCount + (lostReason ? 1 : 0),
+      content: <AuditTrail entityType="deal" entityId={deal.id} extraEntries={lostReason ? [{
+        id: `lost-${deal.id}`,
+        type: 'closed_lost' as Activity['type'],
+        title: `Deal marked as Closed Lost`,
+        user: user.name,
+        timestamp: new Date().toISOString(),
+        entityType: 'deal',
+        entityId: deal.id,
+        metadata: { reason: lostReason.reason, notes: lostReason.notes },
+      }] : []} />,
     },
   ]
 
@@ -735,6 +791,18 @@ function DealDetailPage() {
                   )
                 })}
               </div>
+              {/* Pre-Sales Manager */}
+              {deal.presalesManager && (
+                <div className="border-t border-border/50 pt-3 mt-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pre-Sales Manager</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                      {deal.presalesManager.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{deal.presalesManager}</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -798,7 +866,7 @@ function DealDetailPage() {
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Contact SPOC</p>
                     <div className="space-y-1.5">
                       <p className="text-sm font-medium">{contactSpoc.name}</p>
-                      <p className="text-xs text-muted-foreground">{contactSpoc.title}</p>
+                      <p className="text-xs text-muted-foreground">{contactSpoc.designation}</p>
                       <p className="text-xs text-muted-foreground">{contactSpoc.email}</p>
                       <p className="text-xs text-muted-foreground">{contactSpoc.phone}</p>
                     </div>
@@ -807,6 +875,52 @@ function DealDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Addresses Card */}
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="size-4" />
+                Addresses
+                {allAddresses.length > 0 && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+                    {allAddresses.length}
+                  </span>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto h-7 text-xs"
+                  onClick={() => setAddAddressOpen(true)}
+                >
+                  <Plus className="size-3 mr-1" />
+                  Add
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {allAddresses.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  No addresses yet. Add from account or enter manually.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {allAddresses.map((addr, idx) => (
+                    <div key={addr.id} className={cn('space-y-1', idx > 0 && 'border-t pt-3')}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{addr.label}</span>
+                        <Badge variant="outline" className="text-[10px]">{addr.type}</Badge>
+                        {addr.isDefault && <Badge variant="secondary" className="text-[10px]">Default</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{addr.line1}</p>
+                      {addr.line2 && <p className="text-xs text-muted-foreground">{addr.line2}</p>}
+                      <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -816,10 +930,23 @@ function DealDetailPage() {
         onOpenChange={setLostReasonOpen}
         entityType="deal"
         entityName={deal.name}
-        onConfirm={(reason) => {
+        onConfirm={(reason, notes) => {
           setLostReasonOpen(false)
+          setLostReason({ reason, notes })
           setCurrentStage('Closed Lost')
           toast.success(`Deal "${deal.name}" marked as lost — ${reason}`)
+        }}
+      />
+
+      {/* Add Address Dialog — pick from account or enter manually */}
+      <AddAddressDialog
+        open={addAddressOpen}
+        onOpenChange={setAddAddressOpen}
+        accountAddresses={account?.addresses}
+        existingIds={allAddresses.map((a) => a.id)}
+        onAdd={(addr) => {
+          setLocalAddresses((prev) => [...prev, addr])
+          toast.success(`Address "${addr.label}" added`)
         }}
       />
     </div>

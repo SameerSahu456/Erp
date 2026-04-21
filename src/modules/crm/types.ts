@@ -31,6 +31,8 @@ export interface Lead {
   rejectedAt?: string
   rejectedBy?: string
   rejectionReason?: string
+  rejectionNotes?: string
+  addresses?: AccountAddress[]
 }
 
 export interface Deal {
@@ -57,6 +59,7 @@ export interface Deal {
   description: string
   categories: string[]
   leadId?: string
+  addresses?: AccountAddress[]
 }
 
 export type AccountTag = 'Hunting' | 'Farming' | 'Cold'
@@ -219,7 +222,7 @@ export interface CrmNotification {
 
 export interface Activity {
   id: string
-  type: 'call' | 'email' | 'meeting' | 'task' | 'note' | 'stage_change' | 'rejection' | 'reinstatement' | 'account_created' | 'deal_created' | 'so_created' | 'owner_change'
+  type: 'call' | 'email' | 'meeting' | 'task' | 'note' | 'stage_change' | 'rejection' | 'reinstatement' | 'closed_lost' | 'account_created' | 'deal_created' | 'so_created' | 'owner_change'
   title: string
   description?: string
   user: string
