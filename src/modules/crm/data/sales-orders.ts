@@ -1,6 +1,29 @@
-import type { SalesOrder } from '../types'
+import type { SalesOrder, SalesOrderLineItem } from '../types'
+import { getDefaultVariantForPart } from '@/modules/ims/data/variants'
 
-export const salesOrders: SalesOrder[] = [
+// Raw line type: legacy Part-level fields only. Variant fields get derived at load time
+// from each line's partId via the default-variant lookup. This keeps the mock-data rows
+// below untouched during Phase 2 of the Variant migration — Phase 3 will update the picker
+// and make these fields first-class.
+type RawSalesLine = Omit<
+  SalesOrderLineItem,
+  'variantId' | 'condition' | 'variantSku' | 'swapVariantId'
+>
+type RawSalesOrder = Omit<SalesOrder, 'lineItems'> & { lineItems: RawSalesLine[] }
+
+function enrichSalesLine(line: RawSalesLine): SalesOrderLineItem {
+  const variant = getDefaultVariantForPart(line.partId)
+  const swapVariant = line.swapPartId ? getDefaultVariantForPart(line.swapPartId) : undefined
+  return {
+    ...line,
+    variantId: variant?.id ?? 'VAR-UNKNOWN',
+    condition: variant?.condition ?? 'New',
+    variantSku: variant?.variantSku ?? line.partSku,
+    swapVariantId: swapVariant?.id,
+  }
+}
+
+const rawSalesOrders: RawSalesOrder[] = [
   {
     id: 'SO-001',
     orderNumber: 'SO-2026-001',
@@ -269,6 +292,7 @@ export const salesOrders: SalesOrder[] = [
     quoteId: 'QT-002',
     quoteName: 'QT-2026-002',
     approvalStatus: 'Pending',
+    pmApprovalStatus: 'Pending',
     hasPartConfig: false,
     lineItems: [
       {
@@ -310,6 +334,7 @@ export const salesOrders: SalesOrder[] = [
     quoteId: 'QT-003',
     quoteName: 'QT-2026-003',
     approvalStatus: 'Pending',
+    pmApprovalStatus: 'Pending',
     hasPartConfig: false,
     lineItems: [
       {
@@ -438,7 +463,13 @@ export const salesOrders: SalesOrder[] = [
     quoteId: 'QT-008',
     quoteName: 'QT-2026-008',
     approvalStatus: 'Pending',
+    pmApprovalStatus: 'Pending',
     hasPartConfig: false,
     lineItems: [],
   },
 ]
+
+export const salesOrders: SalesOrder[] = rawSalesOrders.map((order) => ({
+  ...order,
+  lineItems: order.lineItems.map(enrichSalesLine),
+}))

@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cat /Users/amardaxini/projects/comprint/theme/src/constants/*.ts)"
+      "Bash(cat /Users/amardaxini/projects/comprint/theme/src/constants/*.ts)",
+      "Bash(lsof -ti:5173)",
+      "Bash(git commit -m ' *)",
+      "Bash(lsof -ti:5174)",
+      "Bash(grep -n \"^function MaterialInquiryDetailPage\\\\|^export\\\\|^function \\\\|^}$\" /Users/macbookpro/Documents/erp-demo/src/modules/crm/pages/MaterialInquiryDetailPage.tsx)"
     ]
   }
 }

@@ -424,6 +424,164 @@ export interface StockSku {
   lastMovement: string
 }
 
+// ── Variants (canonical SKU unit — the thing every dropdown, line item, and price refers to) ──
+export type VariantCondition = 'New' | 'Refurbished' | 'New Pool'
+
+export interface Variant {
+  id: string                        // VAR-0001
+  partId: string                    // parent template (grouping only)
+  condition: VariantCondition
+  attributes: Record<string, string> // { RAM: '16GB', Color: 'Gray' } — optional spec axes
+  variantSku: string                // unique — e.g. 'DL-LAT-5540-NEW'
+  displayName: string               // denormalized for pickers — 'Dell Latitude 5540 · New'
+  // pricing lives on the variant directly
+  sellPrice: number
+  costPrice?: number
+  mrp?: number
+  currency: 'INR'
+  // ops
+  reorderLevel: number
+  isActive: boolean
+  // inventory roll-up — computed in a later phase from StockUnit[]; optional until then
+  quantityOnHand?: number
+  createdAt: string
+  updatedAt?: string
+}
+
+// Serialized physical unit (successor to StockSku — points at a Variant, not a bare SKU)
+export interface StockUnit {
+  id: string
+  variantId: string
+  serialNumber: string
+  barcode?: string
+  status: 'In Stock' | 'Reserved' | 'Dispatched' | 'In Repair' | 'Returned-QC'
+  grade?: 'A' | 'B'
+  location: string
+  poNumber?: string
+  batchNumber?: string
+  receivedDate: string
+  lastMovement: string
+}
+
+// Procurement-only tag — lives on PO / inward records, NOT on the variant
+export type PurchaseType = 'Local' | 'Import'
+
+// ── WMS Outward — SO-level Dispatch Confirmation ──────────────────────────────
+// Captures the external-assembly → billing → dispatch flow. Distinct from the
+// internal OutwardRecord flow below (which is the warehouse picking/packing/QC path).
+
+export type DispatchAction =
+  | 'PLANNED'            // from SO; no variance
+  | 'FITTED_AS_PLANNED'  // SO line fitted with the variant originally planned
+  | 'ADDED'              // fitted a variant not on the SO
+  | 'REMOVED'            // planned variant not fitted (customer declined / out of stock)
+  | 'REPLACED'           // fitted a different variant in place of the planned one
+
+export type DispatchVarianceReason =
+  | 'Faulty Part'
+  | 'Damaged on Receipt'
+  | 'Cheaper Alternative'
+  | 'Better Spec Available'
+  | 'Customer Requested Change'
+  | 'Out of Stock'
+  | 'Other'
+
+export const DISPATCH_CONFIRMATION_STATUSES = [
+  'Draft',
+  'Assembly Pending',
+  'Assembled',
+  'Billed',
+  'Dispatched',
+  'Delivered',
+  'Closed',
+] as const
+
+export type DispatchConfirmationStatus = (typeof DISPATCH_CONFIRMATION_STATUSES)[number]
+
+export interface DispatchLineItem {
+  id: string
+  soLineItemId?: string           // link back to SO line (absent for ADDED actions not on SO)
+  // Variant (canonical)
+  variantId: string
+  condition: VariantCondition
+  variantSku: string
+  // Denormalized display — snapshot at time of dispatch
+  partId: string
+  partName: string
+  partSku: string
+  category: string
+  brand: string
+  // Variance capture
+  action: DispatchAction
+  plannedQty: number              // planned on the SO (0 if ADDED)
+  fittedQty: number               // actually shipped (0 if REMOVED)
+  serialNumbers?: string[]        // serials of units actually fitted
+  // REPLACED-only: what got replaced
+  replacedVariantId?: string
+  replacedDisplayName?: string
+  replacedSerialNumbers?: string[] // serials pulled back for return/QC
+  // Context
+  reason?: DispatchVarianceReason
+  notes?: string
+  // Pricing (for invoice reconciliation)
+  rate: number
+  amount: number                  // fittedQty × rate
+}
+
+export type DispatchDocumentType =
+  | 'Invoice'
+  | 'E-way Bill'
+  | 'Delivery Challan'
+  | 'Warranty Card'
+  | 'Service Agreement'
+  | 'Other'
+
+export interface DispatchDocument {
+  id: string
+  type: DispatchDocumentType
+  documentNumber: string          // e.g. Tally invoice #, state e-way #
+  fileName?: string               // demo-only — no real upload
+  fileUrl?: string                // placeholder / external link
+  issuedDate?: string
+  uploadedBy: string
+  uploadedAt: string
+  notes?: string
+}
+
+export interface Dispatch {
+  id: string
+  dispatchNumber: string          // DISP-2026-001
+  // Source
+  salesOrderId: string
+  salesOrderNumber: string
+  accountId: string
+  accountName: string
+  shippingAddress?: string
+  // Status
+  status: DispatchConfirmationStatus
+  // External third-party system reference (free text now, API-integrated later)
+  externalTicketNumber?: string
+  externalSystem?: string         // 'Freshdesk', 'Zendesk', etc.
+  // What happened
+  lineItems: DispatchLineItem[]
+  documents: DispatchDocument[]
+  // People
+  storeManager: string
+  billingPerson?: string
+  createdBy: string
+  // Timestamps — fill as the flow progresses
+  assemblyStartedAt?: string
+  assemblyCompletedAt?: string
+  billingCompletedAt?: string
+  dispatchedAt?: string
+  deliveredAt?: string
+  createdAt: string
+  updatedAt?: string
+  notes?: string
+  // Financial reconciliation (from the invoice doc)
+  invoiceAmount?: number
+}
+
 // ── SKU History / Traceability ──
 export interface SkuHistoryEntry {
   id: string
@@ -583,6 +741,11 @@ export type BOMStatus = 'Draft' | 'Active' | 'Revision' | 'Obsolete'
 
 export interface BOMItem {
   id: string
+  // Canonical FK — introduced in Phase 2B of the Variant migration.
+  variantId: string
+  condition: VariantCondition
+  variantSku: string
+  // Part-level fields kept for display + backwards-compat (Phase 3/4 cleanup).
   partId: string
   partName: string
   partSku: string
@@ -590,6 +753,7 @@ export interface BOMItem {
   unitOfMeasure: string
   isOptional: boolean
   allowSubstitution: boolean  // can use related/replaceable parts
+  substituteVariantIds?: string[]
   substitutePartIds?: string[]
   position?: string   // e.g., 'Slot 1', 'Bay 2'
   notes?: string
@@ -645,6 +809,11 @@ export type WorkOrderType = 'SALES' | 'RENTAL' | 'INTERNAL' | 'DEMO'
 export interface WorkOrderComponent {
   id: string
   bomItemId: string
+  // Canonical FK — introduced in Phase 2B.
+  variantId: string
+  condition: VariantCondition
+  variantSku: string
+  // Part-level fields kept for display + backwards-compat.
   partId: string
   partName: string
   partSku: string
@@ -659,7 +828,8 @@ export interface WorkOrderComponent {
     location: string
   }[]
   isSubstitute: boolean        // was a replacement part used?
-  originalPartId?: string      // if substituted, which part was originally in BOM
+  originalVariantId?: string   // if substituted, which variant was originally in BOM
+  originalPartId?: string      // legacy — mirrors originalVariantId's part
   status: 'Pending' | 'Partially Picked' | 'Picked' | 'Issued' | 'Returned'
 }
 

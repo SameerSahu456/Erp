@@ -1,6 +1,24 @@
-import type { WorkOrder } from '@/modules/wms/types'
+import type { WorkOrder, WorkOrderComponent } from '@/modules/wms/types'
+import { getDefaultVariantForPart } from '@/modules/ims/data/variants'
 
-export const mockWorkOrders: WorkOrder[] = [
+type RawWOComponent = Omit<WorkOrderComponent, 'variantId' | 'condition' | 'variantSku' | 'originalVariantId'>
+type RawWorkOrder = Omit<WorkOrder, 'components'> & { components: RawWOComponent[] }
+
+function enrichWOComponent(comp: RawWOComponent): WorkOrderComponent {
+  const variant = getDefaultVariantForPart(comp.partId)
+  const originalVariantId = comp.originalPartId
+    ? getDefaultVariantForPart(comp.originalPartId)?.id
+    : undefined
+  return {
+    ...comp,
+    variantId: variant?.id ?? 'VAR-UNKNOWN',
+    condition: variant?.condition ?? 'New',
+    variantSku: variant?.variantSku ?? comp.partSku,
+    originalVariantId,
+  }
+}
+
+const rawWorkOrders: RawWorkOrder[] = [
   // ── Sales Work Orders ──
   {
     id: 'WO-001',
@@ -613,3 +631,8 @@ export const mockWorkOrders: WorkOrder[] = [
     notes: '50 workstation kits for Reliance Jio Mumbai HQ. Awaiting manager approval.',
   },
 ]
+
+export const mockWorkOrders: WorkOrder[] = rawWorkOrders.map((wo) => ({
+  ...wo,
+  components: wo.components.map(enrichWOComponent),
+}))

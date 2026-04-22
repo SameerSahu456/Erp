@@ -1,6 +1,20 @@
-import type { DemoRequest } from '../types'
+import type { DemoRequest, DemoRequestItem } from '../types'
+import { getDefaultVariantForPart } from '@/modules/ims/data/variants'
 
-export const demoRequests: DemoRequest[] = [
+type RawDemoLine = Omit<DemoRequestItem, 'variantId' | 'condition' | 'variantSku'>
+type RawDemoRequest = Omit<DemoRequest, 'items'> & { items: RawDemoLine[] }
+
+function enrichDemoLine(line: RawDemoLine): DemoRequestItem {
+  const variant = getDefaultVariantForPart(line.partId)
+  return {
+    ...line,
+    variantId: variant?.id ?? 'VAR-UNKNOWN',
+    condition: variant?.condition ?? 'New',
+    variantSku: variant?.variantSku ?? line.partSku,
+  }
+}
+
+const rawDemoRequests: RawDemoRequest[] = [
   {
     id: 'DEMO-001',
     demoNumber: 'DEMO-2026-001',
@@ -304,3 +318,8 @@ export const demoRequests: DemoRequest[] = [
     notes: 'Rejected by PM — stock insufficient. Sales to discuss alternatives with customer.',
   },
 ]
+
+export const demoRequests: DemoRequest[] = rawDemoRequests.map((req) => ({
+  ...req,
+  items: req.items.map(enrichDemoLine),
+}))

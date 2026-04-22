@@ -117,6 +117,11 @@ export interface Contact {
 
 export interface SalesOrderLineItem {
   id: string
+  // Canonical FK — introduced in Phase 2 of the Variant migration.
+  // The Part-level fields below are kept for backwards-compat until Phase 3 refactors the pickers.
+  variantId: string
+  condition: import('@/modules/wms/types').VariantCondition
+  variantSku: string
   partId: string
   partName: string
   partSku: string
@@ -130,6 +135,7 @@ export interface SalesOrderLineItem {
   // Part add/remove config — visible on dispatch
   configAction: 'STANDARD' | 'ADD' | 'REMOVE' | 'SWAP'
   configNotes?: string     // e.g., "Customer requested 32GB instead of 16GB"
+  swapVariantId?: string
   swapPartId?: string      // if SWAP, what it replaces
   swapPartName?: string
 }
@@ -148,6 +154,11 @@ export interface SalesOrder {
   quoteName?: string
   approvalStatus: 'Pending' | 'Approved' | 'Rejected'
   approvedBy?: string
+  // PM approval (separate from the sales-side approvalStatus above)
+  pmApprovalStatus?: 'Pending' | 'Approved' | 'Rejected'
+  pmApprovedBy?: string
+  pmApprovalDate?: string
+  pmNotes?: string
   purchaseRequestId?: string
   // Enhanced: line items with BOM linkage
   lineItems: SalesOrderLineItem[]
@@ -304,6 +315,9 @@ export type DemoRequestStatus =
 
 export interface DemoRequestItem {
   id: string
+  variantId: string
+  condition: import('@/modules/wms/types').VariantCondition
+  variantSku: string
   partId: string
   partName: string
   partSku: string
@@ -399,6 +413,11 @@ export interface MaterialInquiryResponse {
   notes?: string
   respondedBy: string
   respondedAt: string
+  // PM action on this specific response
+  pmStatus?: 'Pending' | 'Approved' | 'Rejected'
+  pmNotes?: string
+  pmActionedBy?: string
+  pmActionedAt?: string
 }
 
 export interface MaterialInquiry {
@@ -416,6 +435,13 @@ export interface MaterialInquiry {
   requestedBy: string
   assignedTo?: string  // procurement team member
   productManagerNotified?: string  // PM name if they want to intervene
+  // PM approval
+  pmApprovalStatus?: 'Pending' | 'Approved' | 'Rejected'
+  pmApprovedBy?: string
+  pmApprovalDate?: string
+  pmNotes?: string
+  // Response-level approval — which procurement responses the PM picked
+  approvedResponseIds?: string[]
   clientBudget?: number  // overall budget from client
   clientTimeline?: string
   notes?: string

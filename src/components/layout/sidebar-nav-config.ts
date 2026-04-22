@@ -30,7 +30,6 @@ import {
   FileBox,
   RotateCcw,
   MapPin,
-  Hammer,
   Monitor,
   ShieldCheck,
   ListTodo,
@@ -43,6 +42,7 @@ import {
   XCircle,
   Cpu,
   LocateFixed,
+  FileCheck,
 } from 'lucide-react'
 import type { NavGroup } from '@/types/navigation'
 
@@ -83,8 +83,7 @@ export const SIDEBAR_NAV: NavGroup[] = [
       { label: 'Assign to Rack', href: '/wms/assign-rack', icon: LocateFixed, module: 'wms' },
       { label: 'Spares', href: '/wms/spares', icon: Cpu, module: 'wms' },
       { label: 'Outward', href: '/wms/outward', icon: Truck, module: 'wms' },
-      { label: 'Dispatch', href: '/wms/dispatch', icon: Package, module: 'wms' },
-      { label: 'Work Orders', href: '/wms/work-orders', icon: Hammer, module: 'wms' },
+      { label: 'Dispatch Confirmations', href: '/wms/dispatches', icon: FileCheck, module: 'wms' },
       { label: 'Component History', href: '/wms/component-history', icon: History, module: 'wms' },
       { label: 'Checklists', href: '/wms/checklists', icon: ClipboardList, module: 'wms' },
       { label: 'Locations', href: '/wms/locations', icon: MapPin, module: 'wms' },

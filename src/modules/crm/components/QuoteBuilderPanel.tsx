@@ -82,7 +82,7 @@ interface AdditionalComponent {
 interface QuoteBuilderLineItem {
   id: string
   type: LineItemType
-  // IMS Part fields
+  // Part Number fields
   partId?: string
   partName?: string
   partSku?: string
@@ -471,12 +471,12 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
       const name =
         li.type === 'ims_part'
           ? `${li.partName ?? ''}${li.partSku ? ` (${li.partSku})` : ''}`
-          : li.itemName ?? ''
+          : (li.itemDescription ?? '').split('\n')[0] || 'Line item'
       const desc =
         li.type === 'ims_part'
           ? [li.brand, li.category, li.variantType].filter(Boolean).join(' · ')
-          : li.itemDescription ?? ''
-      tableBody.push([idx + 1, `${name}\n${desc}`, li.qty, `₹${fmt(li.rate)}`, `₹${fmt(li.qty * li.rate)}`])
+          : (li.itemDescription ?? '').split('\n').slice(1).join('\n')
+      tableBody.push([idx + 1, desc ? `${name}\n${desc}` : name, li.qty, `₹${fmt(li.rate)}`, `₹${fmt(li.qty * li.rate)}`])
 
       // BOM component details
       if (li.bomId && li.bomComponents.length > 0) {
@@ -694,7 +694,7 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                             }`}
                           >
                             <Package className="size-3.5" />
-                            IMS Part
+                            Part Number
                           </button>
                           <button
                             type="button"
@@ -750,7 +750,7 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                                   onClick={() => openPartPicker(li.id, 'main')}
                                 >
                                   <Search className="size-4" />
-                                  Search and select part from IMS...
+                                  Search and select part number...
                                 </Button>
                               )}
 
@@ -779,20 +779,15 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                               )}
                             </div>
                           ) : (
-                            <div className="space-y-2">
-                              <Input
-                                placeholder="Item name (e.g. Custom Server Config, Installation Service)"
-                                value={li.itemName ?? ''}
-                                onChange={(e) => updateLineItem(li.id, { itemName: e.target.value })}
-                              />
-                              <Input
-                                placeholder="Description (specs, notes, details...)"
-                                value={li.itemDescription ?? ''}
-                                onChange={(e) =>
-                                  updateLineItem(li.id, { itemDescription: e.target.value })
-                                }
-                              />
-                            </div>
+                            <Textarea
+                              placeholder="Describe this line item (e.g. Custom Server Config with specs, Installation Service with details...)"
+                              value={li.itemDescription ?? ''}
+                              onChange={(e) =>
+                                updateLineItem(li.id, { itemDescription: e.target.value })
+                              }
+                              rows={4}
+                              className="resize-y"
+                            />
                           )}
                         </div>
 
@@ -1086,7 +1081,7 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                                       onClick={() => addAdditionalComponent(li.id, 'ims_part')}
                                     >
                                       <Package className="mr-1 size-3" />
-                                      From IMS
+                                      Part Number
                                     </Button>
                                     <Button
                                       variant="outline"
@@ -1212,7 +1207,7 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
 
                                 {li.additionalComponents.length === 0 && (
                                   <p className="py-2 text-center text-xs text-muted-foreground">
-                                    No additional components. Use &quot;From IMS&quot; to pick from
+                                    No additional components. Use &quot;Part Number&quot; to pick from
                                     inventory, or &quot;Description&quot; for items not in the system.
                                   </p>
                                 )}

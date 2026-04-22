@@ -1,8 +1,13 @@
+import type { VariantCondition, PurchaseType } from '@/modules/wms/types'
+
 // ── Purchase Request ──
 export type PRStatus = 'Draft' | 'Submitted' | 'Under Review' | 'Approved' | 'Partially Approved' | 'Rejected' | 'Converted to PO'
 
 export interface PurchaseRequestItem {
   id: string
+  variantId: string
+  condition: VariantCondition
+  variantSku: string
   partId: string
   partName: string
   partSku: string
@@ -12,6 +17,7 @@ export interface PurchaseRequestItem {
   estimatedUnitCost: number
   estimatedTotal: number
   urgency: 'Low' | 'Medium' | 'High' | 'Critical'
+  purchaseType?: PurchaseType  // Local / Import sourcing tag
   notes?: string
 }
 
@@ -48,6 +54,9 @@ export type POStatus = 'Draft' | 'Sent to Vendor' | 'Acknowledged' | 'Partially 
 
 export interface PurchaseOrderItem {
   id: string
+  variantId: string
+  condition: VariantCondition
+  variantSku: string
   partId: string
   partName: string
   partSku: string
@@ -59,6 +68,7 @@ export interface PurchaseOrderItem {
   taxRate: number  // percentage
   amount: number
   deliveryDate?: string
+  purchaseType?: PurchaseType  // Local / Import sourcing tag
 }
 
 export interface PurchaseOrder {
@@ -81,6 +91,11 @@ export interface PurchaseOrder {
   expectedDelivery: string
   status: POStatus
   approvedBy?: string
+  // PM approval
+  pmApprovalStatus?: 'Pending' | 'Approved' | 'Rejected'
+  pmApprovedBy?: string
+  pmApprovalDate?: string
+  pmNotes?: string
   sentDate?: string
   notes?: string
   createdBy: string

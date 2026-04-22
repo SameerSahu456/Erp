@@ -33,6 +33,8 @@ import { Separator } from '@/components/ui/separator'
 import { salesOrders } from '../data/sales-orders'
 import { contacts } from '../data/contacts'
 import { accounts } from '../data/accounts'
+import { getDispatchesForSalesOrder } from '@/modules/wms/data/dispatches'
+import { FileCheck } from 'lucide-react'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-IN', {
@@ -348,6 +350,7 @@ function SalesOrderDetailPage() {
             </div>
           </Link>
         )}
+        <DispatchesCard salesOrderId={so.id} />
         {so.approvedBy && (
           <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
             <CheckCircle2 className="size-4 text-[#50cd89]" />
@@ -479,6 +482,38 @@ function SalesOrderDetailPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function DispatchesCard({ salesOrderId }: { salesOrderId: string }) {
+  const dispatches = getDispatchesForSalesOrder(salesOrderId)
+  if (dispatches.length === 0) {
+    return (
+      <Link
+        to={`/wms/dispatches/new?so=${salesOrderId}`}
+        className="flex items-center gap-3 rounded-lg border border-dashed bg-card px-4 py-3 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+      >
+        <FileCheck className="size-4" />
+        <div>
+          <p className="text-xs">Dispatches</p>
+          <p className="text-sm font-medium">Create first dispatch</p>
+        </div>
+      </Link>
+    )
+  }
+  const latest = dispatches[dispatches.length - 1]!
+  return (
+    <Link
+      to={`/wms/dispatches/${latest.id}`}
+      className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 hover:bg-muted/50 transition-colors"
+    >
+      <FileCheck className="size-4 text-muted-foreground" />
+      <div>
+        <p className="text-xs text-muted-foreground">Dispatches ({dispatches.length})</p>
+        <p className="text-sm font-medium text-primary">{latest.dispatchNumber}</p>
+        <p className="text-xs text-muted-foreground">{latest.status}</p>
+      </div>
+    </Link>
   )
 }
 

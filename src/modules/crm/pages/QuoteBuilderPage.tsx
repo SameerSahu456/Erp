@@ -1,8 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
-import { leads } from '../data/leads'
+import { QuoteBuilderPanel } from '../components/QuoteBuilderPanel'
 import { deals } from '../data/deals'
 import { accounts } from '../data/accounts'
 
@@ -14,7 +13,6 @@ export default function QuoteBuilderPage() {
   const dealId = searchParams.get('dealId') ?? undefined
   const accountId = searchParams.get('accountId') ?? undefined
 
-  const lead = leadId ? leads.find((l) => l.id === leadId) : undefined
   const deal = dealId ? deals.find((d) => d.id === dealId) : undefined
   const account = accountId ? accounts.find((a) => a.id === accountId) : undefined
 
@@ -32,9 +30,9 @@ export default function QuoteBuilderPage() {
           <ArrowLeft />
         </Button>
         <div>
-          <h1 className="text-xl font-bold tracking-tight">BOM Quote Builder</h1>
+          <h1 className="text-xl font-bold tracking-tight">Quote Builder</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">
-            Build server quotes with hierarchical BOM, inline pricing, and margin visibility
+            Add items by part number or enter descriptions &mdash; mix and match per line
           </p>
         </div>
         <div className="ml-auto">
@@ -45,12 +43,10 @@ export default function QuoteBuilderPage() {
         </div>
       </div>
 
-      {/* BOM Builder */}
-      <BOMQuoteBuilder
+      {/* Quote Builder */}
+      <QuoteBuilderPanel
         leadId={leadId}
-        leadName={lead?.name}
         dealId={dealId}
-        dealName={deal?.name}
         accountId={accountId}
         accountName={accountName}
       />

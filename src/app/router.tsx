@@ -29,10 +29,12 @@ const PurchaseRequestFormPage = lazy(() => import('@/modules/crm/pages/PurchaseR
 const MaterialInquiriesPage = lazy(() => import('@/modules/crm/pages/MaterialInquiriesPage'))
 const MaterialInquiryDetailPage = lazy(() => import('@/modules/crm/pages/MaterialInquiryDetailPage'))
 const MaterialInquiryFormPage = lazy(() => import('@/modules/crm/pages/MaterialInquiryFormPage'))
+const MaterialInquiryResponseDetailPage = lazy(() => import('@/modules/crm/pages/MaterialInquiryResponseDetailPage'))
 const DemoRequestsPage = lazy(() => import('@/modules/crm/pages/DemoRequestsPage'))
 const DemoRequestDetailPage = lazy(() => import('@/modules/crm/pages/DemoRequestDetailPage'))
 const SalesOrderDetailPage = lazy(() => import('@/modules/crm/pages/SalesOrderDetailPage'))
 const PMApprovalsPage = lazy(() => import('@/modules/procurement/pages/PMApprovalsPage'))
+const PMApprovalDetailPage = lazy(() => import('@/modules/procurement/pages/PMApprovalDetailPage'))
 const QuoteBuilderPage = lazy(() => import('@/modules/crm/pages/QuoteBuilderPage'))
 const RejectedLeadsPage = lazy(() => import('@/modules/crm/pages/RejectedLeadsPage'))
 const ClosedWonPage = lazy(() => import('@/modules/crm/pages/ClosedWonPage'))
@@ -55,6 +57,9 @@ const OutwardPage = lazy(() => import('@/modules/wms/pages/OutwardPage'))
 const OutwardFormPage = lazy(() => import('@/modules/wms/pages/OutwardFormPage'))
 const OutwardDetailPage = lazy(() => import('@/modules/wms/pages/OutwardDetailPage'))
 const DispatchPage = lazy(() => import('@/modules/wms/pages/DispatchPage'))
+const DispatchListPage = lazy(() => import('@/modules/wms/pages/DispatchListPage'))
+const DispatchDetailPage = lazy(() => import('@/modules/wms/pages/DispatchDetailPage'))
+const DispatchFormPage = lazy(() => import('@/modules/wms/pages/DispatchFormPage'))
 
 const ChecklistTemplatesPage = lazy(() => import('@/modules/wms/pages/ChecklistTemplatesPage'))
 const ChecklistTemplateFormPage = lazy(() => import('@/modules/wms/pages/ChecklistTemplateFormPage'))
@@ -214,6 +219,7 @@ export const router = createBrowserRouter([
       { path: '/crm/material-inquiries/new', element: <LazyRoute><MaterialInquiryFormPage /></LazyRoute> },
       { path: '/crm/material-inquiries/:id', element: <LazyRoute><MaterialInquiryDetailPage /></LazyRoute> },
       { path: '/crm/material-inquiries/:id/edit', element: <LazyRoute><MaterialInquiryFormPage /></LazyRoute> },
+      { path: '/crm/material-inquiries/:id/responses/:responseId', element: <LazyRoute><MaterialInquiryResponseDetailPage /></LazyRoute> },
       { path: '/crm/demo-requests', element: <LazyRoute><DemoRequestsPage /></LazyRoute> },
       { path: '/crm/demo-requests/:id', element: <LazyRoute><DemoRequestDetailPage /></LazyRoute> },
       { path: '/crm/sales-orders/:id', element: <LazyRoute><SalesOrderDetailPage /></LazyRoute> },
@@ -222,6 +228,7 @@ export const router = createBrowserRouter([
       { path: '/crm/calendar', element: <LazyRoute><CalendarPage /></LazyRoute> },
 
       { path: '/procurement/pm-approvals', element: <LazyRoute><PMApprovalsPage /></LazyRoute> },
+      { path: '/procurement/pm-approvals/:type/:id', element: <LazyRoute><PMApprovalDetailPage /></LazyRoute> },
       { path: '/crm/notifications', element: <LazyRoute><NotificationCenter /></LazyRoute> },
 
       // WMS routes
@@ -239,6 +246,10 @@ export const router = createBrowserRouter([
       { path: '/wms/outward/new', element: <LazyRoute><OutwardFormPage /></LazyRoute> },
       { path: '/wms/outward/:id', element: <LazyRoute><OutwardDetailPage /></LazyRoute> },
       { path: '/wms/dispatch', element: <LazyRoute><DispatchPage /></LazyRoute> },
+      { path: '/wms/dispatches', element: <LazyRoute><DispatchListPage /></LazyRoute> },
+      { path: '/wms/dispatches/new', element: <LazyRoute><DispatchFormPage /></LazyRoute> },
+      { path: '/wms/dispatches/:id', element: <LazyRoute><DispatchDetailPage /></LazyRoute> },
+      { path: '/wms/dispatches/:id/edit', element: <LazyRoute><DispatchFormPage /></LazyRoute> },
       { path: '/wms/checklists', element: <LazyRoute><ChecklistTemplatesPage /></LazyRoute> },
       { path: '/wms/checklists/new', element: <LazyRoute><ChecklistTemplateFormPage /></LazyRoute> },
       { path: '/wms/checklists/:id/edit', element: <LazyRoute><ChecklistTemplateFormPage /></LazyRoute> },

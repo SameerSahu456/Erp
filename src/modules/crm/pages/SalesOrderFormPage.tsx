@@ -5,13 +5,9 @@ import {
   CheckCircle,
   Loader2,
   Save,
-  FileText,
   ShoppingCart,
   ClipboardList,
   History,
-  ArrowRight,
-  Copy,
-  Package,
   MapPin,
   Plus,
 } from 'lucide-react'
@@ -32,19 +28,16 @@ import {
 import { MultiSelect } from '@/components/ui/multi-select'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { EntityHeader } from '../components/EntityHeader'
 import { AddAddressDialog } from '../components/AddAddressDialog'
-import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
-import { DescriptionQuoteBuilder } from '../components/DescriptionQuoteBuilder'
-import { TotalsSection } from '../components/TotalsSection'
+import { QuoteBuilderPanel } from '../components/QuoteBuilderPanel'
 import { salesOrders } from '../data/sales-orders'
 import { quotes } from '../data/quotes'
 import { leads } from '../data/leads'
 import { deals } from '../data/deals'
 import { accounts } from '../data/accounts'
 import { IMS_CATEGORIES, ORDER_TYPES } from '../types'
-import type { SalesOrder, OrderType, QuoteType, AccountAddress } from '../types'
+import type { SalesOrder, OrderType, AccountAddress } from '../types'
 
 const SO_STATUSES: SalesOrder['status'][] = ['Draft', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled']
 const DISPATCH_METHODS = ['Standard Shipping', 'Express Shipping', 'Hand Delivery', 'Pickup', 'Third-Party Logistics'] as const
@@ -530,34 +523,11 @@ function SalesOrderFormPage() {
         </CardContent>
       </Card>
 
-      {/* Quote Builder — supports both item-based and description-based modes */}
-      <Tabs defaultValue={linkedQuote?.quoteType ?? 'item-based'}>
-        <TabsList>
-          <TabsTrigger value="item-based">
-            <Package className="size-4" data-icon="inline-start" />
-            Item-based (Inventory)
-          </TabsTrigger>
-          <TabsTrigger value="description-based">
-            <FileText className="size-4" data-icon="inline-start" />
-            Description-based
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="item-based">
-          <BOMQuoteBuilder
-            accountId={accountId || undefined}
-            accountName={selectedAccount?.name}
-            initialEmpty={!linkedQuote}
-          />
-        </TabsContent>
-
-        <TabsContent value="description-based">
-          <DescriptionQuoteBuilder
-            accountId={accountId || undefined}
-            accountName={selectedAccount?.name}
-          />
-        </TabsContent>
-      </Tabs>
+      {/* Quote Builder — per-line Part Number / Description */}
+      <QuoteBuilderPanel
+        accountId={accountId || undefined}
+        accountName={selectedAccount?.name}
+      />
 
       {/* Save/Cancel footer */}
       <div className="flex items-center justify-between rounded-lg border bg-card p-4">

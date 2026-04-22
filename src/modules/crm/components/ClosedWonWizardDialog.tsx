@@ -123,14 +123,14 @@ const WARRANTY_OPTIONS: Record<string, string[]> = {
 const MAX_FILE_SIZE = 20 * 1024 * 1024
 const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png']
 
-// ── Line Item with IMS support ──
+// ── Line Item with Part Number support ──
 
 type SOLineItemType = 'ims_part' | 'description'
 
 interface SOLineItem {
   id: string
   type: SOLineItemType
-  // IMS Part fields
+  // Part Number fields
   partId?: string
   partName?: string
   partSku?: string
@@ -856,12 +856,12 @@ function ClosedWonWizardDialog({
         </SheetContent>
       </Sheet>
 
-      {/* IMS Part Picker Dialog */}
+      {/* Part Number Picker Dialog */}
       <PartPickerDialog
         open={partPickerOpen}
         onOpenChange={setPartPickerOpen}
         onSelect={handlePartPickerSelect}
-        title="Select Part from IMS"
+        title="Select Part Number"
       />
 
       {/* Add Address Dialog */}

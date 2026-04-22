@@ -13,17 +13,24 @@ import {
 } from '@/components/ui/dialog'
 import { mockBOMs } from '@/modules/wms/data/boms'
 import { mockStockItems } from '@/modules/ims/data/stock-items'
-import type { StockVariant } from '@/modules/wms/types'
+import { getDefaultVariantForPart } from '@/modules/ims/data/variants'
+import type { StockVariant, VariantCondition } from '@/modules/wms/types'
 
 // ── Types ──
 
-export type VariantType = StockVariant['type']
+export type VariantType = VariantCondition
 
 export interface SwapResult {
+  // Variant-level (canonical)
+  variantId: string
+  variantSku: string
+  condition: VariantCondition
+  // Part-level (display + backwards-compat)
   partId: string
   partName: string
   partSku: string
-  variantType: VariantType
+  /** @deprecated use condition */
+  variantType: VariantCondition
   unitPrice: number
 }
 
@@ -127,12 +134,18 @@ function SwapComponentDialog({
     if (!selectedPart) return
 
     const variant = selectedPart.variants.find((v) => v.type === selectedVariant)
+    const condition: VariantCondition = selectedVariant ?? 'New'
+    // Look up the canonical Variant record via partId (legacy stub variants cover the COMP-NNN components)
+    const canonicalVariant = getDefaultVariantForPart(selectedPart.id)
 
     onSwap({
+      variantId: canonicalVariant?.id ?? 'VAR-UNKNOWN',
+      variantSku: canonicalVariant?.variantSku ?? selectedPart.sku,
+      condition,
       partId: selectedPart.id,
       partName: selectedPart.name,
       partSku: selectedPart.sku,
-      variantType: selectedVariant ?? 'New',
+      variantType: condition,
       unitPrice: variant?.unitPrice ?? 0,
     })
 

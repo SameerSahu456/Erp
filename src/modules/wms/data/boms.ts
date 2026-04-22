@@ -1,6 +1,24 @@
-import type { BillOfMaterials } from '@/modules/wms/types'
+import type { BillOfMaterials, BOMItem } from '@/modules/wms/types'
+import { getDefaultVariantForPart } from '@/modules/ims/data/variants'
 
-export const mockBOMs: BillOfMaterials[] = [
+type RawBOMItem = Omit<BOMItem, 'variantId' | 'condition' | 'variantSku' | 'substituteVariantIds'>
+type RawBOM = Omit<BillOfMaterials, 'items'> & { items: RawBOMItem[] }
+
+function enrichBOMItem(item: RawBOMItem): BOMItem {
+  const variant = getDefaultVariantForPart(item.partId)
+  const substituteVariantIds = item.substitutePartIds
+    ?.map((pid) => getDefaultVariantForPart(pid)?.id)
+    .filter((id): id is string => !!id)
+  return {
+    ...item,
+    variantId: variant?.id ?? 'VAR-UNKNOWN',
+    condition: variant?.condition ?? 'New',
+    variantSku: variant?.variantSku ?? item.partSku,
+    substituteVariantIds,
+  }
+}
+
+const rawBOMs: RawBOM[] = [
   // ── Assembly BOMs ──
   {
     id: 'BOM-001',
@@ -535,3 +553,8 @@ export const mockBOMs: BillOfMaterials[] = [
     notes: 'Teardown guide for returned workstation bundles.',
   },
 ]
+
+export const mockBOMs: BillOfMaterials[] = rawBOMs.map((bom) => ({
+  ...bom,
+  items: bom.items.map(enrichBOMItem),
+}))

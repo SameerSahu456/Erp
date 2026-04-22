@@ -1,6 +1,20 @@
-import type { PurchaseRequest } from '../types'
+import type { PurchaseRequest, PurchaseRequestItem } from '../types'
+import { getDefaultVariantForPart } from '@/modules/ims/data/variants'
 
-export const mockPurchaseRequests: PurchaseRequest[] = [
+type RawPRLine = Omit<PurchaseRequestItem, 'variantId' | 'condition' | 'variantSku'>
+type RawPurchaseRequest = Omit<PurchaseRequest, 'items'> & { items: RawPRLine[] }
+
+function enrichPRLine(line: RawPRLine): PurchaseRequestItem {
+  const variant = getDefaultVariantForPart(line.partId)
+  return {
+    ...line,
+    variantId: variant?.id ?? 'VAR-UNKNOWN',
+    condition: variant?.condition ?? 'New',
+    variantSku: variant?.variantSku ?? line.partSku,
+  }
+}
+
+const rawPurchaseRequests: RawPurchaseRequest[] = [
   {
     id: 'PROC-PR-001',
     prNumber: 'PR-2026-001',
@@ -327,3 +341,8 @@ export const mockPurchaseRequests: PurchaseRequest[] = [
     createdAt: '2026-04-10',
   },
 ]
+
+export const mockPurchaseRequests: PurchaseRequest[] = rawPurchaseRequests.map((pr) => ({
+  ...pr,
+  items: pr.items.map(enrichPRLine),
+}))

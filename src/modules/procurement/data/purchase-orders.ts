@@ -1,6 +1,20 @@
-import type { PurchaseOrder } from '../types'
+import type { PurchaseOrder, PurchaseOrderItem } from '../types'
+import { getDefaultVariantForPart } from '@/modules/ims/data/variants'
 
-export const mockPurchaseOrders: PurchaseOrder[] = [
+type RawPOLine = Omit<PurchaseOrderItem, 'variantId' | 'condition' | 'variantSku'>
+type RawPurchaseOrder = Omit<PurchaseOrder, 'items'> & { items: RawPOLine[] }
+
+function enrichPOLine(line: RawPOLine): PurchaseOrderItem {
+  const variant = getDefaultVariantForPart(line.partId)
+  return {
+    ...line,
+    variantId: variant?.id ?? 'VAR-UNKNOWN',
+    condition: variant?.condition ?? 'New',
+    variantSku: variant?.variantSku ?? line.partSku,
+  }
+}
+
+const rawPurchaseOrders: RawPurchaseOrder[] = [
   {
     id: 'PO-001',
     poNumber: 'PO-2026-001',
@@ -50,6 +64,8 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
     expectedDelivery: '2026-04-25',
     status: 'Partially Received',
     approvedBy: 'Vikram Singh',
+    pmApprovalStatus: 'Approved',
+    pmApprovedBy: 'Vikram Singh',
     sentDate: '2026-03-18',
     notes: 'First batch of 35 servers delivered. Remaining 15 expected by April 25.',
     createdBy: 'Amit Patel',
@@ -104,6 +120,8 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
     expectedDelivery: '2026-04-20',
     status: 'Fully Received',
     approvedBy: 'Vikram Singh',
+    pmApprovalStatus: 'Approved',
+    pmApprovedBy: 'Vikram Singh',
     sentDate: '2026-03-25',
     createdBy: 'Neha Gupta',
     createdAt: '2026-03-24',
@@ -141,6 +159,8 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
     expectedDelivery: '2026-03-30',
     status: 'Closed',
     approvedBy: 'Vikram Singh',
+    pmApprovalStatus: 'Approved',
+    pmApprovedBy: 'Vikram Singh',
     sentDate: '2026-03-05',
     createdBy: 'Karthik Raman',
     createdAt: '2026-03-04',
@@ -180,6 +200,8 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
     expectedDelivery: '2026-05-15',
     status: 'Acknowledged',
     approvedBy: 'Vikram Singh',
+    pmApprovalStatus: 'Approved',
+    pmApprovedBy: 'Vikram Singh',
     sentDate: '2026-04-05',
     notes: 'Vendor confirmed delivery by May 15. Installation support included.',
     createdBy: 'Deepak Verma',
@@ -217,6 +239,7 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
     deliveryTerms: 'CIF',
     expectedDelivery: '2026-05-30',
     status: 'Sent to Vendor',
+    pmApprovalStatus: 'Pending',
     sentDate: '2026-04-12',
     createdBy: 'Amit Patel',
     createdAt: '2026-04-11',
@@ -341,8 +364,14 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
     deliveryTerms: 'CIF',
     expectedDelivery: '2026-06-15',
     status: 'Draft',
+    pmApprovalStatus: 'Pending',
     notes: 'Awaiting final approval from VP. SBI project.',
     createdBy: 'Deepak Verma',
     createdAt: '2026-04-14',
   },
 ]
+
+export const mockPurchaseOrders: PurchaseOrder[] = rawPurchaseOrders.map((po) => ({
+  ...po,
+  items: po.items.map(enrichPOLine),
+}))

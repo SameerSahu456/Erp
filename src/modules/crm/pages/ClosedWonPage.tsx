@@ -730,12 +730,12 @@ function ClosedWonPage() {
         )}
       </div>
 
-      {/* IMS Part Picker Dialog */}
+      {/* Part Number Picker Dialog */}
       <PartPickerDialog
         open={partPickerOpen}
         onOpenChange={setPartPickerOpen}
         onSelect={handlePartPickerSelect}
-        title="Select Part from IMS"
+        title="Select Part Number"
       />
 
       {/* Add Address Dialog */}
