@@ -272,7 +272,7 @@ export interface RentalDevice {
   model: string
   brand: string
   serialNumber: string
-  variant: 'New Pool' | 'Refurbished'
+  variant: 'New Pull' | 'Refurbished'
   conditionAtDispatch: 'Good' | 'Fair'
   grade?: 'A' | 'B'
   dispatchedDate: string

@@ -49,8 +49,8 @@ function conditionCode(condition: VariantCondition): string {
       return 'NEW'
     case 'Refurbished':
       return 'REF'
-    case 'New Pool':
-      return 'POOL'
+    case 'New Pull':
+      return 'PULL'
   }
 }
 

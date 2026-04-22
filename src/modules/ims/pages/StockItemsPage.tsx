@@ -82,40 +82,51 @@ export default function StockItemsPage() {
         { key: 'name', label: 'Name', sortable: true },
         { key: 'sku', label: 'SKU', sortable: true },
         { key: 'category', label: 'Category', sortable: true },
+        { key: 'type', label: 'Type', sortable: true },
         { key: 'brand', label: 'Brand', sortable: true },
-        { key: 'newQty', label: 'New Qty', sortable: true, align: 'right' },
-        { key: 'newPrice', label: 'New Price', sortable: true, align: 'right' },
-        { key: 'refurbishedQty', label: 'Refurb Qty', sortable: true, align: 'right' },
-        { key: 'refurbishedPrice', label: 'Refurb Price', sortable: true, align: 'right' },
-        { key: 'newPoolQty', label: 'Pool Qty', sortable: true, align: 'right' },
-        { key: 'newPoolPrice', label: 'Pool Price', sortable: true, align: 'right' },
-        { key: 'reorderLevel', label: 'Reorder', sortable: true, align: 'right' },
+        { key: 'condition', label: 'Condition', sortable: true },
+        { key: 'alias', label: 'Alias', sortable: true },
+        { key: 'qty', label: 'Qty', sortable: true, align: 'right' },
+        { key: 'price', label: 'Price', sortable: true, align: 'right' },
       ],
-      data: filtered.map((item) => {
+      data: filtered.flatMap((item) => {
         const newV = item.variants.find((v) => v.type === 'New')
-        const refurbV = item.variants.find((v) => v.type === 'Refurbished')
-        const poolV = item.variants.find((v) => v.type === 'New Pool')
-        return {
+        const parentRow = {
           id: item.id,
           name: item.name,
           sku: item.sku,
           category: item.categoryName,
+          type: 'parent',
           brand: item.brand,
+          condition: '-',
+          alias: item.aliases?.join(', ') || '-',
           reorderLevel: item.reorderLevel,
-          newQty: newV?.quantity ?? '-',
-          newPrice: newV?.unitPrice ?? '-',
-          refurbishedQty: refurbV?.quantity ?? '-',
-          refurbishedPrice: refurbV?.unitPrice ?? '-',
-          newPoolQty: poolV?.quantity ?? '-',
-          newPoolPrice: poolV?.unitPrice ?? '-',
+          qty: newV?.quantity ?? '-',
+          price: newV?.unitPrice ?? '-',
         }
+        const variantRows = item.variants.map((v) => ({
+          id: `${item.id}__${v.type}`,
+          name: item.name,
+          sku: item.sku,
+          category: item.categoryName,
+          type: 'Variant',
+          brand: item.brand,
+          condition: v.type,
+          alias: '-',
+          reorderLevel: item.reorderLevel,
+          qty: v.quantity,
+          price: v.unitPrice,
+        }))
+        return [parentRow, ...variantRows]
       }),
     }
   }, [filtered])
 
   const cellFormatter: CellFormatter = (value, key, row) => {
-    const itemId = row.id as string
-    const reorder = row.reorderLevel as number
+    const rowId = row.id as string
+    const parts = rowId.split('__')
+    const itemId = parts[0] ?? rowId
+    const rowVariantType = parts[1] ?? 'New'
 
     if (key === 'name' && typeof value === 'string') {
       return {
@@ -130,26 +141,9 @@ export default function StockItemsPage() {
       }
     }
 
-    // Quantity columns — red cell if below reorder level
-    if (
-      (key === 'newQty' || key === 'refurbishedQty' || key === 'newPoolQty') &&
-      typeof value === 'number'
-    ) {
-      if (value < reorder) {
-        return {
-          className: 'bg-destructive/10 text-destructive',
-          display: String(value),
-        }
-      }
-    }
-
-    // Price columns — inline editable
-    if (
-      (key === 'newPrice' || key === 'refurbishedPrice' || key === 'newPoolPrice') &&
-      typeof value === 'number'
-    ) {
-      const variantType =
-        key === 'newPrice' ? 'New' : key === 'refurbishedPrice' ? 'Refurbished' : 'New Pool'
+    // Price column — inline editable
+    if (key === 'price' && typeof value === 'number') {
+      const variantType = rowVariantType
       const isEditing =
         editing?.itemId === itemId && editing?.variantType === variantType
 

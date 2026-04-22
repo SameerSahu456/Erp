@@ -36,7 +36,7 @@ export interface RentalOrderItem {
   oem: string
   model: string
   specifications: string
-  variant: 'New' | 'Refurbished' | 'New Pool'
+  variant: 'New' | 'Refurbished' | 'New Pull'
   monthlyRate: number
   status: 'Pending' | 'Staged' | 'Dispatched' | 'Delivered'
 }
@@ -149,9 +149,9 @@ export const mockRentalOrders: RentalOrder[] = [
     customerName: 'Bajaj Finance',
     customerType: 'Direct Customer',
     items: [
-      { id: 'roi-040', category: 'Laptop', oem: 'Dell', model: 'Latitude 7440', specifications: 'i7-1365U, 16GB, 512GB SSD', variant: 'New Pool', monthlyRate: 4000, status: 'Pending' },
-      { id: 'roi-041', category: 'Laptop', oem: 'Dell', model: 'Latitude 7440', specifications: 'i7-1365U, 16GB, 512GB SSD', variant: 'New Pool', monthlyRate: 4000, status: 'Pending' },
-      { id: 'roi-042', category: 'Laptop', oem: 'Dell', model: 'Latitude 7440', specifications: 'i7-1365U, 16GB, 512GB SSD', variant: 'New Pool', monthlyRate: 4000, status: 'Pending' },
+      { id: 'roi-040', category: 'Laptop', oem: 'Dell', model: 'Latitude 7440', specifications: 'i7-1365U, 16GB, 512GB SSD', variant: 'New Pull', monthlyRate: 4000, status: 'Pending' },
+      { id: 'roi-041', category: 'Laptop', oem: 'Dell', model: 'Latitude 7440', specifications: 'i7-1365U, 16GB, 512GB SSD', variant: 'New Pull', monthlyRate: 4000, status: 'Pending' },
+      { id: 'roi-042', category: 'Laptop', oem: 'Dell', model: 'Latitude 7440', specifications: 'i7-1365U, 16GB, 512GB SSD', variant: 'New Pull', monthlyRate: 4000, status: 'Pending' },
     ],
     totalUnits: 3,
     monthlyRental: 12000,

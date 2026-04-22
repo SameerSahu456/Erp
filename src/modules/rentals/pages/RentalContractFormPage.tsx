@@ -62,7 +62,7 @@ export default function RentalContractFormPage() {
   const [depositAmount, setDepositAmount] = useState(existing?.depositAmount?.toString() ?? '')
   const [terms, setTerms] = useState(existing?.terms ?? STANDARD_TERMS)
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<Set<string>>(new Set())
-  const [variantFilter, setVariantFilter] = useState<'all' | 'New Pool' | 'Refurbished'>('all')
+  const [variantFilter, setVariantFilter] = useState<'all' | 'New Pull' | 'Refurbished'>('all')
 
   // Auto-fill customer info
   const selectedCustomer = mockCustomerRegistrations.find((c) => c.id === customerId)
@@ -90,8 +90,8 @@ export default function RentalContractFormPage() {
   const filteredDevices = useMemo(() => {
     if (variantFilter === 'all') return availableDevices
     // Devices don't have a variant field — we map grade to variant
-    // Grade A = New Pool, Grade B = Refurbished
-    if (variantFilter === 'New Pool') {
+    // Grade A = New Pull, Grade B = Refurbished
+    if (variantFilter === 'New Pull') {
       return availableDevices.filter((d) => d.grade === 'A' || !d.grade)
     }
     return availableDevices.filter((d) => d.grade === 'B')
@@ -282,11 +282,11 @@ export default function RentalContractFormPage() {
               All
             </Button>
             <Button
-              variant={variantFilter === 'New Pool' ? 'default' : 'outline'}
+              variant={variantFilter === 'New Pull' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setVariantFilter('New Pool')}
+              onClick={() => setVariantFilter('New Pull')}
             >
-              New Pool
+              New Pull
             </Button>
             <PermissionGate role="TECHNICAL_TEAM" fallback={
               <Button variant="outline" size="sm" disabled title="Requires TECHNICAL_TEAM role">
@@ -340,7 +340,7 @@ export default function RentalContractFormPage() {
                   </TableRow>
                 ) : (
                   filteredDevices.map((d) => {
-                    const variant = d.grade === 'B' ? 'Refurbished' : 'New Pool'
+                    const variant = d.grade === 'B' ? 'Refurbished' : 'New Pull'
                     return (
                       <TableRow
                         key={d.id}

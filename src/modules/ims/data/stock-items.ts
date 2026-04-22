@@ -72,13 +72,13 @@ export const mockStockItems: StockItem[] = [
         ],
       },
       {
-        type: 'New Pool',
+        type: 'New Pull',
         quantity: 8,
         unitPrice: 65000,
         lastUpdated: '2026-04-05T11:00:00Z',
         skus: [
-          { sku: 'SKU-EB840-POOL-001', serialNumber: 'HP840-SN-30001', barcode: 'L-HP-840G8-P01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackB-Bin1', poNumber: 'PO-2026-005', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-03-19T10:00:00Z' },
-          { sku: 'SKU-EB840-POOL-002', serialNumber: 'HP840-SN-30002', barcode: 'L-HP-840G8-P02', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row3-RackB-Bin1', poNumber: 'PO-2026-005', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-04-03T11:00:00Z' },
+          { sku: 'SKU-EB840-PULL-001', serialNumber: 'HP840-SN-30001', barcode: 'L-HP-840G8-P01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackB-Bin1', poNumber: 'PO-2026-005', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-03-19T10:00:00Z' },
+          { sku: 'SKU-EB840-PULL-002', serialNumber: 'HP840-SN-30002', barcode: 'L-HP-840G8-P02', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row3-RackB-Bin1', poNumber: 'PO-2026-005', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-04-03T11:00:00Z' },
         ],
       },
     ],
@@ -245,13 +245,13 @@ export const mockStockItems: StockItem[] = [
         ],
       },
       {
-        type: 'New Pool',
+        type: 'New Pull',
         quantity: 10,
         unitPrice: 42000,
         lastUpdated: '2026-04-01T14:00:00Z',
         skus: [
-          { sku: 'SKU-OPX7010-POOL-001', serialNumber: 'DL7010-SN-30001', barcode: 'D-DEL-7010-P01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackB-Bin1', poNumber: 'PO-2026-006B', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
-          { sku: 'SKU-OPX7010-POOL-002', serialNumber: 'DL7010-SN-30002', barcode: 'D-DEL-7010-P02', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackB-Bin1', poNumber: 'PO-2026-006B', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
+          { sku: 'SKU-OPX7010-PULL-001', serialNumber: 'DL7010-SN-30001', barcode: 'D-DEL-7010-P01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackB-Bin1', poNumber: 'PO-2026-006B', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
+          { sku: 'SKU-OPX7010-PULL-002', serialNumber: 'DL7010-SN-30002', barcode: 'D-DEL-7010-P02', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackB-Bin1', poNumber: 'PO-2026-006B', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
         ],
       },
     ],

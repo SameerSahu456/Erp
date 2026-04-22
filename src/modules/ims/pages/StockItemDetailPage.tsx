@@ -8,7 +8,6 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 import { EmptyState } from '@/components/common/EmptyState'
 import { EntityHeader } from '@/modules/crm/components/EntityHeader'
 import { Timeline, type TimelineEntry } from '@/components/common/Timeline'
-import { PermissionGate } from '@/components/common/PermissionGate'
 import { cn } from '@/lib/utils'
 import { mockStockItems } from '../data/stock-items'
 import { mockSkuHistory } from '../data/sku-history'
@@ -32,7 +31,7 @@ function formatDate(iso: string): string {
 const VARIANT_BADGE_MAP: Record<string, 'success' | 'info' | 'warning'> = {
   New: 'success',
   Refurbished: 'info',
-  'New Pool': 'warning',
+  'New Pull': 'warning',
 }
 
 const SKU_STATUS_BADGE_MAP: Record<StockSku['status'], 'success' | 'info' | 'warning' | 'error'> = {
@@ -167,11 +166,12 @@ export default function StockItemDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Variant Sections */}
+      {/* Variant Sections — show only the New variant */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Variants &amp; Inventory</h2>
-        {item.variants.map((v) => {
-          const variantCard = (
+        <h2 className="text-lg font-semibold">Inventory</h2>
+        {item.variants
+          .filter((v) => v.type === 'New')
+          .map((v) => (
             <VariantCard
               key={v.type}
               variant={v}
@@ -185,17 +185,7 @@ export default function StockItemDetailPage() {
               onSave={savePrice}
               onCancel={cancelEditing}
             />
-          )
-
-          if (v.type === 'Refurbished') {
-            return (
-              <PermissionGate key={v.type} role="TECHNICAL_TEAM">
-                {variantCard}
-              </PermissionGate>
-            )
-          }
-          return variantCard
-        })}
+          ))}
       </div>
 
       {/* Component Movement History */}

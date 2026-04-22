@@ -88,7 +88,7 @@ interface QuoteBuilderLineItem {
   partSku?: string
   category?: string
   brand?: string
-  variantType?: string  // 'New' | 'Refurbished' | 'New Pool'
+  variantType?: string  // 'New' | 'Refurbished' | 'New Pull'
   bomId?: string
   bomName?: string
   // Description-based fields

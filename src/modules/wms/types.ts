@@ -359,6 +359,74 @@ export interface IMSCategory {
 }
 
 // ── Part/Product Management ──
+export type PartProductType = 'parent' | 'variant'
+export type PartAssemblyType = 'Assembled' | 'Disassembled'
+
+// Hardware classification for server / workstation build composition.
+// Used by the Compatible / Assembly / Disassembly pickers to group candidate parts.
+export type HardwareType =
+  | 'CPU'
+  | 'RAM'
+  | 'Motherboard'
+  | 'Storage'
+  | 'RAID'
+  | 'NIC'
+  | 'Ports'
+  | 'Expansion'
+  | 'PSU'
+  | 'Chassis'
+  | 'Cooling'
+  | 'BIOS'
+  | 'OS'
+  | 'Hypervisor'
+
+export interface HardwareTaxonomyType {
+  key: HardwareType
+  label: string
+}
+
+export interface HardwareTaxonomyGroup {
+  group: string
+  types: HardwareTaxonomyType[]
+}
+
+export const HARDWARE_TAXONOMY: HardwareTaxonomyGroup[] = [
+  {
+    group: 'Core hardware',
+    types: [
+      { key: 'CPU', label: 'CPU' },
+      { key: 'RAM', label: 'RAM' },
+      { key: 'Motherboard', label: 'Motherboard' },
+      { key: 'Storage', label: 'Storage' },
+      { key: 'RAID', label: 'RAID controller' },
+    ],
+  },
+  {
+    group: 'Networking & I/O',
+    types: [
+      { key: 'NIC', label: 'Network interface cards (NICs)' },
+      { key: 'Ports', label: 'Ports' },
+      { key: 'Expansion', label: 'Expansion cards' },
+    ],
+  },
+  {
+    group: 'Power & chassis',
+    types: [
+      { key: 'PSU', label: 'Power supplies' },
+      { key: 'Chassis', label: 'Chassis / rack unit' },
+      { key: 'Cooling', label: 'Cooling' },
+    ],
+  },
+  {
+    group: 'Firmware / software',
+    types: [
+      { key: 'BIOS', label: 'BIOS / firmware versions' },
+      { key: 'OS', label: 'OS' },
+      { key: 'Hypervisor', label: 'Hypervisor' },
+    ],
+  },
+]
+
 export interface Part {
   id: string
   name: string
@@ -383,6 +451,13 @@ export interface Part {
   reorderLevel: number
   unitOfMeasure: string  // 'Units', 'Pieces', 'Sets'
   hsnCode?: string  // for GST
+  // Product type + variant linkage (productType defaults to 'parent' when omitted)
+  productType?: PartProductType
+  parentPartId?: string                // set when productType === 'variant'
+  condition?: VariantCondition         // variant condition: 'New' | 'Refurbished' | 'New Pull'
+  sellPrice?: number                   // canonical sell price shown in list view (variants carry this)
+  assemblyType?: PartAssemblyType      // whether this part ships Assembled or Disassembled
+  hardwareType?: HardwareType          // server-hardware taxonomy used for grouping in Compatible / BOM pickers
   // Status
   isActive: boolean
   createdAt: string
@@ -404,7 +479,7 @@ export interface StockItem {
 }
 
 export interface StockVariant {
-  type: 'New' | 'Refurbished' | 'New Pool'
+  type: 'New' | 'Refurbished' | 'New Pull'
   quantity: number
   unitPrice: number
   lastUpdated: string
@@ -425,7 +500,7 @@ export interface StockSku {
 }
 
 // ── Variants (canonical SKU unit — the thing every dropdown, line item, and price refers to) ──
-export type VariantCondition = 'New' | 'Refurbished' | 'New Pool'
+export type VariantCondition = 'New' | 'Refurbished' | 'New Pull'
 
 export interface Variant {
   id: string                        // VAR-0001
@@ -671,7 +746,7 @@ export interface InwardBatchEnhanced {
   sourceName: string
   sourceRef?: string  // customer name, internal dept, demo ID
   // Stock variant this maps to
-  stockVariant: 'New' | 'Refurbished' | 'New Pool'
+  stockVariant: 'New' | 'Refurbished' | 'New Pull'
   // Device details
   category: string
   subcategory?: string

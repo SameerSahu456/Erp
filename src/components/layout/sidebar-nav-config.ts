@@ -95,8 +95,7 @@ export const SIDEBAR_NAV: NavGroup[] = [
     icon: Boxes,
     items: [
       { label: 'Dashboard', href: '/ims', icon: LayoutDashboard, module: 'ims' },
-      { label: 'Inventory', href: '/ims/inventory', icon: Boxes, module: 'ims' },
-      { label: 'Parts / Products', href: '/ims/parts', icon: Package, module: 'ims' },
+      { label: 'Parts', href: '/ims/parts', icon: Package, module: 'ims' },
       { label: 'Categories', href: '/ims/categories', icon: FolderTree, module: 'ims' },
       { label: 'OEMs', href: '/ims/oems', icon: Factory, module: 'ims' },
       { label: 'Stock Items', href: '/ims/stock-items', icon: Tags, module: 'ims' },

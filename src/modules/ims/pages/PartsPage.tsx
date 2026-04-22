@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, GitBranch } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,7 @@ import {
 } from '@/components/common/BusinessMetricsTable'
 import { mockParts } from '../data/parts'
 import { mockPricing } from '../data/pricing'
+import type { Part, VariantCondition } from '@/modules/wms/types'
 
 const MOCK_PRODUCT_MANAGERS = ['Rahul Mehta', 'Vikram Singh', 'Priya Sharma']
 
@@ -28,31 +29,42 @@ const currencyFmt = new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0,
 })
 
-// Build a price lookup: partId → { newBase, refurbBase, tags: { tag → { new, refurb } } }
-interface PartPriceInfo {
-  newBase: number | null
-  refurbBase: number | null
-  newTags: { tag: string; price: number }[]
-  refurbTags: { tag: string; price: number }[]
-}
-
-function buildPriceLookup(): Map<string, PartPriceInfo> {
-  const map = new Map<string, PartPriceInfo>()
+// Build a price lookup for parent parts: partId → { new, refurb }
+// Used as a fallback when a variant-row does not carry its own sellPrice.
+function buildParentPriceLookup(): Map<string, { new: number | null; refurb: number | null }> {
+  const map = new Map<string, { new: number | null; refurb: number | null }>()
   for (const entry of mockPricing) {
+    if (entry.tag !== null) continue // only base prices for list view
     let info = map.get(entry.partId)
     if (!info) {
-      info = { newBase: null, refurbBase: null, newTags: [], refurbTags: [] }
+      info = { new: null, refurb: null }
       map.set(entry.partId, info)
     }
-    if (entry.variant === 'new') {
-      if (entry.tag === null) info.newBase = entry.sellPrice
-      else info.newTags.push({ tag: entry.tag, price: entry.sellPrice })
-    } else {
-      if (entry.tag === null) info.refurbBase = entry.sellPrice
-      else info.refurbTags.push({ tag: entry.tag, price: entry.sellPrice })
-    }
+    if (entry.variant === 'new') info.new = entry.sellPrice
+    else info.refurb = entry.sellPrice
   }
   return map
+}
+
+function priceForPart(
+  part: Part,
+  parentPriceLookup: Map<string, { new: number | null; refurb: number | null }>,
+): number | null {
+  if (part.sellPrice != null) return part.sellPrice
+  if (part.productType === 'variant' && part.parentPartId) {
+    const parent = parentPriceLookup.get(part.parentPartId)
+    if (part.condition === 'Refurbished') return parent?.refurb ?? parent?.new ?? null
+    return parent?.new ?? null
+  }
+  const own = parentPriceLookup.get(part.id)
+  return own?.new ?? own?.refurb ?? null
+}
+
+function conditionVariant(c: VariantCondition | undefined): 'success' | 'info' | 'warning' | 'neutral' {
+  if (c === 'New') return 'success'
+  if (c === 'Refurbished') return 'info'
+  if (c === 'New Pull') return 'warning'
+  return 'neutral'
 }
 
 export default function PartsPage() {
@@ -60,9 +72,10 @@ export default function PartsPage() {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [brandFilter, setBrandFilter] = useState('all')
   const [pmFilter, setPmFilter] = useState('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'parent' | 'variant'>('all')
   const [showActive, setShowActive] = useState<'all' | 'active'>('active')
 
-  const priceLookup = useMemo(() => buildPriceLookup(), [])
+  const parentPriceLookup = useMemo(() => buildParentPriceLookup(), [])
 
   const categories = useMemo(
     () => Array.from(new Set(mockParts.map((p) => p.categoryName))).sort(),
@@ -78,6 +91,10 @@ export default function PartsPage() {
       if (categoryFilter !== 'all' && p.categoryName !== categoryFilter) return false
       if (brandFilter !== 'all' && p.brand !== brandFilter) return false
       if (pmFilter !== 'all' && p.productManager !== pmFilter) return false
+      if (typeFilter !== 'all') {
+        const t = p.productType ?? 'parent'
+        if (t !== typeFilter) return false
+      }
       if (showActive === 'active' && !p.isActive) return false
       if (search) {
         const q = search.toLowerCase()
@@ -88,33 +105,40 @@ export default function PartsPage() {
       }
       return true
     })
-  }, [search, categoryFilter, brandFilter, pmFilter, showActive])
+  }, [search, categoryFilter, brandFilter, pmFilter, typeFilter, showActive])
 
   const tab: TabConfig = {
     id: 'parts',
     label: `Parts (${filtered.length})`,
     columns: [
       { key: 'name', label: 'Name', sortable: true },
+      { key: 'model', label: 'Model', sortable: true },
+      { key: 'aliases', label: 'Alias' },
       { key: 'category', label: 'Category', sortable: true, filterable: true },
       { key: 'brand', label: 'Brand', sortable: true, filterable: true },
-      { key: 'pm', label: 'PM', sortable: true },
-      { key: 'newPrice', label: 'New Price' },
-      { key: 'refurbPrice', label: 'Refurb Price' },
-      { key: 'reorderLevel', label: 'Reorder Lvl', sortable: true, align: 'right' },
+      { key: 'type', label: 'Type', sortable: true, filterable: true },
+      { key: 'condition', label: 'Condition', sortable: true, filterable: true },
+      { key: 'price', label: 'Price', sortable: true, align: 'right' },
+      { key: 'assembly', label: 'Assembly', sortable: true, filterable: true },
       { key: 'status', label: 'Status', sortable: true, filterable: true },
     ],
     data: filtered.map((p) => {
-      const prices = priceLookup.get(p.id)
+      const type = p.productType ?? 'parent'
+      const price = priceForPart(p, parentPriceLookup)
       return {
         name: p.name,
+        model: p.model ?? '-',
+        aliases: p.aliases,
         category: p.categoryName,
         brand: p.brand,
-        pm: p.productManager ?? '-',
-        newPrice: prices ?? null,
-        refurbPrice: prices ?? null,
-        reorderLevel: p.reorderLevel,
+        type: type === 'variant' ? 'Variant' : 'Parent',
+        condition: p.condition ?? '-',
+        price: price ?? null,
+        assembly: p.assemblyType ?? '-',
         status: p.isActive ? 'Active' : 'Inactive',
         _id: p.id,
+        _parentPartId: p.parentPartId,
+        _productType: type,
       }
     }),
   }
@@ -122,59 +146,87 @@ export default function PartsPage() {
   const cellFormatter: CellFormatter = (value, key, row) => {
     if (key === 'name' && typeof value === 'string') {
       const id = (row as Record<string, unknown>)._id as string
+      const productType = (row as Record<string, unknown>)._productType as string
       return {
         display: (
-          <Link to={`/ims/parts/${id}`} className="font-medium text-primary hover:underline">
-            {value}
-          </Link>
+          <div className="flex items-center gap-2">
+            {productType === 'variant' && (
+              <GitBranch className="size-3.5 shrink-0 text-muted-foreground" />
+            )}
+            <Link to={`/ims/parts/${id}`} className="font-medium text-primary hover:underline">
+              {value}
+            </Link>
+          </div>
         ),
       }
     }
-    if (key === 'newPrice') {
-      const prices = value as PartPriceInfo | null
-      if (!prices || (prices.newBase === null && prices.newTags.length === 0)) {
+    if (key === 'aliases') {
+      const list = value as string[]
+      if (!list || list.length === 0) {
         return { display: <span className="text-muted-foreground">-</span> }
       }
       return {
         display: (
-          <div className="space-y-0.5">
-            {prices.newBase !== null && (
-              <div className="font-medium tabular-nums">{currencyFmt.format(prices.newBase)}</div>
-            )}
-            {prices.newTags.length > 0 && (
-              <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                {prices.newTags.map((t) => (
-                  <span key={t.tag} className="text-xs text-muted-foreground">
-                    {t.tag}: <span className="tabular-nums">{currencyFmt.format(t.price)}</span>
-                  </span>
-                ))}
-              </div>
+          <div className="flex flex-wrap gap-1">
+            {list.slice(0, 3).map((a) => (
+              <span key={a} className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                {a}
+              </span>
+            ))}
+            {list.length > 3 && (
+              <span className="text-xs text-muted-foreground">+{list.length - 3}</span>
             )}
           </div>
         ),
       }
     }
-    if (key === 'refurbPrice') {
-      const prices = value as PartPriceInfo | null
-      if (!prices || (prices.refurbBase === null && prices.refurbTags.length === 0)) {
+    if (key === 'model') {
+      if (value === '-' || value == null) {
+        return { display: <span className="text-muted-foreground">-</span> }
+      }
+      return {
+        display: <span className="text-sm">{String(value)}</span>,
+      }
+    }
+    if (key === 'condition') {
+      if (value === '-' || value == null) {
         return { display: <span className="text-muted-foreground">-</span> }
       }
       return {
         display: (
-          <div className="space-y-0.5">
-            {prices.refurbBase !== null && (
-              <div className="font-medium tabular-nums">{currencyFmt.format(prices.refurbBase)}</div>
-            )}
-            {prices.refurbTags.length > 0 && (
-              <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                {prices.refurbTags.map((t) => (
-                  <span key={t.tag} className="text-xs text-muted-foreground">
-                    {t.tag}: <span className="tabular-nums">{currencyFmt.format(t.price)}</span>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+          <StatusBadge variant={conditionVariant(value as VariantCondition)}>
+            {String(value)}
+          </StatusBadge>
+        ),
+      }
+    }
+    if (key === 'price') {
+      if (value == null) {
+        return { display: <span className="text-muted-foreground">-</span> }
+      }
+      return {
+        display: (
+          <span className="font-medium tabular-nums">{currencyFmt.format(value as number)}</span>
+        ),
+      }
+    }
+    if (key === 'type' && typeof value === 'string') {
+      const isVariant = value === 'Variant'
+      return {
+        display: (
+          <StatusBadge variant={isVariant ? 'info' : 'neutral'}>{value}</StatusBadge>
+        ),
+      }
+    }
+    if (key === 'assembly') {
+      if (value === '-' || value == null) {
+        return { display: <span className="text-muted-foreground">-</span> }
+      }
+      return {
+        display: (
+          <StatusBadge variant={value === 'Assembled' ? 'success' : 'warning'}>
+            {String(value)}
+          </StatusBadge>
         ),
       }
     }
@@ -194,12 +246,18 @@ export default function PartsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="cpt-page-title">
-          Parts / Products
+          Parts
         </h1>
-        <Button render={<Link to="/ims/parts/new" />}>
-          <Plus className="mr-1.5 size-4" />
-          Add Part
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" nativeButton={false} render={<Link to="/ims/parts/new?type=variant" />}>
+            <GitBranch className="mr-1.5 size-4" />
+            Add Variant
+          </Button>
+          <Button nativeButton={false} render={<Link to="/ims/parts/new" />}>
+            <Plus className="mr-1.5 size-4" />
+            Add Part
+          </Button>
+        </div>
       </div>
 
       {/* Filter bar */}
@@ -240,6 +298,17 @@ export default function PartsPage() {
           </SelectContent>
         </Select>
 
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter((v ?? 'all') as typeof typeFilter)}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="parent">Parent</SelectItem>
+            <SelectItem value="variant">Variant</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Select value={showActive} onValueChange={(v) => setShowActive((v ?? 'active') as 'all' | 'active')}>
           <SelectTrigger className="w-32">
             <SelectValue />
@@ -251,10 +320,10 @@ export default function PartsPage() {
         </Select>
 
         <Input
-          placeholder="Search name, alias..."
+          placeholder="Search name, SKU, alias..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-56"
+          className="h-10 w-96 flex-1 min-w-[300px]"
         />
       </div>
 

@@ -1,247 +1,282 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight, FolderTree, Plus, Pencil, Trash2, User } from 'lucide-react'
+import {
+  ChevronRight,
+  FolderOpen,
+  Folder,
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  X,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/common/StatusBadge'
-import {
-  BusinessMetricsTable,
-  type TabConfig,
-  type CellFormatter,
-} from '@/components/common/BusinessMetricsTable'
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 import type { IMSCategory } from '../types'
 import { mockCategories } from '../data/categories'
-import { mockStockItems } from '../data/stock-items'
 
-const currencyFmt = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-  maximumFractionDigits: 0,
-})
+function collectAllIds(cats: IMSCategory[]): string[] {
+  const ids: string[] = []
+  const walk = (cat: IMSCategory) => {
+    ids.push(cat.id)
+    cat.subcategories?.forEach(walk)
+  }
+  cats.forEach(walk)
+  return ids
+}
 
-function CategoryNode({
-  category,
-  selectedId,
-  onSelect,
-  depth = 0,
-}: {
+function countDescendants(category: IMSCategory): number {
+  let total = category.subcategories?.length ?? 0
+  if (category.subcategories) {
+    for (const sub of category.subcategories) {
+      total += countDescendants(sub)
+    }
+  }
+  return total
+}
+
+function filterTree(categories: IMSCategory[], query: string): IMSCategory[] {
+  if (!query.trim()) return categories
+  const q = query.toLowerCase()
+  const walk = (cat: IMSCategory): IMSCategory | null => {
+    const selfMatch = cat.name.toLowerCase().includes(q)
+    const filteredSubs = cat.subcategories
+      ?.map(walk)
+      .filter((c): c is IMSCategory => c !== null)
+    if (selfMatch || (filteredSubs && filteredSubs.length > 0)) {
+      return { ...cat, subcategories: filteredSubs }
+    }
+    return null
+  }
+  return categories.map(walk).filter((c): c is IMSCategory => c !== null)
+}
+
+interface CategoryNodeProps {
   category: IMSCategory
-  selectedId: string | null
-  onSelect: (id: string) => void
-  depth?: number
-}) {
-  const [open, setOpen] = useState(false)
-  const hasSubs = category.subcategories && category.subcategories.length > 0
-  const isSelected = selectedId === category.id
+  depth: number
+  expanded: Set<string>
+  onToggle: (id: string) => void
+}
+
+function CategoryNode({ category, depth, expanded, onToggle }: CategoryNodeProps) {
+  const hasSubs = (category.subcategories?.length ?? 0) > 0
+  const isOpen = expanded.has(category.id)
+  const subCount = category.subcategories?.length ?? 0
 
   return (
     <div>
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <div
+      <div
+        className={cn(
+          'group flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
+          'hover:bg-muted/60',
+          !category.isActive && 'opacity-50',
+        )}
+        style={{ marginLeft: depth * 24 }}
+      >
+        {/* Chevron */}
+        {hasSubs ? (
+          <button
+            onClick={() => onToggle(category.id)}
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={isOpen ? 'Collapse' : 'Expand'}
+          >
+            <ChevronRight
+              className={cn(
+                'size-4 transition-transform duration-200',
+                isOpen && 'rotate-90',
+              )}
+            />
+          </button>
+        ) : (
+          <span className="size-6 shrink-0" />
+        )}
+
+        {/* Folder icon */}
+        {hasSubs ? (
+          <FolderOpen className="size-[18px] shrink-0 text-indigo-500/80" />
+        ) : (
+          <Folder className="size-[18px] shrink-0 text-muted-foreground/60" />
+        )}
+
+        {/* Name */}
+        <span
           className={cn(
-            'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors group',
-            isSelected && 'bg-muted font-medium',
-            !category.isActive && 'opacity-60',
+            'truncate',
+            depth === 0 ? 'text-[15px] font-semibold' : 'text-sm font-medium',
           )}
-          style={{ paddingLeft: `${depth * 16 + 8}px` }}
-          onClick={() => onSelect(category.id)}
         >
-          {hasSubs ? (
-            <CollapsibleTrigger
-              className="flex size-5 items-center justify-center rounded hover:bg-muted"
-              onClick={(e) => {
-                e.stopPropagation()
-                setOpen(!open)
-              }}
-            >
-              <ChevronRight
-                className={cn(
-                  'size-3.5 transition-transform',
-                  open && 'rotate-90',
-                )}
-              />
-            </CollapsibleTrigger>
-          ) : (
-            <span className="size-5" />
-          )}
-          <FolderTree className="size-4 text-muted-foreground" />
-          <span className="flex-1 truncate">{category.name}</span>
+          {category.name}
+        </span>
 
-          {!category.isActive && (
-            <StatusBadge variant="neutral">Inactive</StatusBadge>
-          )}
-
-          {category.productManager && (
-            <span className="hidden items-center gap-1 text-xs text-muted-foreground lg:flex">
-              <User className="size-3" />
-              {category.productManager}
+        {/* Counts — quiet, inline */}
+        <span className="ml-2 flex shrink-0 items-center gap-3 text-xs tabular-nums text-muted-foreground">
+          {hasSubs && (
+            <span>
+              {subCount} {subCount === 1 ? 'subcategory' : 'subcategories'}
             </span>
           )}
+          <span className="font-medium text-foreground/70">
+            {category.partCount} {category.partCount === 1 ? 'part' : 'parts'}
+          </span>
+        </span>
 
-          <StatusBadge variant="neutral">{category.partCount}</StatusBadge>
-
-          {/* Edit / Delete actions */}
-          <div className="hidden items-center gap-0.5 group-hover:flex">
-            <Link
-              to={`/ims/categories/${category.id}/edit`}
-              onClick={(e) => e.stopPropagation()}
-              className="rounded p-1 hover:bg-muted"
-            >
-              <Pencil className="size-3.5 text-muted-foreground" />
-            </Link>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                toast.success(`Category "${category.name}" deleted`)
-              }}
-              className="rounded p-1 hover:bg-destructive/10"
-            >
-              <Trash2 className="size-3.5 text-destructive" />
-            </button>
-          </div>
-        </div>
-
-        {hasSubs && (
-          <CollapsibleContent>
-            {category.subcategories!.map((sub) => (
-              <CategoryNode
-                key={sub.id}
-                category={sub}
-                selectedId={selectedId}
-                onSelect={onSelect}
-                depth={depth + 1}
-              />
-            ))}
-          </CollapsibleContent>
+        {!category.isActive && (
+          <StatusBadge variant="neutral">Inactive</StatusBadge>
         )}
-      </Collapsible>
+
+        {/* Push actions to the right */}
+        <div className="ml-auto flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <Link
+            to={`/ims/categories/${category.id}/edit`}
+            title="Edit"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Pencil className="size-3.5" />
+          </Link>
+          <button
+            onClick={() =>
+              toast.success(`Category "${category.name}" deleted`)
+            }
+            title="Delete"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {hasSubs && isOpen && (
+        <div className="mt-0.5 space-y-0.5">
+          {category.subcategories!.map((sub) => (
+            <CategoryNode
+              key={sub.id}
+              category={sub}
+              depth={depth + 1}
+              expanded={expanded}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
 export default function CategoriesPage() {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [expanded, setExpanded] = useState<Set<string>>(
+    () => new Set(mockCategories.map((c) => c.id)),
+  )
 
-  const filteredItems = useMemo(() => {
-    if (!selectedCategoryId) return mockStockItems
+  const allIds = useMemo(() => collectAllIds(mockCategories), [])
+  const filtered = useMemo(() => filterTree(mockCategories, search), [search])
 
-    // Collect all IDs in a category subtree
-    function collectIds(cat: IMSCategory): string[] {
-      const ids = [cat.id]
-      if (cat.subcategories) {
-        for (const sub of cat.subcategories) {
-          ids.push(...collectIds(sub))
-        }
-      }
-      return ids
+  const searchActive = search.trim().length > 0
+  const effectiveExpanded = useMemo(() => {
+    if (searchActive) return new Set(allIds)
+    return expanded
+  }, [searchActive, expanded, allIds])
+
+  const toggleExpanded = useCallback((id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const summary = useMemo(() => {
+    const rootCount = mockCategories.length
+    let subCount = 0
+    let partCount = 0
+    for (const cat of mockCategories) {
+      subCount += countDescendants(cat)
+      partCount += cat.partCount
     }
+    return { rootCount, subCount, partCount }
+  }, [])
 
-    // Find category anywhere in the tree
-    function findCategory(cats: IMSCategory[], id: string): IMSCategory | undefined {
-      for (const cat of cats) {
-        if (cat.id === id) return cat
-        if (cat.subcategories) {
-          const found = findCategory(cat.subcategories, id)
-          if (found) return found
-        }
-      }
-      return undefined
-    }
-
-    const selected = findCategory(mockCategories, selectedCategoryId)
-    if (!selected) return mockStockItems
-
-    const allIds = collectIds(selected)
-
-    // Filter by categoryId match or subcategory name match
-    const allNames = (function collectNames(cat: IMSCategory): string[] {
-      const names = [cat.name]
-      if (cat.subcategories) {
-        for (const sub of cat.subcategories) {
-          names.push(...collectNames(sub))
-        }
-      }
-      return names
-    })(selected)
-
-    return mockStockItems.filter(
-      (item) => allIds.includes(item.categoryId) || allNames.includes(item.subcategory ?? '')
-    )
-  }, [selectedCategoryId])
-
-  const tab: TabConfig = {
-    id: 'items',
-    label: `Stock Items (${filteredItems.length})`,
-    columns: [
-      { key: 'name', label: 'Name', sortable: true },
-      { key: 'sku', label: 'SKU', sortable: true },
-      { key: 'brand', label: 'Brand', sortable: true },
-      { key: 'totalQty', label: 'Total Qty', sortable: true, align: 'right' },
-      { key: 'totalValue', label: 'Total Value', sortable: true, align: 'right' },
-    ],
-    data: filteredItems.map((item) => {
-      const totalQty = item.variants.reduce((s, v) => s + v.quantity, 0)
-      const totalValue = item.variants.reduce(
-        (s, v) => s + v.quantity * v.unitPrice,
-        0
-      )
-      return {
-        name: item.name,
-        sku: item.sku,
-        brand: item.brand,
-        totalQty,
-        totalValue,
-      }
-    }),
-  }
-
-  const cellFormatter: CellFormatter = (value, key) => {
-    if (key === 'totalValue' && typeof value === 'number') {
-      return { display: currencyFmt.format(value) }
-    }
-    return null
-  }
+  const allExpanded = expanded.size === allIds.length
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">
-          Categories
-        </h1>
+    <div className="mx-auto max-w-5xl space-y-6">
+      {/* Header */}
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="cpt-page-title">Categories</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {summary.rootCount} categories · {summary.subCount} subcategories ·{' '}
+            {summary.partCount.toLocaleString('en-IN')} parts
+          </p>
+        </div>
         <Button render={<Link to="/ims/categories/new" />}>
           <Plus className="mr-1.5 size-4" />
-          Create Category
+          New Category
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
-        {/* Category tree */}
-        <div className="rounded-lg border p-2">
-          <p className="mb-2 px-2 text-xs font-medium uppercase text-muted-foreground">
-            Category Tree
-          </p>
-          {mockCategories.map((cat) => (
-            <CategoryNode
-              key={cat.id}
-              category={cat}
-              selectedId={selectedCategoryId}
-              onSelect={setSelectedCategoryId}
-            />
-          ))}
+      {/* Search + simple toggle */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search categories..."
+            className="h-10 pl-9 pr-9"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Clear search"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Stock items table */}
-        <BusinessMetricsTable
-          tabs={[tab]}
-          cellFormatter={cellFormatter}
-        />
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={searchActive}
+          onClick={() =>
+            setExpanded(allExpanded ? new Set() : new Set(allIds))
+          }
+          className="text-muted-foreground"
+        >
+          {allExpanded ? 'Collapse all' : 'Expand all'}
+        </Button>
+      </div>
+
+      {/* Tree */}
+      <div className="rounded-xl border bg-card p-3 shadow-sm">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+            <Search className="size-5 text-muted-foreground/60" />
+            <p className="text-sm font-medium">No categories found</p>
+            <p className="text-xs text-muted-foreground">
+              Try a different search term.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            {filtered.map((cat) => (
+              <CategoryNode
+                key={cat.id}
+                category={cat}
+                depth={0}
+                expanded={effectiveExpanded}
+                onToggle={toggleExpanded}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

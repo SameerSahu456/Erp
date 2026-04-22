@@ -36,7 +36,7 @@ const INWARD_TYPES: { value: InwardType; label: string }[] = [
 const STOCK_VARIANTS = [
   { value: 'New', label: 'New' },
   { value: 'Refurbished', label: 'Refurbished' },
-  { value: 'New Pool', label: 'New Pool' },
+  { value: 'New Pull', label: 'New Pull' },
 ] as const
 
 const CATEGORIES = mockCategories.map((c) => c.name)
@@ -72,7 +72,7 @@ function suggestStockVariant(inwardType: InwardType): string {
     case 'ADVANCE_RETURN':
       return 'Refurbished'
     case 'DEMO_RETURN':
-      return 'New Pool'
+      return 'New Pull'
     case 'INTERNAL_TRANSFER':
       return 'Refurbished'
     default:

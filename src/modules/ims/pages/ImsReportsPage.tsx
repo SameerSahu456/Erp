@@ -30,7 +30,7 @@ export default function ImsReportsPage() {
     const summaryData = mockStockItems.map((item) => {
       const newV = item.variants.find((v) => v.type === 'New')
       const refurbV = item.variants.find((v) => v.type === 'Refurbished')
-      const poolV = item.variants.find((v) => v.type === 'New Pool')
+      const pullV = item.variants.find((v) => v.type === 'New Pull')
       const totalValue = item.variants.reduce(
         (s, v) => s + v.quantity * v.unitPrice,
         0
@@ -41,7 +41,7 @@ export default function ImsReportsPage() {
         category: item.categoryName,
         newQty: newV?.quantity ?? 0,
         refurbishedQty: refurbV?.quantity ?? 0,
-        newPoolQty: poolV?.quantity ?? 0,
+        newPullQty: pullV?.quantity ?? 0,
         totalValue,
         reorderLevel: item.reorderLevel,
       }
@@ -55,7 +55,7 @@ export default function ImsReportsPage() {
         { key: 'category', label: 'Category', sortable: true },
         { key: 'newQty', label: 'New Qty', sortable: true, align: 'right' },
         { key: 'refurbishedQty', label: 'Refurbished Qty', sortable: true, align: 'right' },
-        { key: 'newPoolQty', label: 'New Pool Qty', sortable: true, align: 'right' },
+        { key: 'newPullQty', label: 'New Pull Qty', sortable: true, align: 'right' },
         { key: 'totalValue', label: 'Total Value', sortable: true, align: 'right' },
       ],
       data: summaryData,

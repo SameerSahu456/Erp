@@ -1,17 +1,15 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   Pencil,
   ImageOff,
   Mail,
-  ArrowUpRight,
-  ArrowDownRight,
-  RefreshCw,
   Plug,
-  Replace,
   Plus,
   X,
-  DollarSign,
+  Search,
+  CheckCircle2,
+  ChevronDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -28,39 +26,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
 import { mockParts } from '../data/parts'
 import { mockStockItems } from '../data/stock-items'
-import { mockPricing, mockPriceHistory } from '../data/pricing'
 import { mockChecklistTemplates } from '@/modules/wms/data/checklist-templates'
 import { mockRelatedParts } from '@/modules/wms/data/related-parts'
 import { mockBOMs } from '@/modules/wms/data/boms'
 import { Input } from '@/components/ui/input'
-import type { Part, PartRelationType, RelatedPart, BillOfMaterials, BOMItem, BOMType, BOMStatus } from '@/modules/wms/types'
-
-const RELATION_LABELS: Record<PartRelationType, string> = {
-  REPLACEMENT: 'Replacement',
-  ALTERNATIVE: 'Alternative',
-  UPGRADE: 'Upgrade',
-  DOWNGRADE: 'Downgrade',
-  COMPATIBLE: 'Compatible',
-}
-
-const RELATION_VARIANT: Record<PartRelationType, 'success' | 'warning' | 'info' | 'neutral' | 'error'> = {
-  REPLACEMENT: 'warning',
-  ALTERNATIVE: 'info',
-  UPGRADE: 'success',
-  DOWNGRADE: 'neutral',
-  COMPATIBLE: 'info',
-}
-
-const RELATION_ICON: Record<PartRelationType, React.ReactNode> = {
-  REPLACEMENT: <Replace className="size-3.5" />,
-  ALTERNATIVE: <RefreshCw className="size-3.5" />,
-  UPGRADE: <ArrowUpRight className="size-3.5" />,
-  DOWNGRADE: <ArrowDownRight className="size-3.5" />,
-  COMPATIBLE: <Plug className="size-3.5" />,
-}
+import {
+  HARDWARE_TAXONOMY,
+  type Part,
+  type RelatedPart,
+  type BillOfMaterials,
+  type BOMItem,
+  type BOMType,
+  type BOMStatus,
+  type HardwareType,
+} from '@/modules/wms/types'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -141,6 +122,350 @@ function ChecklistAssignmentRow({
   )
 }
 
+/**
+ * Inline parts picker — every hardware type listed one after another. Each section shows
+ * the already-added parts at the top, plus its own search input to find and add more.
+ * No group headers, no global search, no separate list below. Stays open until Cancel/Done.
+ */
+interface AddedItem {
+  id: string       // entry id (related-part id or BOM item id)
+  part: Part
+  quantity: number // always 1 for Compatible; editable for BOM
+}
+
+function InlinePartPicker({
+  availableParts,
+  addedItems,
+  onAdd,
+  onRemove,
+  onUpdateQuantity,
+  onClose,
+  title,
+  description,
+  withQuantity = false,
+  embedded = false,
+}: {
+  availableParts: Part[]
+  addedItems: AddedItem[]
+  onAdd: (part: Part, quantity: number) => void
+  onRemove: (entryId: string) => void
+  onUpdateQuantity?: (entryId: string, quantity: number) => void
+  onClose: () => void
+  title: string
+  description: string
+  withQuantity?: boolean
+  embedded?: boolean
+}) {
+  // Index available parts by hardware type
+  const availableByType = useMemo(() => {
+    const byType = new Map<HardwareType | 'OTHER', Part[]>()
+    for (const p of availableParts) {
+      const key: HardwareType | 'OTHER' = p.hardwareType ?? 'OTHER'
+      const list = byType.get(key) ?? []
+      list.push(p)
+      byType.set(key, list)
+    }
+    return byType
+  }, [availableParts])
+
+  // Index added items by hardware type
+  const addedByType = useMemo(() => {
+    const byType = new Map<HardwareType | 'OTHER', AddedItem[]>()
+    for (const item of addedItems) {
+      const key: HardwareType | 'OTHER' = item.part.hardwareType ?? 'OTHER'
+      const list = byType.get(key) ?? []
+      list.push(item)
+      byType.set(key, list)
+    }
+    return byType
+  }, [addedItems])
+
+  // Flat taxonomy — each hardware type as its own top-level section.
+  const flatTypes = useMemo(() => {
+    const all: { key: HardwareType | 'OTHER'; label: string }[] = []
+    for (const g of HARDWARE_TAXONOMY) {
+      for (const t of g.types) {
+        all.push({ key: t.key, label: t.label })
+      }
+    }
+    const hasOther =
+      (availableByType.get('OTHER')?.length ?? 0) > 0 ||
+      (addedByType.get('OTHER')?.length ?? 0) > 0
+    if (hasOther) all.push({ key: 'OTHER', label: 'Uncategorised' })
+    return all
+  }, [availableByType, addedByType])
+
+  return (
+    <div className="overflow-hidden rounded-lg border bg-background">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 border-b bg-muted/30 px-4 py-3">
+        <div>
+          <h4 className="text-sm font-semibold">{title}</h4>
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        </div>
+        {!embedded && (
+          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close">
+            <X className="size-3.5" />
+          </Button>
+        )}
+      </div>
+
+      {/* All hardware types — added items + per-type search inside each */}
+      <div className="max-h-[32rem] overflow-y-auto">
+        {flatTypes.map((t) => (
+          <HardwareTypeSection
+            key={t.key}
+            label={t.label}
+            availableParts={availableByType.get(t.key) ?? []}
+            addedItems={addedByType.get(t.key) ?? []}
+            onAdd={onAdd}
+            onRemove={onRemove}
+            onUpdateQuantity={onUpdateQuantity}
+            withQuantity={withQuantity}
+          />
+        ))}
+      </div>
+
+      {/* Footer (hidden when embedded in a larger form that has its own actions) */}
+      {!embedded && (
+        <div className="flex items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            {addedItems.length > 0 ? (
+              <>
+                <CheckCircle2 className="size-4 text-emerald-600" />
+                <span className="font-medium">
+                  {addedItems.length} {addedItems.length === 1 ? 'part' : 'parts'} added
+                </span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">No parts added yet</span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={onClose}>Done</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * A single hardware-type section. Shows added parts at top (with remove / edit-qty),
+ * then a search input that reveals available parts to add.
+ */
+function HardwareTypeSection({
+  label,
+  availableParts,
+  addedItems,
+  onAdd,
+  onRemove,
+  onUpdateQuantity,
+  withQuantity,
+}: {
+  label: string
+  availableParts: Part[]
+  addedItems: AddedItem[]
+  onAdd: (part: Part, quantity: number) => void
+  onRemove: (entryId: string) => void
+  onUpdateQuantity?: (entryId: string, quantity: number) => void
+  withQuantity: boolean
+}) {
+  const [search, setSearch] = useState('')
+  const [rowQuantities, setRowQuantities] = useState<Record<string, string>>({})
+  const sectionRef = useRef<HTMLElement>(null)
+
+  const getQty = (partId: string): string => rowQuantities[partId] ?? '1'
+  const setQty = (partId: string, value: string) => {
+    setRowQuantities((prev) => ({ ...prev, [partId]: value }))
+  }
+
+  const q = search.trim().toLowerCase()
+  const filtered = useMemo(() => {
+    if (!q) return availableParts
+    return availableParts.filter((p) => {
+      const hay = `${p.name} ${p.sku} ${p.brand} ${p.aliases.join(' ')}`.toLowerCase()
+      return hay.includes(q)
+    })
+  }, [availableParts, q])
+
+  // Clear this section's search when the user clicks outside it.
+  useEffect(() => {
+    if (!search) return
+    const handleClickOutside = (event: MouseEvent) => {
+      const node = sectionRef.current
+      if (node && !node.contains(event.target as Node)) {
+        setSearch('')
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [search])
+
+  const availableCount = availableParts.length
+  const addedCount = addedItems.length
+
+  return (
+    <section ref={sectionRef} className="border-b last:border-0">
+      {/* Section header */}
+      <div className="flex items-center justify-between bg-muted/30 px-4 py-2">
+        <h5 className="text-sm font-semibold">{label}</h5>
+        <span className="text-xs text-muted-foreground">
+          {addedCount > 0 && (
+            <span className="mr-2 font-medium text-emerald-700">
+              {addedCount} added
+            </span>
+          )}
+          {availableCount} available
+        </span>
+      </div>
+
+      {/* Added items for this type */}
+      {addedCount > 0 && (
+        <table className="w-full border-t bg-emerald-50/40 text-sm">
+          <tbody>
+            {addedItems.map((item) => (
+              <tr key={item.id} className="border-b last:border-0">
+                <td className="px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{item.part.name}</p>
+                      {item.part.model && (
+                        <p className="truncate text-xs text-muted-foreground">
+                          {item.part.model}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </td>
+                <td className="w-32 px-3 py-2 text-xs text-muted-foreground">
+                  {item.part.brand}
+                </td>
+                <td className="w-40 px-3 py-2 font-mono text-xs text-muted-foreground">
+                  {item.part.sku}
+                </td>
+                {withQuantity && (
+                  <td className="w-20 px-3 py-2">
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        onUpdateQuantity?.(item.id, parseInt(e.target.value) || 1)
+                      }
+                      className="h-8 w-16 text-center"
+                    />
+                  </td>
+                )}
+                <td className="w-24 px-3 py-2 text-right">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => onRemove(item.id)}
+                    aria-label="Remove"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Search input — reveals available parts when user types */}
+      {availableCount > 0 ? (
+        <>
+          <div className="bg-background px-4 py-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder={`Search ${label}... (type to see parts)`}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-8 pl-8 text-sm"
+              />
+            </div>
+          </div>
+
+          {q ? (
+            filtered.length > 0 ? (
+              <table className="w-full border-t text-sm">
+                <tbody>
+                  {filtered.map((p) => {
+                    const qtyStr = getQty(p.id)
+                    const qtyNum = Math.max(1, parseInt(qtyStr) || 1)
+                    return (
+                      <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30">
+                        <td className="px-4 py-2">
+                          <p className="truncate font-medium">
+                            {p.name}
+                            {(p.productType ?? 'parent') === 'variant' && (
+                              <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
+                                Variant
+                              </span>
+                            )}
+                          </p>
+                          {p.model && (
+                            <p className="truncate text-xs text-muted-foreground">{p.model}</p>
+                          )}
+                        </td>
+                        <td className="w-32 px-3 py-2 text-xs text-muted-foreground">
+                          {p.brand}
+                        </td>
+                        <td className="w-40 px-3 py-2 font-mono text-xs text-muted-foreground">
+                          {p.sku}
+                        </td>
+                        {withQuantity && (
+                          <td className="w-20 px-3 py-2">
+                            <Input
+                              type="number"
+                              min="1"
+                              value={qtyStr}
+                              onChange={(e) => setQty(p.id, e.target.value)}
+                              className="h-8 w-16 text-center"
+                            />
+                          </td>
+                        )}
+                        <td className="w-24 px-3 py-2 text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              onAdd(p, qtyNum)
+                              if (withQuantity) setQty(p.id, '1')
+                            }}
+                          >
+                            <Plus className="size-3.5" data-icon="inline-start" />
+                            Add
+                          </Button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <p className="border-t bg-muted/10 px-4 py-3 text-xs text-muted-foreground">
+                No matches for "{search}" in {label}.
+              </p>
+            )
+          ) : null}
+        </>
+      ) : addedCount === 0 ? (
+        <p className="px-4 py-3 text-xs text-muted-foreground">
+          No parts in this category yet.
+        </p>
+      ) : null}
+    </section>
+  )
+}
+
 export default function PartDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [part, setPart] = useState<Part | undefined>(() =>
@@ -170,14 +495,6 @@ export default function PartDetailPage() {
     toast.success(`${tmpl?.name ?? 'Checklist'} assigned`)
   }
 
-  // Compute stock summary
-  const stockSummary = useMemo(() => {
-    if (!stockItem) return { new: 0, refurbished: 0, newPool: 0, total: 0 }
-    const newQty = stockItem.variants.find((v) => v.type === 'New')?.quantity ?? 0
-    const refQty = stockItem.variants.find((v) => v.type === 'Refurbished')?.quantity ?? 0
-    const poolQty = stockItem.variants.find((v) => v.type === 'New Pool')?.quantity ?? 0
-    return { new: newQty, refurbished: refQty, newPool: poolQty, total: newQty + refQty + poolQty }
-  }, [stockItem])
 
   const overviewTab = {
     id: 'overview',
@@ -230,47 +547,62 @@ export default function PartDetailPage() {
           </div>
         )}
 
-        {/* Aliases */}
-        {part.aliases.length > 0 && (
-          <div>
-            <h3 className="mb-2 text-sm font-medium">Aliases</h3>
-            <div className="flex flex-wrap gap-2">
-              {part.aliases.map((alias) => (
-                <span
-                  key={alias}
-                  className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium"
-                >
-                  {alias}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Additional info */}
-        <div className="grid grid-cols-2 gap-4">
-          {part.hsnCode && (
-            <div>
-              <p className="text-xs text-muted-foreground">HSN Code</p>
-              <p className="text-sm font-medium">{part.hsnCode}</p>
-            </div>
-          )}
-          <div>
-            <p className="text-xs text-muted-foreground">Unit of Measure</p>
-            <p className="text-sm font-medium">{part.unitOfMeasure}</p>
+        {/* Additional info — spec-style table for Alias, HSN, UoM */}
+        <div>
+          <h3 className="mb-2 text-sm font-medium">Additional Info</h3>
+          <div className="rounded-md border">
+            <table className="w-full text-sm">
+              <tbody>
+                {part.aliases.length > 0 && (
+                  <tr className="border-b last:border-0">
+                    <td className="px-3 py-2 font-medium text-muted-foreground">Alias</td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {part.aliases.map((alias) => (
+                          <span
+                            key={alias}
+                            className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium"
+                          >
+                            {alias}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {part.hsnCode && (
+                  <tr className="border-b last:border-0">
+                    <td className="px-3 py-2 font-medium text-muted-foreground">HSN Code</td>
+                    <td className="px-3 py-2">{part.hsnCode}</td>
+                  </tr>
+                )}
+                <tr className="border-b last:border-0">
+                  <td className="px-3 py-2 font-medium text-muted-foreground">Unit of Measure</td>
+                  <td className="px-3 py-2">{part.unitOfMeasure}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     ),
   }
 
+  // Parts filter their own condition: a 'New' variant only shows New stock; a 'Refurbished' only Refurb.
+  // Parent parts (or parts without condition) show all condition groups.
+  const inventoryVariants = useMemo(() => {
+    if (!stockItem) return []
+    if (part.condition) return stockItem.variants.filter((v) => v.type === part.condition)
+    return stockItem.variants
+  }, [stockItem, part.condition])
+
   const inventoryTab = {
     id: 'inventory',
     label: 'Inventory',
     content: (
       <div className="space-y-6">
-        {stockItem ? (
-          stockItem.variants.map((variant) => (
+        {stockItem && inventoryVariants.length > 0 ? (
+          inventoryVariants.map((variant) => (
             <div key={variant.type}>
               <h3 className="mb-2 text-sm font-medium">
                 {variant.type}
@@ -315,26 +647,102 @@ export default function PartDetailPage() {
                   </tbody>
                 </table>
               </div>
-              <div className={cn(
-                'mt-2 text-xs',
-                variant.quantity < part.reorderLevel ? 'font-medium text-destructive' : 'text-muted-foreground'
-              )}>
-                {variant.quantity < part.reorderLevel
-                  ? `Below reorder level (${part.reorderLevel})`
-                  : `Above reorder level (${part.reorderLevel})`}
-              </div>
             </div>
           ))
         ) : (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No inventory data linked to this part yet.
+            {part.condition
+              ? `No ${part.condition} inventory linked to this part yet.`
+              : 'No inventory data linked to this part yet.'}
           </p>
         )}
 
-        {stockItem && (
+        {stockItem && inventoryVariants.length > 0 && (
           <div className="rounded-md border bg-muted/30 p-3">
             <p className="text-sm font-medium">
-              Total Stock: {stockItem.variants.reduce((s, v) => s + v.quantity, 0)} units
+              Total Stock: {inventoryVariants.reduce((s, v) => s + v.quantity, 0)} units
+              {part.condition ? ` (${part.condition})` : ''}
+            </p>
+          </div>
+        )}
+      </div>
+    ),
+  }
+
+  // ── Variants tab (visible when this part is a parent with child variants) ──
+  const partVariants = useMemo(
+    () => mockParts.filter((p) => p.parentPartId === part.id),
+    [part.id],
+  )
+  const variantsTab = {
+    id: 'variants',
+    label: 'Variants',
+    count: partVariants.length,
+    content: (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium">
+            Variants of {part.name}
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              ({partVariants.length})
+            </span>
+          </h3>
+          <Button
+            size="sm"
+            variant="outline"
+            nativeButton={false}
+            render={<Link to={`/ims/parts/new?type=variant&parentId=${part.id}`} />}
+          >
+            <Plus className="mr-1 size-3.5" />
+            Add Variant
+          </Button>
+        </div>
+
+        {partVariants.length > 0 ? (
+          <div className="divide-y rounded-lg border">
+            {partVariants.map((v) => (
+              <div key={v.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <Link
+                    to={`/ims/parts/${v.id}`}
+                    className="block truncate font-medium text-primary hover:underline"
+                  >
+                    {v.name}
+                  </Link>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {v.sku}
+                    {v.model && ` · ${v.model}`}
+                  </p>
+                </div>
+                {v.condition && (
+                  <StatusBadge
+                    variant={
+                      v.condition === 'New'
+                        ? 'success'
+                        : v.condition === 'Refurbished'
+                        ? 'info'
+                        : 'warning'
+                    }
+                  >
+                    {v.condition}
+                  </StatusBadge>
+                )}
+                {v.sellPrice != null && (
+                  <span className="text-sm font-medium tabular-nums">
+                    {currencyFmt.format(v.sellPrice)}
+                  </span>
+                )}
+                <StatusBadge variant={v.isActive ? 'success' : 'neutral'}>
+                  {v.isActive ? 'Active' : 'Inactive'}
+                </StatusBadge>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed p-8 text-center">
+            <p className="text-sm font-medium">No variants yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Add a variant to track different conditions (New, Refurbished) or configurations
             </p>
           </div>
         )}
@@ -417,19 +825,13 @@ export default function PartDetailPage() {
     ),
   }
 
-  // ── Related Parts tab ──
+  // ── Compatible tab ──
   const relatedParts = useMemo(
     () => mockRelatedParts.filter((rp) => rp.partId === part.id && rp.isActive),
     [part.id]
   )
-  const incomingRelations = useMemo(
-    () => mockRelatedParts.filter((rp) => rp.relatedPartId === part.id && rp.isActive),
-    [part.id]
-  )
 
-  const [addingRelated, setAddingRelated] = useState(false)
-  const [newRelationType, setNewRelationType] = useState<PartRelationType>('ALTERNATIVE')
-  const [newRelatedPartId, setNewRelatedPartId] = useState<string>('')
+  const [showRelatedPicker, setShowRelatedPicker] = useState(false)
   const [localRelatedParts, setLocalRelatedParts] = useState<RelatedPart[]>(relatedParts)
 
   // Parts available to add (not already related and not self)
@@ -444,199 +846,82 @@ export default function PartDetailPage() {
     [part.id, localRelatedParts]
   )
 
-  const handleAddRelatedPart = () => {
-    if (!newRelatedPartId) return
-    const target = mockParts.find((p) => p.id === newRelatedPartId)
-    if (!target) return
+  // Already-related parts shaped for the picker's per-section "added" list
+  const relatedAddedItems = useMemo<AddedItem[]>(
+    () =>
+      localRelatedParts
+        .map((rp) => {
+          const p = mockParts.find((mp) => mp.id === rp.relatedPartId)
+          if (!p) return null
+          return { id: rp.id, part: p, quantity: 1 }
+        })
+        .filter((x): x is AddedItem => x !== null),
+    [localRelatedParts],
+  )
 
+  const openRelatedPicker = () => setShowRelatedPicker(true)
+  const closeRelatedPicker = () => setShowRelatedPicker(false)
+
+  const handleAddRelatedPart = (target: Part, _qty: number) => {
     const newRP: RelatedPart = {
       id: `RP-NEW-${Date.now()}`,
       partId: part.id,
-      relatedPartId: newRelatedPartId,
-      relationType: newRelationType,
+      relatedPartId: target.id,
+      relationType: 'COMPATIBLE',
       priority: localRelatedParts.length + 1,
       isActive: true,
     }
     setLocalRelatedParts((prev) => [...prev, newRP])
-    setAddingRelated(false)
-    setNewRelatedPartId('')
-    toast.success(`${target.name} added as ${RELATION_LABELS[newRelationType].toLowerCase()}`)
+    toast.success(`${target.name} marked compatible`)
   }
 
   const handleRemoveRelatedPart = (rpId: string) => {
     setLocalRelatedParts((prev) => prev.filter((rp) => rp.id !== rpId))
-    toast.success('Related part removed')
+    toast.success('Compatible part removed')
   }
 
   const relatedPartsTab = {
-    id: 'related',
-    label: 'Related Parts',
+    id: 'compatible',
+    label: 'Compatible',
     count: localRelatedParts.length,
     content: (
       <div className="space-y-6">
-        {/* Outgoing: This part → related parts */}
         <div>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-medium">
-              Replaceable / Related Parts
+              Compatible Parts
               <span className="ml-2 text-xs font-normal text-muted-foreground">
                 ({localRelatedParts.length})
               </span>
             </h3>
-            <Button size="sm" variant="outline" onClick={() => setAddingRelated(!addingRelated)}>
-              {addingRelated ? (
-                <>
-                  <X className="mr-1 size-3.5" />
-                  Cancel
-                </>
-              ) : (
-                <>
-                  <Plus className="mr-1 size-3.5" />
-                  Add Related Part
-                </>
-              )}
-            </Button>
+            {!showRelatedPicker && (
+              <Button size="sm" variant="outline" onClick={openRelatedPicker}>
+                <Plus className="mr-1 size-3.5" />
+                {localRelatedParts.length > 0 ? 'Manage compatible parts' : 'Add Compatible Part'}
+              </Button>
+            )}
           </div>
 
-          {/* Add form */}
-          {addingRelated && (
-            <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border bg-muted/30 p-4">
-              <div className="flex-1 min-w-[200px]">
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Part
-                </label>
-                <Select onValueChange={(v: string | null) => setNewRelatedPartId(v ?? '')}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a part..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableParts.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name} ({p.brand})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="w-48">
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Relation Type
-                </label>
-                <Select
-                  value={newRelationType}
-                  onValueChange={(v: string | null) =>
-                    setNewRelationType((v as PartRelationType) ?? 'ALTERNATIVE')
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(RELATION_LABELS) as PartRelationType[]).map((rel) => (
-                      <SelectItem key={rel} value={rel}>
-                        {RELATION_LABELS[rel]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button size="sm" onClick={handleAddRelatedPart} disabled={!newRelatedPartId}>
-                Add
-              </Button>
-            </div>
-          )}
-
-          {/* Related parts list */}
-          {localRelatedParts.length > 0 ? (
-            <div className="divide-y rounded-lg border">
-              {localRelatedParts.map((rp) => {
-                const target = mockParts.find((p) => p.id === rp.relatedPartId)
-                if (!target) return null
-                return (
-                  <div key={rp.id} className="flex items-center gap-4 px-4 py-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                      {RELATION_ICON[rp.relationType]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          to={`/ims/parts/${target.id}`}
-                          className="font-medium text-primary hover:underline truncate"
-                        >
-                          {target.name}
-                        </Link>
-                        <StatusBadge variant={RELATION_VARIANT[rp.relationType]}>
-                          {RELATION_LABELS[rp.relationType]}
-                        </StatusBadge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {target.brand} · {target.sku}
-                        {rp.notes && ` · ${rp.notes}`}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="inline-flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                        {rp.priority}
-                      </span>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleRemoveRelatedPart(rp.id)}
-                      >
-                        <X className="size-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
+          {showRelatedPicker ? (
+            <InlinePartPicker
+              availableParts={availableParts}
+              addedItems={relatedAddedItems}
+              onAdd={handleAddRelatedPart}
+              onRemove={handleRemoveRelatedPart}
+              onClose={closeRelatedPicker}
+              title="Compatible parts"
+              description="Each hardware type is listed below. Already-added parts appear at the top of their section. Use the search inside a section to find and add more."
+            />
+          ) : localRelatedParts.length === 0 ? (
             <div className="rounded-lg border border-dashed p-8 text-center">
-              <RefreshCw className="mx-auto mb-2 size-8 text-muted-foreground" />
-              <p className="text-sm font-medium">No related parts defined</p>
+              <Plug className="mx-auto mb-2 size-8 text-muted-foreground" />
+              <p className="text-sm font-medium">No compatible parts yet</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Add alternatives, replacements, or upgrades for this part
+                Click "Add Compatible Part" to browse parts by hardware type.
               </p>
             </div>
-          )}
+          ) : null}
         </div>
-
-        {/* Incoming: Other parts that reference this part */}
-        {incomingRelations.length > 0 && (
-          <div>
-            <h3 className="mb-3 text-sm font-medium">
-              Referenced By
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                ({incomingRelations.length} parts reference this as a related part)
-              </span>
-            </h3>
-            <div className="divide-y rounded-lg border bg-muted/20">
-              {incomingRelations.map((rp) => {
-                const source = mockParts.find((p) => p.id === rp.partId)
-                if (!source) return null
-                return (
-                  <div key={rp.id} className="flex items-center gap-4 px-4 py-3">
-                    <div className="flex-1 min-w-0">
-                      <Link
-                        to={`/ims/parts/${source.id}`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {source.name}
-                      </Link>
-                      <p className="text-xs text-muted-foreground">
-                        {source.brand} · Uses this part as{' '}
-                        <StatusBadge variant={RELATION_VARIANT[rp.relationType]}>
-                          {RELATION_LABELS[rp.relationType]}
-                        </StatusBadge>
-                      </p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
       </div>
     ),
   }
@@ -653,99 +938,145 @@ export default function PartDetailPage() {
 
   // Local BOMs state so newly created ones show immediately
   const [localBOMs, setLocalBOMs] = useState<BillOfMaterials[]>(partBOMs)
+  const [expandedBOMId, setExpandedBOMId] = useState<string | null>(null)
 
-  // BOM creation form state
-  const [creatingBOM, setCreatingBOM] = useState(false)
-  const [newBOMName, setNewBOMName] = useState('')
-  const [newBOMType, setNewBOMType] = useState<BOMType>('ASSEMBLY')
-  const [newBOMItems, setNewBOMItems] = useState<BOMItem[]>([])
-  const [newBOMEstTime, setNewBOMEstTime] = useState('')
-  const [newBOMEstCost, setNewBOMEstCost] = useState('')
-  const [newBOMNotes, setNewBOMNotes] = useState('')
+  // Draft creation state (before user confirms Save)
+  const [draftType, setDraftType] = useState<BOMType | null>(null)
+  const [draftItems, setDraftItems] = useState<BOMItem[]>([])
 
-  // For adding items to the BOM being created
-  const [addingBOMItem, setAddingBOMItem] = useState(false)
-  const [bomItemPartId, setBomItemPartId] = useState('')
-  const [bomItemQty, setBomItemQty] = useState('1')
-  const [bomItemPosition, setBomItemPosition] = useState('')
-  const [bomItemOptional, setBomItemOptional] = useState(false)
-  const [bomItemSubstitutable, setBomItemSubstitutable] = useState(false)
+  const bomLabel = (type: BOMType) =>
+    type === 'ASSEMBLY' ? `${part.name} Assembled` : `${part.name} Disassembled`
 
-  const handleAddBOMItem = () => {
-    const selectedPart = mockParts.find((p) => p.id === bomItemPartId)
-    if (!selectedPart) return
-
-    const item: BOMItem = {
-      id: `BOMI-NEW-${Date.now()}`,
-      partId: selectedPart.id,
-      partName: selectedPart.name,
-      partSku: selectedPart.sku,
-      quantity: parseInt(bomItemQty) || 1,
-      unitOfMeasure: selectedPart.unitOfMeasure,
-      isOptional: bomItemOptional,
-      allowSubstitution: bomItemSubstitutable,
-      position: bomItemPosition || undefined,
-    }
-
-    setNewBOMItems((prev) => [...prev, item])
-    setBomItemPartId('')
-    setBomItemQty('1')
-    setBomItemPosition('')
-    setBomItemOptional(false)
-    setBomItemSubstitutable(false)
-    setAddingBOMItem(false)
+  const startBOM = (type: BOMType) => {
+    setDraftType(type)
+    setDraftItems([])
   }
 
-  const handleRemoveBOMItem = (itemId: string) => {
-    setNewBOMItems((prev) => prev.filter((i) => i.id !== itemId))
+  const cancelDraftBOM = () => {
+    setDraftType(null)
+    setDraftItems([])
   }
 
-  const handleCreateBOM = () => {
-    if (!newBOMName.trim() || newBOMItems.length === 0) {
-      toast.error('BOM needs a name and at least one component')
-      return
-    }
-
+  const saveDraftBOM = () => {
+    if (!draftType) return
     const nextNum = localBOMs.length + partBOMs.length + 1
     const newBOM: BillOfMaterials = {
       id: `BOM-NEW-${Date.now()}`,
-      name: newBOMName,
+      name: bomLabel(draftType),
       bomNumber: `BOM-2026-${String(100 + nextNum).padStart(3, '0')}`,
-      type: newBOMType,
+      type: draftType,
       status: 'Draft' as BOMStatus,
       version: 1,
       parentPartId: part.id,
       parentPartName: part.name,
       parentPartSku: part.sku,
-      items: newBOMItems,
-      estimatedAssemblyTime: newBOMEstTime ? parseInt(newBOMEstTime) : undefined,
-      estimatedCost: newBOMEstCost ? parseInt(newBOMEstCost) : undefined,
+      items: draftItems,
       createdBy: 'Current User',
       createdAt: new Date().toISOString(),
-      notes: newBOMNotes || undefined,
     }
-
     setLocalBOMs((prev) => [...prev, newBOM])
-    setCreatingBOM(false)
-    setNewBOMName('')
-    setNewBOMType('ASSEMBLY')
-    setNewBOMItems([])
-    setNewBOMEstTime('')
-    setNewBOMEstCost('')
-    setNewBOMNotes('')
-    toast.success(`BOM "${newBOM.name}" created as Draft`)
+    setExpandedBOMId(newBOM.id)
+    setDraftType(null)
+    setDraftItems([])
+    toast.success(`${bomLabel(newBOM.type)} created as Draft`)
   }
 
-  const handleCancelBOM = () => {
-    setCreatingBOM(false)
-    setNewBOMName('')
-    setNewBOMType('ASSEMBLY')
-    setNewBOMItems([])
-    setNewBOMEstTime('')
-    setNewBOMEstCost('')
-    setNewBOMNotes('')
-    setAddingBOMItem(false)
+  const addDraftItem = (selectedPart: Part, quantity: number) => {
+    const item: BOMItem = {
+      id: `BOMI-NEW-${Date.now()}`,
+      variantId: `VAR-${selectedPart.id}`,
+      condition: selectedPart.condition ?? 'New',
+      variantSku: selectedPart.sku,
+      partId: selectedPart.id,
+      partName: selectedPart.name,
+      partSku: selectedPart.sku,
+      quantity: Math.max(1, quantity),
+      unitOfMeasure: selectedPart.unitOfMeasure,
+      isOptional: false,
+      allowSubstitution: false,
+    }
+    setDraftItems((prev) => [...prev, item])
+    toast.success(`${selectedPart.name} added (×${Math.max(1, quantity)})`)
   }
+
+  const removeDraftItem = (itemId: string) => {
+    setDraftItems((prev) => prev.filter((i) => i.id !== itemId))
+  }
+
+  const updateDraftItemQty = (itemId: string, qty: number) => {
+    setDraftItems((prev) =>
+      prev.map((i) => (i.id === itemId ? { ...i, quantity: Math.max(1, qty) } : i)),
+    )
+  }
+
+  const draftAddedItems = useMemo<AddedItem[]>(
+    () =>
+      draftItems
+        .map((item) => {
+          const p = mockParts.find((mp) => mp.id === item.partId)
+          if (!p) return null
+          return { id: item.id, part: p, quantity: item.quantity }
+        })
+        .filter((x): x is AddedItem => x !== null),
+    [draftItems],
+  )
+
+  const draftAvailableParts = useMemo(
+    () =>
+      mockParts.filter(
+        (p) =>
+          p.isActive &&
+          p.id !== part.id &&
+          !draftItems.some((it) => it.partId === p.id),
+      ),
+    [part.id, draftItems],
+  )
+
+  const addItemToBOM = (bomId: string, selectedPart: Part, quantity: number) => {
+    const item: BOMItem = {
+      id: `BOMI-NEW-${Date.now()}`,
+      variantId: `VAR-${selectedPart.id}`,
+      condition: selectedPart.condition ?? 'New',
+      variantSku: selectedPart.sku,
+      partId: selectedPart.id,
+      partName: selectedPart.name,
+      partSku: selectedPart.sku,
+      quantity: Math.max(1, quantity),
+      unitOfMeasure: selectedPart.unitOfMeasure,
+      isOptional: false,
+      allowSubstitution: false,
+    }
+    setLocalBOMs((prev) =>
+      prev.map((b) => (b.id === bomId ? { ...b, items: [...b.items, item] } : b)),
+    )
+    toast.success(`${selectedPart.name} added (×${Math.max(1, quantity)})`)
+  }
+
+  const removeItemFromBOM = (bomId: string, itemId: string) => {
+    setLocalBOMs((prev) =>
+      prev.map((b) =>
+        b.id === bomId ? { ...b, items: b.items.filter((i) => i.id !== itemId) } : b,
+      ),
+    )
+  }
+
+  const updateItemQtyInBOM = (bomId: string, itemId: string, qty: number) => {
+    setLocalBOMs((prev) =>
+      prev.map((b) =>
+        b.id === bomId
+          ? {
+              ...b,
+              items: b.items.map((i) =>
+                i.id === itemId ? { ...i, quantity: Math.max(1, qty) } : i,
+              ),
+            }
+          : b,
+      ),
+    )
+  }
+
+  const hasAssembly = localBOMs.some((b) => b.type === 'ASSEMBLY')
+  const hasDisassembly = localBOMs.some((b) => b.type === 'DISASSEMBLY')
 
   const bomsTab = {
     id: 'boms',
@@ -758,280 +1089,128 @@ export default function PartDetailPage() {
           <h3 className="text-sm font-medium">
             Bill of Materials for {part.name}
           </h3>
-          {!creatingBOM && (
+          {!draftType && (
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => { setNewBOMType('ASSEMBLY'); setCreatingBOM(true) }}
-              >
-                <Plus className="mr-1 size-3.5" />
-                Assembly BOM
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => { setNewBOMType('DISASSEMBLY'); setCreatingBOM(true) }}
-              >
-                <Plus className="mr-1 size-3.5" />
-                Disassembly BOM
-              </Button>
+              {!hasAssembly && (
+                <Button size="sm" variant="outline" onClick={() => startBOM('ASSEMBLY')}>
+                  <Plus className="mr-1 size-3.5" />
+                  Assembly BOM
+                </Button>
+              )}
+              {!hasDisassembly && (
+                <Button size="sm" variant="outline" onClick={() => startBOM('DISASSEMBLY')}>
+                  <Plus className="mr-1 size-3.5" />
+                  Disassembly BOM
+                </Button>
+              )}
             </div>
           )}
         </div>
 
-        {/* ── Create BOM Form ── */}
-        {creatingBOM && (
-          <div className="rounded-lg border bg-muted/20 p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold flex items-center gap-2">
-                <Plus className="size-4" />
-                New {newBOMType === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'} BOM
-              </h4>
-              <StatusBadge variant={newBOMType === 'ASSEMBLY' ? 'info' : 'warning'}>
-                {newBOMType === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'}
-              </StatusBadge>
-            </div>
-
-            {/* BOM info fields */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  BOM Name *
-                </label>
-                <Input
-                  value={newBOMName}
-                  onChange={(e) => setNewBOMName(e.target.value)}
-                  placeholder={`e.g. ${part.name} Standard Build`}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Type
-                </label>
-                <Select
-                  value={newBOMType}
-                  onValueChange={(v: string | null) => setNewBOMType((v as BOMType) ?? 'ASSEMBLY')}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ASSEMBLY">Assembly</SelectItem>
-                    <SelectItem value="DISASSEMBLY">Disassembly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Est. Assembly Time (minutes)
-                </label>
-                <Input
-                  type="number"
-                  value={newBOMEstTime}
-                  onChange={(e) => setNewBOMEstTime(e.target.value)}
-                  placeholder="e.g. 120"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Est. Cost (INR)
-                </label>
-                <Input
-                  type="number"
-                  value={newBOMEstCost}
-                  onChange={(e) => setNewBOMEstCost(e.target.value)}
-                  placeholder="e.g. 285000"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Notes
-              </label>
-              <Input
-                value={newBOMNotes}
-                onChange={(e) => setNewBOMNotes(e.target.value)}
-                placeholder="Optional notes about this BOM..."
-              />
-            </div>
-
-            {/* Parent product (read-only) */}
-            <div className="rounded-md bg-muted/50 px-4 py-3 text-sm">
-              <span className="text-muted-foreground">
-                {newBOMType === 'ASSEMBLY' ? 'Output Product:' : 'Source Product:'}
-              </span>{' '}
-              <span className="font-medium">{part.name}</span>
-              <span className="text-muted-foreground"> ({part.sku})</span>
-            </div>
-
-            {/* Component Items */}
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <h5 className="text-sm font-medium">
-                  Components ({newBOMItems.length})
-                </h5>
+        {/* ── Draft new BOM ── */}
+        {draftType && (
+          <div className="space-y-4 rounded-lg border bg-muted/10 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h4 className="text-sm font-semibold">{bomLabel(draftType)}</h4>
+              <div className="flex items-center gap-2">
+                <StatusBadge variant={draftType === 'ASSEMBLY' ? 'info' : 'warning'}>
+                  {draftType === 'ASSEMBLY' ? 'Assembled' : 'Disassembled'}
+                </StatusBadge>
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={() => setAddingBOMItem(!addingBOMItem)}
+                  variant="ghost"
+                  onClick={cancelDraftBOM}
+                  aria-label="Cancel"
+                  className="size-7 p-0"
                 >
-                  {addingBOMItem ? (
-                    <><X className="mr-1 size-3.5" /> Cancel</>
-                  ) : (
-                    <><Plus className="mr-1 size-3.5" /> Add Component</>
-                  )}
+                  <X className="size-4" />
                 </Button>
               </div>
-
-              {/* Add component form */}
-              {addingBOMItem && (
-                <div className="mb-3 rounded-md border bg-background p-3 space-y-3">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div className="sm:col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Part *</label>
-                      <Select onValueChange={(v: string | null) => setBomItemPartId(v ?? '')}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select component part..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {mockParts
-                            .filter((p) => p.isActive && p.id !== part.id)
-                            .map((p) => (
-                              <SelectItem key={p.id} value={p.id}>
-                                {p.name} ({p.brand} · {p.sku})
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Quantity *</label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={bomItemQty}
-                        onChange={(e) => setBomItemQty(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Position</label>
-                      <Input
-                        value={bomItemPosition}
-                        onChange={(e) => setBomItemPosition(e.target.value)}
-                        placeholder="e.g. Slot 1, Bay 2"
-                      />
-                    </div>
-                    <div className="flex items-end gap-4 sm:col-span-2">
-                      <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={bomItemOptional}
-                          onChange={(e) => setBomItemOptional(e.target.checked)}
-                          className="rounded border-input"
-                        />
-                        Optional
-                      </label>
-                      <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={bomItemSubstitutable}
-                          onChange={(e) => setBomItemSubstitutable(e.target.checked)}
-                          className="rounded border-input"
-                        />
-                        Allow Substitution
-                      </label>
-                      <Button size="sm" onClick={handleAddBOMItem} disabled={!bomItemPartId}>
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Component list */}
-              {newBOMItems.length > 0 ? (
-                <div className="divide-y rounded-md border">
-                  {newBOMItems.map((item, idx) => (
-                    <div key={item.id} className="flex items-center gap-3 px-4 py-2.5">
-                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                        {idx + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.partName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.partSku}
-                          {item.position && ` · ${item.position}`}
-                          {item.isOptional && ' · Optional'}
-                          {item.allowSubstitution && ' · Substitutable'}
-                        </p>
-                      </div>
-                      <span className="text-sm font-semibold">&times;{item.quantity}</span>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleRemoveBOMItem(item.id)}
-                      >
-                        <X className="size-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  No components added yet. Click "Add Component" to start building the BOM.
-                </div>
-              )}
             </div>
-
-            {/* Actions */}
+            <InlinePartPicker
+              availableParts={draftAvailableParts}
+              addedItems={draftAddedItems}
+              onAdd={addDraftItem}
+              onRemove={removeDraftItem}
+              onUpdateQuantity={updateDraftItemQty}
+              onClose={() => {}}
+              title={`Parts in ${bomLabel(draftType)}`}
+              description="Each hardware type is listed below. Already-added parts appear at the top of their section. Use the search inside a section to find and add more."
+              withQuantity
+              embedded
+            />
             <div className="flex justify-end gap-2 border-t pt-4">
-              <Button variant="outline" onClick={handleCancelBOM}>
+              <Button variant="outline" onClick={cancelDraftBOM}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateBOM} disabled={!newBOMName.trim() || newBOMItems.length === 0}>
-                Create BOM (Draft)
+              <Button onClick={saveDraftBOM} disabled={draftItems.length === 0}>
+                Save BOM
               </Button>
             </div>
           </div>
         )}
 
-        {/* ── Existing BOMs for this part ── */}
+        {/* ── Assembly / Disassembly BOMs — expandable rows ── */}
         {localBOMs.length > 0 && (
-          <div>
-            <h3 className="mb-3 text-sm font-medium">
-              Assembly / Disassembly BOMs
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                (this part as output)
-              </span>
-            </h3>
-            <div className="divide-y rounded-lg border">
-              {localBOMs.map((bom) => (
-                <Link
-                  key={bom.id}
-                  to={`/wms/bom/${bom.id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium">{bom.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {bom.bomNumber} · v{bom.version} · {bom.items.length} components
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
+          <div className="divide-y rounded-lg border">
+            {localBOMs.map((bom) => {
+              const isExpanded = expandedBOMId === bom.id
+              const addedItems: AddedItem[] = bom.items
+                .map((item) => {
+                  const p = mockParts.find((mp) => mp.id === item.partId)
+                  if (!p) return null
+                  return { id: item.id, part: p, quantity: item.quantity }
+                })
+                .filter((x): x is AddedItem => x !== null)
+
+              const availableParts = mockParts.filter(
+                (p) =>
+                  p.isActive &&
+                  p.id !== part.id &&
+                  !bom.items.some((it) => it.partId === p.id),
+              )
+
+              return (
+                <div key={bom.id}>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedBOMId(isExpanded ? null : bom.id)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ChevronDown
+                        className={`size-4 text-muted-foreground transition-transform ${isExpanded ? '' : '-rotate-90'}`}
+                      />
+                      <div>
+                        <p className="font-medium">{bomLabel(bom.type)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {bom.items.length} {bom.items.length === 1 ? 'part' : 'parts'}
+                        </p>
+                      </div>
+                    </div>
                     <StatusBadge variant={bom.type === 'ASSEMBLY' ? 'info' : 'warning'}>
-                      {bom.type === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'}
+                      {bom.type === 'ASSEMBLY' ? 'Assembled' : 'Disassembled'}
                     </StatusBadge>
-                    <StatusBadge variant={bom.status === 'Active' ? 'success' : bom.status === 'Draft' ? 'neutral' : 'neutral'}>
-                      {bom.status}
-                    </StatusBadge>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </button>
+                  {isExpanded && (
+                    <div className="border-t bg-muted/10 p-4">
+                      <InlinePartPicker
+                        availableParts={availableParts}
+                        addedItems={addedItems}
+                        onAdd={(sp, q) => addItemToBOM(bom.id, sp, q)}
+                        onRemove={(itemId) => removeItemFromBOM(bom.id, itemId)}
+                        onUpdateQuantity={(itemId, q) => updateItemQtyInBOM(bom.id, itemId, q)}
+                        onClose={() => setExpandedBOMId(null)}
+                        title={`Parts in ${bomLabel(bom.type)}`}
+                        description="Each hardware type is listed below. Already-added parts appear at the top of their section. Use the search inside a section to find and add more."
+                        withQuantity
+                        embedded
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -1061,7 +1240,7 @@ export default function PartDetailPage() {
                       </p>
                     </div>
                     <StatusBadge variant={bom.type === 'ASSEMBLY' ? 'info' : 'warning'}>
-                      {bom.type === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'}
+                      {bom.type === 'ASSEMBLY' ? 'Assembled' : 'Disassembled'}
                     </StatusBadge>
                   </Link>
                 )
@@ -1071,178 +1250,11 @@ export default function PartDetailPage() {
         )}
 
         {/* Empty state only if nothing at all */}
-        {localBOMs.length === 0 && usedInBOMs.length === 0 && !creatingBOM && (
+        {localBOMs.length === 0 && usedInBOMs.length === 0 && !draftType && (
           <div className="rounded-lg border border-dashed p-8 text-center">
             <p className="text-sm font-medium">No BOMs linked</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Create an Assembly or Disassembly BOM for this part using the buttons above
-            </p>
-          </div>
-        )}
-      </div>
-    ),
-  }
-
-  // ── Pricing tab ──
-  const partPricing = useMemo(
-    () => mockPricing.filter((p) => p.partId === part.id),
-    [part.id]
-  )
-
-  const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
-  const [editPriceValue, setEditPriceValue] = useState('')
-  const editPriceRef = useRef<HTMLInputElement>(null)
-
-  const startPriceEdit = useCallback((entryId: string, currentPrice: number) => {
-    setEditingPriceId(entryId)
-    setEditPriceValue(String(currentPrice))
-    setTimeout(() => editPriceRef.current?.focus(), 0)
-  }, [])
-
-  const cancelPriceEdit = useCallback(() => {
-    setEditingPriceId(null)
-    setEditPriceValue('')
-  }, [])
-
-  const [localPricing, setLocalPricing] = useState(partPricing)
-  const [localPriceHistory, setLocalPriceHistory] = useState(mockPriceHistory)
-
-  const savePriceEdit = useCallback(
-    (entryId: string) => {
-      const newPrice = parseInt(editPriceValue, 10)
-      if (isNaN(newPrice) || newPrice < 0) {
-        cancelPriceEdit()
-        return
-      }
-      setLocalPricing((prev) =>
-        prev.map((p) => {
-          if (p.id !== entryId || p.sellPrice === newPrice) return p
-          const historyEntry = {
-            id: `ph-${Date.now()}`,
-            priceEntryId: entryId,
-            oldPrice: p.sellPrice,
-            newPrice,
-            changedBy: 'Current User',
-            changedAt: new Date().toISOString(),
-            notes: 'Manual price update',
-          }
-          setLocalPriceHistory((h) => [historyEntry, ...h])
-          toast.success('Price updated')
-          return { ...p, sellPrice: newPrice, updatedBy: 'Current User', updatedAt: new Date().toISOString() }
-        })
-      )
-      setEditingPriceId(null)
-      setEditPriceValue('')
-    },
-    [editPriceValue, cancelPriceEdit]
-  )
-
-  // Group pricing by variant
-  const newPrices = useMemo(() => localPricing.filter((p) => p.variant === 'new'), [localPricing])
-  const refurbishedPrices = useMemo(() => localPricing.filter((p) => p.variant === 'refurbished'), [localPricing])
-
-  // All price history for this part's entries
-  const partPriceHistory = useMemo(
-    () => {
-      const entryIds = new Set(localPricing.map((p) => p.id))
-      return localPriceHistory
-        .filter((h) => entryIds.has(h.priceEntryId))
-        .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
-    },
-    [localPricing, localPriceHistory]
-  )
-
-  const pricingTab = {
-    id: 'pricing',
-    label: 'Pricing',
-    count: localPricing.length,
-    content: (
-      <div className="space-y-4">
-        {localPricing.length > 0 ? (
-          <>
-            {/* New variant card */}
-            {newPrices.length > 0 && (
-              <PricingVariantCard
-                variantLabel="New"
-                variantBadge="success"
-                entries={newPrices}
-                editingId={editingPriceId}
-                editValue={editPriceValue}
-                editRef={editPriceRef}
-                onStartEdit={startPriceEdit}
-                onEditChange={setEditPriceValue}
-                onSave={savePriceEdit}
-                onCancel={cancelPriceEdit}
-              />
-            )}
-
-            {/* Refurbished variant card */}
-            {refurbishedPrices.length > 0 && (
-              <PricingVariantCard
-                variantLabel="Refurbished"
-                variantBadge="info"
-                entries={refurbishedPrices}
-                editingId={editingPriceId}
-                editValue={editPriceValue}
-                editRef={editPriceRef}
-                onStartEdit={startPriceEdit}
-                onEditChange={setEditPriceValue}
-                onSave={savePriceEdit}
-                onCancel={cancelPriceEdit}
-              />
-            )}
-
-            {/* Price Change History */}
-            {partPriceHistory.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm">Price Change History</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {partPriceHistory.map((h) => {
-                      const entry = localPricing.find((p) => p.id === h.priceEntryId)
-                      return (
-                        <div key={h.id} className="flex items-start gap-3">
-                          <div className="flex flex-col items-center">
-                            <div className="mt-1 size-2.5 rounded-full bg-primary" />
-                            <div className="w-px flex-1 bg-border" />
-                          </div>
-                          <div className="flex-1 pb-3">
-                            <p className="text-sm">
-                              <span className="font-medium tabular-nums">
-                                {currencyFmt.format(h.oldPrice)}
-                              </span>
-                              <span className="text-muted-foreground"> &rarr; </span>
-                              <span className="font-medium tabular-nums">
-                                {currencyFmt.format(h.newPrice)}
-                              </span>
-                              {entry && (
-                                <span className="ml-2 text-xs text-muted-foreground">
-                                  ({entry.variant === 'new' ? 'New' : 'Refurbished'}
-                                  {entry.tag ? ` / ${entry.tag}` : ' / Base'})
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {h.changedBy} &middot; {formatDate(h.changedAt)}
-                              {h.notes && ` &middot; ${h.notes}`}
-                            </p>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        ) : (
-          <div className="rounded-lg border border-dashed p-8 text-center">
-            <DollarSign className="mx-auto mb-2 size-8 text-muted-foreground" />
-            <p className="text-sm font-medium">No pricing defined</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Pricing entries for this part will appear here
             </p>
           </div>
         )}
@@ -1258,16 +1270,35 @@ export default function PartDetailPage() {
         status={{ label: part.isActive ? 'Active' : 'Inactive', variant: part.isActive ? 'success' : 'neutral' }}
         backHref="/ims/parts"
         actions={
-          <Button variant="outline" render={<Link to={`/ims/parts/${part.id}/edit`} />}>
+          <Button variant="outline" nativeButton={false} render={<Link to={`/ims/parts/${part.id}/edit`} />}>
             <Pencil className="mr-1.5 size-4" />
             Edit
           </Button>
         }
       />
 
+      {(() => {
+        // BOM is meaningful only for Server-category products; for variants we check the parent's category too.
+        const variantParent = part.parentPartId
+          ? mockParts.find((p) => p.id === part.parentPartId)
+          : undefined
+        const isServerCategory =
+          part.categoryName === 'Servers' || variantParent?.categoryName === 'Servers'
+
+        return (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        {/* Left: Tabs */}
-        <DetailTabs tabs={[overviewTab, relatedPartsTab, bomsTab, inventoryTab, pricingTab, checklistsTab, historyTab]} />
+        {/* Left: Tabs — variants tab only for parent parts, BOMs only for Server category */}
+        <DetailTabs
+          tabs={[
+            overviewTab,
+            ...((part.productType ?? 'parent') === 'parent' ? [variantsTab] : []),
+            relatedPartsTab,
+            ...(isServerCategory ? [bomsTab] : []),
+            inventoryTab,
+            checklistsTab,
+            historyTab,
+          ]}
+        />
 
         {/* Right: Sidebar cards */}
         <div className="space-y-4">
@@ -1295,6 +1326,37 @@ export default function PartDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Parent card — only for variant-type parts */}
+          {(part.productType ?? 'parent') === 'variant' && (() => {
+            const parent = part.parentPartId
+              ? mockParts.find((p) => p.id === part.parentPartId)
+              : undefined
+            return (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Parent Product</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  {parent ? (
+                    <div className="space-y-1">
+                      <Link
+                        to={`/ims/parts/${parent.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {parent.name}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">
+                        {parent.brand} · {parent.sku}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Parent not found</p>
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })()}
 
           {/* Part Info card */}
           <Card>
@@ -1329,9 +1391,33 @@ export default function PartDetailPage() {
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Reorder Level</span>
-                <span className="font-medium">{part.reorderLevel}</span>
+                <span className="text-muted-foreground">Product Type</span>
+                <StatusBadge variant={(part.productType ?? 'parent') === 'variant' ? 'info' : 'neutral'}>
+                  {(part.productType ?? 'parent') === 'variant' ? 'Variant' : 'Parent'}
+                </StatusBadge>
               </div>
+              {part.condition && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Condition</span>
+                  <StatusBadge variant={part.condition === 'New' ? 'success' : part.condition === 'Refurbished' ? 'info' : 'warning'}>
+                    {part.condition}
+                  </StatusBadge>
+                </div>
+              )}
+              {part.assemblyType && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Assembly</span>
+                  <StatusBadge variant={part.assemblyType === 'Assembled' ? 'success' : 'warning'}>
+                    {part.assemblyType}
+                  </StatusBadge>
+                </div>
+              )}
+              {part.sellPrice != null && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Price</span>
+                  <span className="font-medium tabular-nums">{currencyFmt.format(part.sellPrice)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Unit of Measure</span>
                 <span className="font-medium">{part.unitOfMeasure}</span>
@@ -1342,158 +1428,11 @@ export default function PartDetailPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Stock Summary card */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Stock Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">New</span>
-                <span className="font-medium">{stockSummary.new} units</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Refurbished</span>
-                <span className="font-medium">{stockSummary.refurbished} units</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">New Pool</span>
-                <span className="font-medium">{stockSummary.newPool} units</span>
-              </div>
-              <div className="flex justify-between border-t pt-2">
-                <span className="font-medium">Total</span>
-                <span className="font-semibold">{stockSummary.total} units</span>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
+        )
+      })()}
     </div>
   )
 }
 
-// ── Pricing Variant Card component (like StockItemDetailPage's VariantCard) ──
-
-interface PricingVariantCardProps {
-  variantLabel: string
-  variantBadge: 'success' | 'info' | 'warning'
-  entries: import('../data/pricing').PriceEntry[]
-  editingId: string | null
-  editValue: string
-  editRef: React.RefObject<HTMLInputElement | null>
-  onStartEdit: (entryId: string, currentPrice: number) => void
-  onEditChange: (v: string) => void
-  onSave: (entryId: string) => void
-  onCancel: () => void
-}
-
-function PricingVariantCard({
-  variantLabel,
-  variantBadge,
-  entries,
-  editingId,
-  editValue,
-  editRef,
-  onStartEdit,
-  onEditChange,
-  onSave,
-  onCancel,
-}: PricingVariantCardProps) {
-  const baseEntry = entries.find((e) => e.tag === null)
-  const tagEntries = entries.filter((e) => e.tag !== null)
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-center gap-4">
-          <StatusBadge variant={variantBadge}>{variantLabel}</StatusBadge>
-          {baseEntry && (
-            <div className="flex items-baseline gap-1">
-              <span className="text-sm text-muted-foreground">Base Price:</span>
-              {editingId === baseEntry.id ? (
-                <input
-                  ref={editRef}
-                  type="number"
-                  value={editValue}
-                  onChange={(e) => onEditChange(e.target.value)}
-                  onBlur={() => onSave(baseEntry.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') onSave(baseEntry.id)
-                    if (e.key === 'Escape') onCancel()
-                  }}
-                  className="h-7 w-28 rounded border border-input bg-background px-2 text-sm font-medium"
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onStartEdit(baseEntry.id, baseEntry.sellPrice)}
-                  className="group inline-flex items-center gap-1"
-                >
-                  <span className="text-lg font-bold">{currencyFmt.format(baseEntry.sellPrice)}</span>
-                  <Pencil className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        {tagEntries.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 pr-4 font-medium">Tag</th>
-                  <th className="pb-2 pr-4 font-medium text-right">Sell Price</th>
-                  <th className="pb-2 pr-4 font-medium">Updated By</th>
-                  <th className="pb-2 font-medium">Last Updated</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tagEntries.map((entry) => (
-                  <tr key={entry.id} className="border-b last:border-0">
-                    <td className="py-2 pr-4">
-                      <StatusBadge variant="neutral">{entry.tag}</StatusBadge>
-                    </td>
-                    <td className="py-2 pr-4 text-right">
-                      {editingId === entry.id ? (
-                        <input
-                          ref={editRef}
-                          type="number"
-                          value={editValue}
-                          onChange={(e) => onEditChange(e.target.value)}
-                          onBlur={() => onSave(entry.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') onSave(entry.id)
-                            if (e.key === 'Escape') onCancel()
-                          }}
-                          className="ml-auto h-7 w-28 rounded border border-input bg-background px-2 text-right text-sm font-medium"
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => onStartEdit(entry.id, entry.sellPrice)}
-                          className="group inline-flex items-center gap-1"
-                        >
-                          <span className="font-medium tabular-nums">
-                            {currencyFmt.format(entry.sellPrice)}
-                          </span>
-                          <Pencil className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                        </button>
-                      )}
-                    </td>
-                    <td className="py-2 pr-4">{entry.updatedBy}</td>
-                    <td className="py-2 text-muted-foreground">{formatDate(entry.updatedAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No tag-specific prices.</p>
-        )}
-      </CardContent>
-    </Card>
-  )
-}

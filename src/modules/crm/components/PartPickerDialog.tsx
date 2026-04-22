@@ -107,7 +107,7 @@ const availableCategories = [...new Set(allVariantRows.map((r) => r.category))].
 const CONDITION_COLORS: Record<VariantCondition, string> = {
   New: 'bg-[#e8fff3] text-[#0b5c22] dark:bg-[#0b5c22]/20 dark:text-[#50cd89]',
   Refurbished: 'bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]',
-  'New Pool': 'bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]',
+  'New Pull': 'bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]',
 }
 
 function fmt(n: number): string {

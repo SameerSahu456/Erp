@@ -111,7 +111,7 @@ const partsWithBOM = mockBOMs
 const VARIANT_COLORS: Record<string, string> = {
   New: 'bg-[#dfffea] text-[#17c653]',
   Refurbished: 'bg-[#fff8dd] text-[#f6b100]',
-  'New Pool': 'bg-[#f1f0ff] text-[#7239ea]',
+  'New Pull': 'bg-[#f1f0ff] text-[#7239ea]',
 }
 
 // ── Main Component ──

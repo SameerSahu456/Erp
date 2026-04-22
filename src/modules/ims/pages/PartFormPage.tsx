@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -20,7 +20,12 @@ import { EntityHeader } from '@/modules/crm/components/EntityHeader'
 import { mockParts } from '../data/parts'
 import { mockCategories } from '../data/categories'
 import { mockChecklistTemplates } from '@/modules/wms/data/checklist-templates'
-import type { IMSCategory } from '@/modules/wms/types'
+import type {
+  IMSCategory,
+  PartProductType,
+  PartAssemblyType,
+  VariantCondition,
+} from '@/modules/wms/types'
 
 const MOCK_PRODUCT_MANAGERS = [
   { name: 'Rahul Mehta', email: 'rahul@comprinttech.com' },
@@ -45,20 +50,44 @@ function flattenCategories(cats: IMSCategory[], depth = 0): { cat: IMSCategory; 
 export default function PartFormPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const existing = id ? mockParts.find((p) => p.id === id) : undefined
   const isEdit = !!existing
 
-  const [name, setName] = useState(existing?.name ?? '')
-  const [sku, setSku] = useState(existing?.sku ?? '')
-  const [categoryId, setCategoryId] = useState(existing?.categoryId ?? 'none')
-  const [subcategoryId, setSubcategoryId] = useState(existing?.subcategoryId ?? 'none')
-  const [brand, setBrand] = useState(existing?.brand ?? '')
-  const [model, setModel] = useState(existing?.model ?? '')
-  const [productManager, setProductManager] = useState(existing?.productManager ?? 'none')
-  const [reorderLevel, setReorderLevel] = useState(existing?.reorderLevel?.toString() ?? '10')
-  const [unitOfMeasure, setUnitOfMeasure] = useState(existing?.unitOfMeasure ?? 'Units')
-  const [hsnCode, setHsnCode] = useState(existing?.hsnCode ?? '')
+  // Read type & parent hints from the query string when creating a new part.
+  const queryType = searchParams.get('type') === 'variant' ? 'variant' : null
+  const queryParentId = searchParams.get('parentId') ?? null
+  const queryParent = queryParentId
+    ? mockParts.find((p) => p.id === queryParentId && (p.productType ?? 'parent') === 'parent')
+    : undefined
+
+  const initialProductType: PartProductType =
+    existing?.productType ?? (queryType === 'variant' ? 'variant' : 'parent')
+  const initialParentPartId =
+    existing?.parentPartId ?? queryParent?.id ?? 'none'
+
+  const [productType, setProductType] = useState<PartProductType>(initialProductType)
+  const [parentPartId, setParentPartId] = useState<string>(initialParentPartId)
+  const [condition, setCondition] = useState<VariantCondition | ''>(
+    existing?.condition ?? (initialProductType === 'variant' ? 'New' : '')
+  )
+  const [sellPrice, setSellPrice] = useState(existing?.sellPrice?.toString() ?? '')
+  const [assemblyType, setAssemblyType] = useState<PartAssemblyType | ''>(existing?.assemblyType ?? '')
+
+  const [name, setName] = useState(
+    existing?.name ?? (queryParent ? `${queryParent.name} · New` : '')
+  )
+  const [sku, setSku] = useState(
+    existing?.sku ?? (queryParent ? `${queryParent.sku}-NEW` : '')
+  )
+  const [categoryId, setCategoryId] = useState(existing?.categoryId ?? queryParent?.categoryId ?? 'none')
+  const [subcategoryId, setSubcategoryId] = useState(existing?.subcategoryId ?? queryParent?.subcategoryId ?? 'none')
+  const [brand, setBrand] = useState(existing?.brand ?? queryParent?.brand ?? '')
+  const [model, setModel] = useState(existing?.model ?? queryParent?.model ?? '')
+  const [productManager, setProductManager] = useState(existing?.productManager ?? queryParent?.productManager ?? 'none')
+  const [unitOfMeasure, setUnitOfMeasure] = useState(existing?.unitOfMeasure ?? queryParent?.unitOfMeasure ?? 'Units')
+  const [hsnCode, setHsnCode] = useState(existing?.hsnCode ?? queryParent?.hsnCode ?? '')
   const [isActive, setIsActive] = useState(existing?.isActive ?? true)
   const [description, setDescription] = useState(existing?.description ?? '')
   const [aliases, setAliases] = useState<string[]>(existing?.aliases ?? [])
@@ -71,6 +100,15 @@ export default function PartFormPage() {
   const [inwardChecklistId, setInwardChecklistId] = useState(existing?.inwardChecklistId ?? 'none')
   const [outwardChecklistId, setOutwardChecklistId] = useState(existing?.outwardChecklistId ?? 'none')
   const [inspectionChecklistId, setInspectionChecklistId] = useState(existing?.inspectionChecklistId ?? 'none')
+
+  // Parents available for variant selection: any parent-type part.
+  const availableParents = useMemo(
+    () =>
+      mockParts.filter(
+        (p) => (p.productType ?? 'parent') === 'parent' && p.isActive && p.id !== existing?.id
+      ),
+    [existing?.id]
+  )
 
   const allCategories = useMemo(() => flattenCategories(mockCategories), [])
 
@@ -141,6 +179,16 @@ export default function PartFormPage() {
       toast.error('SKU is required')
       return
     }
+    if (productType === 'variant') {
+      if (!parentPartId || parentPartId === 'none') {
+        toast.error('A variant must have a parent product')
+        return
+      }
+      if (!condition) {
+        toast.error('Select a condition for the variant')
+        return
+      }
+    }
     toast.success(isEdit ? 'Part updated successfully' : 'Part created successfully')
     navigate(backHref)
   }
@@ -149,18 +197,112 @@ export default function PartFormPage() {
     navigate(backHref)
   }
 
+  const headerTitle = isEdit
+    ? `Edit ${productType === 'variant' ? 'Variant' : 'Part'}: ${existing!.name}`
+    : productType === 'variant'
+      ? 'Add Variant'
+      : 'Add Part'
+
   return (
     <div className="space-y-6">
       <EntityHeader
-        title={isEdit ? `Edit Part: ${existing!.name}` : 'Add Part'}
+        title={headerTitle}
         backHref={backHref}
       />
 
       <Card>
         <CardHeader>
-          <CardTitle>{isEdit ? 'Edit Part Details' : 'New Part'}</CardTitle>
+          <CardTitle>
+            {isEdit
+              ? productType === 'variant'
+                ? 'Edit Variant Details'
+                : 'Edit Part Details'
+              : productType === 'variant'
+                ? 'New Variant'
+                : 'New Part'}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-8">
+          {/* Product type + parent link (top of form) */}
+          <div className="grid grid-cols-1 gap-4 rounded-md border bg-muted/30 p-4 md:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="part-type">Product Type</Label>
+              <Select
+                value={productType}
+                onValueChange={(v) => {
+                  const next = (v ?? 'parent') as PartProductType
+                  setProductType(next)
+                  if (next === 'parent') {
+                    setParentPartId('none')
+                    setCondition('')
+                  } else if (!condition) {
+                    setCondition('New')
+                  }
+                }}
+              >
+                <SelectTrigger id="part-type" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="parent">Parent Product</SelectItem>
+                  <SelectItem value="variant">Variant</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {productType === 'variant' && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="part-parent">
+                    Parent Product <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={parentPartId}
+                    onValueChange={(v) => setParentPartId(v ?? 'none')}
+                  >
+                    <SelectTrigger id="part-parent" className="w-full">
+                      <SelectValue placeholder="Select parent product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {availableParents.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name} ({p.sku})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {parentPartId !== 'none' && (
+                    <Link
+                      to={`/ims/parts/${parentPartId}`}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      View parent →
+                    </Link>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="part-condition">
+                    Condition <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={condition || 'New'}
+                    onValueChange={(v) => setCondition((v ?? 'New') as VariantCondition)}
+                  >
+                    <SelectTrigger id="part-condition" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="New">New</SelectItem>
+                      <SelectItem value="Refurbished">Refurbished</SelectItem>
+                      <SelectItem value="New Pull">New Pull</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Two-column grid */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Left column */}
@@ -268,14 +410,34 @@ export default function PartFormPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="part-reorder">Reorder Level</Label>
+                <Label htmlFor="part-price">Price (INR)</Label>
                 <Input
-                  id="part-reorder"
+                  id="part-price"
                   type="number"
-                  value={reorderLevel}
-                  onChange={(e) => setReorderLevel(e.target.value)}
+                  value={sellPrice}
+                  onChange={(e) => setSellPrice(e.target.value)}
                   min={0}
+                  placeholder="e.g., 89000"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="part-assembly">Assembly</Label>
+                <Select
+                  value={assemblyType || 'none'}
+                  onValueChange={(v) =>
+                    setAssemblyType(((v ?? 'none') === 'none' ? '' : v) as PartAssemblyType | '')
+                  }
+                >
+                  <SelectTrigger id="part-assembly" className="w-full">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="Assembled">Assembled</SelectItem>
+                    <SelectItem value="Disassembled">Disassembled</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">
