@@ -170,6 +170,7 @@ function VendorListPage() {
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
+        onRowClick={(row) => navigate(`/vendors/${row.id}`)}
       />
     </div>
   )

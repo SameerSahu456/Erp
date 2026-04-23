@@ -154,7 +154,11 @@ function WorkOrderListPage() {
     if (key === 'bomNumber') {
       return {
         display: (
-          <Link to={`/wms/bom/${row.bomId}`} className="text-xs text-primary hover:underline">
+          <Link
+            to={`/wms/bom/${row.bomId}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs text-primary hover:underline"
+          >
             {value as string}
           </Link>
         ),
@@ -194,7 +198,11 @@ function WorkOrderListPage() {
       </div>
 
       <StatsRow stats={stats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        onRowClick={(row) => navigate(`/wms/work-orders/${row.id}`)}
+      />
     </div>
   )
 }

@@ -154,7 +154,11 @@ function BOMListPage() {
       </div>
 
       <StatsRow stats={stats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        onRowClick={(row) => navigate(`/wms/bom/${row.id}`)}
+      />
     </div>
   )
 }

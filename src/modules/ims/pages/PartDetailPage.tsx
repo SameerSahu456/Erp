@@ -4,12 +4,12 @@ import {
   Pencil,
   ImageOff,
   Mail,
-  Plug,
   Plus,
   X,
   Search,
   CheckCircle2,
   ChevronDown,
+  Video,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -501,23 +501,37 @@ export default function PartDetailPage() {
     label: 'Overview',
     content: (
       <div className="space-y-6">
-        {/* Image gallery placeholder */}
-        <div className="flex gap-3">
-          {part.images.length > 0 ? (
-            part.images.map((img, i) => (
+        {/* Media gallery — images & videos combined */}
+        <div>
+          <h3 className="mb-2 text-sm font-medium">Media</h3>
+          <div className="flex flex-wrap gap-3">
+            {part.images.map((img, i) => (
               <div
-                key={i}
+                key={`img-${i}`}
                 className="flex size-32 items-center justify-center rounded-lg border bg-muted"
+                title={img}
               >
                 <ImageOff className="size-8 text-muted-foreground" />
                 <span className="sr-only">{img}</span>
               </div>
-            ))
-          ) : (
-            <div className="flex size-32 items-center justify-center rounded-lg border bg-muted">
-              <ImageOff className="size-8 text-muted-foreground" />
-            </div>
-          )}
+            ))}
+            {part.videos?.map((v, i) => (
+              <div
+                key={`vid-${i}`}
+                className="flex size-32 items-center justify-center rounded-lg border bg-muted"
+                title={v}
+              >
+                <Video className="size-8 text-muted-foreground" />
+                <span className="sr-only">{v}</span>
+              </div>
+            ))}
+            {part.images.length === 0 && (!part.videos || part.videos.length === 0) && (
+              <div className="flex size-32 flex-col items-center justify-center gap-1 rounded-lg border border-dashed bg-muted/30 text-muted-foreground">
+                <ImageOff className="size-6" />
+                <span className="text-xs">No media</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Description */}
@@ -590,10 +604,32 @@ export default function PartDetailPage() {
 
   // Parts filter their own condition: a 'New' variant only shows New stock; a 'Refurbished' only Refurb.
   // Parent parts (or parts without condition) show all condition groups.
+  // Pad SKU rows up to the declared quantity so the table reflects total units.
   const inventoryVariants = useMemo(() => {
     if (!stockItem) return []
-    if (part.condition) return stockItem.variants.filter((v) => v.type === part.condition)
-    return stockItem.variants
+    const source = part.condition
+      ? stockItem.variants.filter((v) => v.type === part.condition)
+      : stockItem.variants
+    return source.map((v) => {
+      if (v.skus.length >= v.quantity) return v
+      const missing = v.quantity - v.skus.length
+      const padded = [...v.skus]
+      for (let i = 0; i < missing; i++) {
+        const idx = v.skus.length + i + 1
+        const prefix = `${stockItem.sku}-${v.type.toUpperCase().replace(/\s+/g, '')}-${String(idx).padStart(3, '0')}`
+        padded.push({
+          sku: prefix,
+          serialNumber: '—',
+          barcode: '—',
+          status: 'In Stock',
+          grade: 'A',
+          location: stockItem.location,
+          receivedDate: v.lastUpdated,
+          lastMovement: v.lastUpdated,
+        })
+      }
+      return { ...v, skus: padded }
+    })
   }, [stockItem, part.condition])
 
   const inventoryTab = {
@@ -777,6 +813,25 @@ export default function PartDetailPage() {
     ),
   }
 
+  const historyEvents = (() => {
+    const events: { title: string; date: string; subtitle?: string; dot: string }[] = [
+      { title: 'Part created', date: part.createdAt, dot: 'bg-primary' },
+    ]
+    if (part.updatedAt) {
+      events.push({ title: 'Part updated', date: part.updatedAt, dot: 'bg-primary' })
+    }
+    if (part.inwardChecklistId) {
+      events.push({
+        title: 'Inward checklist assigned',
+        date: part.updatedAt ?? part.createdAt,
+        subtitle:
+          mockChecklistTemplates.find((t) => t.id === part.inwardChecklistId)?.name ?? 'Unknown',
+        dot: 'bg-emerald-500',
+      })
+    }
+    return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  })()
+
   const historyTab = {
     id: 'history',
     label: 'History',
@@ -784,41 +839,20 @@ export default function PartDetailPage() {
       <div className="space-y-4">
         <div className="rounded-md border p-4">
           <div className="space-y-4">
-            <div className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <div className="size-2.5 rounded-full bg-primary" />
-                <div className="w-px flex-1 bg-border" />
-              </div>
-              <div className="pb-4">
-                <p className="text-sm font-medium">Part created</p>
-                <p className="text-xs text-muted-foreground">{formatDate(part.createdAt)}</p>
-              </div>
-            </div>
-            {part.updatedAt && (
-              <div className="flex gap-3">
+            {historyEvents.map((e, i) => (
+              <div key={i} className="flex gap-3">
                 <div className="flex flex-col items-center">
-                  <div className="size-2.5 rounded-full bg-primary" />
-                  <div className="w-px flex-1 bg-border" />
+                  <div className={`size-2.5 rounded-full ${e.dot}`} />
+                  {i < historyEvents.length - 1 && <div className="w-px flex-1 bg-border" />}
                 </div>
-                <div className="pb-4">
-                  <p className="text-sm font-medium">Part updated</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(part.updatedAt)}</p>
-                </div>
-              </div>
-            )}
-            {part.inwardChecklistId && (
-              <div className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="size-2.5 rounded-full bg-emerald-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Inward checklist assigned</p>
+                <div className={i < historyEvents.length - 1 ? 'pb-4' : undefined}>
+                  <p className="text-sm font-medium">{e.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {mockChecklistTemplates.find((t) => t.id === part.inwardChecklistId)?.name ?? 'Unknown'}
+                    {e.subtitle ?? formatDate(e.date)}
                   </p>
                 </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
       </div>
@@ -831,7 +865,6 @@ export default function PartDetailPage() {
     [part.id]
   )
 
-  const [showRelatedPicker, setShowRelatedPicker] = useState(false)
   const [localRelatedParts, setLocalRelatedParts] = useState<RelatedPart[]>(relatedParts)
 
   // Parts available to add (not already related and not self)
@@ -859,9 +892,6 @@ export default function PartDetailPage() {
     [localRelatedParts],
   )
 
-  const openRelatedPicker = () => setShowRelatedPicker(true)
-  const closeRelatedPicker = () => setShowRelatedPicker(false)
-
   const handleAddRelatedPart = (target: Part, _qty: number) => {
     const newRP: RelatedPart = {
       id: `RP-NEW-${Date.now()}`,
@@ -887,40 +917,25 @@ export default function PartDetailPage() {
     content: (
       <div className="space-y-6">
         <div>
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3">
             <h3 className="text-sm font-medium">
               Compatible Parts
               <span className="ml-2 text-xs font-normal text-muted-foreground">
                 ({localRelatedParts.length})
               </span>
             </h3>
-            {!showRelatedPicker && (
-              <Button size="sm" variant="outline" onClick={openRelatedPicker}>
-                <Plus className="mr-1 size-3.5" />
-                {localRelatedParts.length > 0 ? 'Manage compatible parts' : 'Add Compatible Part'}
-              </Button>
-            )}
           </div>
 
-          {showRelatedPicker ? (
-            <InlinePartPicker
-              availableParts={availableParts}
-              addedItems={relatedAddedItems}
-              onAdd={handleAddRelatedPart}
-              onRemove={handleRemoveRelatedPart}
-              onClose={closeRelatedPicker}
-              title="Compatible parts"
-              description="Each hardware type is listed below. Already-added parts appear at the top of their section. Use the search inside a section to find and add more."
-            />
-          ) : localRelatedParts.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-8 text-center">
-              <Plug className="mx-auto mb-2 size-8 text-muted-foreground" />
-              <p className="text-sm font-medium">No compatible parts yet</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Click "Add Compatible Part" to browse parts by hardware type.
-              </p>
-            </div>
-          ) : null}
+          <InlinePartPicker
+            availableParts={availableParts}
+            addedItems={relatedAddedItems}
+            onAdd={handleAddRelatedPart}
+            onRemove={handleRemoveRelatedPart}
+            onClose={() => {}}
+            title="Compatible parts"
+            description="Each hardware type is listed below. Already-added parts appear at the top of their section. Use the search inside a section to find and add more."
+            embedded
+          />
         </div>
       </div>
     ),
@@ -1172,12 +1187,12 @@ export default function PartDetailPage() {
 
               return (
                 <div key={bom.id}>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedBOMId(isExpanded ? null : bom.id)}
-                    className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-muted/50"
-                  >
-                    <div className="flex items-center gap-2">
+                  <div className="flex w-full items-center justify-between px-4 py-3 transition-colors hover:bg-muted/50">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedBOMId(isExpanded ? null : bom.id)}
+                      className="flex flex-1 items-center gap-2 text-left"
+                    >
                       <ChevronDown
                         className={`size-4 text-muted-foreground transition-transform ${isExpanded ? '' : '-rotate-90'}`}
                       />
@@ -1187,11 +1202,24 @@ export default function PartDetailPage() {
                           {bom.items.length} {bom.items.length === 1 ? 'part' : 'parts'}
                         </p>
                       </div>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <StatusBadge variant={bom.type === 'ASSEMBLY' ? 'info' : 'warning'}>
+                        {bom.type === 'ASSEMBLY' ? 'Assembled' : 'Disassembled'}
+                      </StatusBadge>
+                      {isExpanded && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setExpandedBOMId(null)}
+                          aria-label="Close"
+                          className="size-7"
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      )}
                     </div>
-                    <StatusBadge variant={bom.type === 'ASSEMBLY' ? 'info' : 'warning'}>
-                      {bom.type === 'ASSEMBLY' ? 'Assembled' : 'Disassembled'}
-                    </StatusBadge>
-                  </button>
+                  </div>
                   {isExpanded && (
                     <div className="border-t bg-muted/10 p-4">
                       <InlinePartPicker
@@ -1364,6 +1392,10 @@ export default function PartDetailPage() {
               <CardTitle className="text-sm">Part Info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">SKU</span>
+                <span className="font-mono text-xs font-medium">{part.sku}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Category</span>
                 <span className="font-medium">{part.categoryName}</span>

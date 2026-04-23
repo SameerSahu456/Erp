@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -21,6 +21,7 @@ const currencyFmt = new Intl.NumberFormat('en-IN', {
 type EditingCell = { itemId: string; variantType: string } | null
 
 export default function StockItemsPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [items, setItems] = useState<StockItem[]>(mockStockItems)
   const [editing, setEditing] = useState<EditingCell>(null)
@@ -156,6 +157,7 @@ export default function StockItemsPage() {
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={savePrice}
+              onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') savePrice()
                 if (e.key === 'Escape') cancelEditing()
@@ -170,7 +172,10 @@ export default function StockItemsPage() {
         display: (
           <button
             type="button"
-            onClick={() => startEditing(itemId, variantType, value)}
+            onClick={(e) => {
+              e.stopPropagation()
+              startEditing(itemId, variantType, value)
+            }}
             className="group inline-flex items-center gap-1 text-right"
           >
             <span>{currencyFmt.format(value)}</span>
@@ -196,7 +201,15 @@ export default function StockItemsPage() {
         className="max-w-sm"
       />
 
-      <BusinessMetricsTable tabs={[tab]} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable
+        tabs={[tab]}
+        cellFormatter={cellFormatter}
+        onRowClick={(row) => {
+          const rowId = row.id as string
+          const itemId = rowId.split('__')[0] ?? rowId
+          navigate(`/ims/stock-items/${itemId}`)
+        }}
+      />
     </div>
   )
 }

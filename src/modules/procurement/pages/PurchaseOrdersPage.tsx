@@ -150,6 +150,7 @@ function PurchaseOrdersPage() {
             tabs={tabs}
             cellFormatter={cellFormatter}
             pageSize={10}
+            onRowClick={(row) => navigate(`/procurement/po/${row.id}`)}
           />
         </CardContent>
       </Card>

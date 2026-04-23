@@ -566,12 +566,15 @@ export default function PartFormPage() {
               </div>
             </div>
 
-            {/* Image Upload placeholder */}
+            {/* Media Upload placeholder — images & videos */}
             <div className="space-y-1.5">
-              <Label>Images</Label>
-              <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-8">
+              <Label>Media</Label>
+              <div className="flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  Drag and drop images here, or click to upload (placeholder)
+                  Drag and drop images or videos here, or click to upload
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Supports JPG, PNG, MP4, WebM (placeholder)
                 </p>
               </div>
             </div>

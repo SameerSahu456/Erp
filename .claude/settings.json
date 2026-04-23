@@ -5,7 +5,24 @@
       "Bash(lsof -ti:5173)",
       "Bash(git commit -m ' *)",
       "Bash(lsof -ti:5174)",
-      "Bash(grep -n \"^function MaterialInquiryDetailPage\\\\|^export\\\\|^function \\\\|^}$\" /Users/macbookpro/Documents/erp-demo/src/modules/crm/pages/MaterialInquiryDetailPage.tsx)"
+      "Bash(grep -n \"^function MaterialInquiryDetailPage\\\\|^export\\\\|^function \\\\|^}$\" /Users/macbookpro/Documents/erp-demo/src/modules/crm/pages/MaterialInquiryDetailPage.tsx)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --virtual-time-budget=4000 --screenshot=/tmp/parts-page.png --window-size=1400,900 http://localhost:5173/ims/parts)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --virtual-time-budget=4000 --screenshot=/tmp/parent-detail.png --window-size=1400,900 http://localhost:5173/ims/parts/PART-001)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --virtual-time-budget=4000 --enable-logging=stderr http://localhost:5173/ims/parts)",
+      "Bash(kill 91453)",
+      "Bash(lsof -iTCP:5173 -sTCP:LISTEN)",
+      "Bash(lsof -iTCP:5173)",
+      "Bash(kill 61956)",
+      "Bash(disown)",
+      "Bash(echo \"started, pid=$!\")",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --virtual-time-budget=4000 --screenshot=/tmp/parts-list-v2.png --window-size=1500,900 http://localhost:5173/ims/parts)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --virtual-time-budget=4000 --screenshot=/tmp/parts-v4.png --window-size=1500,900 http://localhost:5173/ims/parts)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --virtual-time-budget=4000 --screenshot=/tmp/server-v4.png --window-size=1400,900 http://localhost:5173/ims/parts/PART-008)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --virtual-time-budget=4000 --screenshot=/tmp/laptop-v4.png --window-size=1400,900 http://localhost:5173/ims/parts/PART-001)",
+      "Bash(lsof -ti:5173 -ti:5174 -ti:3000)"
     ]
   }
 }

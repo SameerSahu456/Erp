@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -56,6 +56,7 @@ const columns = [
 ]
 
 export default function RentalContractsPage() {
+  const navigate = useNavigate()
   const allRows = useMemo(() => mockRentalContracts.map(contractToRow), [])
 
   const tabs: TabConfig[] = useMemo(
@@ -153,7 +154,11 @@ export default function RentalContractsPage() {
         </Button>
       </div>
 
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        onRowClick={(row) => navigate(`/rentals/contracts/${row.id}`)}
+      />
     </div>
   )
 }

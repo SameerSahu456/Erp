@@ -440,6 +440,7 @@ export interface Part {
   model?: string
   description?: string
   images: string[]  // URLs or placeholder paths
+  videos?: string[]  // URLs or placeholder paths
   specifications?: Record<string, string>  // e.g., { 'RAM': '16GB', 'Storage': '512GB SSD' }
   productManager?: string
   productManagerEmail?: string

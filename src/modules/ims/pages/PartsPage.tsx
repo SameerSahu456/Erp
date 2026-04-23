@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Plus, GitBranch } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,7 @@ import {
 } from '@/components/common/BusinessMetricsTable'
 import { mockParts } from '../data/parts'
 import { mockPricing } from '../data/pricing'
+import { mockStockItems } from '../data/stock-items'
 import type { Part, VariantCondition } from '@/modules/wms/types'
 
 const MOCK_PRODUCT_MANAGERS = ['Rahul Mehta', 'Vikram Singh', 'Priya Sharma']
@@ -60,6 +61,19 @@ function priceForPart(
   return own?.new ?? own?.refurb ?? null
 }
 
+function qtyForPart(part: Part): number | null {
+  const stockItem = mockStockItems.find(
+    (si) =>
+      si.name === part.name ||
+      si.sku.includes(part.sku.split('-').pop() ?? '')
+  )
+  if (!stockItem) return null
+  const variants = part.condition
+    ? stockItem.variants.filter((v) => v.type === part.condition)
+    : stockItem.variants
+  return variants.reduce((sum, v) => sum + v.quantity, 0)
+}
+
 function conditionVariant(c: VariantCondition | undefined): 'success' | 'info' | 'warning' | 'neutral' {
   if (c === 'New') return 'success'
   if (c === 'Refurbished') return 'info'
@@ -68,6 +82,7 @@ function conditionVariant(c: VariantCondition | undefined): 'success' | 'info' |
 }
 
 export default function PartsPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [brandFilter, setBrandFilter] = useState('all')
@@ -118,6 +133,7 @@ export default function PartsPage() {
       { key: 'brand', label: 'Brand', sortable: true, filterable: true },
       { key: 'type', label: 'Type', sortable: true, filterable: true },
       { key: 'condition', label: 'Condition', sortable: true, filterable: true },
+      { key: 'qty', label: 'Qty', sortable: true, align: 'right' },
       { key: 'price', label: 'Price', sortable: true, align: 'right' },
       { key: 'assembly', label: 'Assembly', sortable: true, filterable: true },
       { key: 'status', label: 'Status', sortable: true, filterable: true },
@@ -125,6 +141,7 @@ export default function PartsPage() {
     data: filtered.map((p) => {
       const type = p.productType ?? 'parent'
       const price = priceForPart(p, parentPriceLookup)
+      const qty = qtyForPart(p)
       return {
         name: p.name,
         model: p.model ?? '-',
@@ -133,6 +150,7 @@ export default function PartsPage() {
         brand: p.brand,
         type: type === 'variant' ? 'Variant' : 'Parent',
         condition: p.condition ?? '-',
+        qty: qty ?? null,
         price: price ?? null,
         assembly: p.assemblyType ?? '-',
         status: p.isActive ? 'Active' : 'Inactive',
@@ -198,6 +216,14 @@ export default function PartsPage() {
             {String(value)}
           </StatusBadge>
         ),
+      }
+    }
+    if (key === 'qty') {
+      if (value == null) {
+        return { display: <span className="text-muted-foreground">-</span> }
+      }
+      return {
+        display: <span className="tabular-nums">{String(value)}</span>,
       }
     }
     if (key === 'price') {
@@ -330,6 +356,7 @@ export default function PartsPage() {
       <BusinessMetricsTable
         tabs={[tab]}
         cellFormatter={cellFormatter}
+        onRowClick={(row) => navigate(`/ims/parts/${row._id}`)}
       />
     </div>
   )

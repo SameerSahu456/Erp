@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Pencil } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,7 @@ import {
 import { mockOEMs, type OEM } from '../data/oems'
 
 export default function OEMListPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
 
@@ -89,10 +90,12 @@ export default function OEMListPage() {
     if (key === 'actions' && typeof value === 'string') {
       return {
         display: (
-          <Button variant="ghost" size="sm" render={<Link to={`/ims/oems/${value}/edit`} />}>
-            <Pencil className="mr-1.5 size-3.5" />
-            Edit
-          </Button>
+          <span onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="sm" render={<Link to={`/ims/oems/${value}/edit`} />}>
+              <Pencil className="mr-1.5 size-3.5" />
+              Edit
+            </Button>
+          </span>
         ),
       }
     }
@@ -135,6 +138,7 @@ export default function OEMListPage() {
       <BusinessMetricsTable
         tabs={[tab]}
         cellFormatter={cellFormatter}
+        onRowClick={(row) => navigate(`/ims/oems/${row._id}`)}
       />
     </div>
   )
