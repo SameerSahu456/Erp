@@ -1,16 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, GitBranch } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import {
   BusinessMetricsTable,
@@ -21,8 +13,6 @@ import { mockParts } from '../data/parts'
 import { mockPricing } from '../data/pricing'
 import { mockStockItems } from '../data/stock-items'
 import type { Part, VariantCondition } from '@/modules/wms/types'
-
-const MOCK_PRODUCT_MANAGERS = ['Rahul Mehta', 'Vikram Singh', 'Priya Sharma']
 
 const currencyFmt = new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -83,56 +73,58 @@ function conditionVariant(c: VariantCondition | undefined): 'success' | 'info' |
 
 export default function PartsPage() {
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('all')
-  const [brandFilter, setBrandFilter] = useState('all')
-  const [pmFilter, setPmFilter] = useState('all')
-  const [typeFilter, setTypeFilter] = useState<'all' | 'parent' | 'variant'>('all')
-  const [showActive, setShowActive] = useState<'all' | 'active'>('active')
 
   const parentPriceLookup = useMemo(() => buildParentPriceLookup(), [])
 
-  const categories = useMemo(
-    () => Array.from(new Set(mockParts.map((p) => p.categoryName))).sort(),
-    []
-  )
-  const brands = useMemo(
-    () => Array.from(new Set(mockParts.map((p) => p.brand))).sort(),
-    []
-  )
-
+  // Demo scope: only Servers + a curated set of laptops (the ones with variants so
+  // the variant icon is visible). Interleaves variants directly under their parent
+  // so they show on the first page instead of clustering at the end.
   const filtered = useMemo(() => {
-    return mockParts.filter((p) => {
-      if (categoryFilter !== 'all' && p.categoryName !== categoryFilter) return false
-      if (brandFilter !== 'all' && p.brand !== brandFilter) return false
-      if (pmFilter !== 'all' && p.productManager !== pmFilter) return false
-      if (typeFilter !== 'all') {
-        const t = p.productType ?? 'parent'
-        if (t !== typeFilter) return false
+    const FEATURED_LAPTOP_IDS = new Set(['PART-001', 'PART-002', 'PART-004'])
+    const active = mockParts.filter((p) => p.isActive)
+    const variantsByParent = new Map<string, Part[]>()
+    for (const p of active) {
+      if ((p.productType ?? 'parent') === 'variant' && p.parentPartId) {
+        const bucket = variantsByParent.get(p.parentPartId) ?? []
+        bucket.push(p)
+        variantsByParent.set(p.parentPartId, bucket)
       }
-      if (showActive === 'active' && !p.isActive) return false
-      if (search) {
-        const q = search.toLowerCase()
-        const matchesName = p.name.toLowerCase().includes(q)
-        const matchesSku = p.sku.toLowerCase().includes(q)
-        const matchesAlias = p.aliases.some((a) => a.toLowerCase().includes(q))
-        if (!matchesName && !matchesSku && !matchesAlias) return false
-      }
-      return true
+    }
+    const parents = active.filter(
+      (p) =>
+        (p.productType ?? 'parent') === 'parent' &&
+        (p.categoryName === 'Servers' || FEATURED_LAPTOP_IDS.has(p.id)),
+    )
+    // HPE DL360 Gen11 first (it + its 3 variants lead page 1), then other Servers,
+    // then the featured laptops.
+    parents.sort((a, b) => {
+      const aFeatured = a.id === 'PART-022' ? 0 : 1
+      const bFeatured = b.id === 'PART-022' ? 0 : 1
+      if (aFeatured !== bFeatured) return aFeatured - bFeatured
+      const aServer = a.categoryName === 'Servers' ? 0 : 1
+      const bServer = b.categoryName === 'Servers' ? 0 : 1
+      return aServer - bServer
     })
-  }, [search, categoryFilter, brandFilter, pmFilter, typeFilter, showActive])
+    const result: Part[] = []
+    for (const parent of parents) {
+      result.push(parent)
+      const kids = variantsByParent.get(parent.id)
+      if (kids) result.push(...kids)
+    }
+    return result
+  }, [])
 
   const tab: TabConfig = {
     id: 'parts',
     label: `Parts (${filtered.length})`,
     columns: [
-      { key: 'name', label: 'Name', sortable: true },
+      { key: 'name', label: 'Part No', sortable: true },
+      { key: 'condition', label: 'Condition', sortable: true, filterable: true },
       { key: 'model', label: 'Model', sortable: true },
       { key: 'aliases', label: 'Alias' },
       { key: 'category', label: 'Category', sortable: true, filterable: true },
       { key: 'brand', label: 'Brand', sortable: true, filterable: true },
       { key: 'type', label: 'Type', sortable: true, filterable: true },
-      { key: 'condition', label: 'Condition', sortable: true, filterable: true },
       { key: 'qty', label: 'Qty', sortable: true, align: 'right' },
       { key: 'price', label: 'Price', sortable: true, align: 'right' },
       { key: 'assembly', label: 'Assembly', sortable: true, filterable: true },
@@ -169,7 +161,12 @@ export default function PartsPage() {
         display: (
           <div className="flex items-center gap-2">
             {productType === 'variant' && (
-              <GitBranch className="size-3.5 shrink-0 text-muted-foreground" />
+              <span
+                title="Variant"
+                className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+              >
+                <GitBranch className="size-3" />
+              </span>
             )}
             <Link to={`/ims/parts/${id}`} className="font-medium text-primary hover:underline">
               {value}
@@ -269,7 +266,7 @@ export default function PartsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 bmt-search-lg">
       <div className="flex items-center justify-between">
         <h1 className="cpt-page-title">
           Parts
@@ -286,76 +283,10 @@ export default function PartsPage() {
         </div>
       </div>
 
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v ?? 'all')}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={brandFilter} onValueChange={(v) => setBrandFilter(v ?? 'all')}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Brand" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Brands</SelectItem>
-            {brands.map((b) => (
-              <SelectItem key={b} value={b}>{b}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={pmFilter} onValueChange={(v) => setPmFilter(v ?? 'all')}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="PM" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All PMs</SelectItem>
-            {MOCK_PRODUCT_MANAGERS.map((pm) => (
-              <SelectItem key={pm} value={pm}>{pm}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter((v ?? 'all') as typeof typeFilter)}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="parent">Parent</SelectItem>
-            <SelectItem value="variant">Variant</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={showActive} onValueChange={(v) => setShowActive((v ?? 'active') as 'all' | 'active')}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Active Only</SelectItem>
-            <SelectItem value="all">All</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Input
-          placeholder="Search name, SKU, alias..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-10 w-96 flex-1 min-w-[300px]"
-        />
-      </div>
-
       <BusinessMetricsTable
         tabs={[tab]}
         cellFormatter={cellFormatter}
+        persistKey="ims-parts"
         onRowClick={(row) => navigate(`/ims/parts/${row._id}`)}
       />
     </div>

@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '@/modules/crm/components/EntityHeader'
 import { mockCategories } from '../data/categories'
 import type { IMSCategory } from '@/modules/wms/types'
@@ -50,6 +51,7 @@ export default function CategoryFormPage() {
   const [isActive, setIsActive] = useState(existing?.isActive ?? true)
 
   const backHref = '/ims/categories'
+  const goBack = useNavigateBack(backHref)
   const topLevelCategories = getTopLevelCategories()
 
   function handleSave() {
@@ -62,7 +64,7 @@ export default function CategoryFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   return (

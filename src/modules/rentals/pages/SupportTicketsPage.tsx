@@ -93,7 +93,7 @@ function SupportTicketsPage() {
       </div>
 
       <StatsRow stats={kpiStats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-support" />
     </div>
   )
 }

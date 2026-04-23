@@ -91,6 +91,7 @@ function SalesOrdersPage() {
         tabs={[ordersTab]}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="crm-sales-orders"
         onRowClick={(row) => navigate(`/crm/sales-orders/${row.id}`)}
       />
     </div>

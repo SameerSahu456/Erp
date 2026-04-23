@@ -46,7 +46,9 @@ function DetailTabs({ tabs, defaultTab, className }: DetailTabsProps) {
           </button>
         ))}
       </div>
-      {tabs[activeIndex] && tabs[activeIndex].content}
+      {tabs[activeIndex] && (
+        <div className="pt-6">{tabs[activeIndex].content}</div>
+      )}
     </div>
   )
 }

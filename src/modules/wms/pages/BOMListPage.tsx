@@ -157,6 +157,7 @@ function BOMListPage() {
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
+        persistKey="wms-bom"
         onRowClick={(row) => navigate(`/wms/bom/${row.id}`)}
       />
     </div>

@@ -201,6 +201,7 @@ function WorkOrderListPage() {
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
+        persistKey="wms-work-orders"
         onRowClick={(row) => navigate(`/wms/work-orders/${row.id}`)}
       />
     </div>

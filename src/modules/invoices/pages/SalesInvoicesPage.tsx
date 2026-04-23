@@ -110,6 +110,7 @@ function SalesInvoicesPage() {
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="invoices-sales"
         onRowClick={(row) => navigate(`/invoices/sales/${row.id}`)}
       />
     </div>

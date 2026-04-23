@@ -146,12 +146,12 @@ const CategoriesPage = lazy(() => import('@/modules/ims/pages/CategoriesPage'))
 const CategoryFormPage = lazy(() => import('@/modules/ims/pages/CategoryFormPage'))
 const StockItemsPage = lazy(() => import('@/modules/ims/pages/StockItemsPage'))
 const StockItemDetailPage = lazy(() => import('@/modules/ims/pages/StockItemDetailPage'))
+const StockItemFormPage = lazy(() => import('@/modules/ims/pages/StockItemFormPage'))
 const ImsReportsPage = lazy(() => import('@/modules/ims/pages/ImsReportsPage'))
 const SkuHistoryPage = lazy(() => import('@/modules/ims/pages/SkuHistoryPage'))
 const PartsPage = lazy(() => import('@/modules/ims/pages/PartsPage'))
 const PartDetailPage = lazy(() => import('@/modules/ims/pages/PartDetailPage'))
 const PartFormPage = lazy(() => import('@/modules/ims/pages/PartFormPage'))
-const PricingPage = lazy(() => import('@/modules/ims/pages/PricingPage'))
 const OEMListPage = lazy(() => import('@/modules/ims/pages/OEMListPage'))
 const OEMFormPage = lazy(() => import('@/modules/ims/pages/OEMFormPage'))
 const OEMDetailPage = lazy(() => import('@/modules/ims/pages/OEMDetailPage'))
@@ -274,6 +274,7 @@ export const router = createBrowserRouter([
       { path: '/ims/parts/:id', element: <LazyRoute><PartDetailPage /></LazyRoute> },
       { path: '/ims/parts/:id/edit', element: <LazyRoute><PartFormPage /></LazyRoute> },
       { path: '/ims/stock-items', element: <LazyRoute><StockItemsPage /></LazyRoute> },
+      { path: '/ims/stock-items/new', element: <LazyRoute><StockItemFormPage /></LazyRoute> },
       { path: '/ims/stock-items/:id', element: <LazyRoute><StockItemDetailPage /></LazyRoute> },
       { path: '/ims/stock-items/:id/sku/:sku', element: <LazyRoute><SkuHistoryPage /></LazyRoute> },
       { path: '/ims/oems', element: <LazyRoute><OEMListPage /></LazyRoute> },
@@ -281,7 +282,6 @@ export const router = createBrowserRouter([
       { path: '/ims/oems/:id', element: <LazyRoute><OEMDetailPage /></LazyRoute> },
       { path: '/ims/oems/:id/edit', element: <LazyRoute><OEMFormPage /></LazyRoute> },
       { path: '/ims/pm-assignments', element: <LazyRoute><PMAssignmentsPage /></LazyRoute> },
-      { path: '/ims/pricing', element: <LazyRoute><PricingPage /></LazyRoute> },
       { path: '/ims/reports', element: <LazyRoute><ImsReportsPage /></LazyRoute> },
 
       // Procurement routes

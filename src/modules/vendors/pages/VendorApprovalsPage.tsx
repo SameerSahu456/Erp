@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { usePersistedState } from '@/hooks/use-persisted-state'
 import { CheckCircle, XCircle, Eye, ClipboardCheck } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -44,7 +45,7 @@ function getStatusVariant(status: VendorOnboardingStatus): StatusBadgeVariant {
 }
 
 function VendorApprovalsPage() {
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = usePersistedState<string>('vendors-approvals:status', 'all')
   const [approveDialogVendor, setApproveDialogVendor] = useState<VendorRegistration | null>(null)
   const [rejectDialogVendor, setRejectDialogVendor] = useState<VendorRegistration | null>(null)
   const [rejectReason, setRejectReason] = useState('')

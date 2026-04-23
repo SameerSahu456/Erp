@@ -221,7 +221,7 @@ function PaintPage() {
       </div>
 
       {/* Paint Jobs Table */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-paint" />
     </div>
   )
 }

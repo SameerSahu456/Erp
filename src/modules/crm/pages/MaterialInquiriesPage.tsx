@@ -82,6 +82,7 @@ function MaterialInquiriesPage() {
         tabs={[miTab]}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="crm-material-inquiries"
         onRowClick={(row) => navigate(`/crm/material-inquiries/${row.id}`)}
       />
     </div>

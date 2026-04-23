@@ -180,6 +180,7 @@ function RejectedLeadsPage() {
         tabs={[tab]}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="crm-rejected-leads"
         onRowClick={(row) => navigate(`/crm/leads/${row.id}`)}
       />
     </div>

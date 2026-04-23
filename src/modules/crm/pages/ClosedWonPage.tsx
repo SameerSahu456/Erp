@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import {
   ArrowLeft, Check, Plus, Trash2, Building2, ShoppingCart,
   Upload, FileText, X, Package, Search, Tag, Cpu, MapPin,
@@ -135,6 +136,7 @@ function ClosedWonPage() {
   const existingAccountName = deal?.accountName ?? ''
 
   const backPath = isLead ? `/crm/leads/${id}` : `/crm/deals/${id}`
+  const goBack = useNavigateBack(backPath)
 
   const [currentStep, setCurrentStep] = useState(1)
 
@@ -220,7 +222,7 @@ function ClosedWonPage() {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
         <h2 className="font-display text-xl font-semibold">{isLead ? 'Lead' : 'Deal'} not found</h2>
-        <Button variant="outline" onClick={() => navigate(backPath)}>Go Back</Button>
+        <Button variant="outline" onClick={goBack}>Go Back</Button>
       </div>
     )
   }
@@ -329,7 +331,7 @@ function ClosedWonPage() {
       <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center justify-between px-8 py-4">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => navigate(backPath)}>
+            <Button variant="outline" size="icon" aria-label="Back" onClick={goBack}>
               <ArrowLeft className="size-4" />
             </Button>
             <div>
@@ -341,7 +343,7 @@ function ClosedWonPage() {
               </p>
             </div>
           </div>
-          <Button variant="ghost" onClick={() => navigate(backPath)}>Cancel</Button>
+          <Button variant="ghost" onClick={goBack}>Cancel</Button>
         </div>
 
         {/* Step indicator */}

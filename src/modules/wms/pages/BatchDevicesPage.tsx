@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { ArrowLeft, CalendarDays, Package, Tag, Layers, Send, ChevronDown, ChevronRight, Printer } from 'lucide-react'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -89,6 +90,7 @@ function handlePrintBarcode(barcode: string, model: string, serial: string) {
 
 function BatchDevicesPage() {
   const { id } = useParams<{ id: string }>()
+  const goBack = useNavigateBack('/wms/inward')
 
   const batch = mockBatches.find((b) => b.id === id)
   const initialDevices = useMemo(
@@ -104,7 +106,7 @@ function BatchDevicesPage() {
       <EmptyState
         title="Batch not found"
         description="The batch you are looking for does not exist."
-        action={{ label: 'Back to Inward', onClick: () => window.history.back() }}
+        action={{ label: 'Back to Inward', onClick: goBack }}
       />
     )
   }
@@ -178,7 +180,7 @@ function BatchDevicesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <Button variant="ghost" size="icon-sm" render={<Link to="/wms/inward" />}>
+          <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={goBack}>
             <ArrowLeft />
           </Button>
           <div className="min-w-0 space-y-1">

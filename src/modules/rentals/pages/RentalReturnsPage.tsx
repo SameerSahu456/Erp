@@ -252,7 +252,7 @@ export default function RentalReturnsPage() {
         </Card>
       )}
 
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-returns" />
 
       {/* Detail panel for selected return */}
       {selectedReturn && (

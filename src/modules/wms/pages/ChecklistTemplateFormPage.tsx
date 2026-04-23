@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { ArrowLeft, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -57,6 +58,7 @@ function flattenCategories(cats: IMSCategory[], level: 'category' | 'subcategory
 function ChecklistTemplateFormPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const goBack = useNavigateBack('/wms/checklists')
   const existing = id ? mockChecklistTemplates.find((t) => t.id === id) : null
   const isEdit = Boolean(existing)
 
@@ -133,7 +135,7 @@ function ChecklistTemplateFormPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon-sm" render={<Link to="/wms/checklists" />}>
+        <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={goBack}>
           <ArrowLeft />
         </Button>
         <div className="min-w-0">
@@ -322,7 +324,7 @@ function ChecklistTemplateFormPage() {
           )}
         </CardContent>
         <CardFooter className="justify-end gap-2">
-          <Button variant="outline" onClick={() => navigate('/wms/checklists')}>
+          <Button variant="outline" onClick={goBack}>
             Cancel
           </Button>
           <Button onClick={handleSave}>

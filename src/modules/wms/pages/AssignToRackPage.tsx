@@ -302,7 +302,7 @@ function AssignToRackPage() {
       </div>
 
       {/* Device Table */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-assign-rack" />
 
       {/* Assign Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { toast } from 'sonner'
 import {
   ArrowLeft,
@@ -88,6 +89,7 @@ const CONFIG_ACTION_VARIANT: Record<string, 'success' | 'warning' | 'info' | 'ne
 function SalesOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const goBack = useNavigateBack('/crm/sales-orders')
 
   const so = useMemo(() => salesOrders.find((s) => s.id === id), [id])
 
@@ -95,7 +97,7 @@ function SalesOrderDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <p className="text-muted-foreground">Sales Order not found</p>
-        <Button variant="ghost" className="mt-4" onClick={() => navigate('/crm/sales-orders')}>
+        <Button variant="ghost" className="mt-4" onClick={goBack}>
           Back to Sales Orders
         </Button>
       </div>
@@ -116,7 +118,7 @@ function SalesOrderDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/crm/sales-orders')}>
+        <Button variant="ghost" size="icon" onClick={goBack}>
           <ArrowLeft className="size-4" />
         </Button>
         <div className="flex-1">

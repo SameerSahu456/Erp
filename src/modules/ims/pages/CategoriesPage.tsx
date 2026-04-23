@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { usePersistedState } from '@/hooks/use-persisted-state'
 import {
   ChevronRight,
   FolderOpen,
@@ -167,7 +168,7 @@ function CategoryNode({ category, depth, expanded, onToggle }: CategoryNodeProps
 }
 
 export default function CategoriesPage() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = usePersistedState('ims-categories:search', '')
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(mockCategories.map((c) => c.id)),
   )
@@ -222,21 +223,21 @@ export default function CategoriesPage() {
 
       {/* Search + simple toggle */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search categories..."
-            className="h-10 pl-9 pr-9"
+            className="h-12 pl-12 pr-10 text-base"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Clear search"
             >
-              <X className="size-3.5" />
+              <X className="size-4" />
             </button>
           )}
         </div>

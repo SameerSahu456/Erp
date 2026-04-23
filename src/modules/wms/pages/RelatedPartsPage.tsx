@@ -157,7 +157,7 @@ function RelatedPartsPage() {
       </div>
 
       <StatsRow stats={stats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-related-parts" />
     </div>
   )
 }

@@ -203,6 +203,7 @@ export default function ImsReportsPage() {
       <BusinessMetricsTable
         tabs={[stockSummaryTab, lowStockTab, valuationTab, movementTab]}
         cellFormatter={cellFormatter}
+        persistKey="ims-reports"
       />
     </div>
   )

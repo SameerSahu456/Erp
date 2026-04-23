@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { Check, Plus, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -100,6 +101,7 @@ function getInitialFormData(customer?: CustomerRegistration): FormData {
 function CustomerFormPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const goBack = useNavigateBack('/customers')
   const isEdit = Boolean(id) && id !== 'new'
   const existingCustomer = isEdit ? mockCustomerRegistrations.find((c) => c.id === id) : undefined
 
@@ -785,7 +787,7 @@ function CustomerFormPage() {
               : 'Complete all steps to register a new customer'}
           </p>
         </div>
-        <Button variant="outline" render={<Link to="/customers" />}>
+        <Button variant="outline" onClick={goBack}>
           Cancel
         </Button>
       </div>

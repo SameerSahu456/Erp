@@ -179,6 +179,7 @@ function AccountsPage() {
         tabs={[accountsTab]}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="crm-accounts"
         onRowClick={(row) => navigate(`/crm/accounts/${row.id}`)}
       />
     </div>

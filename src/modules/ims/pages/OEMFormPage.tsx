@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '@/modules/crm/components/EntityHeader'
 import { mockOEMs } from '../data/oems'
 import { mockCategories } from '../data/categories'
@@ -54,6 +55,7 @@ export default function OEMFormPage() {
   }
 
   const backHref = isEdit ? `/ims/oems/${id}` : '/ims/oems'
+  const goBack = useNavigateBack(backHref)
 
   function handleSave() {
     if (!name.trim()) {
@@ -65,7 +67,7 @@ export default function OEMFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   return (

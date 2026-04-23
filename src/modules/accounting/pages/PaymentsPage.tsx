@@ -107,6 +107,7 @@ function PaymentsPage() {
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="accounting-payments"
       />
     </div>
   )

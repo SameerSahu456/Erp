@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { usePersistedState } from '@/hooks/use-persisted-state'
 import {
   Plus,
   Video,
@@ -61,9 +62,9 @@ function getTypeIcon(type: MeetingType) {
 
 function MeetingsPage() {
   const [meetings, setMeetings] = useState(mockMeetings)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [search, setSearch] = usePersistedState('crm-meetings:search', '')
+  const [statusFilter, setStatusFilter] = usePersistedState<string>('crm-meetings:status', 'all')
+  const [typeFilter, setTypeFilter] = usePersistedState<string>('crm-meetings:type', 'all')
   const [createOpen, setCreateOpen] = useState(false)
   const [newMeeting, setNewMeeting] = useState({
     title: '',

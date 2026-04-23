@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import {
   ArrowLeft,
   Package,
@@ -80,7 +81,7 @@ function getActiveStage(status: DemoRequestStatus): number {
 
 function DemoRequestDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const goBack = useNavigateBack('/crm/demo-requests')
 
   const demo = useMemo(() => demoRequests.find((d) => d.id === id), [id])
 
@@ -88,7 +89,7 @@ function DemoRequestDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <p className="text-muted-foreground">Demo request not found</p>
-        <Button variant="ghost" className="mt-4" onClick={() => navigate('/crm/demo-requests')}>
+        <Button variant="ghost" className="mt-4" onClick={goBack}>
           Back to Demo Requests
         </Button>
       </div>
@@ -104,7 +105,7 @@ function DemoRequestDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/crm/demo-requests')}>
+        <Button variant="ghost" size="icon" onClick={goBack}>
           <ArrowLeft className="size-4" />
         </Button>
         <div className="flex-1">

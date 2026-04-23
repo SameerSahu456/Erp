@@ -215,7 +215,7 @@ export default function DeviceTrackingPage() {
         </Button>
       </div>
 
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-tracking" />
     </div>
   )
 }

@@ -1,8 +1,8 @@
 import { ArrowLeft } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 
 interface EntityHeaderProps {
   title: string
@@ -48,13 +48,20 @@ function EntityHeader({
 }: EntityHeaderProps) {
   // Normalize to array — prefer owners prop, fall back to single owner
   const ownerList = owners ?? (owner ? [owner] : [])
+  const goBack = useNavigateBack(backHref)
 
   return (
     <div className={cn('cpt-page-header', className)}>
       <div className="cpt-row" style={{ alignItems: 'flex-start', gap: 12 }}>
-        <Link to={backHref} className="cpt-btn cpt-btn-ghost" style={{ padding: 6, borderRadius: 7, marginTop: 2 }}>
+        <button
+          type="button"
+          onClick={goBack}
+          aria-label="Go back"
+          className="cpt-btn cpt-btn-ghost"
+          style={{ padding: 6, borderRadius: 7, marginTop: 2 }}
+        >
           <ArrowLeft className="size-4" />
-        </Link>
+        </button>
         <div style={{ minWidth: 0 }}>
           <div className="cpt-row" style={{ gap: 10, flexWrap: 'wrap' }}>
             <h1 className="cpt-page-title">{title}</h1>

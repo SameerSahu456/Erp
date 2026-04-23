@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Trash2, Wand2, Plus } from 'lucide-react'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -118,6 +119,7 @@ function createEmptyItem(): InwardItem {
 
 function InwardFormPage() {
   const navigate = useNavigate()
+  const goBack = useNavigateBack('/wms/inward')
 
   /* --- Basic info state --- */
   const [batchNumber] = useState(generateBatchNumber)
@@ -268,7 +270,7 @@ function InwardFormPage() {
   }
 
   function handleCancel() {
-    navigate('/wms/inward')
+    goBack()
   }
 
   const validItemCount = items.filter((i) => i.serialNumber.trim() !== '').length
@@ -278,7 +280,7 @@ function InwardFormPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon-sm" render={<Link to="/wms/inward" />}>
+        <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={goBack}>
           <ArrowLeft />
         </Button>
         <div className="min-w-0">

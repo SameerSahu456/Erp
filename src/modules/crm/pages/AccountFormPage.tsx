@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { Separator } from '@/components/ui/separator'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '../components/EntityHeader'
 import { accounts } from '../data/accounts'
 import { IMS_CATEGORIES } from '../types'
@@ -52,6 +53,7 @@ function AccountFormPage() {
   const [addresses, setAddresses] = useState<AccountAddress[]>(existingAccount?.addresses ?? [])
 
   const backHref = isEdit ? `/crm/accounts/${accountId}` : '/crm/accounts'
+  const goBack = useNavigateBack(backHref)
 
   let addressCounter = addresses.length
 
@@ -101,7 +103,7 @@ function AccountFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   const otherAccounts = accounts.filter((a) => a.id !== accountId)

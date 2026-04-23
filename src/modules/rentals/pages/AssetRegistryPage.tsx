@@ -108,7 +108,7 @@ function AssetRegistryPage() {
       </div>
 
       <StatsRow stats={kpiStats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-assets" />
     </div>
   )
 }

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '@/modules/crm/components/EntityHeader'
 import { mockParts } from '../data/parts'
 import { mockCategories } from '../data/categories'
@@ -134,6 +135,7 @@ export default function PartFormPage() {
   const inspectionTemplates = mockChecklistTemplates.filter((t) => t.type === 'INSPECTION' && t.isActive)
 
   const backHref = isEdit ? `/ims/parts/${id}` : '/ims/parts'
+  const goBack = useNavigateBack(backHref)
 
   // Auto-suggest SKU
   function suggestSku() {
@@ -194,7 +196,7 @@ export default function PartFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   const headerTitle = isEdit

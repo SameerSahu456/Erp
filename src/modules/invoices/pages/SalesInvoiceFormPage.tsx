@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { Plus, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -45,7 +45,7 @@ const customerOptions = [
 const paymentTermsOptions = ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Due on Receipt']
 
 function SalesInvoiceFormPage() {
-  const navigate = useNavigate()
+  const goBack = useNavigateBack('/invoices/sales')
 
   const [customerId, setCustomerId] = useState('')
   const [issueDate, setIssueDate] = useState('2026-04-15')
@@ -276,7 +276,7 @@ function SalesInvoiceFormPage() {
           <div className="flex flex-col gap-2">
             <Button className="w-full">Send Invoice</Button>
             <Button variant="outline" className="w-full">Save Draft</Button>
-            <Button variant="ghost" className="w-full" onClick={() => navigate('/invoices/sales')}>
+            <Button variant="ghost" className="w-full" onClick={goBack}>
               Cancel
             </Button>
           </div>

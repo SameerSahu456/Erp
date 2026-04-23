@@ -164,6 +164,7 @@ function PurchaseRequestsPage() {
             tabs={tabs}
             cellFormatter={cellFormatter}
             pageSize={10}
+            persistKey="procurement-pr"
           />
         </CardContent>
       </Card>

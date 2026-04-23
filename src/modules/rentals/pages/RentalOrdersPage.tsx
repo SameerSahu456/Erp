@@ -112,7 +112,7 @@ function RentalOrdersPage() {
       </div>
 
       <StatsRow stats={kpiStats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-orders" />
     </div>
   )
 }

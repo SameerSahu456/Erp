@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '../components/EntityHeader'
 import { contacts } from '../data/contacts'
 import { accounts } from '../data/accounts'
@@ -41,6 +42,7 @@ function ContactFormPage() {
   const [notes, setNotes] = useState('')
 
   const backHref = isEdit ? `/crm/contacts/${contactId}` : '/crm/contacts'
+  const goBack = useNavigateBack(backHref)
 
   function handleSave() {
     if (!name.trim() || !email.trim()) return
@@ -50,7 +52,7 @@ function ContactFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   return (

@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '../components/EntityHeader'
 import { purchaseRequests } from '../data/purchase-requests'
 import { salesOrders } from '../data/sales-orders'
@@ -82,6 +83,7 @@ function PurchaseRequestFormPage() {
   )
 
   const backHref = '/crm/purchase-requests'
+  const goBack = useNavigateBack(backHref)
 
   function updateItem(id: string, field: keyof Omit<PurchaseRequestItem, 'id'>, value: string | number | undefined) {
     setItems((prev) =>
@@ -109,7 +111,7 @@ function PurchaseRequestFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   return (

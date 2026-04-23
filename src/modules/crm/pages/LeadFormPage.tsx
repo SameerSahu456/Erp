@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { MultiSelect } from '@/components/ui/multi-select'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '../components/EntityHeader'
 import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
 import { leads } from '../data/leads'
@@ -56,6 +57,7 @@ function LeadFormPage() {
   const [showQuoteBuilder, setShowQuoteBuilder] = useState(true)
 
   const backHref = isEdit ? `/crm/leads/${leadId}` : '/crm/leads'
+  const goBack = useNavigateBack(backHref)
 
   function handleSave() {
     if (!name.trim() || !company.trim() || !description.trim()) return
@@ -65,7 +67,7 @@ function LeadFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   return (

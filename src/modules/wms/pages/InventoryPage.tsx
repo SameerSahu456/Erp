@@ -247,6 +247,7 @@ export default function InventoryPage() {
       <BusinessMetricsTable
         tabs={[inStockTab, allTab]}
         cellFormatter={cellFormatter}
+        persistKey="wms-inventory"
       />
     </div>
   )

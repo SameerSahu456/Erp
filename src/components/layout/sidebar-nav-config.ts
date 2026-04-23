@@ -100,7 +100,6 @@ export const SIDEBAR_NAV: NavGroup[] = [
       { label: 'OEMs', href: '/ims/oems', icon: Factory, module: 'ims' },
       { label: 'Stock Items', href: '/ims/stock-items', icon: Tags, module: 'ims' },
       { label: 'PM Assignments', href: '/ims/pm-assignments', icon: UserCog, module: 'ims' },
-      { label: 'Pricing', href: '/ims/pricing', icon: DollarSign, module: 'ims' },
       { label: 'Reports', href: '/ims/reports', icon: BarChart3, module: 'ims' },
     ],
   },

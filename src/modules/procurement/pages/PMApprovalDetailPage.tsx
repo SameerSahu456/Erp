@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { ArrowLeft, User } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -38,7 +39,7 @@ const TYPE_LABEL: Record<EntityType, string> = {
 
 function PMApprovalDetailPage() {
   const { type: rawType, id } = useParams<{ type: string; id: string }>()
-  const navigate = useNavigate()
+  const goBack = useNavigateBack('/procurement/pm-approvals')
   const [currentPM, setCurrentPM] = useState<string>(ALL_PMS[0]!)
   const myCategories = PM_CATEGORIES[currentPM] ?? []
 
@@ -64,7 +65,7 @@ function PMApprovalDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate('/procurement/pm-approvals')}
+            onClick={goBack}
           >
             <ArrowLeft className="mr-1.5 size-3.5" /> Back to list
           </Button>

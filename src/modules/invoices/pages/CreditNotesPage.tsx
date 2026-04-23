@@ -72,6 +72,7 @@ function CreditNotesPage() {
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="invoices-credit-notes"
       />
     </div>
   )

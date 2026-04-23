@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '../components/EntityHeader'
 import { materialInquiries } from '../data/material-inquiries'
 import { leads } from '../data/leads'
@@ -84,6 +85,7 @@ function MaterialInquiryFormPage() {
   )
 
   const backHref = '/crm/material-inquiries'
+  const goBack = useNavigateBack(backHref)
 
   function updateItem(id: string, field: keyof Omit<MaterialInquiryItem, 'id'>, value: string | number | undefined) {
     setItems((prev) =>
@@ -111,7 +113,7 @@ function MaterialInquiryFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   return (

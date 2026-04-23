@@ -16,6 +16,7 @@ const PART_TO_STOCK_ITEM: Record<string, string> = {
   'PART-015': 'item-012',
   'PART-016': 'item-014',
   'PART-018': 'item-006',
+  'PART-022': 'item-016',
 }
 
 // Fallback sell prices for parts that have no matching stock item yet.
@@ -41,6 +42,25 @@ const DEFAULT_NEW_SELL_PRICE: Record<string, number> = {
   'COMP-017': 95000, 'COMP-018': 14000, 'COMP-019': 18000, 'COMP-020': 13500,
   'COMP-021': 24000, 'COMP-022': 5000,
   'COMP-023': 3000, 'COMP-024': 400, 'COMP-025': 600, 'COMP-026': 45000,
+  // HPE DL360 Gen11 + compatible components (parents from Data.xlsx import)
+  'PART-022': 435000,
+  'COMP-027': 740000, 'COMP-028': 285000, 'COMP-029': 115000,
+  'COMP-030': 5500, 'COMP-031': 6000,
+  'COMP-032': 185000, 'COMP-033': 145000, 'COMP-034': 148000, 'COMP-035': 85000,
+  'COMP-036': 7500, 'COMP-037': 3500,
+  'COMP-038': 52000, 'COMP-039': 44000,
+  'COMP-040': 28000, 'COMP-041': 13500,
+  'COMP-042': 30000, 'COMP-043': 35000,
+  'COMP-044': 85000, 'COMP-045': 65000,
+  'COMP-046': 85000, 'COMP-047': 95000,
+  'COMP-048': 8500,
+  'COMP-049': 13500, 'COMP-050': 29000, 'COMP-051': 48000,
+  'COMP-052': 14500, 'COMP-053': 30000, 'COMP-054': 52000, 'COMP-055': 115000,
+  'COMP-056': 18500, 'COMP-057': 12000,
+  'COMP-058': 6000, 'COMP-059': 3800,
+  'COMP-060': 24000, 'COMP-061': 5500,
+  'COMP-062': 115000,
+  'COMP-063': 35000, 'COMP-064': 38000,
 }
 
 function conditionCode(condition: VariantCondition): string {
@@ -87,7 +107,7 @@ function buildVariants(): Variant[] {
       }
     } else {
       const id = `VAR-${String(seq++).padStart(4, '0')}`
-      const sellPrice = DEFAULT_NEW_SELL_PRICE[part.id] ?? 50000
+      const sellPrice = part.sellPrice ?? DEFAULT_NEW_SELL_PRICE[part.id] ?? 50000
       result.push({
         id,
         partId: part.id,

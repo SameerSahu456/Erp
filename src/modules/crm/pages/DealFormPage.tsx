@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { MultiSelect } from '@/components/ui/multi-select'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '../components/EntityHeader'
 import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
 import { deals } from '../data/deals'
@@ -55,6 +56,7 @@ function DealFormPage() {
   const selectedAccount = accounts.find((a) => a.id === accountId)
 
   const backHref = isEdit ? `/crm/deals/${dealId}` : '/crm/deals'
+  const goBack = useNavigateBack(backHref)
 
   function handleSave() {
     if (!name.trim()) return
@@ -64,7 +66,7 @@ function DealFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   return (

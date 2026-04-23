@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '../components/EntityHeader'
 import { LineItemsEditor, createEmptyItem } from '../components/LineItemsEditor'
 import { TotalsSection } from '../components/TotalsSection'
@@ -74,6 +75,7 @@ function InvoiceFormPage() {
   )
 
   const backHref = '/crm/invoices'
+  const goBack = useNavigateBack(backHref)
 
   function handleSaveDraft() {
     if (!accountId) return
@@ -88,7 +90,7 @@ function InvoiceFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   return (

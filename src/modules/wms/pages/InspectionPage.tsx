@@ -414,7 +414,7 @@ function InspectionPage() {
       </div>
 
       {/* Device Queue */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-inspection" />
 
       {/* Inspection Dialog */}
       <Dialog open={inspectionDialogOpen} onOpenChange={setInspectionDialogOpen}>

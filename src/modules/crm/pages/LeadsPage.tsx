@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react"
-import { Plus, LayoutGrid, List, Search, X, TrendingUp, Users, Target, DollarSign } from "lucide-react"
+import { Plus, LayoutGrid, List, Search, X, TrendingUp, Users, Target, DollarSign, Filter } from "lucide-react"
 import { useNavigate, Link } from "react-router-dom"
+import { usePersistedState } from "@/hooks/use-persisted-state"
 import { toast } from "sonner"
 import { parseISO } from "date-fns"
 
@@ -81,17 +82,25 @@ function groupLeadsByStage(leadList: Lead[]): Record<string, Lead[]> {
 
 function LeadsPage() {
   const navigate = useNavigate()
-  const [view, setView] = useState<"kanban" | "list">("kanban")
+  const [view, setView] = usePersistedState<"kanban" | "list">("leads:view", "kanban")
 
   // Filters
-  const [preset, setPreset] = useState<DateFilterPreset>("yearly")
-  const [customFrom, setCustomFrom] = useState("")
-  const [customTo, setCustomTo] = useState("")
-  const [selectedUser, setSelectedUser] = useState<string>(
+  const [preset, setPreset] = usePersistedState<DateFilterPreset>("leads:preset", "yearly")
+  const [customFrom, setCustomFrom] = usePersistedState("leads:customFrom", "")
+  const [customTo, setCustomTo] = usePersistedState("leads:customTo", "")
+  const [selectedUser, setSelectedUser] = usePersistedState<string>(
+    "leads:selectedUser",
     IS_SUPERADMIN ? "__all__" : CURRENT_USER
   )
-  const [selectedStage, setSelectedStage] = useState<string>("__all__")
-  const [selectedPriority, setSelectedPriority] = useState<string>("__all__")
+  const [selectedStage, setSelectedStage] = usePersistedState<string>("leads:selectedStage", "__all__")
+  const [selectedPriority, setSelectedPriority] = usePersistedState<string>("leads:selectedPriority", "__all__")
+  const [filtersOpen, setFiltersOpen] = useState(false)
+
+  const activeFilterCount =
+    (selectedStage !== "__all__" ? 1 : 0) +
+    (selectedPriority !== "__all__" ? 1 : 0) +
+    (IS_SUPERADMIN && selectedUser !== "__all__" ? 1 : 0) +
+    (preset !== "yearly" ? 1 : 0)
 
   const dateRange: DateRange = useMemo(() => {
     if (preset === "custom" && customFrom && customTo) {
@@ -137,7 +146,7 @@ function LeadsPage() {
     setKanbanItems(groupLeadsByStage(filteredLeads))
   }, [filteredLeads])
 
-  const [kanbanSearch, setKanbanSearch] = useState("")
+  const [kanbanSearch, setKanbanSearch] = usePersistedState("leads:search", "")
 
   // Filtered kanban items for display
   const filteredKanbanItems = useMemo(() => {
@@ -304,9 +313,18 @@ function LeadsPage() {
     return null
   }
 
-  // Filter bar component (shared between views)
-  const filterBar = (
-    <div className="flex flex-wrap items-center gap-3">
+  const resetFilters = () => {
+    setSelectedStage("__all__")
+    setSelectedPriority("__all__")
+    setSelectedUser(IS_SUPERADMIN ? "__all__" : CURRENT_USER)
+    setPreset("yearly")
+    setCustomFrom("")
+    setCustomTo("")
+  }
+
+  // Search + Filters toggle (shared between views)
+  const searchBar = (
+    <div className="flex items-center gap-2">
       <div className="relative max-w-sm flex-1 min-w-[200px]">
         <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -321,74 +339,127 @@ function LeadsPage() {
           </button>
         )}
       </div>
-      <Select value={selectedStage} onValueChange={setSelectedStage}>
-        <SelectTrigger className="w-[140px] h-8 text-[13px]">
-          <SelectValue placeholder="All Stages" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__all__">All Stages</SelectItem>
-          {LEAD_STAGES.map((s) => (
-            <SelectItem key={s} value={s}>{s}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={selectedPriority} onValueChange={setSelectedPriority}>
-        <SelectTrigger className="w-[130px] h-8 text-[13px]">
-          <SelectValue placeholder="All Priority" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__all__">All Priority</SelectItem>
-          <SelectItem value="High">High</SelectItem>
-          <SelectItem value="Medium">Medium</SelectItem>
-          <SelectItem value="Low">Low</SelectItem>
-        </SelectContent>
-      </Select>
-      {IS_SUPERADMIN && (
-        <Select value={selectedUser} onValueChange={setSelectedUser}>
-          <SelectTrigger className="w-[170px] h-8 text-[13px]">
-            <SelectValue />
+      <Button
+        variant={filtersOpen ? "default" : "outline"}
+        size="sm"
+        onClick={() => setFiltersOpen((v) => !v)}
+        className="h-8 text-[13px]"
+      >
+        <Filter className="size-4 mr-1" />
+        Filters
+        {activeFilterCount > 0 && (
+          <Badge variant="secondary" className="ml-1.5 h-4 px-1.5 text-[10px]">
+            {activeFilterCount}
+          </Badge>
+        )}
+      </Button>
+    </div>
+  )
+
+  const filterPanel = (
+    <aside className="w-60 shrink-0 space-y-4 rounded-md border bg-card p-4 h-fit">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Filters</h3>
+        <button
+          className="text-muted-foreground hover:text-foreground"
+          onClick={() => setFiltersOpen(false)}
+          aria-label="Close filters"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Stage</label>
+        <Select value={selectedStage} onValueChange={setSelectedStage}>
+          <SelectTrigger className="w-full h-8 text-[13px]">
+            <SelectValue placeholder="All Stages" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">All Users</SelectItem>
-            {MOCK_USERS.map((u) => (
-              <SelectItem key={u} value={u}>{u}</SelectItem>
+            <SelectItem value="__all__">All Stages</SelectItem>
+            {LEAD_STAGES.map((s) => (
+              <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-      )}
-      <Select
-        value={preset}
-        onValueChange={(v) => setPreset(v as DateFilterPreset)}
-      >
-        <SelectTrigger className="w-[140px] h-8 text-[13px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="today">Today</SelectItem>
-          <SelectItem value="monthly">This Month</SelectItem>
-          <SelectItem value="quarterly">This Quarter</SelectItem>
-          <SelectItem value="yearly">This Year</SelectItem>
-          <SelectItem value="custom">Custom</SelectItem>
-        </SelectContent>
-      </Select>
-      {preset === "custom" && (
-        <div className="flex items-center gap-2">
-          <Input
-            type="date"
-            value={customFrom}
-            onChange={(e) => setCustomFrom(e.target.value)}
-            className="w-[140px] h-8 text-[13px]"
-          />
-          <span className="text-muted-foreground text-xs">to</span>
-          <Input
-            type="date"
-            value={customTo}
-            onChange={(e) => setCustomTo(e.target.value)}
-            className="w-[140px] h-8 text-[13px]"
-          />
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Priority</label>
+        <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+          <SelectTrigger className="w-full h-8 text-[13px]">
+            <SelectValue placeholder="All Priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Priority</SelectItem>
+            <SelectItem value="High">High</SelectItem>
+            <SelectItem value="Medium">Medium</SelectItem>
+            <SelectItem value="Low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {IS_SUPERADMIN && (
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">User</label>
+          <Select value={selectedUser} onValueChange={setSelectedUser}>
+            <SelectTrigger className="w-full h-8 text-[13px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All Users</SelectItem>
+              {MOCK_USERS.map((u) => (
+                <SelectItem key={u} value={u}>{u}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
-    </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Date Range</label>
+        <Select value={preset} onValueChange={(v) => setPreset(v as DateFilterPreset)}>
+          <SelectTrigger className="w-full h-8 text-[13px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="monthly">This Month</SelectItem>
+            <SelectItem value="quarterly">This Quarter</SelectItem>
+            <SelectItem value="yearly">This Year</SelectItem>
+            <SelectItem value="custom">Custom</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {preset === "custom" && (
+        <div className="space-y-2">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">From</label>
+            <Input
+              type="date"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              className="w-full h-8 text-[13px]"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">To</label>
+            <Input
+              type="date"
+              value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              className="w-full h-8 text-[13px]"
+            />
+          </div>
+        </div>
+      )}
+      {activeFilterCount > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={resetFilters}
+          className="w-full h-8 text-[13px]"
+        >
+          Clear all
+        </Button>
+      )}
+    </aside>
   )
 
   return (
@@ -472,27 +543,30 @@ function LeadsPage() {
       </div>
 
       {/* Content */}
-      {view === "kanban" ? (
-        <div className="space-y-3">
-          {filterBar}
-          <KanbanBoard<Lead>
-            columns={kanbanColumns}
-            items={filteredKanbanItems}
-            renderCard={renderLeadCard}
-            onMoveAcross={handleMoveAcross}
-          />
+      <div className="space-y-3">
+        {searchBar}
+        <div className="flex gap-3">
+          {filtersOpen && filterPanel}
+          <div className="flex-1 min-w-0">
+            {view === "kanban" ? (
+              <KanbanBoard<Lead>
+                columns={kanbanColumns}
+                items={filteredKanbanItems}
+                renderCard={renderLeadCard}
+                onMoveAcross={handleMoveAcross}
+              />
+            ) : (
+              <BusinessMetricsTable
+                tabs={[listTab]}
+                cellFormatter={listCellFormatter}
+                pageSize={10}
+                persistKey="crm-leads"
+                onRowClick={(row) => navigate(`/crm/leads/${row.id}`)}
+              />
+            )}
+          </div>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {filterBar}
-          <BusinessMetricsTable
-            tabs={[listTab]}
-            cellFormatter={listCellFormatter}
-            pageSize={10}
-            onRowClick={(row) => navigate(`/crm/leads/${row.id}`)}
-          />
-        </div>
-      )}
+      </div>
       {/* Closed Lost Reason */}
       {pendingClosedLost && (
         <LostReasonDialog

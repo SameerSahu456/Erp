@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { usePersistedState } from '@/hooks/use-persisted-state'
 import {
   Building2,
   MapPin,
@@ -37,7 +38,7 @@ const formatCurrency = (value: number) =>
 
 function CustomerApprovalsPage() {
   const navigate = useNavigate()
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = usePersistedState<string>('customers-approvals:status', 'all')
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [rejectCustomerId, setRejectCustomerId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')

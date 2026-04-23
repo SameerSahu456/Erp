@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { usePersistedState } from '@/hooks/use-persisted-state'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -39,9 +40,9 @@ export default function PMAssignmentsPage() {
   const [assignments, setAssignments] = useState<PMAssignment[]>([...mockPMAssignments])
 
   // Filters
-  const [categoryFilter, setCategoryFilter] = useState('all')
-  const [oemFilter, setOemFilter] = useState('all')
-  const [pmFilter, setPmFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = usePersistedState<string>('ims-pm-assignments:category', 'all')
+  const [oemFilter, setOemFilter] = usePersistedState<string>('ims-pm-assignments:oem', 'all')
+  const [pmFilter, setPmFilter] = usePersistedState<string>('ims-pm-assignments:pm', 'all')
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)

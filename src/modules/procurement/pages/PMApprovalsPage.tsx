@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { usePersistedState } from '@/hooks/use-persisted-state'
 import {
   CheckCircle2,
   XCircle,
@@ -60,7 +61,7 @@ import type { PurchaseOrder } from '@/modules/procurement/types'
 
 function PMApprovalsPage() {
   const navigate = useNavigate()
-  const [currentPM, setCurrentPM] = useState<string>(ALL_PMS[0]!)
+  const [currentPM, setCurrentPM] = usePersistedState<string>('procurement-pm-approvals:pm', ALL_PMS[0]!)
   const myCategories: string[] = PM_CATEGORIES[currentPM] ?? []
 
   const localMIs = useMIs()

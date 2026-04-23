@@ -182,7 +182,7 @@ function DemoRequestsPage() {
       )}
 
       <StatsRow stats={stats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} onRowClick={(row) => navigate(`/crm/demo-requests/${row.id}`)} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="crm-demo-requests" onRowClick={(row) => navigate(`/crm/demo-requests/${row.id}`)} />
     </div>
   )
 }

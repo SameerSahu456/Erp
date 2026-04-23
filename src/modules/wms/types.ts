@@ -367,15 +367,25 @@ export type PartAssemblyType = 'Assembled' | 'Disassembled'
 export type HardwareType =
   | 'CPU'
   | 'RAM'
+  | 'Memory'
   | 'Motherboard'
   | 'Storage'
+  | 'HDD'
+  | 'SATA SSD'
+  | 'SAS SSD'
+  | 'NVMe SSD'
+  | 'DVD'
   | 'RAID'
   | 'NIC'
+  | 'Ethernet Adapter'
+  | 'FC HBA'
+  | 'Riser'
   | 'Ports'
   | 'Expansion'
   | 'PSU'
   | 'Chassis'
   | 'Cooling'
+  | 'Cable Kit'
   | 'BIOS'
   | 'OS'
   | 'Hypervisor'
@@ -396,15 +406,29 @@ export const HARDWARE_TAXONOMY: HardwareTaxonomyGroup[] = [
     types: [
       { key: 'CPU', label: 'CPU' },
       { key: 'RAM', label: 'RAM' },
+      { key: 'Memory', label: 'Memory' },
       { key: 'Motherboard', label: 'Motherboard' },
-      { key: 'Storage', label: 'Storage' },
       { key: 'RAID', label: 'RAID controller' },
+    ],
+  },
+  {
+    group: 'Drives & storage',
+    types: [
+      { key: 'Storage', label: 'Storage' },
+      { key: 'HDD', label: 'HDD' },
+      { key: 'SATA SSD', label: 'SATA SSD' },
+      { key: 'SAS SSD', label: 'SAS SSD' },
+      { key: 'NVMe SSD', label: 'NVMe SSD' },
+      { key: 'DVD', label: 'DVD' },
     ],
   },
   {
     group: 'Networking & I/O',
     types: [
       { key: 'NIC', label: 'Network interface cards (NICs)' },
+      { key: 'Ethernet Adapter', label: 'Ethernet Adapter' },
+      { key: 'FC HBA', label: 'FC HBA card' },
+      { key: 'Riser', label: 'Riser' },
       { key: 'Ports', label: 'Ports' },
       { key: 'Expansion', label: 'Expansion cards' },
     ],
@@ -415,6 +439,7 @@ export const HARDWARE_TAXONOMY: HardwareTaxonomyGroup[] = [
       { key: 'PSU', label: 'Power supplies' },
       { key: 'Chassis', label: 'Chassis / rack unit' },
       { key: 'Cooling', label: 'Cooling' },
+      { key: 'Cable Kit', label: 'Cable kit' },
     ],
   },
   {

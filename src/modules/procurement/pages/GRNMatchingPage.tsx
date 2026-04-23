@@ -164,6 +164,7 @@ function GRNMatchingPage() {
               tabs={tabs}
               cellFormatter={cellFormatter}
               pageSize={10}
+              persistKey="procurement-grn"
             />
           </CardContent>
         </Card>

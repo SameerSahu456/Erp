@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import {
   Plus,
   Trash2,
@@ -13,6 +14,7 @@ import {
   Send,
   Save,
   X,
+  ArrowLeft,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -30,6 +32,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 
 import { mockVendors } from '@/modules/procurement/data/vendors'
 import { mockPurchaseRequests } from '@/modules/procurement/data/purchase-requests'
+import { mockParts } from '@/modules/ims/data/parts'
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-IN', {
@@ -51,12 +54,14 @@ const paymentTermsOptions = ['Net 30', 'Net 45', 'Net 60', 'Advance']
 const deliveryTermsOptions = ['FOB', 'CIF', 'Ex-Works', 'DDP']
 
 function POFormPage() {
-  const navigate = useNavigate()
+  const goBack = useNavigateBack('/procurement/po')
   const [searchParams] = useSearchParams()
   const prId = searchParams.get('prId')
+  const partId = searchParams.get('partId')
 
   // Pre-fill from PR if available
   const sourcePR = prId ? mockPurchaseRequests.find((pr) => pr.id === prId) : null
+  const sourcePart = partId ? mockParts.find((p) => p.id === partId) : null
 
   const [vendorId, setVendorId] = useState('')
   const [paymentTerms, setPaymentTerms] = useState('Net 30')
@@ -75,6 +80,18 @@ function POFormPage() {
         unitPrice: item.estimatedUnitCost,
         taxRate: 18,
       }))
+    }
+    if (sourcePart) {
+      return [
+        {
+          id: `poi-${Date.now()}`,
+          partName: sourcePart.name,
+          partSku: sourcePart.sku,
+          qty: 1,
+          unitPrice: 0,
+          taxRate: 18,
+        },
+      ]
     }
     return [
       {
@@ -132,6 +149,14 @@ function POFormPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Back"
+            onClick={goBack}
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
           <h2 className="cpt-page-title">
             Create Purchase Order
           </h2>
@@ -140,8 +165,13 @@ function POFormPage() {
               From {sourcePR.prNumber}
             </span>
           )}
+          {sourcePart && (
+            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              For {sourcePart.sku}
+            </span>
+          )}
         </div>
-        <Button variant="outline" size="sm" onClick={() => navigate('/procurement/po')}>
+        <Button variant="outline" size="sm" onClick={goBack}>
           <X className="mr-1.5 size-4" />
           Cancel
         </Button>
@@ -453,7 +483,7 @@ function POFormPage() {
               variant="ghost"
               className="w-full"
               size="default"
-              onClick={() => navigate('/procurement/po')}
+              onClick={goBack}
             >
               Cancel
             </Button>

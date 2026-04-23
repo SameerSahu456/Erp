@@ -473,7 +473,7 @@ function RepairPage() {
       )}
 
       {/* Repair Jobs Table */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-repair" />
     </div>
   )
 }

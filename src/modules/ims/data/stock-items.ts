@@ -499,4 +499,29 @@ export const mockStockItems: StockItem[] = [
     reorderLevel: 3,
     location: 'Mumbai-WH1',
   },
+  {
+    id: 'item-016',
+    name: 'HPE ProLiant DL360 Gen11',
+    categoryId: 'cat-003',
+    categoryName: 'Servers',
+    subcategory: 'Rack Servers',
+    sku: 'SRV-HPE-DL360G11',
+    brand: 'HPE',
+    variants: [
+      {
+        type: 'New',
+        quantity: 3,
+        unitPrice: 435000,
+        lastUpdated: '2026-04-20T10:00:00Z',
+        skus: [
+          { sku: 'SKU-DL360G11-NEW-001', serialNumber: 'HPE-DL360G11-SN-0001', barcode: 'S-HPE-DL360G11-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin1', poNumber: 'PO-2026-025', receivedDate: '2026-04-12T10:00:00Z', lastMovement: '2026-04-12T10:00:00Z' },
+          { sku: 'SKU-DL360G11-NEW-002', serialNumber: 'HPE-DL360G11-SN-0002', barcode: 'S-HPE-DL360G11-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin1', poNumber: 'PO-2026-025', receivedDate: '2026-04-12T10:00:00Z', lastMovement: '2026-04-12T10:00:00Z' },
+          { sku: 'SKU-DL360G11-NEW-003', serialNumber: 'HPE-DL360G11-SN-0003', barcode: 'S-HPE-DL360G11-003', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin2', poNumber: 'PO-2026-025', receivedDate: '2026-04-12T10:00:00Z', lastMovement: '2026-04-12T10:00:00Z' },
+        ],
+      },
+    ],
+    reorderLevel: 2,
+    location: 'Mumbai-WH1',
+    aliases: ['DL360 Gen11', 'ProLiant 360 G11'],
+  },
 ]

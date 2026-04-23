@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import {
   ArrowLeft,
   Package,
@@ -136,13 +137,14 @@ function StatusStepper({ current }: { current: DispatchConfirmationStatus }) {
 function DispatchDetailPage() {
   const { id = '' } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const goBack = useNavigateBack('/wms/dispatches')
   const dispatches = useDispatches()
   const dispatch = useMemo(() => dispatches.find((d) => d.id === id), [dispatches, id])
 
   if (!dispatch) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/wms/dispatches')}>
+        <Button variant="ghost" size="sm" onClick={goBack}>
           <ArrowLeft className="mr-1 size-4" />
           Back to dispatches
         </Button>
@@ -166,7 +168,7 @@ function DispatchDetailPage() {
       {/* Back + header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={() => navigate('/wms/dispatches')}>
+          <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={goBack}>
             <ArrowLeft className="mr-1 size-4" />
             Back to dispatches
           </Button>

@@ -1,55 +1,30 @@
-import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Pencil } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import {
   BusinessMetricsTable,
   type TabConfig,
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
-import { mockOEMs, type OEM } from '../data/oems'
+import { mockOEMs } from '../data/oems'
 
 export default function OEMListPage() {
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
-
-  const filtered = useMemo(() => {
-    return mockOEMs.filter((oem) => {
-      if (statusFilter === 'active' && oem.status !== 'active') return false
-      if (statusFilter === 'inactive' && oem.status !== 'inactive') return false
-      if (search) {
-        const q = search.toLowerCase()
-        if (!oem.name.toLowerCase().includes(q) && !oem.code.toLowerCase().includes(q)) {
-          return false
-        }
-      }
-      return true
-    })
-  }, [search, statusFilter])
 
   const tab: TabConfig = {
     id: 'oems',
-    label: `OEMs (${filtered.length})`,
+    label: `OEMs (${mockOEMs.length})`,
     columns: [
       { key: 'name', label: 'Name', sortable: true },
       { key: 'code', label: 'Code', sortable: true },
       { key: 'categories', label: 'Categories' },
       { key: 'models', label: 'Models', sortable: true, align: 'right' },
-      { key: 'status', label: 'Status', sortable: true },
+      { key: 'status', label: 'Status', sortable: true, filterable: true },
       { key: 'actions', label: '' },
     ],
-    data: filtered.map((oem) => ({
+    data: mockOEMs.map((oem) => ({
       name: oem.name,
       code: oem.code,
       categories: oem.categoryNames,
@@ -103,7 +78,7 @@ export default function OEMListPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h1 className="cpt-page-title">
           OEMs
@@ -114,30 +89,10 @@ export default function OEMListPage() {
         </Button>
       </div>
 
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter((v ?? 'all') as 'all' | 'active' | 'inactive')}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Input
-          placeholder="Search by name or code..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-56"
-        />
-      </div>
-
       <BusinessMetricsTable
         tabs={[tab]}
         cellFormatter={cellFormatter}
+        persistKey="ims-oems"
         onRowClick={(row) => navigate(`/ims/oems/${row._id}`)}
       />
     </div>

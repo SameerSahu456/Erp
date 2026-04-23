@@ -90,6 +90,7 @@ function PurchaseInvoicesPage() {
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="invoices-purchase"
       />
     </div>
   )

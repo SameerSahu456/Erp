@@ -48,6 +48,17 @@
   font-family: inherit;
 }
 
+/* Opt-in larger search field — applied via wrapper className on consumer pages */
+.bmt-search-lg .cpt-search-field {
+  min-width: 360px;
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+.bmt-search-lg .cpt-search-field input {
+  font-size: 14px;
+}
+
 .cpt-filter-chip {
   display: inline-flex;
   align-items: center;

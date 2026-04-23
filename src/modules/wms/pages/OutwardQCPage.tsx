@@ -275,7 +275,7 @@ function OutwardQCPage() {
       </div>
 
       {/* QC Queue Table */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-outward-qc" />
 
       {/* QC Form */}
       {selectedDevice && (

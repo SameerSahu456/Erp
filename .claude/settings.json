@@ -22,7 +22,14 @@
       "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --virtual-time-budget=4000 --screenshot=/tmp/parts-v4.png --window-size=1500,900 http://localhost:5173/ims/parts)",
       "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --virtual-time-budget=4000 --screenshot=/tmp/server-v4.png --window-size=1400,900 http://localhost:5173/ims/parts/PART-008)",
       "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --virtual-time-budget=4000 --screenshot=/tmp/laptop-v4.png --window-size=1400,900 http://localhost:5173/ims/parts/PART-001)",
-      "Bash(lsof -ti:5173 -ti:5174 -ti:3000)"
+      "Bash(lsof -ti:5173 -ti:5174 -ti:3000)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx\\)$\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3)",
+      "Bash(sed -n '120,240p' /tmp/stock_items.txt)",
+      "Bash(sort -rn grep -oE \"^src/[^\\(]+\" /tmp/after-errors.txt)",
+      "Bash(python3 /tmp/gen_hpe_data.py)",
+      "Bash(pkill -f \"vite.*5174\")"
     ]
   }
 }

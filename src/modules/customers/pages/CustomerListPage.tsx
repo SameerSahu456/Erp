@@ -159,6 +159,7 @@ function CustomerListPage() {
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="customers"
         onRowClick={(row) => navigate(`/customers/${row.id}`)}
       />
     </div>

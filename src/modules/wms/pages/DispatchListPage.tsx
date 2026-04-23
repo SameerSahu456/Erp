@@ -155,6 +155,7 @@ function DispatchListPage() {
         tabs={[tab]}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="wms-dispatches"
         onRowClick={(row) => navigate(`/wms/dispatches/${row.id}`)}
       />
     </div>

@@ -157,6 +157,7 @@ export default function RentalContractsPage() {
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
+        persistKey="rentals-contracts"
         onRowClick={(row) => navigate(`/rentals/contracts/${row.id}`)}
       />
     </div>

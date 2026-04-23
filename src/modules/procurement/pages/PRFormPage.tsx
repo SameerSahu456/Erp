@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { Plus, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -147,6 +148,7 @@ function getApprovalSteps(approvers: ResolvedApprover[]): StepConfig[] {
 
 function PRFormPage() {
   const navigate = useNavigate()
+  const goBack = useNavigateBack('/procurement/pr')
   const [form, setForm] = useState<PRFormState>(initialState)
 
   const totalEstimated = useMemo(
@@ -553,7 +555,7 @@ function PRFormPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="cpt-page-title">Create Purchase Request</h2>
-        <Button variant="outline" onClick={() => navigate('/procurement/pr')}>
+        <Button variant="outline" onClick={goBack}>
           Cancel
         </Button>
       </div>

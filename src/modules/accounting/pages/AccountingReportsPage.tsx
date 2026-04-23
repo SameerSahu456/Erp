@@ -181,6 +181,7 @@ function AccountingReportsPage() {
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={25}
+        persistKey="accounting-reports"
       />
     </div>
   )

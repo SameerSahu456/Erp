@@ -153,7 +153,7 @@ function InwardPage() {
         </Button>
       </div>
 
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-inward" />
     </div>
   )
 }

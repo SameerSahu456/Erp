@@ -158,7 +158,7 @@ function PurchaseRequestsPage() {
       </div>
 
       <StatsRow stats={stats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} pageSize={10} onRowClick={(row) => navigate(`/crm/purchase-requests/${row.id}/edit`)} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} pageSize={10} persistKey="crm-purchase-requests" onRowClick={(row) => navigate(`/crm/purchase-requests/${row.id}/edit`)} />
     </div>
   )
 }

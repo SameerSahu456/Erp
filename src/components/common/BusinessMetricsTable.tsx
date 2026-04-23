@@ -2,6 +2,7 @@ import * as React from "react"
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { usePersistedState } from "@/hooks/use-persisted-state"
 
 interface ColumnDef {
   key: string
@@ -36,6 +37,8 @@ interface BusinessMetricsTableProps {
   searchable?: boolean
   className?: string
   onRowClick?: (row: Record<string, unknown>) => void
+  /** When provided, tab/search/filter/sort/page state persists to sessionStorage under this key. */
+  persistKey?: string
 }
 
 type SortDirection = "asc" | "desc" | null
@@ -48,14 +51,19 @@ function BusinessMetricsTable({
   searchable = true,
   className,
   onRowClick,
+  persistKey,
 }: BusinessMetricsTableProps) {
-  const [activeTab, setActiveTab] = React.useState(tabs[0]?.id ?? "")
-  const [sortColumn, setSortColumn] = React.useState<string | null>(null)
-  const [sortDirection, setSortDirection] = React.useState<SortDirection>(null)
-  const [currentPage, setCurrentPage] = React.useState(0)
-  const [pageSize, setPageSize] = React.useState(initialPageSize)
-  const [searchQuery, setSearchQuery] = React.useState("")
-  const [columnFilters, setColumnFilters] = React.useState<Record<string, string>>({})
+  const pk = persistKey ? `bmt:${persistKey}` : ""
+  const [activeTab, setActiveTab] = usePersistedState<string>(pk ? `${pk}:tab` : "", tabs[0]?.id ?? "")
+  const [sortColumn, setSortColumn] = usePersistedState<string | null>(pk ? `${pk}:sortCol` : "", null)
+  const [sortDirection, setSortDirection] = usePersistedState<SortDirection>(pk ? `${pk}:sortDir` : "", null)
+  const [currentPage, setCurrentPage] = usePersistedState<number>(pk ? `${pk}:page` : "", 0)
+  const [pageSize, setPageSize] = usePersistedState<number>(pk ? `${pk}:pageSize` : "", initialPageSize)
+  const [searchQuery, setSearchQuery] = usePersistedState<string>(pk ? `${pk}:search` : "", "")
+  const [columnFilters, setColumnFilters] = usePersistedState<Record<string, string>>(
+    pk ? `${pk}:colFilters` : "",
+    {},
+  )
 
   const activeTabConfig = tabs.find((t) => t.id === activeTab)
 

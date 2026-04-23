@@ -403,7 +403,7 @@ function SparesPage() {
       {/* Spare Requests */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">Spare Requests</h2>
-        <BusinessMetricsTable tabs={requestTabs} cellFormatter={requestCellFormatter} />
+        <BusinessMetricsTable tabs={requestTabs} cellFormatter={requestCellFormatter} persistKey="wms-spares-req" />
       </div>
 
       {/* Spare Shop / Inventory */}
@@ -414,7 +414,7 @@ function SparesPage() {
             Add Stock
           </Button>
         </div>
-        <BusinessMetricsTable tabs={inventoryTabs} cellFormatter={inventoryCellFormatter} />
+        <BusinessMetricsTable tabs={inventoryTabs} cellFormatter={inventoryCellFormatter} persistKey="wms-spares-inv" />
       </div>
 
       {/* Add Stock Dialog */}

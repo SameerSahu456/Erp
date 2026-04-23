@@ -183,6 +183,7 @@ function LedgerPage() {
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
+        persistKey="accounting-ledger"
       />
     </div>
   )

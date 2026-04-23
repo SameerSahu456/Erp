@@ -79,6 +79,7 @@ function ContactsPage() {
         tabs={[contactsTab]}
         cellFormatter={contactCellFormatter}
         pageSize={10}
+        persistKey="crm-contacts"
         onRowClick={(row) => navigate(`/crm/contacts/${row.id}`)}
       />
     </div>

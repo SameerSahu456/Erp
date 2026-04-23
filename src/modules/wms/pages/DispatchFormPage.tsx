@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { toast } from 'sonner'
 import {
   ArrowLeft,
@@ -219,6 +220,7 @@ function editorToDispatchDoc(d: EditorDocument, uploadedBy: string): DispatchDoc
 
 function DispatchFormPage() {
   const navigate = useNavigate()
+  const goBack = useNavigateBack('/wms/dispatches')
   const { id: editId } = useParams<{ id: string }>()
   const [search] = useSearchParams()
   const initialSO = search.get('so') ?? ''
@@ -440,7 +442,7 @@ function DispatchFormPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={() => navigate('/wms/dispatches')}>
+          <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={goBack}>
             <ArrowLeft className="mr-1 size-4" />
             Back to dispatches
           </Button>

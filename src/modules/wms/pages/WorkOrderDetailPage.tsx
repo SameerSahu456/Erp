@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import {
   ArrowLeft,
   Package,
@@ -90,7 +91,7 @@ function getActiveStage(status: WorkOrderStatus): number {
 
 function WorkOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const goBack = useNavigateBack('/wms/work-orders')
 
   const wo = useMemo(() => mockWorkOrders.find((w) => w.id === id), [id])
 
@@ -98,7 +99,7 @@ function WorkOrderDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <p className="text-muted-foreground">Work Order not found</p>
-        <Button variant="ghost" className="mt-4" onClick={() => navigate('/wms/work-orders')}>
+        <Button variant="ghost" className="mt-4" onClick={goBack}>
           Back to Work Orders
         </Button>
       </div>
@@ -115,7 +116,7 @@ function WorkOrderDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/wms/work-orders')}>
+        <Button variant="ghost" size="icon" onClick={goBack}>
           <ArrowLeft className="size-4" />
         </Button>
         <div className="flex-1">

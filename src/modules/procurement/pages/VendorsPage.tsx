@@ -161,6 +161,7 @@ function VendorsPage() {
             tabs={tabs}
             cellFormatter={cellFormatter}
             pageSize={10}
+            persistKey="procurement-vendors"
             onRowClick={(row) => navigate(`/procurement/vendors/${row.id}`)}
           />
         </CardContent>

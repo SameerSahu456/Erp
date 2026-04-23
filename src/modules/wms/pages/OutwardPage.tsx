@@ -252,7 +252,7 @@ export default function OutwardPage() {
 
       <StatsRow stats={stats} />
 
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-outward" />
     </div>
   )
 }

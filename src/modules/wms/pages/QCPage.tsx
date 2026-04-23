@@ -361,7 +361,7 @@ function QCPage() {
       </div>
 
       {/* QC Queue Table */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-qc" />
 
       {/* QC Dialog */}
       <Dialog open={qcDialogOpen} onOpenChange={setQcDialogOpen}>

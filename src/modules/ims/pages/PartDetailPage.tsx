@@ -10,12 +10,18 @@ import {
   CheckCircle2,
   ChevronDown,
   Video,
+  ShoppingCart,
+  ArrowRightLeft,
+  Package,
+  AlertTriangle,
+  Wrench,
+  Truck,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { StatusBadge } from '@/components/common/StatusBadge'
+import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { EmptyState } from '@/components/common/EmptyState'
 import { EntityHeader } from '@/modules/crm/components/EntityHeader'
 import { DetailTabs } from '@/modules/crm/components/DetailTabs'
@@ -26,11 +32,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { mockParts } from '../data/parts'
 import { mockStockItems } from '../data/stock-items'
 import { mockChecklistTemplates } from '@/modules/wms/data/checklist-templates'
 import { mockRelatedParts } from '@/modules/wms/data/related-parts'
 import { mockBOMs } from '@/modules/wms/data/boms'
+import { mockWarehouses } from '@/modules/wms/data/warehouses'
+import { mockStockMovements } from '@/modules/wms/data/stock-movements'
+import { salesOrders } from '@/modules/crm/data/sales-orders'
+import type { SalesOrder } from '@/modules/crm/types'
 import { Input } from '@/components/ui/input'
 import {
   HARDWARE_TAXONOMY,
@@ -466,11 +486,175 @@ function HardwareTypeSection({
   )
 }
 
+function TransferStockDialog({
+  open,
+  onOpenChange,
+  part,
+  currentLocation,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  part: Part
+  currentLocation?: string
+}) {
+  const [fromWarehouseId, setFromWarehouseId] = useState<string>(() => {
+    const prefix = currentLocation?.split('-')[0]?.toUpperCase()
+    const match = prefix
+      ? mockWarehouses.find((w) => w.code.startsWith(prefix))
+      : undefined
+    return match?.id ?? mockWarehouses[0]?.id ?? ''
+  })
+  const [toWarehouseId, setToWarehouseId] = useState<string>('')
+  const [quantity, setQuantity] = useState<string>('1')
+  const [notes, setNotes] = useState<string>('')
+
+  const handleSubmit = () => {
+    if (!toWarehouseId) {
+      toast.error('Please select a destination warehouse')
+      return
+    }
+    if (fromWarehouseId === toWarehouseId) {
+      toast.error('Destination must differ from source')
+      return
+    }
+    const qty = parseInt(quantity) || 0
+    if (qty < 1) {
+      toast.error('Quantity must be at least 1')
+      return
+    }
+    const from = mockWarehouses.find((w) => w.id === fromWarehouseId)
+    const to = mockWarehouses.find((w) => w.id === toWarehouseId)
+    toast.success(
+      `Transfer queued: ${qty} × ${part.name} from ${from?.name ?? 'source'} → ${to?.name ?? 'destination'}`,
+    )
+    onOpenChange(false)
+    setToWarehouseId('')
+    setQuantity('1')
+    setNotes('')
+  }
+
+  const fromWarehouse = mockWarehouses.find((w) => w.id === fromWarehouseId)
+  const toWarehouse = mockWarehouses.find((w) => w.id === toWarehouseId)
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Transfer Stock</DialogTitle>
+          <DialogDescription>
+            Move units between warehouses
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-1">
+          {/* Part summary */}
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2.5">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-background ring-1 ring-border">
+              <Package className="size-4 text-muted-foreground" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium">{part.name}</div>
+              <div className="truncate text-xs text-muted-foreground">
+                {part.sku}
+                {part.condition ? <> · {part.condition}</> : null}
+              </div>
+            </div>
+          </div>
+
+          {/* From — full width */}
+          <div className="grid gap-1.5">
+            <Label htmlFor="tr-from">From</Label>
+            <Select
+              value={fromWarehouseId}
+              onValueChange={(v: string | null) => setFromWarehouseId(v ?? '')}
+            >
+              <SelectTrigger id="tr-from" className="w-full">
+                <SelectValue placeholder="Source warehouse" />
+              </SelectTrigger>
+              <SelectContent>
+                {mockWarehouses.map((w) => (
+                  <SelectItem key={w.id} value={w.id}>
+                    <span className="font-medium">{w.name}</span>
+                    <span className="ml-1 text-xs text-muted-foreground">· {w.code}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {fromWarehouse ? (
+              <p className="text-xs text-muted-foreground">{fromWarehouse.code}</p>
+            ) : null}
+          </div>
+
+          {/* To — full width */}
+          <div className="grid gap-1.5">
+            <Label htmlFor="tr-to">To</Label>
+            <Select
+              value={toWarehouseId}
+              onValueChange={(v: string | null) => setToWarehouseId(v ?? '')}
+            >
+              <SelectTrigger id="tr-to" className="w-full">
+                <SelectValue placeholder="Destination warehouse" />
+              </SelectTrigger>
+              <SelectContent>
+                {mockWarehouses
+                  .filter((w) => w.id !== fromWarehouseId)
+                  .map((w) => (
+                    <SelectItem key={w.id} value={w.id}>
+                      <span className="font-medium">{w.name}</span>
+                      <span className="ml-1 text-xs text-muted-foreground">· {w.code}</span>
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            {toWarehouse ? (
+              <p className="text-xs text-muted-foreground">{toWarehouse.code}</p>
+            ) : null}
+          </div>
+
+          {/* Qty — full width */}
+          <div className="grid gap-1.5">
+            <Label htmlFor="tr-qty">Qty</Label>
+            <Input
+              id="tr-qty"
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              className="w-full"
+            />
+          </div>
+
+          {/* Notes — full width */}
+          <div className="grid gap-1.5">
+            <Label htmlFor="tr-notes">Notes</Label>
+            <Textarea
+              id="tr-notes"
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Reason or internal reference"
+              className="w-full"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit}>Transfer</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function PartDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [part, setPart] = useState<Part | undefined>(() =>
     mockParts.find((p) => p.id === id)
   )
+  const [transferOpen, setTransferOpen] = useState(false)
 
   // Find matching stock item for inventory data
   const stockItem = useMemo(() => {
@@ -496,6 +680,25 @@ export default function PartDetailPage() {
   }
 
 
+  // ── Stock rollup for quick stats (computed from matched stockItem variants) ──
+  const stockStats = useMemo(() => {
+    const totals = { total: 0, inStock: 0, reserved: 0, dispatched: 0, inRepair: 0 }
+    if (!stockItem) return totals
+    const source = part.condition
+      ? stockItem.variants.filter((v) => v.type === part.condition)
+      : stockItem.variants
+    for (const v of source) {
+      totals.total += v.quantity
+      for (const s of v.skus) {
+        if (s.status === 'In Stock') totals.inStock += 1
+        else if (s.status === 'Reserved') totals.reserved += 1
+        else if (s.status === 'Dispatched') totals.dispatched += 1
+        else if (s.status === 'In Repair') totals.inRepair += 1
+      }
+    }
+    return totals
+  }, [stockItem, part.condition])
+
   const overviewTab = {
     id: 'overview',
     label: 'Overview',
@@ -508,26 +711,26 @@ export default function PartDetailPage() {
             {part.images.map((img, i) => (
               <div
                 key={`img-${i}`}
-                className="flex size-32 items-center justify-center rounded-lg border bg-muted"
+                className="flex size-24 items-center justify-center rounded-lg border bg-muted"
                 title={img}
               >
-                <ImageOff className="size-8 text-muted-foreground" />
+                <ImageOff className="size-7 text-muted-foreground" />
                 <span className="sr-only">{img}</span>
               </div>
             ))}
             {part.videos?.map((v, i) => (
               <div
                 key={`vid-${i}`}
-                className="flex size-32 items-center justify-center rounded-lg border bg-muted"
+                className="flex size-24 items-center justify-center rounded-lg border bg-muted"
                 title={v}
               >
-                <Video className="size-8 text-muted-foreground" />
+                <Video className="size-7 text-muted-foreground" />
                 <span className="sr-only">{v}</span>
               </div>
             ))}
             {part.images.length === 0 && (!part.videos || part.videos.length === 0) && (
-              <div className="flex size-32 flex-col items-center justify-center gap-1 rounded-lg border border-dashed bg-muted/30 text-muted-foreground">
-                <ImageOff className="size-6" />
+              <div className="flex size-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed bg-muted/30 text-muted-foreground">
+                <ImageOff className="size-5" />
                 <span className="text-xs">No media</span>
               </div>
             )}
@@ -542,65 +745,120 @@ export default function PartDetailPage() {
           </div>
         )}
 
-        {/* Specifications */}
-        {part.specifications && Object.keys(part.specifications).length > 0 && (
-          <div>
-            <h3 className="mb-2 text-sm font-medium">Specifications</h3>
-            <div className="rounded-md border">
-              <table className="w-full text-sm">
-                <tbody>
+        {/* Specifications + Additional Info — compact side-by-side grid */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {part.specifications && Object.keys(part.specifications).length > 0 && (
+            <div>
+              <h3 className="mb-2 text-sm font-medium">Specifications</h3>
+              <div className="rounded-md border">
+                <dl className="divide-y text-xs">
                   {Object.entries(part.specifications).map(([key, value]) => (
-                    <tr key={key} className="border-b last:border-0">
-                      <td className="px-3 py-2 font-medium text-muted-foreground">{key}</td>
-                      <td className="px-3 py-2">{value}</td>
-                    </tr>
+                    <div key={key} className="flex items-start justify-between gap-3 px-2.5 py-1.5">
+                      <dt className="font-medium text-muted-foreground">{key}</dt>
+                      <dd className="text-right">{value}</dd>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </dl>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Additional info — spec-style table for Alias, HSN, UoM */}
-        <div>
-          <h3 className="mb-2 text-sm font-medium">Additional Info</h3>
-          <div className="rounded-md border">
-            <table className="w-full text-sm">
-              <tbody>
+          <div>
+            <h3 className="mb-2 text-sm font-medium">Additional Info</h3>
+            <div className="rounded-md border">
+              <dl className="divide-y text-xs">
                 {part.aliases.length > 0 && (
-                  <tr className="border-b last:border-0">
-                    <td className="px-3 py-2 font-medium text-muted-foreground">Alias</td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-wrap gap-1.5">
-                        {part.aliases.map((alias) => (
-                          <span
-                            key={alias}
-                            className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium"
-                          >
-                            {alias}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
+                  <div className="flex items-start justify-between gap-3 px-2.5 py-1.5">
+                    <dt className="font-medium text-muted-foreground">Alias</dt>
+                    <dd className="flex flex-wrap justify-end gap-1">
+                      {part.aliases.map((alias) => (
+                        <span
+                          key={alias}
+                          className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium"
+                        >
+                          {alias}
+                        </span>
+                      ))}
+                    </dd>
+                  </div>
                 )}
                 {part.hsnCode && (
-                  <tr className="border-b last:border-0">
-                    <td className="px-3 py-2 font-medium text-muted-foreground">HSN Code</td>
-                    <td className="px-3 py-2">{part.hsnCode}</td>
-                  </tr>
+                  <div className="flex items-start justify-between gap-3 px-2.5 py-1.5">
+                    <dt className="font-medium text-muted-foreground">HSN Code</dt>
+                    <dd>{part.hsnCode}</dd>
+                  </div>
                 )}
-                <tr className="border-b last:border-0">
-                  <td className="px-3 py-2 font-medium text-muted-foreground">Unit of Measure</td>
-                  <td className="px-3 py-2">{part.unitOfMeasure}</td>
-                </tr>
-              </tbody>
-            </table>
+                <div className="flex items-start justify-between gap-3 px-2.5 py-1.5">
+                  <dt className="font-medium text-muted-foreground">Unit of Measure</dt>
+                  <dd>{part.unitOfMeasure}</dd>
+                </div>
+                {part.brand && (
+                  <div className="flex items-start justify-between gap-3 px-2.5 py-1.5">
+                    <dt className="font-medium text-muted-foreground">Brand</dt>
+                    <dd>{part.brand}</dd>
+                  </div>
+                )}
+                {part.model && (
+                  <div className="flex items-start justify-between gap-3 px-2.5 py-1.5">
+                    <dt className="font-medium text-muted-foreground">Model</dt>
+                    <dd>{part.model}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
           </div>
         </div>
       </div>
     ),
   }
+
+  const quickStatsBar = (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="rounded-lg border p-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Package className="size-3.5" />
+          Total Units
+        </div>
+        <p className="mt-1 text-xl font-semibold tabular-nums">{stockStats.total}</p>
+      </div>
+      <div className="rounded-lg border p-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <CheckCircle2 className="size-3.5 text-emerald-600" />
+          In Stock
+        </div>
+        <p className="mt-1 text-xl font-semibold tabular-nums text-emerald-700">
+          {stockStats.inStock}
+        </p>
+      </div>
+      <div className="rounded-lg border p-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <AlertTriangle className="size-3.5 text-amber-600" />
+          Reserved
+        </div>
+        <p className="mt-1 text-xl font-semibold tabular-nums text-amber-700">
+          {stockStats.reserved}
+        </p>
+      </div>
+      <div className="rounded-lg border p-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Truck className="size-3.5 text-sky-600" />
+          Dispatched
+        </div>
+        <p className="mt-1 text-xl font-semibold tabular-nums text-sky-700">
+          {stockStats.dispatched}
+        </p>
+      </div>
+      <div className="rounded-lg border p-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Wrench className="size-3.5 text-rose-600" />
+          In Repair
+        </div>
+        <p className="mt-1 text-xl font-semibold tabular-nums text-rose-700">
+          {stockStats.inRepair}
+        </p>
+      </div>
+    </div>
+  )
 
   // Parts filter their own condition: a 'New' variant only shows New stock; a 'Refurbished' only Refurb.
   // Parent parts (or parts without condition) show all condition groups.
@@ -648,15 +906,19 @@ export default function PartDetailPage() {
                 >
                   {variant.quantity} units
                 </StatusBadge>
+                <span className="ml-2 text-xs font-normal tabular-nums text-muted-foreground">
+                  {currencyFmt.format(variant.unitPrice)} / unit
+                </span>
               </h3>
               <div className="rounded-md border">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/50">
                       <th className="px-3 py-2 text-left font-medium">SKU</th>
-                      <th className="px-3 py-2 text-left font-medium">Serial</th>
+                      <th className="px-3 py-2 text-left font-medium">Serial No</th>
+                      <th className="px-3 py-2 text-right font-medium">Price</th>
                       <th className="px-3 py-2 text-left font-medium">Status</th>
-                      <th className="px-3 py-2 text-left font-medium">Grade</th>
+                      <th className="px-3 py-2 text-right font-medium">Qty</th>
                       <th className="px-3 py-2 text-left font-medium">Location</th>
                     </tr>
                   </thead>
@@ -665,6 +927,9 @@ export default function PartDetailPage() {
                       <tr key={sku.sku} className="border-b last:border-0">
                         <td className="px-3 py-2 font-mono text-xs">{sku.sku}</td>
                         <td className="px-3 py-2">{sku.serialNumber}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {currencyFmt.format(variant.unitPrice)}
+                        </td>
                         <td className="px-3 py-2">
                           <StatusBadge
                             variant={
@@ -676,7 +941,7 @@ export default function PartDetailPage() {
                             {sku.status}
                           </StatusBadge>
                         </td>
-                        <td className="px-3 py-2">{sku.grade ?? '-'}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">1</td>
                         <td className="px-3 py-2 text-xs">{sku.location}</td>
                       </tr>
                     ))}
@@ -788,7 +1053,7 @@ export default function PartDetailPage() {
 
   const checklistsTab = {
     id: 'checklists',
-    label: 'Checklists',
+    label: 'Checklist',
     content: (
       <div className="space-y-4">
         <ChecklistAssignmentRow
@@ -832,9 +1097,169 @@ export default function PartDetailPage() {
     return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   })()
 
-  const historyTab = {
-    id: 'history',
-    label: 'History',
+  // ── Movements tab — stock movements for this part's SKUs/barcodes ──
+  const movementsForPart = useMemo(() => {
+    if (!stockItem) return []
+    const barcodes = new Set<string>()
+    for (const v of stockItem.variants) {
+      for (const s of v.skus) {
+        if (s.barcode && s.barcode !== '—') barcodes.add(s.barcode)
+      }
+    }
+    return mockStockMovements
+      .filter((m) => barcodes.has(m.deviceBarcode))
+      .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
+  }, [stockItem])
+
+  const movementsTab = {
+    id: 'movements',
+    label: 'Movements',
+    count: movementsForPart.length,
+    content: (
+      <div className="space-y-4">
+        {movementsForPart.length > 0 ? (
+          <div className="rounded-md border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-3 py-2 text-left font-medium">When</th>
+                  <th className="px-3 py-2 text-left font-medium">Unit</th>
+                  <th className="px-3 py-2 text-left font-medium">From</th>
+                  <th className="px-3 py-2 text-left font-medium">To</th>
+                  <th className="px-3 py-2 text-left font-medium">By</th>
+                  <th className="px-3 py-2 text-left font-medium">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movementsForPart.map((m) => (
+                  <tr key={m.id} className="border-b last:border-0">
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {formatDate(m.changedAt)}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-xs">{m.deviceBarcode}</td>
+                    <td className="px-3 py-2 text-xs">{m.fromStatus}</td>
+                    <td className="px-3 py-2 text-xs">{m.toStatus}</td>
+                    <td className="px-3 py-2 text-xs">{m.changedBy}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">{m.notes ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed p-8 text-center">
+            <p className="text-sm font-medium">No movements yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Unit movements will appear here once inventory is received, inspected, or dispatched.
+            </p>
+          </div>
+        )}
+      </div>
+    ),
+  }
+
+  // ── Linked Orders tab — sales orders that reference this part (or any of its variants) ──
+  const linkedOrders = useMemo(() => {
+    const childIds = new Set(
+      mockParts.filter((p) => p.parentPartId === part.id).map((p) => p.id),
+    )
+    const matches: { order: SalesOrder; qty: number; amount: number }[] = []
+    for (const so of salesOrders) {
+      let qty = 0
+      let amount = 0
+      for (const li of so.lineItems) {
+        if (li.partId === part.id || childIds.has(li.partId)) {
+          qty += li.qty
+          amount += li.amount
+        }
+      }
+      if (qty > 0) matches.push({ order: so, qty, amount })
+    }
+    return matches.sort(
+      (a, b) => new Date(b.order.date).getTime() - new Date(a.order.date).getTime(),
+    )
+  }, [part.id])
+
+  const soStatusVariant = (status: SalesOrder['status']): StatusBadgeVariant => {
+    switch (status) {
+      case 'Delivered':
+      case 'Shipped':
+        return 'success'
+      case 'Cancelled':
+        return 'error'
+      case 'Draft':
+        return 'neutral'
+      case 'Ready for Dispatch':
+        return 'info'
+      default:
+        return 'warning'
+    }
+  }
+
+  const linkedOrdersTab = {
+    id: 'linked-orders',
+    label: 'Linked Orders',
+    count: linkedOrders.length,
+    content: (
+      <div className="space-y-4">
+        {linkedOrders.length > 0 ? (
+          <div className="rounded-md border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-3 py-2 text-left font-medium">SO#</th>
+                  <th className="px-3 py-2 text-left font-medium">Account</th>
+                  <th className="px-3 py-2 text-left font-medium">Date</th>
+                  <th className="px-3 py-2 text-right font-medium">Qty</th>
+                  <th className="px-3 py-2 text-right font-medium">Amount</th>
+                  <th className="px-3 py-2 text-left font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {linkedOrders.map(({ order, qty, amount }) => (
+                  <tr key={order.id} className="border-b last:border-0 hover:bg-muted/30">
+                    <td className="px-3 py-2 font-mono text-xs">
+                      <Link
+                        to={`/crm/sales-orders/${order.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {order.orderNumber}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2">{order.accountName}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {formatDate(order.date)}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">{qty}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {currencyFmt.format(amount)}
+                    </td>
+                    <td className="px-3 py-2">
+                      <StatusBadge variant={soStatusVariant(order.status)}>
+                        {order.status}
+                      </StatusBadge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed p-8 text-center">
+            <p className="text-sm font-medium">No linked sales orders</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Sales orders that include this {part.productType === 'variant' ? 'variant' : 'part'}{' '}
+              will appear here.
+            </p>
+          </div>
+        )}
+      </div>
+    ),
+  }
+
+  const activityTab = {
+    id: 'activity',
+    label: 'Activity',
     content: (
       <div className="space-y-4">
         <div className="rounded-md border p-4">
@@ -1095,7 +1520,7 @@ export default function PartDetailPage() {
 
   const bomsTab = {
     id: 'boms',
-    label: 'BOMs',
+    label: 'BOM',
     count: localBOMs.length + usedInBOMs.length,
     content: (
       <div className="space-y-6">
@@ -1298,12 +1723,35 @@ export default function PartDetailPage() {
         status={{ label: part.isActive ? 'Active' : 'Inactive', variant: part.isActive ? 'success' : 'neutral' }}
         backHref="/ims/parts"
         actions={
-          <Button variant="outline" nativeButton={false} render={<Link to={`/ims/parts/${part.id}/edit`} />}>
-            <Pencil className="mr-1.5 size-4" />
-            Edit
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link to={`/procurement/po/new?partId=${part.id}`} />}
+            >
+              <ShoppingCart className="mr-1.5 size-4" />
+              Create PO
+            </Button>
+            <Button variant="outline" onClick={() => setTransferOpen(true)}>
+              <ArrowRightLeft className="mr-1.5 size-4" />
+              Transfer Stock
+            </Button>
+            <Button variant="outline" nativeButton={false} render={<Link to={`/ims/parts/${part.id}/edit`} />}>
+              <Pencil className="mr-1.5 size-4" />
+              Edit
+            </Button>
+          </>
         }
       />
+
+      <TransferStockDialog
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+        part={part}
+        currentLocation={stockItem?.location}
+      />
+
+      {quickStatsBar}
 
       {(() => {
         // BOM is meaningful only for Server-category products; for variants we check the parent's category too.
@@ -1319,12 +1767,14 @@ export default function PartDetailPage() {
         <DetailTabs
           tabs={[
             overviewTab,
-            ...((part.productType ?? 'parent') === 'parent' ? [variantsTab] : []),
-            relatedPartsTab,
-            ...(isServerCategory ? [bomsTab] : []),
             inventoryTab,
+            ...((part.productType ?? 'parent') === 'parent' ? [variantsTab] : []),
+            ...(isServerCategory ? [bomsTab] : []),
+            relatedPartsTab,
+            movementsTab,
+            linkedOrdersTab,
             checklistsTab,
-            historyTab,
+            activityTab,
           ]}
         />
 

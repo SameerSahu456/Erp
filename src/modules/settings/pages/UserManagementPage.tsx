@@ -282,6 +282,7 @@ export default function UserManagementPage() {
           },
         ]}
         cellFormatter={cellFormatter}
+        persistKey="settings-users"
       />
     </div>
   )

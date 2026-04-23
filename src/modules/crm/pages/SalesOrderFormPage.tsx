@@ -28,6 +28,7 @@ import {
 import { MultiSelect } from '@/components/ui/multi-select'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { Badge } from '@/components/ui/badge'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { EntityHeader } from '../components/EntityHeader'
 import { AddAddressDialog } from '../components/AddAddressDialog'
 import { QuoteBuilderPanel } from '../components/QuoteBuilderPanel'
@@ -172,6 +173,7 @@ function SalesOrderFormPage() {
   useEffect(() => { return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) } }, [])
 
   const backHref = '/crm/sales-orders'
+  const goBack = useNavigateBack(backHref)
 
   function handleSave() {
     if (!accountId) {
@@ -183,7 +185,7 @@ function SalesOrderFormPage() {
   }
 
   function handleCancel() {
-    navigate(backHref)
+    goBack()
   }
 
   function handleApprove() {

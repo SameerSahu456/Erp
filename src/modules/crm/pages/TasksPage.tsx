@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { usePersistedState } from '@/hooks/use-persisted-state'
 import {
   Plus,
   CheckCircle2,
@@ -66,9 +67,9 @@ function getStatusIcon(status: TaskStatus) {
 
 function TasksPage() {
   const [tasks, setTasks] = useState(mockTasks)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [priorityFilter, setPriorityFilter] = useState<string>('all')
+  const [search, setSearch] = usePersistedState('crm-tasks:search', '')
+  const [statusFilter, setStatusFilter] = usePersistedState<string>('crm-tasks:status', 'all')
+  const [priorityFilter, setPriorityFilter] = usePersistedState<string>('crm-tasks:priority', 'all')
   const [createOpen, setCreateOpen] = useState(false)
   const [newTask, setNewTask] = useState({
     title: '',

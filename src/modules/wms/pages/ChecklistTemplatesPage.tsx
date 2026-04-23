@@ -112,7 +112,7 @@ function ChecklistTemplatesPage() {
         </Button>
       </div>
 
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} />
+      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-checklists" />
     </div>
   )
 }

@@ -1,12 +1,14 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { QuoteBuilderPanel } from '../components/QuoteBuilderPanel'
 import { deals } from '../data/deals'
 import { accounts } from '../data/accounts'
 
 export default function QuoteBuilderPage() {
   const navigate = useNavigate()
+  const goBack = useNavigateBack('/crm/quotes')
   const [searchParams] = useSearchParams()
 
   const leadId = searchParams.get('leadId') ?? undefined
@@ -25,7 +27,8 @@ export default function QuoteBuilderPage() {
         <Button
           variant="ghost"
           size="icon-sm"
-          onClick={() => navigate(-1)}
+          aria-label="Back"
+          onClick={goBack}
         >
           <ArrowLeft />
         </Button>
