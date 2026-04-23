@@ -1,6 +1,27 @@
 import { useState, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { toast } from 'sonner'
+import {
+  FileText,
+  Calendar,
+  CalendarCheck,
+  Activity,
+  UserCircle,
+  ClipboardList,
+  CheckSquare,
+  User,
+  Phone,
+  MapPin,
+  Truck,
+  Upload,
+  Tag,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Layers,
+  ExternalLink,
+  FileCheck,
+} from 'lucide-react'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,6 +49,7 @@ import {
 import { mockOutwardRecords } from '../data/outward'
 import { mockReturnRecords } from '../data/returns'
 import { mockCourierPartners } from '../data/courier-partners'
+import { getDispatchForOutward } from '../data/dispatches'
 
 const TYPE_VARIANT: Record<OutwardType, 'info' | 'warning' | 'neutral' | 'success' | 'error'> = {
   SALES: 'info',
@@ -125,6 +147,7 @@ function formatDate(iso: string): string {
 export default function OutwardDetailPage() {
   const { id } = useParams<{ id: string }>()
   const record = mockOutwardRecords.find((r) => r.id === id)
+  const linkedDispatch = useMemo(() => (id ? getDispatchForOutward(id) : undefined), [id])
 
   const [status, setStatus] = useState<OutwardRecord['status']>(record?.status ?? 'Draft')
   const [devices, setDevices] = useState<OutwardDevice[]>(record?.devices ?? [])
@@ -287,66 +310,141 @@ export default function OutwardDetailPage() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Dispatch Info */}
-        <Card>
+        <Card size="sm">
           <CardHeader>
             <CardTitle>Dispatch Info</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="space-y-3">
-              <div>
-                <dt className="text-sm text-muted-foreground">Type</dt>
-                <dd className="mt-1">
-                  <StatusBadge variant={TYPE_VARIANT[record.type]}>
-                    {TYPE_LABELS[record.type]}
-                  </StatusBadge>
-                </dd>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex items-start gap-2">
+                <Tag className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Type</dt>
+                  <dd className="mt-1">
+                    <StatusBadge variant={TYPE_VARIANT[record.type]}>
+                      {TYPE_LABELS[record.type]}
+                    </StatusBadge>
+                  </dd>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Activity className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Status</dt>
+                  <dd className="mt-1">
+                    <StatusBadge variant={getStatusVariant(status)}>{status}</StatusBadge>
+                  </dd>
+                </div>
               </div>
               {record.salesOrderNumber && (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Sales Order</dt>
-                  <dd className="mt-1 text-sm font-medium">{record.salesOrderNumber}</dd>
+                <div className="flex items-start gap-2">
+                  <FileText className="mt-0.5 size-4 text-muted-foreground" />
+                  <div>
+                    <dt className="text-xs font-ui text-muted-foreground">Sales Order</dt>
+                    <dd className="text-sm font-medium">
+                      {record.salesOrderId ? (
+                        <Link
+                          to={`/crm/sales-orders/${record.salesOrderId}`}
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                        >
+                          {record.salesOrderNumber}
+                          <ExternalLink className="size-3" />
+                        </Link>
+                      ) : (
+                        record.salesOrderNumber
+                      )}
+                    </dd>
+                  </div>
                 </div>
               )}
               {record.rentalContractId && (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Rental Contract</dt>
-                  <dd className="mt-1 text-sm font-medium">{record.rentalContractId}</dd>
+                <div className="flex items-start gap-2">
+                  <FileText className="mt-0.5 size-4 text-muted-foreground" />
+                  <div>
+                    <dt className="text-xs font-ui text-muted-foreground">Rental Contract</dt>
+                    <dd className="text-sm font-medium">
+                      <Link
+                        to={`/rentals/contracts/${record.rentalContractId}`}
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                      >
+                        {record.rentalContractId}
+                        <ExternalLink className="size-3" />
+                      </Link>
+                    </dd>
+                  </div>
                 </div>
               )}
               {record.demoRequestId && (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Demo Request</dt>
-                  <dd className="mt-1 text-sm font-medium">{record.demoRequestId}</dd>
+                <div className="flex items-start gap-2">
+                  <FileText className="mt-0.5 size-4 text-muted-foreground" />
+                  <div>
+                    <dt className="text-xs font-ui text-muted-foreground">Demo Request</dt>
+                    <dd className="text-sm font-medium">
+                      <Link
+                        to={`/crm/demo-requests/${record.demoRequestId}`}
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                      >
+                        {record.demoRequestId}
+                        <ExternalLink className="size-3" />
+                      </Link>
+                    </dd>
+                  </div>
                 </div>
               )}
-              <div>
-                <dt className="text-sm text-muted-foreground">Expected Dispatch</dt>
-                <dd className="mt-1 text-sm">{formatDate(record.expectedDispatchDate)}</dd>
+              {linkedDispatch && (
+                <div className="flex items-start gap-2">
+                  <FileCheck className="mt-0.5 size-4 text-muted-foreground" />
+                  <div>
+                    <dt className="text-xs font-ui text-muted-foreground">Dispatch Request</dt>
+                    <dd className="text-sm font-medium">
+                      <Link
+                        to={`/wms/dispatches/${linkedDispatch.id}`}
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                      >
+                        {linkedDispatch.dispatchNumber}
+                        <ExternalLink className="size-3" />
+                      </Link>
+                    </dd>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-start gap-2">
+                <Calendar className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Expected Dispatch</dt>
+                  <dd className="text-sm">{formatDate(record.expectedDispatchDate)}</dd>
+                </div>
               </div>
               {record.actualDispatchDate && (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Actual Dispatch</dt>
-                  <dd className="mt-1 text-sm">{formatDate(record.actualDispatchDate)}</dd>
+                <div className="flex items-start gap-2">
+                  <CalendarCheck className="mt-0.5 size-4 text-muted-foreground" />
+                  <div>
+                    <dt className="text-xs font-ui text-muted-foreground">Actual Dispatch</dt>
+                    <dd className="text-sm">{formatDate(record.actualDispatchDate)}</dd>
+                  </div>
                 </div>
               )}
-              <div>
-                <dt className="text-sm text-muted-foreground">Status</dt>
-                <dd className="mt-1">
-                  <StatusBadge variant={getStatusVariant(status)}>{status}</StatusBadge>
-                </dd>
+              <div className="flex items-start gap-2">
+                <UserCircle className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Store Manager</dt>
+                  <dd className="text-sm font-medium">{record.storeManager}</dd>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Store Manager</dt>
-                <dd className="mt-1 text-sm font-medium">{record.storeManager}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Prepared By</dt>
-                <dd className="mt-1 text-sm">{record.preparedBy}</dd>
+              <div className="flex items-start gap-2">
+                <ClipboardList className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Prepared By</dt>
+                  <dd className="text-sm">{record.preparedBy}</dd>
+                </div>
               </div>
               {record.approvedBy && (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Approved By</dt>
-                  <dd className="mt-1 text-sm">{record.approvedBy}</dd>
+                <div className="flex items-start gap-2">
+                  <CheckSquare className="mt-0.5 size-4 text-muted-foreground" />
+                  <div>
+                    <dt className="text-xs font-ui text-muted-foreground">Approved By</dt>
+                    <dd className="text-sm">{record.approvedBy}</dd>
+                  </div>
                 </div>
               )}
             </dl>
@@ -354,107 +452,101 @@ export default function OutwardDetailPage() {
         </Card>
 
         {/* Delivery Details */}
-        <Card>
+        <Card size="sm">
           <CardHeader>
             <CardTitle>Delivery Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="space-y-3">
-              <div>
-                <dt className="text-sm text-muted-foreground">Customer</dt>
-                <dd className="mt-1 text-sm font-medium">{record.customerName}</dd>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex items-start gap-2 sm:col-span-2">
+                <UserCircle className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Customer</dt>
+                  <dd className="text-sm font-medium">{record.customerName}</dd>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Contact Person</dt>
-                <dd className="mt-1 text-sm">{record.contactPerson}</dd>
+              <div className="flex items-start gap-2">
+                <User className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Contact Person</dt>
+                  <dd className="text-sm">{record.contactPerson}</dd>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Phone</dt>
-                <dd className="mt-1">
-                  <a href={`tel:${record.contactPhone}`} className="text-sm text-primary hover:underline">
-                    {record.contactPhone}
-                  </a>
-                </dd>
+              <div className="flex items-start gap-2">
+                <Phone className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Phone</dt>
+                  <dd>
+                    <a href={`tel:${record.contactPhone}`} className="text-sm text-primary hover:underline">
+                      {record.contactPhone}
+                    </a>
+                  </dd>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Shipping Address</dt>
-                <dd className="mt-1 text-sm whitespace-pre-line">
-                  {record.shippingAddress.split(',').map((part) => part.trim()).join('\n')}
-                </dd>
+              <div className="flex items-start gap-2 sm:col-span-2">
+                <MapPin className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Shipping Address</dt>
+                  <dd className="text-sm whitespace-pre-line">
+                    {record.shippingAddress.split(',').map((part) => part.trim()).join('\n')}
+                  </dd>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Expected Delivery</dt>
-                <dd className="mt-1 text-sm">{formatDate(record.expectedDispatchDate)}</dd>
+              <div className="flex items-start gap-2">
+                <Calendar className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Expected Delivery</dt>
+                  <dd className="text-sm">{formatDate(record.expectedDispatchDate)}</dd>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Dispatch Type</dt>
-                <dd className="mt-1">
-                  <StatusBadge variant={TYPE_VARIANT[record.type]}>
-                    {TYPE_LABELS[record.type]}
-                  </StatusBadge>
-                </dd>
+              <div className="flex items-start gap-2">
+                <Truck className="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs font-ui text-muted-foreground">Dispatch Type</dt>
+                  <dd className="mt-1">
+                    <StatusBadge variant={TYPE_VARIANT[record.type]}>
+                      {TYPE_LABELS[record.type]}
+                    </StatusBadge>
+                  </dd>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Delivery Challan</dt>
-                <dd className="mt-1">
-                  {deliveryChallan ? (
-                    <div className="flex items-center gap-2">
-                      <StatusBadge variant="success">Uploaded</StatusBadge>
-                      <span className="text-sm text-muted-foreground">{deliveryChallan.name}</span>
-                    </div>
-                  ) : (
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-muted-foreground/40 px-3 py-1.5 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
-                      <input
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) {
-                            setDeliveryChallan(file)
-                            toast.success(`Delivery challan "${file.name}" uploaded.`)
-                          }
-                        }}
-                      />
-                      Upload Challan
-                    </label>
-                  )}
-                </dd>
+              <div className="flex items-start gap-2 sm:col-span-2">
+                <Upload className="mt-0.5 size-4 text-muted-foreground" />
+                <div className="min-w-0">
+                  <dt className="text-xs font-ui text-muted-foreground">Delivery Challan</dt>
+                  <dd className="mt-1">
+                    {deliveryChallan ? (
+                      <div className="flex items-center gap-2">
+                        <StatusBadge variant="success">Uploaded</StatusBadge>
+                        <span className="truncate text-sm text-muted-foreground">{deliveryChallan.name}</span>
+                      </div>
+                    ) : (
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-muted-foreground/40 px-3 py-1.5 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              setDeliveryChallan(file)
+                              toast.success(`Delivery challan "${file.name}" uploaded.`)
+                            }
+                          }}
+                        />
+                        Upload Challan
+                      </label>
+                    )}
+                  </dd>
+                </div>
               </div>
             </dl>
           </CardContent>
         </Card>
       </div>
 
-      {/* QC Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>QC Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-emerald-600">{qcPassedCount}</p>
-              <p className="text-xs text-muted-foreground">Passed</p>
-            </div>
-            <div className={`text-center ${qcFailedCount > 0 ? 'bg-destructive/10 rounded-lg px-3 py-1' : ''}`}>
-              <p className={`text-2xl font-bold ${qcFailedCount > 0 ? 'text-destructive' : ''}`}>{qcFailedCount}</p>
-              <p className="text-xs text-muted-foreground">Failed</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{qcPendingCount}</p>
-              <p className="text-xs text-muted-foreground">Pending</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-muted-foreground">{devices.length}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {record.notes && (
-        <Card>
+        <Card size="sm">
           <CardHeader>
             <CardTitle>Notes</CardTitle>
           </CardHeader>
@@ -464,6 +556,59 @@ export default function OutwardDetailPage() {
         </Card>
       )}
     </div>
+  )
+
+  // QC Summary — sits above the tabs, right after the workflow stepper
+  const qcSummary = (
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle>QC Summary</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+            <CheckCircle2 className="size-5 text-emerald-600" />
+            <div>
+              <p className="text-2xl font-semibold leading-none text-emerald-600">{qcPassedCount}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Passed</p>
+            </div>
+          </div>
+          <div
+            className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${
+              qcFailedCount > 0 ? 'border-destructive/40 bg-destructive/10' : 'bg-muted/30'
+            }`}
+          >
+            <XCircle
+              className={`size-5 ${qcFailedCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`}
+            />
+            <div>
+              <p
+                className={`text-2xl font-semibold leading-none ${
+                  qcFailedCount > 0 ? 'text-destructive' : ''
+                }`}
+              >
+                {qcFailedCount}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Failed</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+            <Clock className="size-5 text-muted-foreground" />
+            <div>
+              <p className="text-2xl font-semibold leading-none">{qcPendingCount}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Pending</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+            <Layers className="size-5 text-muted-foreground" />
+            <div>
+              <p className="text-2xl font-semibold leading-none">{devices.length}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Total</p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 
   const devicesTab = (
@@ -831,6 +976,8 @@ export default function OutwardDetailPage() {
           <WorkflowStepper steps={steps} />
         </CardContent>
       </Card>
+
+      {qcSummary}
 
       <DetailTabs tabs={tabsConfig} />
     </div>

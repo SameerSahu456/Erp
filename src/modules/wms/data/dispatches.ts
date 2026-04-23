@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Dispatch, DispatchLineItem } from '../types'
 import { getDefaultVariantForPart } from '@/modules/ims/data/variants'
+import { mockOutwardRecords } from './outward'
 
 // Raw line omits the variant-derived fields; they get filled in at module load
 // from `partId` / `replacedPartId` via the default-variant lookup.
@@ -33,6 +34,8 @@ const rawDispatches: RawDispatch[] = [
     dispatchNumber: 'DISP-2026-001',
     salesOrderId: 'SO-001',
     salesOrderNumber: 'SO-2026-001',
+    outwardId: 'out-001',
+    outwardNumber: 'OUT-2026-001',
     accountId: 'ACC-001',
     accountName: 'Tata Consultancy Services',
     shippingAddress: 'TCS Siruseri, Chennai 603103',
@@ -204,6 +207,8 @@ const rawDispatches: RawDispatch[] = [
     dispatchNumber: 'DISP-2026-002',
     salesOrderId: 'SO-002',
     salesOrderNumber: 'SO-2026-002',
+    outwardId: 'out-002',
+    outwardNumber: 'OUT-2026-002',
     accountId: 'ACC-004',
     accountName: 'Wipro Technologies',
     shippingAddress: 'Wipro Tech Park, Sarjapur Road, Bangalore 560035',
@@ -291,6 +296,8 @@ const rawDispatches: RawDispatch[] = [
     dispatchNumber: 'DISP-2026-003',
     salesOrderId: 'SO-004',
     salesOrderNumber: 'SO-2026-004',
+    outwardId: 'out-003',
+    outwardNumber: 'OUT-2026-003',
     accountId: 'ACC-005',
     accountName: 'Bharti Airtel',
     shippingAddress: 'Airtel Center, Plot No. 16, Udyog Vihar Phase IV, Gurugram 122015',
@@ -417,4 +424,23 @@ export function getDispatchById(id: string): Dispatch | undefined {
 
 export function getDispatchesForSalesOrder(salesOrderId: string): Dispatch[] {
   return currentDispatches.filter((d) => d.salesOrderId === salesOrderId)
+}
+
+/** Find the dispatch request attached to a specific outward (1:1). */
+export function getDispatchForOutward(outwardId: string): Dispatch | undefined {
+  return currentDispatches.find((d) => d.outwardId === outwardId)
+}
+
+/** Allocate the next OUT-YYYY-### number based on existing outward records. */
+export function nextOutwardNumber(): { id: string; outwardNumber: string } {
+  const year = new Date().getFullYear()
+  const maxNum = mockOutwardRecords.reduce((max, r) => {
+    const num = parseInt(r.outwardNumber.split('-').pop() ?? '0', 10)
+    return Number.isFinite(num) && num > max ? num : max
+  }, 0)
+  const seq = maxNum + 1
+  return {
+    id: `out-${String(seq).padStart(3, '0')}`,
+    outwardNumber: `OUT-${year}-${String(seq).padStart(3, '0')}`,
+  }
 }

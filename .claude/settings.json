@@ -29,7 +29,8 @@
       "Bash(sed -n '120,240p' /tmp/stock_items.txt)",
       "Bash(sort -rn grep -oE \"^src/[^\\(]+\" /tmp/after-errors.txt)",
       "Bash(python3 /tmp/gen_hpe_data.py)",
-      "Bash(pkill -f \"vite.*5174\")"
+      "Bash(pkill -f \"vite.*5174\")",
+      "Bash(grep -E \"\\\\.\\(jsx|js|tsx|ts\\)$\")"
     ]
   }
 }

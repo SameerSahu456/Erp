@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Eye } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -42,13 +42,11 @@ const columns = [
   { key: 'batchNumber', label: 'Batch #', sortable: true },
   { key: 'inwardType', label: 'Inward Type' },
   { key: 'category', label: 'Category' },
-  { key: 'brand', label: 'Brand', sortable: true },
   { key: 'deviceCount', label: 'Devices', sortable: true, align: 'right' as const },
   { key: 'warehouse', label: 'Warehouse' },
   { key: 'receivedBy', label: 'Received By' },
   { key: 'receivedDate', label: 'Date', sortable: true },
   { key: 'status', label: 'Status' },
-  { key: 'actions', label: 'Actions' },
 ]
 
 function InwardPage() {
@@ -61,7 +59,6 @@ function InwardPage() {
         batchNumber: b.batchNumber,
         inwardType: b.inwardType,
         category: b.category,
-        brand: b.brand,
         deviceCount: b.deviceCount,
         warehouse: b.warehouseName,
         receivedBy: b.receivedBy,
@@ -97,6 +94,7 @@ function InwardPage() {
         display: (
           <Link
             to={`/wms/inward/${row.id}/devices`}
+            onClick={(e) => e.stopPropagation()}
             className="font-medium text-primary hover:underline"
           >
             {value as string}
@@ -115,26 +113,12 @@ function InwardPage() {
       }
     }
     if (key === 'status') {
-      const variant = value === 'Open' ? 'success' : value === 'In Inspection' ? 'warning' : 'neutral'
+      const variant = value === 'Open' ? 'success' : 'neutral'
       return {
         display: (
           <StatusBadge variant={variant}>
             {value as string}
           </StatusBadge>
-        ),
-      }
-    }
-    if (key === 'actions') {
-      const batchId = row.id as string
-      return {
-        display: (
-          <Link
-            to={`/wms/inward/${batchId}/devices`}
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-          >
-            <Eye className="size-3.5" />
-            View
-          </Link>
         ),
       }
     }
@@ -153,7 +137,14 @@ function InwardPage() {
         </Button>
       </div>
 
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-inward" />
+      <div className="bmt-search-md">
+        <BusinessMetricsTable
+          tabs={tabs}
+          cellFormatter={cellFormatter}
+          persistKey="wms-inward"
+          onRowClick={(row) => navigate(`/wms/inward/${row.id}/devices`)}
+        />
+      </div>
     </div>
   )
 }

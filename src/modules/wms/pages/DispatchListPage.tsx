@@ -10,9 +10,9 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 
 import { useDispatches } from '../data/dispatches'
-import type { Dispatch, DispatchConfirmationStatus } from '../types'
+import type { Dispatch, DispatchRequestStatus } from '../types'
 
-const STATUS_VARIANT: Record<DispatchConfirmationStatus, StatusBadgeVariant> = {
+const STATUS_VARIANT: Record<DispatchRequestStatus, StatusBadgeVariant> = {
   Draft: 'neutral',
   'Assembly Pending': 'warning',
   Assembled: 'info',
@@ -46,6 +46,7 @@ function buildTab(dispatches: Dispatch[]): TabConfig {
     label: 'All Dispatches',
     columns: [
       { key: 'dispatchNumber', label: 'Dispatch #', sortable: true },
+      { key: 'outwardNumber', label: 'Outward #', sortable: true },
       { key: 'salesOrderNumber', label: 'Sales Order', sortable: true },
       { key: 'accountName', label: 'Account', sortable: true },
       { key: 'status', label: 'Status', sortable: true, filterable: true },
@@ -58,6 +59,8 @@ function buildTab(dispatches: Dispatch[]): TabConfig {
     data: dispatches.map((d) => ({
       id: d.id,
       dispatchNumber: d.dispatchNumber,
+      outwardId: d.outwardId ?? '',
+      outwardNumber: d.outwardNumber ?? '',
       salesOrderId: d.salesOrderId,
       salesOrderNumber: d.salesOrderNumber,
       accountName: d.accountName,
@@ -81,17 +84,30 @@ const cellFormatter: CellFormatter = (value, key, row) => {
       ),
     }
   }
+  if (key === 'outwardNumber' && typeof value === 'string') {
+    if (!value) return { display: <span className="text-muted-foreground">—</span> }
+    const outwardId = row['outwardId']
+    return {
+      display: outwardId ? (
+        <Link to={`/wms/outward/${outwardId}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+          {value}
+        </Link>
+      ) : (
+        <span>{value}</span>
+      ),
+    }
+  }
   if (key === 'salesOrderNumber' && typeof value === 'string') {
     return {
       display: (
-        <Link to={`/crm/sales-orders/${row['salesOrderId']}`} className="text-muted-foreground hover:text-foreground hover:underline">
+        <Link to={`/crm/sales-orders/${row['salesOrderId']}`} className="text-muted-foreground hover:text-foreground hover:underline" onClick={(e) => e.stopPropagation()}>
           {value}
         </Link>
       ),
     }
   }
   if (key === 'status' && typeof value === 'string') {
-    const variant = STATUS_VARIANT[value as DispatchConfirmationStatus] ?? 'neutral'
+    const variant = STATUS_VARIANT[value as DispatchRequestStatus] ?? 'neutral'
     return { display: <StatusBadge variant={variant}>{value}</StatusBadge> }
   }
   if (key === 'variance' && typeof value === 'number') {
@@ -131,14 +147,14 @@ function DispatchListPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-display font-semibold">WMS Outward &mdash; Dispatches</h2>
+          <h2 className="text-2xl font-display font-semibold">WMS Outward &mdash; Dispatch Requests</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            SO-level dispatch confirmations with external assembly tracking, billing documents, and Remove / Add / Replace variance capture.
+            SO-level dispatch requests with external assembly tracking, billing documents, and Remove / Add / Replace variance capture.
           </p>
         </div>
         <Button onClick={() => navigate('/wms/dispatches/new')}>
           <Plus className="mr-1 size-4" />
-          New Dispatch
+          New Dispatch Request
         </Button>
       </div>
 

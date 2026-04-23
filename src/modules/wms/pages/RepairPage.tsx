@@ -1,9 +1,12 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Printer, AlertCircle } from 'lucide-react'
+import { Printer, ChevronDown, ChevronRight, Check, X, Minus, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -13,13 +16,32 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress'
 import {
   BusinessMetricsTable,
   type TabConfig,
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@/components/ui/collapsible'
 
-import type { RepairJob, RepairType } from '../types'
+import {
+  INSPECTION_CHECKLIST_ITEMS,
+  type Device,
+  type InspectionResult,
+  type RepairJob,
+  type RepairType,
+} from '../types'
 import { mockRepairJobs } from '../data/repairs'
 import { mockDevices } from '../data/devices'
 
@@ -45,6 +67,45 @@ const STATUS_VARIANT: Record<RepairJob['status'], StatusBadgeVariant> = {
   Completed: 'success',
   Failed: 'error',
 }
+
+const READINESS_VARIANT: Record<string, StatusBadgeVariant> = {
+  Ready: 'success',
+  'In Repair': 'warning',
+  'Awaiting Assembly': 'info',
+  'Waiting for Paint': 'warning',
+  'Waiting for Spares': 'warning',
+}
+
+function computeReadiness(job: RepairJob, device: Device | undefined): string[] {
+  const statuses: string[] = []
+  if (device?.requiresSpares && !device.sparesIssued) statuses.push('Waiting for Spares')
+  if (device?.requiresPaint && !device.paintCompleted) statuses.push('Waiting for Paint')
+  if (job.status === 'In Progress') {
+    statuses.push('In Repair')
+  } else if (job.status === 'Assigned') {
+    if (device?.requiresSpares && device.sparesIssued && device.requiresPaint && device.paintCompleted) {
+      statuses.push('Awaiting Assembly')
+    } else if (statuses.length === 0) {
+      statuses.push('Ready')
+    }
+  }
+  if (statuses.length === 0) statuses.push('Ready')
+  return statuses
+}
+
+// Group checklist items
+const CHECKLIST_GROUPS = INSPECTION_CHECKLIST_ITEMS.reduce<
+  Record<string, typeof INSPECTION_CHECKLIST_ITEMS[number][]>
+>((acc, item) => {
+  const group = item.group
+  if (!acc[group]) acc[group] = []
+  acc[group].push(item)
+  return acc
+}, {})
+
+const GROUP_ORDER = ['Panels', 'Display', 'Input', 'Audio', 'Power', 'Hardware', 'Ports']
+
+type ChecklistState = Record<string, { result: InspectionResult; notes: string }>
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return '-'
@@ -76,66 +137,98 @@ function handlePrintBarcode(barcode: string) {
 }
 
 function RepairPage() {
-  // Filter out DISPLAY and BATTERY repair jobs — those are handled separately
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Filter out BATTERY — that's handled separately. DISPLAY stays so we can show a tab for it.
   const [jobs, setJobs] = useState<RepairJob[]>(
-    mockRepairJobs.filter((j) => j.repairType !== 'DISPLAY' && j.repairType !== 'BATTERY')
+    mockRepairJobs.filter((j) => j.repairType !== 'BATTERY')
   )
   const [showAssignForm, setShowAssignForm] = useState(false)
   const [assignDeviceId, setAssignDeviceId] = useState('')
   const [assignEngineer, setAssignEngineer] = useState('')
 
-  // Check if device is ready for repair (spares fulfilled + paint done)
-  const isDeviceReadyForRepair = (deviceId: string): { ready: boolean; reason?: string } => {
-    const device = mockDevices.find((d) => d.id === deviceId)
-    if (!device) return { ready: true }
+  // Checklist dialog state
+  const [checklistOpen, setChecklistOpen] = useState(false)
+  const [activeJob, setActiveJob] = useState<RepairJob | null>(null)
+  const [checklist, setChecklist] = useState<ChecklistState>({})
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
+  const [notes, setNotes] = useState('')
+  // Per-device requires-spares / requires-paint overrides toggled directly from the list
+  const [deviceFlags, setDeviceFlags] = useState<Record<string, { spares?: boolean; paint?: boolean }>>({})
 
-    if (device.requiresSpares && !device.sparesIssued) {
-      return { ready: false, reason: 'Waiting for spares' }
-    }
-    if (device.requiresPaint && !device.paintCompleted) {
-      return { ready: false, reason: 'Waiting for paint' }
-    }
-    return { ready: true }
+  const toggleDeviceFlag = (deviceId: string, flag: 'spares' | 'paint') => {
+    const device = mockDevices.find((d) => d.id === deviceId)
+    const current =
+      deviceFlags[deviceId]?.[flag] ??
+      (flag === 'spares' ? device?.requiresSpares : device?.requiresPaint) ??
+      false
+    const next = !current
+    setDeviceFlags((prev) => ({
+      ...prev,
+      [deviceId]: { ...prev[deviceId], [flag]: next },
+    }))
+    const label = flag === 'spares' ? 'Spares' : 'Paint'
+    const doneLabel = flag === 'spares' ? 'issued' : 'done'
+    toast.success(`${device?.barcode ?? deviceId}: ${label} ${next ? doneLabel : 'reset'}`)
   }
 
-  const handleAction = (jobId: string, action: 'start' | 'complete' | 'fail') => {
-    const job = jobs.find((j) => j.id === jobId)
-    if (!job) return
+  const openChecklist = (job: RepairJob) => {
+    setActiveJob(job)
+    setChecklist({})
+    setCollapsedGroups({})
+    setNotes('')
+    setChecklistOpen(true)
+  }
 
-    if (action === 'start') {
-      const readiness = isDeviceReadyForRepair(job.deviceId)
-      if (!readiness.ready) {
-        toast.error(`Cannot start repair: ${readiness.reason}`)
-        return
-      }
+  // Auto-open the repair checklist when arriving with ?open=<jobId>
+  // (used by the "Start Repair" button on the device detail page).
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (!openId) return
+    const job = jobs.find((j) => j.id === openId)
+    if (job) openChecklist(job)
+    const next = new URLSearchParams(searchParams)
+    next.delete('open')
+    setSearchParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleChecklistChange = (itemId: string, result: InspectionResult) => {
+    setChecklist((prev) => ({
+      ...prev,
+      [itemId]: { result, notes: prev[itemId]?.notes ?? '' },
+    }))
+  }
+  const handleChecklistNotes = (itemId: string, text: string) => {
+    setChecklist((prev) => ({
+      ...prev,
+      [itemId]: { ...prev[itemId], result: prev[itemId]?.result ?? 'FAIL', notes: text },
+    }))
+  }
+  const toggleGroup = (group: string) => {
+    setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }))
+  }
+
+  const checkedCount = Object.keys(checklist).length
+  const passCount = Object.values(checklist).filter((i) => i.result === 'PASS').length
+  const failCount = Object.values(checklist).filter((i) => i.result === 'FAIL').length
+  const naCount = Object.values(checklist).filter((i) => i.result === 'NOT_APPLICABLE').length
+
+  const handleSubmitChecklist = () => {
+    if (!activeJob) return
+    if (checkedCount < INSPECTION_CHECKLIST_ITEMS.length) {
+      toast.error('Please complete all checklist items.')
+      return
     }
-
     setJobs((prev) =>
       prev.map((j) => {
-        if (j.id !== jobId) return j
-        switch (action) {
-          case 'start':
-            toast.success(`Repair started for ${j.deviceBarcode}`)
-            return { ...j, status: 'In Progress' as const, startedAt: new Date().toISOString() }
-          case 'complete':
-            toast.success(`Repair completed for ${j.deviceBarcode}`)
-            return {
-              ...j,
-              status: 'Completed' as const,
-              completedAt: new Date().toISOString(),
-            }
-          case 'fail':
-            toast.error(`Repair failed for ${j.deviceBarcode}`)
-            return {
-              ...j,
-              status: 'Failed' as const,
-              completedAt: new Date().toISOString(),
-            }
-          default:
-            return j
-        }
-      }),
+        if (j.id !== activeJob.id) return j
+        return { ...j, status: 'In Progress' as const, startedAt: j.startedAt ?? new Date().toISOString() }
+      })
     )
+    toast.success(`Repair started for ${activeJob.deviceBarcode}`)
+    setChecklistOpen(false)
+    setActiveJob(null)
   }
 
   const summaryStats = useMemo(() => {
@@ -184,37 +277,54 @@ function RepairPage() {
     toast.success(`${job?.deviceBarcode ?? 'Device'} assigned to ${engineer}`)
   }
 
+  const handleAssemble = (jobId: string, barcode: string) => {
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === jobId
+          ? { ...job, status: 'Completed' as const, completedAt: new Date().toISOString() }
+          : job,
+      ),
+    )
+    toast.success(`${barcode} assembled and sent to Inward QC.`)
+  }
+
   const buildRows = useCallback(
     (filtered: RepairJob[]) =>
       filtered.map((job) => {
-        const readiness = isDeviceReadyForRepair(job.deviceId)
+        const device = mockDevices.find((d) => d.id === job.deviceId)
+        const readiness = computeReadiness(job, device)
         return {
           id: job.id,
           barcode: job.deviceBarcode,
+          partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
+          biosNo: device?.biosNo ?? '-',
           type: job.repairType,
           status: job.status,
           assignedTo: job.assignedTo,
-          rework: job.isRework ? 'Yes' : 'No',
-          isRework: job.isRework,
+          rework: job.reworkCount,
           started: formatDate(job.startedAt),
-          readiness: readiness.ready ? 'Ready' : readiness.reason ?? 'Not Ready',
-          _isReady: readiness.ready,
+          readiness: readiness.join(','),
+          _readinessList: readiness,
+          spares: deviceFlags[job.deviceId]?.spares ?? device?.requiresSpares ?? false,
+          paint: deviceFlags[job.deviceId]?.paint ?? device?.requiresPaint ?? false,
           notes: job.notes ?? '-',
           _status: job.status,
           _deviceId: job.deviceId,
         }
       }),
-    [],
+    [deviceFlags],
   )
 
   const columns = [
     { key: 'barcode', label: 'Device Barcode', sortable: true },
-    { key: 'type', label: 'Type' },
+    { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+    { key: 'biosNo', label: 'BIOS No', sortable: true },
     { key: 'status', label: 'Status' },
     { key: 'readiness', label: 'Readiness' },
+    { key: 'spares', label: 'Spares', align: 'center' as const },
+    { key: 'paint', label: 'Paint', align: 'center' as const },
     { key: 'assignedTo', label: 'Assigned To', sortable: true },
-    { key: 'rework', label: 'Rework' },
-    { key: 'started', label: 'Started', sortable: true },
+    { key: 'rework', label: 'Rework', align: 'center' as const },
     { key: 'actions', label: 'Actions' },
   ]
 
@@ -238,6 +348,12 @@ function RepairPage() {
         columns,
         data: buildRows(jobs.filter((j) => j.repairType === 'L3')),
       },
+      {
+        id: 'display',
+        label: 'Display Repair',
+        columns,
+        data: buildRows(jobs.filter((j) => j.repairType === 'DISPLAY')),
+      },
     ],
     [jobs, buildRows],
   )
@@ -246,18 +362,16 @@ function RepairPage() {
     (value, key, row) => {
       if (key === 'barcode') {
         return {
+          display: <span className="font-medium">{String(value)}</span>,
+        }
+      }
+      if (key === 'partSerial') {
+        const [part, serial] = String(value).split('\n')
+        return {
           display: (
-            <div className="flex items-center gap-1.5">
-              <span className="font-medium">{String(value)}</span>
-              <Button
-                size="xs"
-                variant="ghost"
-                className="size-6 p-0 text-muted-foreground hover:text-foreground"
-                onClick={() => handlePrintBarcode(String(value))}
-                title="Print barcode"
-              >
-                <Printer className="size-3.5" />
-              </Button>
+            <div className="flex flex-col leading-tight">
+              <span className="font-medium">{part}</span>
+              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
             </div>
           ),
         }
@@ -281,18 +395,15 @@ function RepairPage() {
         }
       }
       if (key === 'readiness') {
-        const isReady = row._isReady as boolean
+        const list = (row._readinessList as string[]) ?? []
         return {
           display: (
-            <div className="flex items-center gap-1">
-              {isReady ? (
-                <StatusBadge variant="success">Ready</StatusBadge>
-              ) : (
-                <StatusBadge variant="warning">
-                  <AlertCircle className="size-3 mr-1" />
-                  {String(value)}
+            <div className="flex flex-col items-start gap-1">
+              {list.map((status) => (
+                <StatusBadge key={status} variant={READINESS_VARIANT[status] ?? 'neutral'}>
+                  {status}
                 </StatusBadge>
-              )}
+              ))}
             </div>
           ),
         }
@@ -303,65 +414,108 @@ function RepairPage() {
         if (!current || current === 'Unassigned') {
           return {
             display: (
-              <Select value="" onValueChange={(val) => { if (val) handleAssignEngineerInline(jobId, val) }}>
-                <SelectTrigger className="h-8 w-36 text-xs">
-                  <SelectValue placeholder="Unassigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  {REPAIR_ENGINEERS.map((eng) => (
-                    <SelectItem key={eng} value={eng}>
-                      {eng}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div onClick={(e) => e.stopPropagation()}>
+                <Select value="" onValueChange={(val) => { if (val) handleAssignEngineerInline(jobId, val) }}>
+                  <SelectTrigger className="h-8 w-36 text-xs">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REPAIR_ENGINEERS.map((eng) => (
+                      <SelectItem key={eng} value={eng}>
+                        {eng}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             ),
           }
         }
         return null
       }
-      if (key === 'rework' && value === 'Yes') {
+      if (key === 'rework') {
+        const count = value as number
+        if (count > 0) {
+          return {
+            className: 'bg-destructive/10 text-destructive font-medium',
+            display: String(count),
+          }
+        }
+        return { display: <span className="text-muted-foreground">0</span> }
+      }
+      if ((key === 'spares' || key === 'paint') && typeof value === 'boolean') {
+        const deviceId = row._deviceId as string
+        const enabled = value
+        const onLabel = key === 'spares' ? 'Issued' : 'Done'
         return {
-          className: 'bg-destructive/10 text-destructive',
-          display: 'Yes',
+          display: (
+            <div onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => toggleDeviceFlag(deviceId, key)}
+                className={
+                  enabled
+                    ? 'inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                    : 'inline-flex items-center gap-1 rounded-full border border-dashed border-muted-foreground/40 px-2 py-0.5 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors'
+                }
+              >
+                {enabled ? (
+                  <>
+                    <Check className="size-3" /> {onLabel}
+                  </>
+                ) : (
+                  <>
+                    <Plus className="size-3" /> Add
+                  </>
+                )}
+              </button>
+            </div>
+          ),
         }
       }
       if (key === 'actions') {
         const status = row._status as RepairJob['status']
         const jobId = row.id as string
-        const isReady = row._isReady as boolean
+        const barcode = row.barcode as string
+        const job = jobs.find((j) => j.id === jobId)
+        // Mutually exclusive: Start while not yet in progress, Assemble once repair is underway.
+        const showStart = status === 'Assigned'
+        const showAssemble = status === 'In Progress'
         return {
           display: (
-            <div className="flex gap-1">
-              {status === 'Assigned' && (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => handleAction(jobId, 'start')}
-                  disabled={!isReady}
-                  title={!isReady ? 'Spare/paint must be fulfilled first' : 'Start repair'}
+            <div
+              className="flex items-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {showStart && (
+                <button
+                  type="button"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  onClick={() => {
+                    if (job) openChecklist(job)
+                  }}
                 >
                   Start
-                </Button>
+                </button>
               )}
-              {status === 'In Progress' && (
-                <>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    onClick={() => handleAction(jobId, 'complete')}
-                  >
-                    Complete
-                  </Button>
-                  <Button
-                    size="xs"
-                    variant="destructive"
-                    onClick={() => handleAction(jobId, 'fail')}
-                  >
-                    Failed
-                  </Button>
-                </>
+              {showAssemble && (
+                <button
+                  type="button"
+                  className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+                  onClick={() => handleAssemble(jobId, barcode)}
+                >
+                  Assemble
+                </button>
               )}
+              <Button
+                size="xs"
+                variant="ghost"
+                className="size-7 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => handlePrintBarcode(barcode)}
+                title="Print barcode"
+              >
+                <Printer className="size-3.5" />
+              </Button>
             </div>
           ),
         }
@@ -369,7 +523,7 @@ function RepairPage() {
       return null
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [jobs, deviceFlags],
   )
 
   return (
@@ -377,7 +531,7 @@ function RepairPage() {
       <div>
         <h1 className="cpt-page-title">Repair Station</h1>
         <p className="text-sm text-muted-foreground">
-          Manage L2 and L3 repair jobs. Repair starts once spares are fulfilled and paint is done.
+          Manage L2, L3, and Display repair jobs. Repair starts once spares are fulfilled and paint is done.
         </p>
       </div>
 
@@ -473,7 +627,191 @@ function RepairPage() {
       )}
 
       {/* Repair Jobs Table */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-repair" />
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="wms-repair"
+        onRowClick={(row) => navigate(`/wms/devices/${row._deviceId}?from=repair`)}
+      />
+
+      {/* Repair Checklist Dialog */}
+      <Dialog open={checklistOpen} onOpenChange={setChecklistOpen}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
+          <div className="shrink-0 border-b px-6 py-4">
+            <DialogHeader>
+              <DialogTitle className="text-lg">
+                Repair Checklist: {activeJob?.deviceBarcode}
+              </DialogTitle>
+              {activeJob && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {REPAIR_TYPE_LABELS[activeJob.repairType]} — Assigned to {activeJob.assignedTo}
+                </p>
+              )}
+            </DialogHeader>
+            <div className="mt-3 flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <Progress
+                  value={
+                    INSPECTION_CHECKLIST_ITEMS.length > 0
+                      ? Math.round((checkedCount / INSPECTION_CHECKLIST_ITEMS.length) * 100)
+                      : 0
+                  }
+                >
+                  <ProgressLabel className="sr-only">Progress</ProgressLabel>
+                  <ProgressValue className="sr-only" />
+                </Progress>
+              </div>
+              <div className="flex shrink-0 items-center gap-3 text-xs">
+                <span className="font-medium">{checkedCount}/{INSPECTION_CHECKLIST_ITEMS.length}</span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-2 rounded-full bg-emerald-500" />
+                  {passCount}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-2 rounded-full bg-destructive" />
+                  {failCount}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-2 rounded-full bg-muted-foreground" />
+                  {naCount}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            {GROUP_ORDER.map((group) => {
+              const items = CHECKLIST_GROUPS[group]
+              if (!items) return null
+              const isCollapsed = collapsedGroups[group] ?? false
+              const groupChecked = items.filter((i) => checklist[i.id]).length
+              const groupPassed = items.filter((i) => checklist[i.id]?.result === 'PASS').length
+              const groupFailed = items.filter((i) => checklist[i.id]?.result === 'FAIL').length
+              return (
+                <Collapsible key={group} open={!isCollapsed}>
+                  <CollapsibleTrigger
+                    className="flex w-full items-center justify-between rounded-lg border bg-muted/40 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                    onClick={() => toggleGroup(group)}
+                  >
+                    <div className="flex items-center gap-2">
+                      {isCollapsed ? (
+                        <ChevronRight className="size-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="size-4 text-muted-foreground" />
+                      )}
+                      <span className="text-sm font-semibold">{group}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {groupPassed > 0 && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                          {groupPassed} pass
+                        </span>
+                      )}
+                      {groupFailed > 0 && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                          {groupFailed} fail
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {groupChecked}/{items.length}
+                      </span>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-1.5 pt-2">
+                      {items.map((item) => {
+                        const state = checklist[item.id]
+                        return (
+                          <div
+                            key={item.id}
+                            className={`rounded-lg border transition-colors ${
+                              state?.result === 'PASS'
+                                ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30'
+                                : state?.result === 'FAIL'
+                                  ? 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/30'
+                                  : 'bg-card'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                              <p className="text-sm font-medium min-w-0 flex-1">{item.label}</p>
+                              <div className="flex shrink-0 gap-1">
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className={
+                                    state?.result === 'PASS'
+                                      ? 'border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700'
+                                      : 'border-muted-foreground/20 text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50 dark:text-emerald-500 dark:hover:bg-emerald-950'
+                                  }
+                                  onClick={() => handleChecklistChange(item.id, 'PASS')}
+                                >
+                                  <Check className="size-3.5" /> Pass
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className={
+                                    state?.result === 'FAIL'
+                                      ? 'border-destructive bg-destructive text-white hover:bg-destructive/90'
+                                      : 'border-muted-foreground/20 text-[#f1416c] hover:border-[#f1416c]/60 hover:bg-[#fff5f8] dark:text-[#f1416c] dark:hover:bg-red-950'
+                                  }
+                                  onClick={() => handleChecklistChange(item.id, 'FAIL')}
+                                >
+                                  <X className="size-3.5" /> Fail
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className={
+                                    state?.result === 'NOT_APPLICABLE'
+                                      ? 'border-muted-foreground/50 bg-muted text-muted-foreground'
+                                      : 'border-muted-foreground/20 text-muted-foreground hover:bg-muted'
+                                  }
+                                  onClick={() => handleChecklistChange(item.id, 'NOT_APPLICABLE')}
+                                >
+                                  <Minus className="size-3.5" /> N/A
+                                </Button>
+                              </div>
+                            </div>
+                            {state?.result === 'FAIL' && (
+                              <div className="border-t px-3 py-2">
+                                <Input
+                                  placeholder="Describe the issue..."
+                                  value={state.notes}
+                                  onChange={(e) => handleChecklistNotes(item.id, e.target.value)}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )
+            })}
+
+            <div className="space-y-2">
+              <Label htmlFor="repair-notes">Notes</Label>
+              <Textarea
+                id="repair-notes"
+                placeholder="Any observations during repair..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="shrink-0 rounded-b-xl">
+            <Button variant="outline" onClick={() => setChecklistOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitChecklist}>Start Repair</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

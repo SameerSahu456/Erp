@@ -161,6 +161,8 @@ const PMAssignmentsPage = lazy(() => import('@/modules/ims/pages/PMAssignmentsPa
 const ComponentMovementHistoryPage = lazy(() => import('@/modules/wms/pages/ComponentMovementHistoryPage'))
 const SparesPage = lazy(() => import('@/modules/wms/pages/SparesPage'))
 const AssignToRackPage = lazy(() => import('@/modules/wms/pages/AssignToRackPage'))
+const DeviceDetailPage = lazy(() => import('@/modules/wms/pages/DeviceDetailPage'))
+const DevicesAssignmentPage = lazy(() => import('@/modules/wms/pages/DevicesAssignmentPage'))
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return (
@@ -261,6 +263,8 @@ export const router = createBrowserRouter([
       { path: '/wms/work-orders/:id', element: <LazyRoute><WorkOrderDetailPage /></LazyRoute> },
       { path: '/wms/spares', element: <LazyRoute><SparesPage /></LazyRoute> },
       { path: '/wms/assign-rack', element: <LazyRoute><AssignToRackPage /></LazyRoute> },
+      { path: '/wms/devices', element: <LazyRoute><DevicesAssignmentPage /></LazyRoute> },
+      { path: '/wms/devices/:id', element: <LazyRoute><DeviceDetailPage /></LazyRoute> },
       { path: '/wms/component-history', element: <LazyRoute><ComponentMovementHistoryPage /></LazyRoute> },
 
       // IMS routes

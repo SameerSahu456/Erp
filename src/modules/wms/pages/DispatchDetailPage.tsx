@@ -29,12 +29,12 @@ import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { useDispatches } from '../data/dispatches'
 import type {
   DispatchAction,
-  DispatchConfirmationStatus,
+  DispatchRequestStatus,
   DispatchLineItem,
   DispatchDocumentType,
 } from '../types'
 
-const STATUS_VARIANT: Record<DispatchConfirmationStatus, StatusBadgeVariant> = {
+const STATUS_VARIANT: Record<DispatchRequestStatus, StatusBadgeVariant> = {
   Draft: 'neutral',
   'Assembly Pending': 'warning',
   Assembled: 'info',
@@ -45,7 +45,7 @@ const STATUS_VARIANT: Record<DispatchConfirmationStatus, StatusBadgeVariant> = {
 }
 
 // Flow order — used to render a visual stepper
-const STATUS_FLOW: DispatchConfirmationStatus[] = [
+const STATUS_FLOW: DispatchRequestStatus[] = [
   'Draft',
   'Assembly Pending',
   'Assembled',
@@ -103,7 +103,7 @@ function ActionBadge({ action }: { action: DispatchAction }) {
   )
 }
 
-function StatusStepper({ current }: { current: DispatchConfirmationStatus }) {
+function StatusStepper({ current }: { current: DispatchRequestStatus }) {
   const currentIdx = STATUS_FLOW.indexOf(current)
   return (
     <div className="flex items-center gap-1 overflow-x-auto">
@@ -176,10 +176,25 @@ function DispatchDetailPage() {
             <h2 className="text-2xl font-display font-semibold">{dispatch.dispatchNumber}</h2>
             <StatusBadge variant={STATUS_VARIANT[dispatch.status]}>{dispatch.status}</StatusBadge>
           </div>
-          <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             <span>
               For SO <Link to={`/crm/sales-orders/${dispatch.salesOrderId}`} className="text-primary hover:underline">{dispatch.salesOrderNumber}</Link>
             </span>
+            {dispatch.outwardNumber && (
+              <>
+                <span>·</span>
+                <span>
+                  Outward{' '}
+                  {dispatch.outwardId ? (
+                    <Link to={`/wms/outward/${dispatch.outwardId}`} className="text-primary hover:underline">
+                      {dispatch.outwardNumber}
+                    </Link>
+                  ) : (
+                    <span className="font-mono">{dispatch.outwardNumber}</span>
+                  )}
+                </span>
+              </>
+            )}
             <span>·</span>
             <span>{dispatch.accountName}</span>
           </div>
@@ -201,57 +216,113 @@ function DispatchDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Top metadata grid */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* External ticket */}
-        <Card>
-          <CardContent className="space-y-2 py-4">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              <Ticket className="size-3.5" />
-              External Ticket
-            </div>
-            {dispatch.externalTicketNumber ? (
-              <>
-                <div className="font-mono text-sm font-semibold">{dispatch.externalTicketNumber}</div>
-                <div className="text-xs text-muted-foreground">via {dispatch.externalSystem ?? '—'}</div>
-              </>
-            ) : (
-              <div className="text-sm italic text-muted-foreground">Not linked yet</div>
-            )}
-          </CardContent>
-        </Card>
-        {/* Store/Billing */}
-        <Card>
-          <CardContent className="space-y-2 py-4">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              <User className="size-3.5" />
-              People
-            </div>
-            <div className="space-y-1 text-sm">
+      {/* Dispatch Details — all form-captured fields, always visible */}
+      <Card>
+        <CardContent className="py-5">
+          <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <ClipboardList className="size-3.5" />
+            Dispatch Details
+          </div>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex items-start gap-2">
+              <FileText className="mt-0.5 size-4 text-muted-foreground" />
               <div>
-                <span className="text-muted-foreground">Store Manager: </span>
-                <span className="font-medium">{dispatch.storeManager}</span>
+                <dt className="text-xs text-muted-foreground">Sales Order</dt>
+                <dd className="text-sm font-medium">
+                  <Link
+                    to={`/crm/sales-orders/${dispatch.salesOrderId}`}
+                    className="text-primary hover:underline"
+                  >
+                    {dispatch.salesOrderNumber}
+                  </Link>
+                </dd>
               </div>
-              {dispatch.billingPerson && (
-                <div>
-                  <span className="text-muted-foreground">Billing: </span>
-                  <span className="font-medium">{dispatch.billingPerson}</span>
-                </div>
-              )}
             </div>
-          </CardContent>
-        </Card>
-        {/* Shipping */}
-        <Card>
-          <CardContent className="space-y-2 py-4">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              <MapPin className="size-3.5" />
-              Ship To
+            <div className="flex items-start gap-2">
+              <Truck className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs text-muted-foreground">Outward</dt>
+                <dd className="text-sm font-medium">
+                  {dispatch.outwardNumber ? (
+                    dispatch.outwardId ? (
+                      <Link to={`/wms/outward/${dispatch.outwardId}`} className="text-primary hover:underline">
+                        {dispatch.outwardNumber}
+                      </Link>
+                    ) : (
+                      <span className="font-mono">{dispatch.outwardNumber}</span>
+                    )
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </dd>
+              </div>
             </div>
-            <div className="text-sm">{dispatch.shippingAddress ?? '—'}</div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="flex items-start gap-2">
+              <User className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs text-muted-foreground">Account</dt>
+                <dd className="text-sm font-medium">{dispatch.accountName}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Ticket className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs text-muted-foreground">External Ticket</dt>
+                <dd className="text-sm">
+                  {dispatch.externalTicketNumber ? (
+                    <>
+                      <span className="font-mono font-medium">{dispatch.externalTicketNumber}</span>
+                      {dispatch.externalSystem && (
+                        <span className="ml-1 text-xs text-muted-foreground">via {dispatch.externalSystem}</span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <User className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs text-muted-foreground">Store Manager</dt>
+                <dd className="text-sm font-medium">
+                  {dispatch.storeManager || <span className="text-muted-foreground">—</span>}
+                </dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Receipt className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs text-muted-foreground">Billing Person</dt>
+                <dd className="text-sm font-medium">
+                  {dispatch.billingPerson || <span className="text-muted-foreground">—</span>}
+                </dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Receipt className="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <dt className="text-xs text-muted-foreground">Invoice Amount</dt>
+                <dd className="text-sm font-medium tabular-nums">
+                  {dispatch.invoiceAmount !== undefined
+                    ? formatCurrency(dispatch.invoiceAmount)
+                    : <span className="text-muted-foreground">—</span>}
+                </dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2 sm:col-span-2 lg:col-span-2">
+              <MapPin className="mt-0.5 size-4 text-muted-foreground" />
+              <div className="min-w-0">
+                <dt className="text-xs text-muted-foreground">Shipping Address</dt>
+                <dd className="text-sm font-medium">
+                  {dispatch.shippingAddress || <span className="text-muted-foreground">—</span>}
+                </dd>
+              </div>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
 
       {/* Timestamps */}
       <Card>
@@ -389,28 +460,14 @@ function DispatchDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Notes + invoice amount */}
-      {(dispatch.notes || dispatch.invoiceAmount) && (
-        <div className="grid gap-4 md:grid-cols-3">
-          {dispatch.notes && (
-            <Card className="md:col-span-2">
-              <CardContent className="py-4">
-                <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Notes</div>
-                <p className="text-sm whitespace-pre-line">{dispatch.notes}</p>
-              </CardContent>
-            </Card>
-          )}
-          {dispatch.invoiceAmount !== undefined && (
-            <Card>
-              <CardContent className="py-4">
-                <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Invoice Total</div>
-                <div className="text-2xl font-display font-semibold tabular-nums">
-                  {formatCurrency(dispatch.invoiceAmount)}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      {/* Notes */}
+      {dispatch.notes && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Notes</div>
+            <p className="text-sm whitespace-pre-line">{dispatch.notes}</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

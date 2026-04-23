@@ -97,7 +97,7 @@ export const mockBatches: InwardBatchEnhanced[] = [
     warehouseName: 'Bangalore Warehouse',
     receivedBy: 'Rajesh Kumar',
     inspectionAssignedTo: 'Arjun Patel',
-    status: 'In Inspection',
+    status: 'Open',
     notes: 'Returned from Infosys Bangalore campus',
     createdAt: '2026-03-20T09:15:00Z',
   },

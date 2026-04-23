@@ -110,6 +110,7 @@ export interface Device {
   brand: string
   model: string
   serialNumber: string
+  biosNo?: string
   status: DeviceStatus
   grade?: 'A' | 'B'
   assignedTo?: string
@@ -567,7 +568,7 @@ export interface StockUnit {
 // Procurement-only tag — lives on PO / inward records, NOT on the variant
 export type PurchaseType = 'Local' | 'Import'
 
-// ── WMS Outward — SO-level Dispatch Confirmation ──────────────────────────────
+// ── WMS Outward — SO-level Dispatch Request ──────────────────────────────────
 // Captures the external-assembly → billing → dispatch flow. Distinct from the
 // internal OutwardRecord flow below (which is the warehouse picking/packing/QC path).
 
@@ -587,7 +588,7 @@ export type DispatchVarianceReason =
   | 'Out of Stock'
   | 'Other'
 
-export const DISPATCH_CONFIRMATION_STATUSES = [
+export const DISPATCH_REQUEST_STATUSES = [
   'Draft',
   'Assembly Pending',
   'Assembled',
@@ -597,7 +598,7 @@ export const DISPATCH_CONFIRMATION_STATUSES = [
   'Closed',
 ] as const
 
-export type DispatchConfirmationStatus = (typeof DISPATCH_CONFIRMATION_STATUSES)[number]
+export type DispatchRequestStatus = (typeof DISPATCH_REQUEST_STATUSES)[number]
 
 export interface DispatchLineItem {
   id: string
@@ -655,11 +656,14 @@ export interface Dispatch {
   // Source
   salesOrderId: string
   salesOrderNumber: string
+  // Linked internal Outward record (1:1 — every dispatch request ships against an outward)
+  outwardId?: string
+  outwardNumber?: string          // OUT-2026-001
   accountId: string
   accountName: string
   shippingAddress?: string
   // Status
-  status: DispatchConfirmationStatus
+  status: DispatchRequestStatus
   // External third-party system reference (free text now, API-integrated later)
   externalTicketNumber?: string
   externalSystem?: string         // 'Freshdesk', 'Zendesk', etc.
@@ -786,7 +790,7 @@ export interface InwardBatchEnhanced {
   receivedBy: string
   inspectionAssignedTo?: string
   // Status
-  status: 'Open' | 'In Inspection' | 'Closed'
+  status: 'Open' | 'Closed'
   notes?: string
   createdAt: string
 }

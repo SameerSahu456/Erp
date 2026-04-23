@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Truck, ClipboardCheck, PackageCheck, Send } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -86,10 +86,8 @@ const outwardColumns = [
   { key: 'outwardNumber', label: 'Outward #', sortable: true },
   { key: 'type', label: 'Type', sortable: true },
   { key: 'customerName', label: 'Customer', sortable: true },
-  { key: 'devicesCount', label: 'Devices', sortable: true, align: 'right' as const },
-  { key: 'qcStatus', label: 'QC Status', sortable: true },
+  { key: 'devicesCount', label: 'Devices', sortable: true },
   { key: 'status', label: 'Status', sortable: true },
-  { key: 'storeManager', label: 'Store Manager', sortable: true },
   { key: 'expectedDate', label: 'Expected Date', sortable: true },
 ]
 
@@ -97,12 +95,13 @@ const returnColumns = [
   { key: 'returnNumber', label: 'Return #', sortable: true },
   { key: 'outwardNumber', label: 'Outward #', sortable: true },
   { key: 'reason', label: 'Reason', sortable: true },
-  { key: 'devicesCount', label: 'Devices', sortable: true, align: 'right' as const },
+  { key: 'devicesCount', label: 'Devices', sortable: true },
   { key: 'status', label: 'Status', sortable: true },
   { key: 'actions', label: 'Action' },
 ]
 
 export default function OutwardPage() {
+  const navigate = useNavigate()
   const stats = useMemo(() => {
     const total = mockOutwardRecords.length
     const pendingQc = mockOutwardRecords.filter((r) => r.status === 'Pending QC').length
@@ -160,6 +159,7 @@ export default function OutwardPage() {
         display: (
           <Link
             to={`/wms/outward/${row.id as string}`}
+            onClick={(e) => e.stopPropagation()}
             className="font-medium text-primary hover:underline"
           >
             {value}
@@ -252,7 +252,15 @@ export default function OutwardPage() {
 
       <StatsRow stats={stats} />
 
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-outward" />
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="wms-outward"
+        onRowClick={(row) => {
+          if (row.returnNumber) return
+          navigate(`/wms/outward/${row.id}`)
+        }}
+      />
     </div>
   )
 }

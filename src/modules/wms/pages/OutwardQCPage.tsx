@@ -18,6 +18,7 @@ import {
 
 import { mockOutwardRecords } from '../data/outward'
 import { mockQCRecords } from '../data/qc-records'
+import { mockDevices } from '../data/devices'
 import type { OutwardRecord, OutwardDevice, QCRecord } from '../types'
 
 function formatDate(dateStr: string) {
@@ -50,6 +51,27 @@ function OutwardQCPage() {
   const outwardQCRecords = useMemo(
     () => mockQCRecords.filter((r) => r.qcType === 'OUTWARD'),
     [],
+  )
+
+  // Devices stocked after Inward QC + rack assignment — these are eligible for Outward QC.
+  const stockedDevices = useMemo(
+    () =>
+      mockDevices.filter((d) => d.status === 'IN_STOCK' && !!d.rackLocation),
+    [],
+  )
+
+  const stockedRows = useMemo(
+    () =>
+      stockedDevices.map((d) => ({
+        id: d.id,
+        barcode: d.barcode,
+        partSerial: `${d.model}\n${d.serialNumber}`,
+        brand: d.brand,
+        grade: d.grade ?? '-',
+        rack: d.rackLocation ?? '-',
+        qcPassedAt: d.qcPassedAt ? formatDate(d.qcPassedAt) : '-',
+      })),
+    [stockedDevices],
   )
 
   // Build rows grouped by outward, showing individual devices
@@ -107,6 +129,19 @@ function OutwardQCPage() {
   const tabs: TabConfig[] = useMemo(
     () => [
       {
+        id: 'stocked',
+        label: `Ready for Outward QC (${stockedRows.length})`,
+        columns: [
+          { key: 'barcode', label: 'Barcode', sortable: true },
+          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'brand', label: 'Brand', sortable: true },
+          { key: 'grade', label: 'Grade', align: 'center' as const },
+          { key: 'rack', label: 'Rack Location' },
+          { key: 'qcPassedAt', label: 'Inward QC Passed', sortable: true },
+        ],
+        data: stockedRows,
+      },
+      {
         id: 'summary',
         label: `Outward Summary (${summaryRows.length})`,
         columns: [
@@ -146,7 +181,7 @@ function OutwardQCPage() {
         data: completedRows,
       },
     ],
-    [summaryRows, pendingRows, completedRows],
+    [summaryRows, pendingRows, completedRows, stockedRows],
   )
 
   const handleSelectDevice = (outwardId: string, deviceId: string) => {
@@ -190,6 +225,17 @@ function OutwardQCPage() {
             >
               {String(value)}
             </button>
+          ),
+        }
+      }
+      if (key === 'partSerial') {
+        const [part, serial] = String(value).split('\n')
+        return {
+          display: (
+            <div className="flex flex-col leading-tight">
+              <span className="font-medium">{part}</span>
+              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
+            </div>
           ),
         }
       }

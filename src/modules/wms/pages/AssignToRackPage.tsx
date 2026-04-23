@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Printer } from 'lucide-react'
 
@@ -62,6 +63,7 @@ function handlePrintBarcode(barcode: string, model: string, serial: string) {
 }
 
 function AssignToRackPage() {
+  const navigate = useNavigate()
   // QC-passed devices that need rack assignment (READY_FOR_STOCK status)
   const qcPassedDevices = useMemo(
     () => mockDevices.filter((d) => d.status === 'READY_FOR_STOCK' || (d.status === 'IN_STOCK' && !d.rackLocation)),
@@ -136,9 +138,9 @@ function AssignToRackPage() {
         return {
           id: d.id,
           barcode: d.barcode,
-          model: d.model,
+          partSerial: `${d.model}\n${d.serialNumber}`,
+          biosNo: d.biosNo ?? '-',
           brand: d.brand,
-          serial: d.serialNumber,
           grade: d.grade ?? '-',
           qcDate: formatDate(d.qcPassedAt),
           rackAssigned: assignment
@@ -155,12 +157,13 @@ function AssignToRackPage() {
       assignedDevices.map((d) => ({
         id: d.id,
         barcode: d.barcode,
-        model: d.model,
+        partSerial: `${d.model}\n${d.serialNumber}`,
+        biosNo: d.biosNo ?? '-',
         brand: d.brand,
-        serial: d.serialNumber,
         grade: d.grade ?? '-',
         rack: d.rackLocation ?? '-',
         warehouse: d.warehouseName ?? '-',
+        _hasAssignment: true,
       })),
     [assignedDevices],
   )
@@ -172,7 +175,8 @@ function AssignToRackPage() {
         label: `QC Passed - Unassigned (${pendingRows.length})`,
         columns: [
           { key: 'barcode', label: 'Barcode', sortable: true },
-          { key: 'model', label: 'Model', sortable: true },
+          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'brand', label: 'Brand', sortable: true },
           { key: 'grade', label: 'Grade', align: 'center' as const },
           { key: 'qcDate', label: 'QC Passed', sortable: true },
@@ -186,11 +190,13 @@ function AssignToRackPage() {
         label: `Already Assigned (${assignedRows.length})`,
         columns: [
           { key: 'barcode', label: 'Barcode', sortable: true },
-          { key: 'model', label: 'Model', sortable: true },
+          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'brand', label: 'Brand' },
           { key: 'grade', label: 'Grade', align: 'center' as const },
           { key: 'warehouse', label: 'Warehouse' },
           { key: 'rack', label: 'Rack Location' },
+          { key: 'actions', label: 'Action' },
         ],
         data: assignedRows,
       },
@@ -202,21 +208,16 @@ function AssignToRackPage() {
     (value, key, row) => {
       if (key === 'barcode') {
         return {
+          display: <span className="font-medium">{String(value)}</span>,
+        }
+      }
+      if (key === 'partSerial') {
+        const [part, serial] = String(value).split('\n')
+        return {
           display: (
-            <div className="flex items-center gap-1.5">
-              <span className="font-medium">{String(value)}</span>
-              <Button
-                size="xs"
-                variant="ghost"
-                className="size-6 p-0 text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  const device = mockDevices.find((d) => d.id === row.id)
-                  if (device) handlePrintBarcode(device.barcode, device.model, device.serialNumber)
-                }}
-                title="Print barcode"
-              >
-                <Printer className="size-3.5" />
-              </Button>
+            <div className="flex flex-col leading-tight">
+              <span className="font-medium">{part}</span>
+              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
             </div>
           ),
         }
@@ -237,16 +238,33 @@ function AssignToRackPage() {
         const deviceId = row.id as string
         return {
           display: (
-            <Button
-              size="xs"
-              variant={hasAssignment ? 'outline' : 'default'}
-              onClick={() => {
-                const device = mockDevices.find((d) => d.id === deviceId)
-                if (device) openAssignDialog(device)
-              }}
+            <div
+              className="flex items-center gap-1"
+              onClick={(e) => e.stopPropagation()}
             >
-              {hasAssignment ? 'Reassign' : 'Assign Rack'}
-            </Button>
+              <Button
+                size="xs"
+                variant={hasAssignment ? 'outline' : 'default'}
+                onClick={() => {
+                  const device = mockDevices.find((d) => d.id === deviceId)
+                  if (device) openAssignDialog(device)
+                }}
+              >
+                {hasAssignment ? 'Reassign' : 'Assign Rack'}
+              </Button>
+              <Button
+                size="xs"
+                variant="ghost"
+                className="size-7 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  const device = mockDevices.find((d) => d.id === deviceId)
+                  if (device) handlePrintBarcode(device.barcode, device.model, device.serialNumber)
+                }}
+                title="Print barcode"
+              >
+                <Printer className="size-3.5" />
+              </Button>
+            </div>
           ),
         }
       }
@@ -302,7 +320,12 @@ function AssignToRackPage() {
       </div>
 
       {/* Device Table */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-assign-rack" />
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="wms-assign-rack"
+        onRowClick={(row) => navigate(`/wms/devices/${row.id}?from=rack`)}
+      />
 
       {/* Assign Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>

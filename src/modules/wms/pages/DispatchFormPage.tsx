@@ -7,9 +7,7 @@ import {
   Save,
   Plus,
   Trash2,
-  Package,
   ArrowLeftRight,
-  FileText,
   Ticket,
   X as XIcon,
   ClipboardList,
@@ -17,7 +15,7 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -38,18 +36,19 @@ import {
   getDispatchById,
   upsertDispatch,
   nextDispatchNumber,
+  nextOutwardNumber,
 } from '../data/dispatches'
 import type {
   Dispatch,
   DispatchAction,
-  DispatchConfirmationStatus,
+  DispatchRequestStatus,
   DispatchLineItem,
   DispatchDocument,
   DispatchVarianceReason,
   DispatchDocumentType,
   VariantCondition,
 } from '../types'
-import { DISPATCH_CONFIRMATION_STATUSES } from '../types'
+import { DISPATCH_REQUEST_STATUSES } from '../types'
 
 // ── Local editor types ──────────────────────────────────────────────────────
 
@@ -106,6 +105,55 @@ const DOC_TYPE_OPTIONS: DispatchDocumentType[] = [
 // Lines needing a variance reason
 function needsReason(action: DispatchAction): boolean {
   return action === 'ADDED' || action === 'REMOVED' || action === 'REPLACED'
+}
+
+// ── Layout helpers (mirror OutwardFormPage styling) ─────────────────────────
+
+function SectionHeader({
+  step,
+  title,
+  description,
+  trailing,
+}: {
+  step: number
+  title: string
+  description: string
+  trailing?: React.ReactNode
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start gap-3">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+          {step}
+        </span>
+        <div className="min-w-0">
+          <CardTitle className="text-[15px] leading-tight">{title}</CardTitle>
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      {trailing}
+    </div>
+  )
+}
+
+function FieldLabel({
+  children,
+  required,
+  hint,
+}: {
+  children: React.ReactNode
+  required?: boolean
+  hint?: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <Label className="text-xs font-medium text-foreground">
+        {children}
+        {required && <span className="ml-0.5 text-destructive">*</span>}
+      </Label>
+      {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
+    </div>
+  )
 }
 
 function genId(prefix: string): string {
@@ -229,7 +277,7 @@ function DispatchFormPage() {
 
   // ── Header fields ──
   const [salesOrderId, setSalesOrderId] = useState<string>(existing?.salesOrderId ?? initialSO)
-  const [status, setStatus] = useState<DispatchConfirmationStatus>(existing?.status ?? 'Draft')
+  const [status, setStatus] = useState<DispatchRequestStatus>(existing?.status ?? 'Draft')
   const [externalTicketNumber, setExternalTicketNumber] = useState(existing?.externalTicketNumber ?? '')
   const [externalSystem, setExternalSystem] = useState(existing?.externalSystem ?? 'Freshdesk')
   const [storeManager, setStoreManager] = useState(existing?.storeManager ?? '')
@@ -395,11 +443,21 @@ function DispatchFormPage() {
       ? { id: ids.id, dispatchNumber: ids.dispatchNumber }
       : nextDispatchNumber()
 
+    // Every dispatch request is linked to an outward — allocate one on create if absent.
+    const outward = isEditMode
+      ? { id: existing?.outwardId, number: existing?.outwardNumber }
+      : (() => {
+          const n = nextOutwardNumber()
+          return { id: n.id, number: n.outwardNumber }
+        })()
+
     const next: Dispatch = {
       id,
       dispatchNumber,
       salesOrderId,
       salesOrderNumber: so.orderNumber,
+      outwardId: outward.id,
+      outwardNumber: outward.number,
       accountId: so.accountId,
       accountName: so.accountName,
       shippingAddress: shippingAddress || undefined,
@@ -437,49 +495,89 @@ function DispatchFormPage() {
   const fittedTotal = lines.reduce((sum, l) => sum + l.fittedQty * l.rate, 0)
   const varianceCount = lines.filter((l) => needsReason(l.action)).length
 
+  const nextNumbers = !isEditMode ? nextDispatchNumber() : null
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6 pb-24">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={goBack}>
-            <ArrowLeft className="mr-1 size-4" />
-            Back to dispatches
+        <div className="flex items-start gap-3">
+          <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={goBack}>
+            <ArrowLeft />
           </Button>
-          <h2 className="text-2xl font-display font-semibold">
-            {isEditMode ? `Edit ${existing!.dispatchNumber}` : 'New Dispatch Confirmation'}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Record what was actually fitted against the SO plan, capture external ticket + billing docs.
-          </p>
+          <div>
+            <h1 className="cpt-page-title">
+              {isEditMode ? `Edit ${existing!.dispatchNumber}` : 'New Dispatch Request'}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Record what was actually fitted against the SO plan. Required fields are marked with an asterisk (<span className="text-destructive">*</span>).
+            </p>
+          </div>
         </div>
-        <Button onClick={handleSave}>
-          <Save className="mr-1 size-4" />
-          {isEditMode ? 'Save Changes' : 'Create Dispatch'}
-        </Button>
+        {nextNumbers && (
+          <div className="hidden sm:flex flex-col items-end gap-1">
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Dispatch #
+            </span>
+            <span className="font-mono text-sm font-semibold">{nextNumbers.dispatchNumber}</span>
+          </div>
+        )}
       </div>
 
-      {/* Source SO + external ticket */}
+      {/* 1. Source — Sales Order */}
       <Card>
-        <CardContent className="py-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label>Sales Order *</Label>
-              <Select value={salesOrderId || undefined} onValueChange={handleSOChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a sales order..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {salesOrders.map((so) => (
-                    <SelectItem key={so.id} value={so.id}>
-                      {so.orderNumber} &mdash; {so.accountName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>External Ticket #</Label>
+        <CardHeader>
+          <SectionHeader
+            step={1}
+            title="Sales Order"
+            description="Pick the SO this dispatch ships against. Lines will auto-populate from the SO plan."
+          />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <FieldLabel required>Sales Order</FieldLabel>
+            <Select value={salesOrderId || undefined} onValueChange={handleSOChange}>
+              <SelectTrigger className="h-11 w-full text-sm">
+                <SelectValue placeholder="Select a Sales Order…" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {salesOrders.map((so) => (
+                  <SelectItem key={so.id} value={so.id}>
+                    <span className="flex w-full min-w-0 items-center gap-2">
+                      <span className="font-mono text-[12px] shrink-0">{so.orderNumber}</span>
+                      <span className="truncate text-muted-foreground">
+                        {so.accountName}
+                      </span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedSO && (
+              <div className="rounded-lg bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                Planned: {selectedSO.lineItems.length} lines ·{' '}
+                <Link to={`/crm/sales-orders/${selectedSO.id}`} className="text-primary hover:underline">
+                  View SO &rarr;
+                </Link>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 2. External ticket + billing metadata */}
+      <Card>
+        <CardHeader>
+          <SectionHeader
+            step={2}
+            title="External Ticket &amp; Billing"
+            description="Link the third-party ticket, store + billing owners, and shipping address."
+          />
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+            <div className="space-y-2">
+              <FieldLabel>External Ticket #</FieldLabel>
               <div className="relative">
                 <Ticket className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -490,32 +588,32 @@ function DispatchFormPage() {
                 />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>External System</Label>
+            <div className="space-y-2">
+              <FieldLabel>External System</FieldLabel>
               <Input
-                placeholder="Freshdesk / Zendesk / ..."
+                placeholder="Freshdesk / Zendesk / …"
                 value={externalSystem}
                 onChange={(e) => setExternalSystem(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Store Manager *</Label>
+            <div className="space-y-2">
+              <FieldLabel required>Store Manager</FieldLabel>
               <Input
                 placeholder="Name"
                 value={storeManager}
                 onChange={(e) => setStoreManager(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Billing Person</Label>
+            <div className="space-y-2">
+              <FieldLabel>Billing Person</FieldLabel>
               <Input
                 placeholder="Name"
                 value={billingPerson}
                 onChange={(e) => setBillingPerson(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Invoice Amount (₹)</Label>
+            <div className="space-y-2">
+              <FieldLabel>Invoice Amount (₹)</FieldLabel>
               <Input
                 type="number"
                 placeholder="0"
@@ -523,21 +621,21 @@ function DispatchFormPage() {
                 onChange={(e) => setInvoiceAmount(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus((v ?? 'Draft') as DispatchConfirmationStatus)}>
+            <div className="space-y-2">
+              <FieldLabel>Status</FieldLabel>
+              <Select value={status} onValueChange={(v) => setStatus((v ?? 'Draft') as DispatchRequestStatus)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {DISPATCH_CONFIRMATION_STATUSES.map((s) => (
+                  {DISPATCH_REQUEST_STATUSES.map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>Shipping Address</Label>
+            <div className="space-y-2 sm:col-span-2 md:col-span-3">
+              <FieldLabel>Shipping Address</FieldLabel>
               <Input
                 placeholder="Street, city, pincode"
                 value={shippingAddress}
@@ -545,14 +643,6 @@ function DispatchFormPage() {
               />
             </div>
           </div>
-          {selectedSO && (
-            <div className="mt-3 rounded-lg bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              Planned: {selectedSO.lineItems.length} lines ·{' '}
-              <Link to={`/crm/sales-orders/${selectedSO.id}`} className="text-primary hover:underline">
-                View SO &rarr;
-              </Link>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -569,20 +659,27 @@ function DispatchFormPage() {
         </div>
       )}
 
-      {/* Line items editor */}
+      {/* 3. Line items editor */}
       <Card>
-        <CardContent className="p-0">
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <div className="flex items-center gap-2">
-              <Package className="size-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">Line Items</span>
-              <span className="text-xs text-muted-foreground">({lines.length})</span>
-            </div>
-            <Button variant="outline" size="sm" onClick={openAddPicker}>
-              <Plus className="mr-1 size-3.5" />
-              Add line
-            </Button>
-          </div>
+        <CardHeader>
+          <SectionHeader
+            step={3}
+            title="Line Items"
+            description="Capture each fitted variant. Flag ADDED / REMOVED / REPLACED and give a reason when it differs from the SO plan."
+            trailing={
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  {lines.length} line{lines.length === 1 ? '' : 's'}
+                </span>
+                <Button variant="outline" size="sm" onClick={openAddPicker}>
+                  <Plus className="mr-1 size-3.5" />
+                  Add line
+                </Button>
+              </div>
+            }
+          />
+        </CardHeader>
+        <CardContent className="p-0 border-t">
           {lines.length === 0 ? (
             <div className="py-10 text-center text-sm text-muted-foreground">
               <ClipboardList className="mx-auto mb-2 size-6" />
@@ -633,23 +730,30 @@ function DispatchFormPage() {
         </CardContent>
       </Card>
 
-      {/* Documents editor */}
+      {/* 4. Documents editor */}
       <Card>
-        <CardContent className="p-0">
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <div className="flex items-center gap-2">
-              <FileText className="size-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">Documents</span>
-              <span className="text-xs text-muted-foreground">({documents.length})</span>
-            </div>
-            <Button variant="outline" size="sm" onClick={addDocument}>
-              <Plus className="mr-1 size-3.5" />
-              Attach
-            </Button>
-          </div>
+        <CardHeader>
+          <SectionHeader
+            step={4}
+            title="Documents"
+            description="Attach Invoice, E-way Bill, Delivery Challan, etc. once billing is done."
+            trailing={
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  {documents.length} attached
+                </span>
+                <Button variant="outline" size="sm" onClick={addDocument}>
+                  <Plus className="mr-1 size-3.5" />
+                  Attach
+                </Button>
+              </div>
+            }
+          />
+        </CardHeader>
+        <CardContent className="p-0 border-t">
           {documents.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
-              Attach Invoice, E-way Bill, Delivery Challan, etc. once billing is done.
+              No documents yet. Click “Attach” to add an Invoice, E-way Bill, Delivery Challan, etc.
             </div>
           ) : (
             <div className="divide-y">
@@ -689,12 +793,18 @@ function DispatchFormPage() {
         </CardContent>
       </Card>
 
-      {/* Notes */}
+      {/* 5. Notes */}
       <Card>
-        <CardContent className="space-y-2 py-4">
-          <Label>Notes</Label>
+        <CardHeader>
+          <SectionHeader
+            step={5}
+            title="Notes"
+            description="Optional. Assembly team notes, customer acknowledgements, special instructions."
+          />
+        </CardHeader>
+        <CardContent>
           <Textarea
-            placeholder="Assembly team notes, customer acknowledgements, special instructions..."
+            placeholder="Additional notes…"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
@@ -708,6 +818,34 @@ function DispatchFormPage() {
         onSelect={handlePickerSelect}
         title={pickerMode === 'add' ? 'Add line item' : 'Pick replacement variant'}
       />
+
+      {/* Sticky footer */}
+      <div className="sticky bottom-0 -mx-4 sm:-mx-6 border-t bg-background/95 px-4 sm:px-6 py-3 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-5xl flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-muted-foreground">
+            {varianceCount > 0 ? (
+              <span className="flex items-center gap-1.5 text-[#b88800]">
+                <AlertTriangle className="size-3.5" />
+                {varianceCount} variance line{varianceCount === 1 ? '' : 's'} need{varianceCount === 1 ? 's' : ''} a reason before save
+              </span>
+            ) : (
+              <span>
+                Fitted value:{' '}
+                <span className="font-medium text-foreground tabular-nums">
+                  ₹{fittedTotal.toLocaleString('en-IN')}
+                </span>
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={goBack}>Cancel</Button>
+            <Button onClick={handleSave}>
+              <Save className="mr-1 size-4" />
+              {isEditMode ? 'Save Changes' : 'Create Dispatch Request'}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

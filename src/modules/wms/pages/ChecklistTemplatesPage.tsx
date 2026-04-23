@@ -73,7 +73,10 @@ function ChecklistTemplatesPage() {
         display: (
           <button
             className="font-medium text-primary hover:underline"
-            onClick={() => navigate(`/wms/checklists/${row.id}/edit`)}
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate(`/wms/checklists/${row.id}/edit`)
+            }}
           >
             {String(value)}
           </button>
@@ -112,7 +115,12 @@ function ChecklistTemplatesPage() {
         </Button>
       </div>
 
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-checklists" />
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="wms-checklists"
+        onRowClick={(row) => navigate(`/wms/checklists/${row.id}/edit`)}
+      />
     </div>
   )
 }

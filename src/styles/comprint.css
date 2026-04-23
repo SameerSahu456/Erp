@@ -59,6 +59,16 @@
   font-size: 14px;
 }
 
+/* Opt-in medium search field — a comfortable middle ground */
+.bmt-search-md .cpt-search-field {
+  min-width: 280px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.bmt-search-md .cpt-search-field input {
+  font-size: 13px;
+}
+
 .cpt-filter-chip {
   display: inline-flex;
   align-items: center;

@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ChevronDown, ChevronRight, Check, X, Minus, Camera, Upload, Printer, Plus, Trash2 } from 'lucide-react'
 
@@ -103,6 +104,8 @@ function handlePrintBarcode(barcode: string, model: string, serial: string) {
 }
 
 function InspectionPage() {
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [inspectionDialogOpen, setInspectionDialogOpen] = useState(false)
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
   const [checklist, setChecklist] = useState<ChecklistState>({})
@@ -179,7 +182,8 @@ function InspectionPage() {
       pendingDevices.map((d) => ({
         id: d.id,
         barcode: d.barcode,
-        model: d.model,
+        partSerial: `${d.model}\n${d.serialNumber}`,
+        biosNo: d.biosNo ?? '-',
         brand: d.brand,
         batch: d.batchNumber,
         receivedDate: formatDate(d.receivedAt),
@@ -196,7 +200,8 @@ function InspectionPage() {
         return {
           id: d.id,
           barcode: d.barcode,
-          model: d.model,
+          partSerial: `${d.model}\n${d.serialNumber}`,
+          biosNo: d.biosNo ?? '-',
           result: insp
             ? insp.checklist.every((c) => c.result !== 'FAIL')
               ? 'All Pass'
@@ -218,11 +223,12 @@ function InspectionPage() {
         label: `Pending (${pendingRows.length})`,
         columns: [
           { key: 'barcode', label: 'Barcode', sortable: true },
-          { key: 'model', label: 'Model', sortable: true },
+          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'brand', label: 'Brand', sortable: true },
           { key: 'batch', label: 'Batch' },
           { key: 'receivedDate', label: 'Received Date', sortable: true },
-          { key: 'assignedTo', label: 'Assign' },
+          { key: 'assignedTo', label: 'Assigned to' },
           { key: 'actions', label: 'Actions' },
         ],
         data: pendingRows,
@@ -232,12 +238,14 @@ function InspectionPage() {
         label: `Completed (${completedRows.length})`,
         columns: [
           { key: 'barcode', label: 'Barcode', sortable: true },
-          { key: 'model', label: 'Model', sortable: true },
+          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'result', label: 'Result' },
           { key: 'repair', label: 'Repair' },
           { key: 'paint', label: 'Paint' },
           { key: 'spares', label: 'Spares' },
           { key: 'date', label: 'Date', sortable: true },
+          { key: 'actions', label: 'Action' },
         ],
         data: completedRows,
       },
@@ -258,19 +266,61 @@ function InspectionPage() {
     setInspectionDialogOpen(true)
   }
 
+  // Auto-open the inspection dialog when arriving with ?open=<deviceId>
+  // (used by the "Start Inspection" button on the device detail page).
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (!openId) return
+    const device = mockDevices.find((d) => d.id === openId)
+    if (device) handleStartInspection(device)
+    const next = new URLSearchParams(searchParams)
+    next.delete('open')
+    setSearchParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const cellFormatter: CellFormatter = useCallback(
     (value, key, row) => {
       if (key === 'barcode') {
         return {
+          display: <span className="font-medium">{String(value)}</span>,
+        }
+      }
+      if (key === 'partSerial') {
+        const [part, serial] = String(value).split('\n')
+        return {
           display: (
-            <div className="flex items-center gap-1.5">
-              <span className="font-medium">{String(value)}</span>
+            <div className="flex flex-col leading-tight">
+              <span className="font-medium">{part}</span>
+              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
+            </div>
+          ),
+        }
+      }
+      if (key === 'actions') {
+        const device = mockDevices.find((d) => d.id === row.id)
+        return {
+          display: (
+            <div
+              className="flex items-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {row.batch !== undefined && (
+                <button
+                  type="button"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  onClick={() => {
+                    if (device) handleStartInspection(device)
+                  }}
+                >
+                  Inspect
+                </button>
+              )}
               <Button
                 size="xs"
                 variant="ghost"
-                className="size-6 p-0 text-muted-foreground hover:text-foreground"
+                className="size-7 p-0 text-muted-foreground hover:text-foreground"
                 onClick={() => {
-                  const device = mockDevices.find((d) => d.id === row.id)
                   if (device) handlePrintBarcode(device.barcode, device.model, device.serialNumber)
                 }}
                 title="Print barcode"
@@ -281,42 +331,28 @@ function InspectionPage() {
           ),
         }
       }
-      if (key === 'actions' && row.batch !== undefined) {
-        // Only for pending tab rows
-        return {
-          display: (
-            <Button
-              size="xs"
-              onClick={() => {
-                const device = mockDevices.find((d) => d.id === row.id)
-                if (device) handleStartInspection(device)
-              }}
-            >
-              Start Inspection
-            </Button>
-          ),
-        }
-      }
       if (key === 'assignedTo' && row.batch !== undefined) {
         const deviceId = row.id as string
         const currentValue = value as string
         return {
           display: (
-            <Select
-              value={currentValue || ''}
-              onValueChange={(val) => { if (val) handleAssignEngineer(deviceId, val) }}
-            >
-              <SelectTrigger className="h-8 w-36 text-xs">
-                <SelectValue placeholder="Assign..." />
-              </SelectTrigger>
-              <SelectContent>
-                {INSPECTION_ENGINEERS.map((eng) => (
-                  <SelectItem key={eng} value={eng}>
-                    {eng}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div onClick={(e) => e.stopPropagation()}>
+              <Select
+                value={currentValue || ''}
+                onValueChange={(val) => { if (val) handleAssignEngineer(deviceId, val) }}
+              >
+                <SelectTrigger className="h-8 w-36 text-xs">
+                  <SelectValue placeholder="Assign..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {INSPECTION_ENGINEERS.map((eng) => (
+                    <SelectItem key={eng} value={eng}>
+                      {eng}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           ),
         }
       }
@@ -414,7 +450,14 @@ function InspectionPage() {
       </div>
 
       {/* Device Queue */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-inspection" />
+      <div className="bmt-search-lg">
+        <BusinessMetricsTable
+          tabs={tabs}
+          cellFormatter={cellFormatter}
+          persistKey="wms-inspection"
+          onRowClick={(row) => navigate(`/wms/devices/${row.id}?from=inspection`)}
+        />
+      </div>
 
       {/* Inspection Dialog */}
       <Dialog open={inspectionDialogOpen} onOpenChange={setInspectionDialogOpen}>
@@ -480,57 +523,84 @@ function InspectionPage() {
           {/* Scrollable Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
             {/* Device Images - Mandatory */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">
-                Device Images <span className="text-destructive">*</span>
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Upload or take photos of the device (mandatory)
-              </p>
-              <div className="flex flex-wrap gap-2.5">
-                {deviceImages.map((img, idx) => (
-                  <div key={idx} className="relative group">
-                    <div className="w-16 h-16 rounded-md border bg-muted overflow-hidden">
-                      <img
-                        src={URL.createObjectURL(img)}
-                        alt={`Device ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <button
-                      className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImage(idx)}
-                    >
-                      <X className="size-3" />
-                    </button>
-                  </div>
-                ))}
-                <label className="w-16 h-16 rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e.target.files)}
-                  />
-                  <Camera className="size-4 text-muted-foreground" />
-                  <span className="text-[9px] text-muted-foreground mt-0.5">Photo</span>
-                </label>
-                <label className="w-16 h-16 rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e.target.files)}
-                  />
-                  <Upload className="size-4 text-muted-foreground" />
-                  <span className="text-[9px] text-muted-foreground mt-0.5">Upload</span>
-                </label>
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label className="text-sm font-semibold">
+                    Device Images <span className="text-destructive">*</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Capture or upload photos of the device. At least one image is required.
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => handleImageUpload(e.target.files)}
+                    />
+                    <Camera className="size-3.5" />
+                    Take Photo
+                  </label>
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleImageUpload(e.target.files)}
+                    />
+                    <Upload className="size-3.5" />
+                    Upload
+                  </label>
+                </div>
               </div>
-              {deviceImages.length === 0 && (
-                <p className="text-xs text-destructive">At least one image is required</p>
+              {deviceImages.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                  {deviceImages.map((img, idx) => (
+                    <div key={idx} className="relative group aspect-square">
+                      <div className="size-full rounded-md border bg-muted overflow-hidden">
+                        <img
+                          src={URL.createObjectURL(img)}
+                          alt={`Device ${idx + 1}`}
+                          className="size-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="absolute -top-2 -right-2 size-6 rounded-full bg-destructive text-white flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeImage(idx)}
+                        aria-label="Remove image"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                      <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                        {idx + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/30 px-4 py-8 text-center hover:border-primary hover:bg-primary/5 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e.target.files)}
+                  />
+                  <Camera className="size-6 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Add device images</p>
+                    <p className="text-xs text-muted-foreground">
+                      Drag & drop or click to browse
+                    </p>
+                  </div>
+                </label>
               )}
             </div>
 
@@ -678,12 +748,12 @@ function InspectionPage() {
                         value={sr.spareName}
                         onValueChange={(val) => updateSpareRequest(idx, 'spareName', val)}
                       >
-                        <SelectTrigger className="w-48 text-sm">
+                        <SelectTrigger className="h-10 flex-1 min-w-[16rem] text-sm">
                           <SelectValue placeholder="Select spare..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-80 min-w-[16rem]">
                           {AVAILABLE_SPARES.map((spare) => (
-                            <SelectItem key={spare} value={spare}>
+                            <SelectItem key={spare} value={spare} className="text-sm">
                               {spare}
                             </SelectItem>
                           ))}
@@ -694,20 +764,20 @@ function InspectionPage() {
                         min={1}
                         value={sr.qty}
                         onChange={(e) => updateSpareRequest(idx, 'qty', parseInt(e.target.value) || 1)}
-                        className="w-20 h-9 text-sm"
+                        className="w-20 h-10 text-sm"
                         placeholder="Qty"
                       />
                       <Button
-                        size="xs"
+                        size="sm"
                         variant="ghost"
-                        className="text-destructive"
+                        className="h-10 w-10 shrink-0 text-destructive hover:text-destructive"
                         onClick={() => removeSpareRequest(idx)}
                       >
-                        <Trash2 className="size-3.5" />
+                        <Trash2 className="size-4" />
                       </Button>
                     </div>
                   ))}
-                  <Button size="xs" variant="outline" onClick={addSpareRequest}>
+                  <Button size="sm" variant="outline" onClick={addSpareRequest}>
                     <Plus className="size-3.5" />
                     Add Spare
                   </Button>
@@ -728,17 +798,42 @@ function InspectionPage() {
                 Requires Paint
               </Label>
               {requiresPaint && (
-                <div className="ml-6 flex flex-wrap gap-3">
-                  {(['TOP_COVER', 'BOTTOM_COVER'] as PaintPanelType[]).map(
-                    (panel) => (
-                      <Label key={panel} className="cursor-pointer">
-                        <Checkbox
-                          checked={paintPanels.includes(panel)}
-                          onCheckedChange={() => togglePaintPanel(panel)}
-                        />
-                        {panel === 'TOP_COVER' ? 'Top Cover' : 'Bottom Cover'}
-                      </Label>
-                    ),
+                <div className="ml-6 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Select the panels to be painted
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 sm:max-w-md">
+                    {(['TOP_COVER', 'BOTTOM_COVER'] as PaintPanelType[]).map(
+                      (panel) => {
+                        const selected = paintPanels.includes(panel)
+                        const label = panel === 'TOP_COVER' ? 'Top Cover' : 'Bottom Cover'
+                        return (
+                          <button
+                            key={panel}
+                            type="button"
+                            onClick={() => togglePaintPanel(panel)}
+                            aria-pressed={selected}
+                            className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors ${
+                              selected
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-input bg-background text-foreground hover:bg-muted/60'
+                            }`}
+                          >
+                            <span>{label}</span>
+                            {selected ? (
+                              <Check className="size-4" />
+                            ) : (
+                              <Plus className="size-4 text-muted-foreground" />
+                            )}
+                          </button>
+                        )
+                      },
+                    )}
+                  </div>
+                  {paintPanels.length === 0 && (
+                    <p className="text-xs text-destructive">
+                      Select at least one panel
+                    </p>
                   )}
                 </div>
               )}

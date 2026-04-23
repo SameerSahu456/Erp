@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { AlertTriangle, Check, X, Minus, ChevronDown, ChevronRight, Camera, Upload, Printer, Paperclip } from 'lucide-react'
+import { AlertTriangle, Check, X, Minus, ChevronDown, ChevronRight, Printer, Paperclip } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
@@ -37,11 +37,14 @@ import {
 
 import { mockDevices } from '../data/devices'
 import { mockQCRecords } from '../data/qc-records'
+import { mockOutwardRecords } from '../data/outward'
 import {
   INSPECTION_CHECKLIST_ITEMS,
   type Device,
   type QCRecord,
   type InspectionResult,
+  type OutwardDevice,
+  type OutwardRecord,
 } from '../types'
 
 const QC_ENGINEERS = ['Deepak Verma', 'Anita Sharma']
@@ -67,6 +70,7 @@ const CHECKLIST_GROUPS = INSPECTION_CHECKLIST_ITEMS.reduce<
 const GROUP_ORDER = ['Panels', 'Display', 'Input', 'Audio', 'Power', 'Hardware', 'Ports']
 
 type ChecklistState = Record<string, { result: InspectionResult; notes: string }>
+type QCType = 'INWARD' | 'OUTWARD'
 
 const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024 // 5 MB
 
@@ -91,15 +95,17 @@ function handlePrintBarcode(barcode: string) {
 }
 
 function QCPage() {
+  const navigate = useNavigate()
   const [qcDialogOpen, setQcDialogOpen] = useState(false)
+  const [qcType, setQcType] = useState<QCType>('INWARD')
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
+  const [selectedOutwardCtx, setSelectedOutwardCtx] = useState<{ outward: OutwardRecord; device: OutwardDevice } | null>(null)
   const [checklist, setChecklist] = useState<ChecklistState>({})
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [qcResult, setQcResult] = useState<'PASSED' | 'FAILED' | null>(null)
   const [grade, setGrade] = useState<'A' | 'B' | ''>('')
   const [additionalNotes, setAdditionalNotes] = useState('')
   const [attachments, setAttachments] = useState<File[]>([])
-  const [deviceImages, setDeviceImages] = useState<File[]>([])
   const [qcAssignments, setQcAssignments] = useState<Record<string, string>>({})
 
   const handleAssignQCEngineer = (deviceId: string, engineer: string) => {
@@ -108,85 +114,205 @@ function QCPage() {
     toast.success(`${device?.barcode ?? deviceId} assigned to ${engineer}`)
   }
 
-  const pendingDevices = useMemo(
+  // ── Inward QC ──────────────────────────────────────────────────────────
+  const inwardPendingDevices = useMemo(
     () => mockDevices.filter((d) => d.status === 'AWAITING_QC'),
     [],
   )
-
   const inwardQCRecords = useMemo(
     () => mockQCRecords.filter((r) => r.qcType === 'INWARD'),
     [],
   )
 
-  const pendingRows = useMemo(
+  const inwardPendingRows = useMemo(
     () =>
-      pendingDevices.map((d) => ({
+      inwardPendingDevices.map((d) => ({
         id: d.id,
+        _deviceId: d.id,
+        _qcType: 'INWARD' as const,
         barcode: d.barcode,
-        model: d.model,
+        partSerial: `${d.model}\n${d.serialNumber}`,
+        biosNo: d.biosNo ?? '-',
         brand: d.brand,
-        qcFailCount: d.qcFailCount,
+        rework: d.qcFailCount,
         assignedTo: qcAssignments[d.id] ?? d.assignedTo ?? '',
         actions: '',
       })),
-    [pendingDevices, qcAssignments],
+    [inwardPendingDevices, qcAssignments],
   )
 
-  const completedRows = useMemo(
+  const inwardCompletedRows = useMemo(
     () =>
-      inwardQCRecords.map((r) => ({
-        id: r.id,
-        barcode: r.deviceBarcode,
-        qcType: r.qcType,
-        result: r.result,
-        grade: r.grade ?? '-',
-        inspectedBy: r.inspectedBy,
-        date: formatDate(r.inspectedAt),
-      })),
+      inwardQCRecords.map((r) => {
+        const device = mockDevices.find((d) => d.id === r.deviceId)
+        return {
+          id: r.id,
+          _deviceId: r.deviceId,
+          barcode: r.deviceBarcode,
+          partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
+          biosNo: device?.biosNo ?? '-',
+          result: r.result,
+          grade: r.grade ?? '-',
+          rework: device?.qcFailCount ?? 0,
+          inspectedBy: r.inspectedBy,
+          date: formatDate(r.inspectedAt),
+        }
+      }),
     [inwardQCRecords],
   )
 
-  const tabs: TabConfig[] = useMemo(
+  // ── Outward QC ─────────────────────────────────────────────────────────
+  const outwardPendingOutwards = useMemo(
+    () => mockOutwardRecords.filter((r) => r.status === 'Pending QC' || r.status === 'Packed'),
+    [],
+  )
+  const outwardQCRecords = useMemo(
+    () => mockQCRecords.filter((r) => r.qcType === 'OUTWARD'),
+    [],
+  )
+
+  const outwardPendingRows = useMemo(() => {
+    const rows: Record<string, unknown>[] = []
+    outwardPendingOutwards.forEach((outward) => {
+      outward.devices
+        .filter((d) => d.qcResult === 'Pending')
+        .forEach((device) => {
+          const base = mockDevices.find((x) => x.id === device.deviceId)
+          rows.push({
+            id: `${outward.id}-${device.deviceId}`,
+            _deviceId: device.deviceId,
+            _qcType: 'OUTWARD' as const,
+            _outwardId: outward.id,
+            outwardNumber: outward.outwardNumber,
+            customerName: outward.customerName,
+            barcode: device.barcode,
+            partSerial: `${device.model}\n${device.serialNumber}`,
+            biosNo: base?.biosNo ?? '-',
+            grade: device.grade ?? '-',
+            rework: base?.outwardQcFailCount ?? 0,
+          })
+        })
+    })
+    return rows
+  }, [outwardPendingOutwards])
+
+  const outwardCompletedRows = useMemo(
+    () =>
+      outwardQCRecords.map((r) => {
+        const device = mockDevices.find((d) => d.id === r.deviceId)
+        return {
+          id: r.id,
+          _deviceId: r.deviceId,
+          barcode: r.deviceBarcode,
+          partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
+          biosNo: device?.biosNo ?? '-',
+          result: r.result,
+          rework: device?.outwardQcFailCount ?? 0,
+          inspectedBy: r.inspectedBy,
+          date: formatDate(r.inspectedAt),
+          notes: r.notes ?? '-',
+        }
+      }),
+    [outwardQCRecords],
+  )
+
+  const inwardTabs: TabConfig[] = useMemo(
     () => [
       {
-        id: 'pending',
-        label: `Pending QC (${pendingRows.length})`,
+        id: 'inward-pending',
+        label: `Pending (${inwardPendingRows.length})`,
         columns: [
           { key: 'barcode', label: 'Barcode', sortable: true },
-          { key: 'model', label: 'Model', sortable: true },
+          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'brand', label: 'Brand', sortable: true },
-          { key: 'qcFailCount', label: 'QC Fail Count', sortable: true, align: 'center' as const },
+          { key: 'rework', label: 'Rework', align: 'center' as const, sortable: true },
           { key: 'assignedTo', label: 'Assigned To' },
           { key: 'actions', label: 'Actions' },
         ],
-        data: pendingRows,
+        data: inwardPendingRows,
       },
       {
-        id: 'completed',
-        label: `Completed (${completedRows.length})`,
+        id: 'inward-completed',
+        label: `Completed (${inwardCompletedRows.length})`,
         columns: [
           { key: 'barcode', label: 'Device Barcode', sortable: true },
-          { key: 'qcType', label: 'QC Type' },
+          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'result', label: 'Result' },
           { key: 'grade', label: 'Grade' },
+          { key: 'rework', label: 'Rework', align: 'center' as const },
           { key: 'inspectedBy', label: 'Inspected By' },
           { key: 'date', label: 'Date', sortable: true },
         ],
-        data: completedRows,
+        data: inwardCompletedRows,
       },
     ],
-    [pendingRows, completedRows],
+    [inwardPendingRows, inwardCompletedRows],
   )
 
-  const handleStartQC = (device: Device) => {
+  const outwardTabs: TabConfig[] = useMemo(
+    () => [
+      {
+        id: 'outward-pending',
+        label: `Pending (${outwardPendingRows.length})`,
+        columns: [
+          { key: 'outwardNumber', label: 'Outward #', sortable: true },
+          { key: 'barcode', label: 'Barcode', sortable: true },
+          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'biosNo', label: 'BIOS No', sortable: true },
+          { key: 'customerName', label: 'Customer', sortable: true },
+          { key: 'grade', label: 'Grade' },
+          { key: 'rework', label: 'Rework', align: 'center' as const },
+          { key: 'actions', label: 'Actions' },
+        ],
+        data: outwardPendingRows,
+      },
+      {
+        id: 'outward-completed',
+        label: `Completed (${outwardCompletedRows.length})`,
+        columns: [
+          { key: 'barcode', label: 'Device Barcode', sortable: true },
+          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'biosNo', label: 'BIOS No', sortable: true },
+          { key: 'result', label: 'Result' },
+          { key: 'rework', label: 'Rework', align: 'center' as const },
+          { key: 'inspectedBy', label: 'Inspected By' },
+          { key: 'date', label: 'Date', sortable: true },
+        ],
+        data: outwardCompletedRows,
+      },
+    ],
+    [outwardPendingRows, outwardCompletedRows],
+  )
+
+  const handleStartInwardQC = (device: Device) => {
+    setQcType('INWARD')
     setSelectedDevice(device)
+    setSelectedOutwardCtx(null)
     setChecklist({})
     setCollapsedGroups({})
     setQcResult(null)
     setGrade('')
     setAdditionalNotes('')
     setAttachments([])
-    setDeviceImages([])
+    setQcDialogOpen(true)
+  }
+
+  const handleStartOutwardQC = (outwardId: string, deviceId: string) => {
+    const outward = mockOutwardRecords.find((o) => o.id === outwardId)
+    const device = outward?.devices.find((d) => d.deviceId === deviceId)
+    if (!outward || !device) return
+    const base = mockDevices.find((x) => x.id === deviceId) ?? null
+    setQcType('OUTWARD')
+    setSelectedDevice(base)
+    setSelectedOutwardCtx({ outward, device })
+    setChecklist({})
+    setCollapsedGroups({})
+    setQcResult(null)
+    setGrade('')
+    setAdditionalNotes('')
+    setAttachments([])
     setQcDialogOpen(true)
   }
 
@@ -194,14 +320,58 @@ function QCPage() {
     (value, key, row) => {
       if (key === 'barcode') {
         return {
+          display: <span className="font-medium">{String(value)}</span>,
+        }
+      }
+      if (key === 'partSerial') {
+        const [part, serial] = String(value).split('\n')
+        return {
           display: (
-            <div className="flex items-center gap-1.5">
-              <span className="font-medium">{String(value)}</span>
+            <div className="flex flex-col leading-tight">
+              <span className="font-medium">{part}</span>
+              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
+            </div>
+          ),
+        }
+      }
+      if (key === 'outwardNumber') {
+        return {
+          display: <span className="font-medium text-muted-foreground">{String(value)}</span>,
+        }
+      }
+      if (key === 'actions') {
+        const type = row._qcType as QCType | undefined
+        const barcode = row.barcode as string
+        return {
+          display: (
+            <div
+              className="flex items-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {type === 'INWARD' && (
+                <Button
+                  size="xs"
+                  onClick={() => {
+                    const device = mockDevices.find((d) => d.id === row._deviceId)
+                    if (device) handleStartInwardQC(device)
+                  }}
+                >
+                  Start Inward QC
+                </Button>
+              )}
+              {type === 'OUTWARD' && (
+                <Button
+                  size="xs"
+                  onClick={() => handleStartOutwardQC(row._outwardId as string, row._deviceId as string)}
+                >
+                  Start Outward QC
+                </Button>
+              )}
               <Button
                 size="xs"
                 variant="ghost"
-                className="size-6 p-0 text-muted-foreground hover:text-foreground"
-                onClick={() => handlePrintBarcode(String(value))}
+                className="size-7 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => handlePrintBarcode(barcode)}
                 title="Print barcode"
               >
                 <Printer className="size-3.5" />
@@ -210,45 +380,32 @@ function QCPage() {
           ),
         }
       }
-      if (key === 'actions' && row.model !== undefined) {
-        return {
-          display: (
-            <Button
-              size="xs"
-              onClick={() => {
-                const device = mockDevices.find((d) => d.id === row.id)
-                if (device) handleStartQC(device)
-              }}
-            >
-              Start QC
-            </Button>
-          ),
-        }
-      }
-      if (key === 'assignedTo' && row.model !== undefined) {
+      if (key === 'assignedTo' && row._qcType === 'INWARD') {
         const deviceId = row.id as string
         const currentValue = value as string
         return {
           display: (
-            <Select
-              value={currentValue || ''}
-              onValueChange={(val) => { if (val) handleAssignQCEngineer(deviceId, val) }}
-            >
-              <SelectTrigger className="h-8 w-36 text-xs">
-                <SelectValue placeholder="Assign..." />
-              </SelectTrigger>
-              <SelectContent>
-                {QC_ENGINEERS.map((eng) => (
-                  <SelectItem key={eng} value={eng}>
-                    {eng}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div onClick={(e) => e.stopPropagation()}>
+              <Select
+                value={currentValue || ''}
+                onValueChange={(val) => { if (val) handleAssignQCEngineer(deviceId, val) }}
+              >
+                <SelectTrigger className="h-8 w-36 text-xs">
+                  <SelectValue placeholder="Assign..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {QC_ENGINEERS.map((eng) => (
+                    <SelectItem key={eng} value={eng}>
+                      {eng}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           ),
         }
       }
-      if (key === 'qcFailCount') {
+      if (key === 'rework') {
         const count = value as number
         if (count > 0) {
           return {
@@ -256,6 +413,7 @@ function QCPage() {
             display: String(count),
           }
         }
+        return { display: <span className="text-muted-foreground">0</span> }
       }
       if (key === 'result') {
         const result = value as QCRecord['result']
@@ -294,11 +452,6 @@ function QCPage() {
     setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }))
   }
 
-  const handleImageUpload = (files: FileList | null) => {
-    if (!files) return
-    setDeviceImages((prev) => [...prev, ...Array.from(files)])
-  }
-
   const handleAttachmentUpload = (files: FileList | null) => {
     if (!files) return
     const validFiles: File[] = []
@@ -321,15 +474,7 @@ function QCPage() {
     setAttachments((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const removeImage = (index: number) => {
-    setDeviceImages((prev) => prev.filter((_, i) => i !== index))
-  }
-
   const handleSubmitQC = () => {
-    if (deviceImages.length === 0) {
-      toast.error('Please upload at least one device image.')
-      return
-    }
     if (checkedCount < INSPECTION_CHECKLIST_ITEMS.length) {
       toast.error('Please complete all checklist items.')
       return
@@ -338,30 +483,76 @@ function QCPage() {
       toast.error('Please select a QC result (Pass/Fail).')
       return
     }
-    if (qcResult === 'PASSED' && !grade) {
+    if (qcType === 'INWARD' && qcResult === 'PASSED' && !grade) {
       toast.error('Please select a grade.')
       return
     }
-    toast.success(
-      qcResult === 'PASSED'
-        ? `QC passed for ${selectedDevice?.barcode} - Grade ${grade} (${grade === 'A' ? 'Excellent' : 'Good'})`
-        : `QC failed for ${selectedDevice?.barcode} - sent back to repair`,
-    )
+
+    if (qcType === 'INWARD') {
+      toast.success(
+        qcResult === 'PASSED'
+          ? `Inward QC passed for ${selectedDevice?.barcode} - Grade ${grade} (${grade === 'A' ? 'Excellent' : 'Good'}) — ready for rack assignment`
+          : `Inward QC failed for ${selectedDevice?.barcode} - sent back to repair`,
+      )
+    } else {
+      const deviceBarcode = selectedOutwardCtx?.device.barcode
+      const outwardNumber = selectedOutwardCtx?.outward.outwardNumber
+      toast.success(
+        qcResult === 'PASSED'
+          ? `Outward QC passed for ${deviceBarcode} (${outwardNumber}) - eligible for dispatch`
+          : `Outward QC failed for ${deviceBarcode} (${outwardNumber}) - sent back to repair`,
+      )
+    }
     setQcDialogOpen(false)
     setSelectedDevice(null)
+    setSelectedOutwardCtx(null)
   }
+
+  const dialogTitle =
+    qcType === 'INWARD'
+      ? `Inward QC: ${selectedDevice?.barcode ?? ''}`
+      : `Outward QC: ${selectedOutwardCtx?.device.barcode ?? ''}`
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="cpt-page-title">Quality Control</h1>
         <p className="text-sm text-muted-foreground">
-          Perform inward quality checks on repaired devices.
+          Inward QC gates rack assignment. Outward QC gates dispatch — failed devices are sent back to repair.
         </p>
       </div>
 
-      {/* QC Queue Table */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-qc" />
+      {/* Inward QC — gates rack assignment */}
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Inward QC</h2>
+          <p className="text-sm text-muted-foreground">
+            Quality check on repaired devices before rack assignment.
+          </p>
+        </div>
+        <BusinessMetricsTable
+          tabs={inwardTabs}
+          cellFormatter={cellFormatter}
+          persistKey="wms-qc-inward"
+          onRowClick={(row) => navigate(`/wms/devices/${row._deviceId}?from=qc`)}
+        />
+      </div>
+
+      {/* Outward QC — gates dispatch */}
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Outward QC</h2>
+          <p className="text-sm text-muted-foreground">
+            Pre-dispatch check. Only devices that pass Outward QC are eligible for outward; failed devices are sent back to repair.
+          </p>
+        </div>
+        <BusinessMetricsTable
+          tabs={outwardTabs}
+          cellFormatter={cellFormatter}
+          persistKey="wms-qc-outward"
+          onRowClick={(row) => navigate(`/wms/devices/${row._deviceId}?from=qc`)}
+        />
+      </div>
 
       {/* QC Dialog */}
       <Dialog open={qcDialogOpen} onOpenChange={setQcDialogOpen}>
@@ -369,8 +560,8 @@ function QCPage() {
           {/* Sticky Header */}
           <div className="shrink-0 border-b px-6 py-4">
             <DialogHeader>
-              <DialogTitle className="text-lg">QC: {selectedDevice?.barcode}</DialogTitle>
-              {selectedDevice && (
+              <DialogTitle className="text-lg">{dialogTitle}</DialogTitle>
+              {qcType === 'INWARD' && selectedDevice && (
                 <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground mt-1">
                   <span>
                     <span className="font-medium text-foreground">Model:</span>{' '}
@@ -384,6 +575,38 @@ function QCPage() {
                     <span className="font-medium text-foreground">Serial:</span>{' '}
                     {selectedDevice.serialNumber}
                   </span>
+                  {selectedDevice.biosNo && (
+                    <span>
+                      <span className="font-medium text-foreground">BIOS:</span>{' '}
+                      {selectedDevice.biosNo}
+                    </span>
+                  )}
+                </div>
+              )}
+              {qcType === 'OUTWARD' && selectedOutwardCtx && (
+                <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground mt-1">
+                  <span>
+                    <span className="font-medium text-foreground">Outward:</span>{' '}
+                    {selectedOutwardCtx.outward.outwardNumber}
+                  </span>
+                  <span>
+                    <span className="font-medium text-foreground">Customer:</span>{' '}
+                    {selectedOutwardCtx.outward.customerName}
+                  </span>
+                  <span>
+                    <span className="font-medium text-foreground">Model:</span>{' '}
+                    {selectedOutwardCtx.device.model}
+                  </span>
+                  <span>
+                    <span className="font-medium text-foreground">Serial:</span>{' '}
+                    {selectedOutwardCtx.device.serialNumber}
+                  </span>
+                  {selectedDevice?.biosNo && (
+                    <span>
+                      <span className="font-medium text-foreground">BIOS:</span>{' '}
+                      {selectedDevice.biosNo}
+                    </span>
+                  )}
                 </div>
               )}
             </DialogHeader>
@@ -422,55 +645,6 @@ function QCPage() {
 
           {/* Scrollable Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            {/* Device Images */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">
-                Device Images <span className="text-destructive">*</span>
-              </Label>
-              <div className="flex flex-wrap gap-2.5">
-                {deviceImages.map((img, idx) => (
-                  <div key={idx} className="relative group">
-                    <div className="w-16 h-16 rounded-md border bg-muted overflow-hidden">
-                      <img
-                        src={URL.createObjectURL(img)}
-                        alt={`Device ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <button
-                      className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImage(idx)}
-                    >
-                      <X className="size-3" />
-                    </button>
-                  </div>
-                ))}
-                <label className="w-16 h-16 rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e.target.files)}
-                  />
-                  <Camera className="size-4 text-muted-foreground" />
-                  <span className="text-[9px] text-muted-foreground mt-0.5">Photo</span>
-                </label>
-                <label className="w-16 h-16 rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e.target.files)}
-                  />
-                  <Upload className="size-4 text-muted-foreground" />
-                  <span className="text-[9px] text-muted-foreground mt-0.5">Upload</span>
-                </label>
-              </div>
-            </div>
-
             {/* Checklist */}
             {GROUP_ORDER.map((group) => {
               const items = CHECKLIST_GROUPS[group]
@@ -620,8 +794,8 @@ function QCPage() {
               </div>
             </div>
 
-            {/* Grade (only on pass) */}
-            {qcResult === 'PASSED' && (
+            {/* Grade (only on inward pass) */}
+            {qcType === 'INWARD' && qcResult === 'PASSED' && (
               <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30 p-4">
                 <Label className="text-sm font-semibold">Grade</Label>
                 <div className="flex gap-3">
@@ -646,12 +820,22 @@ function QCPage() {
             )}
 
             {/* QC Failed warning */}
-            {qcResult === 'FAILED' && selectedDevice && (
+            {qcResult === 'FAILED' && (
               <Alert variant="destructive">
                 <AlertTriangle className="size-4" />
                 <AlertDescription>
-                  Device will be sent back to repair. Current QC fail count:{' '}
-                  <span className="font-bold">{selectedDevice.qcFailCount}</span>
+                  {qcType === 'INWARD' ? (
+                    <>
+                      Device will be sent back to repair. Current inward QC fail count:{' '}
+                      <span className="font-bold">{selectedDevice?.qcFailCount ?? 0}</span>
+                    </>
+                  ) : (
+                    <>
+                      Device will be sent back to repair — not eligible for outward until Outward QC passes.
+                      Current outward QC fail count:{' '}
+                      <span className="font-bold">{selectedDevice?.outwardQcFailCount ?? 0}</span>
+                    </>
+                  )}
                 </AlertDescription>
               </Alert>
             )}

@@ -1,10 +1,19 @@
 import { useState, useMemo, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Package, CheckCircle2, Clock, ShoppingCart } from 'lucide-react'
+
+import { mockDevices } from '../data/devices'
+import {
+  mockSpareRequests,
+  type SpareRequest,
+  type SpareRequestStatus,
+} from '../data/spare-requests'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
@@ -27,22 +36,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 
-// Spare request status
-type SpareRequestStatus = 'Requested' | 'In Stock' | 'Ordered' | 'Fulfilled'
-
-interface SpareRequest {
-  id: string
-  deviceId: string
-  deviceBarcode: string
-  model: string
-  spareName: string
-  qty: number
-  status: SpareRequestStatus
-  requestedBy: string
-  requestedAt: string
-  fulfilledAt?: string
-}
-
 // Spare inventory item
 interface SpareInventory {
   id: string
@@ -61,77 +54,6 @@ const STATUS_VARIANT: Record<SpareRequestStatus, StatusBadgeVariant> = {
   Ordered: 'neutral',
   Fulfilled: 'success',
 }
-
-// Mock spare requests
-const mockSpareRequests: SpareRequest[] = [
-  {
-    id: 'sr-001',
-    deviceId: 'dev-009',
-    deviceBarcode: 'L-HP-2003',
-    model: 'EliteBook 840 G8',
-    spareName: 'SSD 512GB',
-    qty: 1,
-    status: 'Requested',
-    requestedBy: 'Ravi Kumar',
-    requestedAt: '2026-04-15T10:00:00Z',
-  },
-  {
-    id: 'sr-002',
-    deviceId: 'dev-010',
-    deviceBarcode: 'L-DEL-1005',
-    model: 'Latitude 5540',
-    spareName: 'Keyboard',
-    qty: 1,
-    status: 'Requested',
-    requestedBy: 'Priya Nair',
-    requestedAt: '2026-04-14T14:00:00Z',
-  },
-  {
-    id: 'sr-003',
-    deviceId: 'dev-011',
-    deviceBarcode: 'L-LEN-3003',
-    model: 'ThinkPad T14 Gen 4',
-    spareName: 'Touchpad',
-    qty: 1,
-    status: 'In Stock',
-    requestedBy: 'Sanjay Gupta',
-    requestedAt: '2026-04-12T09:00:00Z',
-  },
-  {
-    id: 'sr-004',
-    deviceId: 'dev-014',
-    deviceBarcode: 'L-HP-2004',
-    model: 'EliteBook 840 G8',
-    spareName: 'Battery',
-    qty: 1,
-    status: 'Fulfilled',
-    requestedBy: 'Ravi Kumar',
-    requestedAt: '2026-04-10T11:00:00Z',
-    fulfilledAt: '2026-04-13T16:00:00Z',
-  },
-  {
-    id: 'sr-005',
-    deviceId: 'dev-012',
-    deviceBarcode: 'L-APP-4001',
-    model: 'MacBook Pro 14"',
-    spareName: 'Motherboard',
-    qty: 1,
-    status: 'Ordered',
-    requestedBy: 'Deepak Joshi',
-    requestedAt: '2026-04-08T10:00:00Z',
-  },
-  {
-    id: 'sr-006',
-    deviceId: 'dev-013',
-    deviceBarcode: 'L-DEL-1006',
-    model: 'Latitude 7440',
-    spareName: 'LCD Panel 14" FHD',
-    qty: 1,
-    status: 'Requested',
-    requestedBy: 'Suresh Nair',
-    requestedAt: '2026-04-16T08:30:00Z',
-  },
-]
 
 // Mock spare inventory (Spare Shop)
 const mockSpareInventory: SpareInventory[] = [
@@ -161,11 +83,14 @@ function formatDate(dateStr: string) {
 }
 
 function SparesPage() {
+  const navigate = useNavigate()
   const [requests, setRequests] = useState<SpareRequest[]>(mockSpareRequests)
   const [inventory] = useState<SpareInventory[]>(mockSpareInventory)
   const [addStockDialog, setAddStockDialog] = useState(false)
   const [selectedSpare, setSelectedSpare] = useState('')
   const [addQty, setAddQty] = useState(0)
+  const [fulfillRequestId, setFulfillRequestId] = useState<string | null>(null)
+  const [fulfillNotes, setFulfillNotes] = useState('')
 
   const summaryStats = useMemo(() => ({
     totalRequested: requests.filter((r) => r.status === 'Requested').length,
@@ -174,41 +99,58 @@ function SparesPage() {
     fulfilled: requests.filter((r) => r.status === 'Fulfilled').length,
   }), [requests])
 
-  const handleFulfill = (id: string) => {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? { ...r, status: 'Fulfilled' as const, fulfilledAt: new Date().toISOString() }
-          : r
-      )
-    )
-    const req = requests.find((r) => r.id === id)
-    toast.success(`Spare "${req?.spareName}" fulfilled for ${req?.deviceBarcode}`)
+  const openFulfillDialog = (id: string) => {
+    setFulfillRequestId(id)
+    setFulfillNotes('')
   }
 
-  const handleMarkInStock = (id: string) => {
+  const closeFulfillDialog = () => {
+    setFulfillRequestId(null)
+    setFulfillNotes('')
+  }
+
+  const submitFulfill = () => {
+    if (!fulfillRequestId) return
+    const req = requests.find((r) => r.id === fulfillRequestId)
+    if (!req) return
     setRequests((prev) =>
       prev.map((r) =>
-        r.id === id ? { ...r, status: 'In Stock' as const } : r
-      )
+        r.id === fulfillRequestId
+          ? { ...r, status: 'Fulfilled' as const, fulfilledAt: new Date().toISOString() }
+          : r,
+      ),
     )
-    toast.success('Marked as In Stock')
+    // Mirror into device so the repair/device view reflects "Issued"
+    const device = mockDevices.find((d) => d.id === req.deviceId)
+    if (device) device.sparesIssued = true
+    toast.success(`Spare "${req.spareName}" issued for ${req.deviceBarcode}`)
+    closeFulfillDialog()
   }
+
+  const fulfillTarget = useMemo(
+    () => requests.find((r) => r.id === fulfillRequestId) ?? null,
+    [fulfillRequestId, requests],
+  )
 
   // Spare Requests tabs
   const requestRows = useMemo(
     () =>
-      requests.map((r) => ({
-        id: r.id,
-        barcode: r.deviceBarcode,
-        model: r.model,
-        spare: r.spareName,
-        qty: r.qty,
-        status: r.status,
-        requestedBy: r.requestedBy,
-        date: formatDate(r.requestedAt),
-        _status: r.status,
-      })),
+      requests.map((r) => {
+        const device = mockDevices.find((d) => d.id === r.deviceId)
+        return {
+          id: r.id,
+          _deviceId: r.deviceId,
+          barcode: r.deviceBarcode,
+          partSerial: `${r.model}\n${device?.serialNumber ?? '-'}`,
+          biosNo: device?.biosNo ?? '-',
+          spare: r.spareName,
+          qty: r.qty,
+          status: r.status,
+          requestedBy: r.requestedBy,
+          date: formatDate(r.requestedAt),
+          _status: r.status,
+        }
+      }),
     [requests],
   )
 
@@ -219,7 +161,8 @@ function SparesPage() {
         label: `Pending (${requests.filter((r) => r.status !== 'Fulfilled').length})`,
         columns: [
           { key: 'barcode', label: 'Device', sortable: true },
-          { key: 'model', label: 'Model', sortable: true },
+          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'spare', label: 'Spare Part', sortable: true },
           { key: 'qty', label: 'Qty', align: 'center' as const },
           { key: 'status', label: 'Status' },
@@ -234,7 +177,8 @@ function SparesPage() {
         label: `Fulfilled (${requests.filter((r) => r.status === 'Fulfilled').length})`,
         columns: [
           { key: 'barcode', label: 'Device', sortable: true },
-          { key: 'model', label: 'Model' },
+          { key: 'partSerial', label: 'Part No / Serial No' },
+          { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'spare', label: 'Spare Part' },
           { key: 'qty', label: 'Qty', align: 'center' as const },
           { key: 'status', label: 'Status' },
@@ -248,6 +192,20 @@ function SparesPage() {
 
   const requestCellFormatter: CellFormatter = useCallback(
     (value, key, row) => {
+      if (key === 'barcode') {
+        return { display: <span className="font-medium">{String(value)}</span> }
+      }
+      if (key === 'partSerial') {
+        const [part, serial] = String(value).split('\n')
+        return {
+          display: (
+            <div className="flex flex-col leading-tight">
+              <span className="font-medium">{part}</span>
+              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
+            </div>
+          ),
+        }
+      }
       if (key === 'status') {
         const status = value as SpareRequestStatus
         return {
@@ -257,19 +215,19 @@ function SparesPage() {
       if (key === 'actions') {
         const status = row._status as SpareRequestStatus
         const id = row.id as string
+        if (status === 'Fulfilled') {
+          return { display: <span className="text-xs text-muted-foreground">—</span> }
+        }
         return {
           display: (
-            <div className="flex gap-1">
-              {status === 'Requested' && (
-                <Button size="xs" variant="outline" onClick={() => handleMarkInStock(id)}>
-                  Mark In Stock
-                </Button>
-              )}
-              {(status === 'In Stock' || status === 'Requested') && (
-                <Button size="xs" onClick={() => handleFulfill(id)}>
-                  Fulfill
-                </Button>
-              )}
+            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => openFulfillDialog(id)}
+                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Fulfill
+              </button>
             </div>
           ),
         }
@@ -403,7 +361,12 @@ function SparesPage() {
       {/* Spare Requests */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">Spare Requests</h2>
-        <BusinessMetricsTable tabs={requestTabs} cellFormatter={requestCellFormatter} persistKey="wms-spares-req" />
+        <BusinessMetricsTable
+          tabs={requestTabs}
+          cellFormatter={requestCellFormatter}
+          persistKey="wms-spares-req"
+          onRowClick={(row) => navigate(`/wms/devices/${row._deviceId}?from=spares`)}
+        />
       </div>
 
       {/* Spare Shop / Inventory */}
@@ -416,6 +379,51 @@ function SparesPage() {
         </div>
         <BusinessMetricsTable tabs={inventoryTabs} cellFormatter={inventoryCellFormatter} persistKey="wms-spares-inv" />
       </div>
+
+      {/* Fulfill Dialog */}
+      <Dialog open={fulfillRequestId !== null} onOpenChange={(open) => { if (!open) closeFulfillDialog() }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Fulfill Spare Request</DialogTitle>
+          </DialogHeader>
+          {fulfillTarget && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 rounded-md border bg-muted/30 p-3 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Device</p>
+                  <p className="font-medium">{fulfillTarget.deviceBarcode}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Model</p>
+                  <p className="font-medium">{fulfillTarget.model}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Spare</p>
+                  <p className="font-medium">{fulfillTarget.spareName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Qty</p>
+                  <p className="font-medium">{fulfillTarget.qty}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fulfill-notes">Notes</Label>
+                <Textarea
+                  id="fulfill-notes"
+                  value={fulfillNotes}
+                  onChange={(e) => setFulfillNotes(e.target.value)}
+                  placeholder="Add any notes about this fulfillment…"
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeFulfillDialog}>Cancel</Button>
+            <Button onClick={submitFulfill}>Submit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Stock Dialog */}
       <Dialog open={addStockDialog} onOpenChange={setAddStockDialog}>
