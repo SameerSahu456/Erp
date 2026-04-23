@@ -917,34 +917,34 @@ export default function PartDetailPage() {
                       <th className="px-3 py-2 text-left font-medium">SKU</th>
                       <th className="px-3 py-2 text-left font-medium">Serial No</th>
                       <th className="px-3 py-2 text-right font-medium">Price</th>
-                      <th className="px-3 py-2 text-left font-medium">Status</th>
-                      <th className="px-3 py-2 text-right font-medium">Qty</th>
+                      <th className="px-3 py-2 text-right font-medium">On Hand</th>
+                      <th className="px-3 py-2 text-right font-medium">Available Qty</th>
+                      <th className="px-3 py-2 text-right font-medium">Allocated</th>
+                      <th className="px-3 py-2 text-left font-medium">Warehouse</th>
                       <th className="px-3 py-2 text-left font-medium">Location</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {variant.skus.map((sku) => (
-                      <tr key={sku.sku} className="border-b last:border-0">
-                        <td className="px-3 py-2 font-mono text-xs">{sku.sku}</td>
-                        <td className="px-3 py-2">{sku.serialNumber}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">
-                          {currencyFmt.format(variant.unitPrice)}
-                        </td>
-                        <td className="px-3 py-2">
-                          <StatusBadge
-                            variant={
-                              sku.status === 'In Stock' ? 'success' :
-                              sku.status === 'Reserved' ? 'warning' :
-                              sku.status === 'In Repair' ? 'error' : 'info'
-                            }
-                          >
-                            {sku.status}
-                          </StatusBadge>
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums">1</td>
-                        <td className="px-3 py-2 text-xs">{sku.location}</td>
-                      </tr>
-                    ))}
+                    {variant.skus.map((sku) => {
+                      const [warehouse, ...binParts] = (sku.location ?? '').split('/')
+                      const bin = binParts.join('/') || '—'
+                      const isAvailable = sku.status === 'In Stock'
+                      const isAllocated = sku.status === 'Reserved' || sku.status === 'Dispatched'
+                      return (
+                        <tr key={sku.sku} className="border-b last:border-0">
+                          <td className="px-3 py-2 font-mono text-xs">{sku.sku}</td>
+                          <td className="px-3 py-2">{sku.serialNumber}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            {currencyFmt.format(variant.unitPrice)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums">1</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{isAvailable ? 1 : 0}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{isAllocated ? 1 : 0}</td>
+                          <td className="px-3 py-2 text-xs">{warehouse || '—'}</td>
+                          <td className="px-3 py-2 text-xs text-muted-foreground">{bin}</td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1098,17 +1098,66 @@ export default function PartDetailPage() {
   })()
 
   // ── Movements tab — stock movements for this part's SKUs/barcodes ──
+  type MovementType =
+    | 'Goods Receipt'
+    | 'SO'
+    | 'Stock adjustment'
+    | 'Return'
+    | 'Replace'
+    | 'Internal Transfer'
+
+  function classifyMovement(m: (typeof mockStockMovements)[number]): MovementType {
+    const notes = (m.notes ?? '').toLowerCase()
+    if (m.fromStatus === 'RECEIVED' || m.toStatus === 'RECEIVED') return 'Goods Receipt'
+    if (m.toStatus === 'SCRAPPED') return 'Stock adjustment'
+    if (m.toStatus === 'DISPATCHED' || notes.includes('out-') || notes.includes('shipped')) {
+      return 'SO'
+    }
+    if (notes.includes('return')) return 'Return'
+    if (notes.includes('replace')) return 'Replace'
+    if (m.fromStatus === 'UNDER_QC' && m.toStatus === 'UNDER_REPAIR') return 'Return'
+    return 'Internal Transfer'
+  }
+
+  function movementTypeVariant(t: MovementType): StatusBadgeVariant {
+    switch (t) {
+      case 'Goods Receipt':
+        return 'success'
+      case 'SO':
+        return 'info'
+      case 'Stock adjustment':
+        return 'warning'
+      case 'Return':
+        return 'warning'
+      case 'Replace':
+        return 'info'
+      case 'Internal Transfer':
+        return 'neutral'
+    }
+  }
+
   const movementsForPart = useMemo(() => {
     if (!stockItem) return []
     const barcodes = new Set<string>()
+    const barcodeToLocation = new Map<string, string>()
     for (const v of stockItem.variants) {
       for (const s of v.skus) {
-        if (s.barcode && s.barcode !== '—') barcodes.add(s.barcode)
+        if (s.barcode && s.barcode !== '—') {
+          barcodes.add(s.barcode)
+          barcodeToLocation.set(s.barcode, s.location)
+        }
       }
     }
     return mockStockMovements
       .filter((m) => barcodes.has(m.deviceBarcode))
       .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
+      .map((m) => ({
+        ...m,
+        warehouse:
+          (barcodeToLocation.get(m.deviceBarcode) ?? stockItem.location).split('/')[0] ||
+          stockItem.location,
+        type: classifyMovement(m),
+      }))
   }, [stockItem])
 
   const movementsTab = {
@@ -1122,12 +1171,10 @@ export default function PartDetailPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium">When</th>
-                  <th className="px-3 py-2 text-left font-medium">Unit</th>
-                  <th className="px-3 py-2 text-left font-medium">From</th>
-                  <th className="px-3 py-2 text-left font-medium">To</th>
-                  <th className="px-3 py-2 text-left font-medium">By</th>
-                  <th className="px-3 py-2 text-left font-medium">Notes</th>
+                  <th className="px-3 py-2 text-left font-medium">Date</th>
+                  <th className="px-3 py-2 text-left font-medium">Type</th>
+                  <th className="px-3 py-2 text-left font-medium">Warehouse</th>
+                  <th className="px-3 py-2 text-right font-medium">Qty</th>
                 </tr>
               </thead>
               <tbody>
@@ -1136,11 +1183,11 @@ export default function PartDetailPage() {
                     <td className="px-3 py-2 text-xs text-muted-foreground">
                       {formatDate(m.changedAt)}
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs">{m.deviceBarcode}</td>
-                    <td className="px-3 py-2 text-xs">{m.fromStatus}</td>
-                    <td className="px-3 py-2 text-xs">{m.toStatus}</td>
-                    <td className="px-3 py-2 text-xs">{m.changedBy}</td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{m.notes ?? '—'}</td>
+                    <td className="px-3 py-2">
+                      <StatusBadge variant={movementTypeVariant(m.type)}>{m.type}</StatusBadge>
+                    </td>
+                    <td className="px-3 py-2 text-xs">{m.warehouse}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">1</td>
                   </tr>
                 ))}
               </tbody>

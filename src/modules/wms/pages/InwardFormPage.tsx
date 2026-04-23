@@ -10,7 +10,6 @@ import {
   Package,
   Plus,
   RotateCcw,
-  ShoppingCart,
   Sparkles,
   Trash2,
   UploadCloud,
@@ -37,7 +36,7 @@ import { cn } from '@/lib/utils'
 
 import { mockWarehouses } from '../data/warehouses'
 import { mockPurchaseOrders } from '@/modules/procurement/data/purchase-orders'
-import type { InwardType } from '../types'
+import type { InwardType, ReturnOriginType } from '../types'
 
 const VENDORS = Array.from(
   new Map(mockPurchaseOrders.map((po) => [po.vendorId, po.vendorName])).entries(),
@@ -53,12 +52,6 @@ const INWARD_TYPE_OPTIONS: {
   description: string
   icon: LucideIcon
 }[] = [
-  {
-    value: 'PURCHASE_ORDER',
-    label: 'Purchase Order',
-    description: 'Receive against a PO',
-    icon: ShoppingCart,
-  },
   {
     value: 'REFURB_PURCHASE',
     label: 'Refurb Purchase',
@@ -79,8 +72,8 @@ const INWARD_TYPE_OPTIONS: {
   },
   {
     value: 'ADVANCE_RETURN',
-    label: 'Advance Return',
-    description: 'Pre-dispatch customer return',
+    label: 'Return',
+    description: 'Customer return against a Sale or earlier Return',
     icon: ArchiveRestore,
   },
   {
@@ -121,8 +114,6 @@ interface InwardItem {
 
 function suggestStockVariant(inwardType: InwardType): string {
   switch (inwardType) {
-    case 'PURCHASE_ORDER':
-      return 'New'
     case 'REFURB_PURCHASE':
       return 'Refurbished'
     case 'RENTAL_RETURN':
@@ -228,17 +219,24 @@ function InwardFormPage() {
 
   /* --- Basic info state --- */
   const [batchNumber] = useState(generateBatchNumber)
-  const [inwardType, setInwardType] = useState<InwardType>('PURCHASE_ORDER')
+  const [inwardType, setInwardType] = useState<InwardType>('REFURB_PURCHASE')
   const [brand, setBrand] = useState<string>(BRANDS[0])
   const [notes, setNotes] = useState('')
-  const [stockVariant, setStockVariant] = useState<string>('New')
+  const [stockVariant, setStockVariant] = useState<string>('Refurbished')
 
   /* --- Conditional source fields --- */
-  const [poNumber, setPoNumber] = useState('')
   const [vendorName, setVendorName] = useState('')
+  const [poNumber, setPoNumber] = useState('')
   const [sourceName, setSourceName] = useState('')
   const [sourceRef, setSourceRef] = useState('')
   const [sourceDept, setSourceDept] = useState('')
+  const [salesOrderNumber, setSalesOrderNumber] = useState('')
+  const [customerContact, setCustomerContact] = useState('')
+  const [employeeName, setEmployeeName] = useState('')
+  const [employeeId, setEmployeeId] = useState('')
+  const [employeeDept, setEmployeeDept] = useState('')
+  // For ADVANCE_RETURN (labelled "Return"): did this return originate from a Sale or a prior Return?
+  const [originType, setOriginType] = useState<ReturnOriginType>('Sale')
 
   /* --- Delivery challan --- */
   const [dcFile, setDcFile] = useState<File | null>(null)
@@ -255,18 +253,16 @@ function InwardFormPage() {
   const handleInwardTypeChange = (nextType: InwardType) => {
     setInwardType(nextType)
     setStockVariant(suggestStockVariant(nextType))
-    setPoNumber('')
     setVendorName('')
+    setPoNumber('')
     setSourceName('')
     setSourceRef('')
     setSourceDept('')
-  }
-
-  const handlePoChange = (val: string | null) => {
-    if (!val) return
-    setPoNumber(val)
-    const matched = mockPurchaseOrders.find((po) => po.poNumber === val)
-    if (matched) setVendorName(matched.vendorName)
+    setSalesOrderNumber('')
+    setCustomerContact('')
+    setEmployeeName('')
+    setEmployeeId('')
+    setEmployeeDept('')
   }
 
   const handleDcFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -315,25 +311,26 @@ function InwardFormPage() {
   )
 
   /* --- Derived flags --- */
-  const showPurchaseOrderFields = inwardType === 'PURCHASE_ORDER'
   const showRefurbPurchaseFields = inwardType === 'REFURB_PURCHASE'
   const showReturnFields = inwardType === 'RENTAL_RETURN' || inwardType === 'DEMO_RETURN' || inwardType === 'ADVANCE_RETURN'
+  const showCustomerReturnFields = inwardType === 'ADVANCE_RETURN'
   const showInternalTransferFields = inwardType === 'INTERNAL_TRANSFER'
 
   const validItemCount = items.filter((i) => i.serialNumber.trim() !== '').length
 
   const missingPieces: string[] = []
-  if (showPurchaseOrderFields && !poNumber) missingPieces.push('PO number')
-  if (showPurchaseOrderFields && !vendorName) missingPieces.push('Vendor')
   if (showRefurbPurchaseFields && !vendorName) missingPieces.push('Vendor')
+  if (showRefurbPurchaseFields && !poNumber.trim()) missingPieces.push('PO number')
   if (showReturnFields && !sourceName) {
     missingPieces.push(
-      inwardType === 'RENTAL_RETURN' || inwardType === 'ADVANCE_RETURN'
+      inwardType === 'RENTAL_RETURN' || inwardType === 'ADVANCE_RETURN' || inwardType === 'DEMO_RETURN'
         ? 'Customer name'
         : 'Source name',
     )
   }
+  if (inwardType === 'RENTAL_RETURN' && !salesOrderNumber.trim()) missingPieces.push('SO number')
   if (showInternalTransferFields && !sourceDept) missingPieces.push('Source department')
+  if (showInternalTransferFields && !employeeName.trim()) missingPieces.push('Employee name')
   if (!warehouseId) missingPieces.push('Warehouse')
   if (validItemCount === 0) missingPieces.push('At least one item')
 
@@ -437,26 +434,8 @@ function InwardFormPage() {
 
           {/* Type-specific reference */}
           <div className="rounded-lg border border-dashed bg-muted/20 p-4 space-y-4">
-            {showPurchaseOrderFields && (
+            {showRefurbPurchaseFields && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <FieldLabel required>PO Number</FieldLabel>
-                  <Select value={poNumber} onValueChange={handlePoChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select PO…" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      {mockPurchaseOrders.map((po) => (
-                        <SelectItem key={po.id} value={po.poNumber}>
-                          <span className="flex w-full min-w-0 items-center gap-2">
-                            <span className="font-mono text-[12px] shrink-0">{po.poNumber}</span>
-                            <span className="truncate text-muted-foreground">{po.vendorName}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <FieldLabel required>Vendor</FieldLabel>
                   <Select
@@ -475,75 +454,157 @@ function InwardFormPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-            )}
-
-            {showRefurbPurchaseFields && (
-              <div className="w-full sm:max-w-sm space-y-2">
-                <FieldLabel required>Vendor</FieldLabel>
-                <Select
-                  value={vendorName}
-                  onValueChange={(val) => { if (val) setVendorName(val) }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select vendor…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VENDORS.map((v) => (
-                      <SelectItem key={v.id} value={v.name}>
-                        {v.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <FieldLabel required hint="Source PO for this refurb batch">
+                    Purchase Order #
+                  </FieldLabel>
+                  <Input
+                    placeholder="e.g., PO-2026-1020"
+                    value={poNumber}
+                    onChange={(e) => setPoNumber(e.target.value)}
+                  />
+                </div>
               </div>
             )}
 
             {showReturnFields && (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <FieldLabel required>
-                    {inwardType === 'RENTAL_RETURN' || inwardType === 'ADVANCE_RETURN'
-                      ? 'Customer Name'
-                      : 'Source Name'}
-                  </FieldLabel>
-                  <Input
-                    placeholder={
-                      inwardType === 'RENTAL_RETURN'
-                        ? 'e.g., TCS Pune Office'
-                        : inwardType === 'DEMO_RETURN'
-                          ? 'e.g., Infosys Demo'
-                          : 'e.g., Wipro Ltd'
-                    }
-                    value={sourceName}
-                    onChange={(e) => setSourceName(e.target.value)}
-                  />
+              <div className="space-y-4">
+                {showCustomerReturnFields && (
+                  <div className="space-y-2">
+                    <FieldLabel required hint="Did this return originate from a Sale or a prior Return?">
+                      Origin Type
+                    </FieldLabel>
+                    <div className="grid grid-cols-2 gap-2 sm:max-w-sm">
+                      {(['Sale', 'Return'] as ReturnOriginType[]).map((opt) => {
+                        const selected = originType === opt
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setOriginType(opt)}
+                            aria-pressed={selected}
+                            className={cn(
+                              'flex items-center justify-between gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors',
+                              selected
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-input bg-background text-foreground hover:bg-muted/60',
+                            )}
+                          >
+                            <span>{opt}</span>
+                            {selected && <Check className="size-4" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <FieldLabel required>
+                      Customer Name
+                    </FieldLabel>
+                    <Input
+                      placeholder={
+                        inwardType === 'RENTAL_RETURN'
+                          ? 'e.g., TCS Pune Office'
+                          : inwardType === 'DEMO_RETURN'
+                            ? 'e.g., Infosys BPO'
+                            : 'e.g., Wipro Ltd'
+                      }
+                      value={sourceName}
+                      onChange={(e) => setSourceName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <FieldLabel hint={showCustomerReturnFields ? (originType === 'Sale' ? 'SO number' : 'Original Return #') : 'Optional'}>
+                      {showCustomerReturnFields
+                        ? (originType === 'Sale' ? 'Sales Order #' : 'Original Return #')
+                        : inwardType === 'RENTAL_RETURN'
+                          ? 'Rental Contract #'
+                          : 'Demo Request #'}
+                    </FieldLabel>
+                    <Input
+                      placeholder={
+                        showCustomerReturnFields
+                          ? (originType === 'Sale' ? 'e.g., SO-2026-0011' : 'e.g., RET-2026-014')
+                          : inwardType === 'RENTAL_RETURN'
+                            ? 'e.g., RC-2026-0023'
+                            : 'e.g., DEMO-2026-042'
+                      }
+                      value={sourceRef}
+                      onChange={(e) => setSourceRef(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <FieldLabel hint="Optional">Reference #</FieldLabel>
-                  <Input
-                    placeholder={
-                      inwardType === 'RENTAL_RETURN'
-                        ? 'e.g., Rental contract ID'
-                        : inwardType === 'DEMO_RETURN'
-                          ? 'e.g., DEMO-2026-042'
-                          : 'e.g., ADV-2026-087'
-                    }
-                    value={sourceRef}
-                    onChange={(e) => setSourceRef(e.target.value)}
-                  />
-                </div>
+                {inwardType === 'RENTAL_RETURN' && (
+                  <div className="w-full sm:max-w-sm space-y-2">
+                    <FieldLabel required hint="Original SO the rental was fulfilled from">
+                      Sales Order #
+                    </FieldLabel>
+                    <Input
+                      placeholder="e.g., SO-2026-0007"
+                      value={salesOrderNumber}
+                      onChange={(e) => setSalesOrderNumber(e.target.value)}
+                    />
+                  </div>
+                )}
+                {inwardType === 'DEMO_RETURN' && (
+                  <div className="w-full sm:max-w-sm space-y-2">
+                    <FieldLabel hint="Phone or email of the customer contact">
+                      Customer Contact
+                    </FieldLabel>
+                    <Input
+                      placeholder="e.g., rohit@infosys.com · +91 98..."
+                      value={customerContact}
+                      onChange={(e) => setCustomerContact(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
             {showInternalTransferFields && (
-              <div className="w-full sm:max-w-sm space-y-2">
-                <FieldLabel required>Source Department</FieldLabel>
-                <Input
-                  placeholder="e.g., IT Department"
-                  value={sourceDept}
-                  onChange={(e) => setSourceDept(e.target.value)}
-                />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <FieldLabel required>Source Department</FieldLabel>
+                    <Input
+                      placeholder="e.g., IT Department"
+                      value={sourceDept}
+                      onChange={(e) => setSourceDept(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <FieldLabel hint="Branch/team the employee belongs to">
+                      Employee Department
+                    </FieldLabel>
+                    <Input
+                      placeholder="e.g., Operations"
+                      value={employeeDept}
+                      onChange={(e) => setEmployeeDept(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <FieldLabel required>Employee Name</FieldLabel>
+                    <Input
+                      placeholder="e.g., Rahul Mehta"
+                      value={employeeName}
+                      onChange={(e) => setEmployeeName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <FieldLabel hint="Internal ID or email">
+                      Employee ID
+                    </FieldLabel>
+                    <Input
+                      placeholder="e.g., EMP-2041"
+                      value={employeeId}
+                      onChange={(e) => setEmployeeId(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>

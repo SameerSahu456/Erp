@@ -264,7 +264,7 @@ function WorkOrderDetailPage() {
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase">Bill of Materials</p>
-            <Link to={`/wms/bom/${wo.bomId}`} className="mt-1 block font-medium text-primary hover:underline">
+            <Link to={`/wms/bom/${wo.bomId}`} className="mt-1 block font-medium wms-link">
               {wo.bomName}
             </Link>
             <p className="text-sm text-muted-foreground">{wo.bomNumber}</p>

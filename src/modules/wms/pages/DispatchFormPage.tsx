@@ -12,6 +12,10 @@ import {
   X as XIcon,
   ClipboardList,
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  Package2,
+  Layers,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -38,6 +42,7 @@ import {
   nextDispatchNumber,
   nextOutwardNumber,
 } from '../data/dispatches'
+import { mockBOMs } from '../data/boms'
 import type {
   Dispatch,
   DispatchAction,
@@ -47,6 +52,7 @@ import type {
   DispatchVarianceReason,
   DispatchDocumentType,
   VariantCondition,
+  BOMItem,
 } from '../types'
 import { DISPATCH_REQUEST_STATUSES } from '../types'
 
@@ -81,6 +87,47 @@ type EditorDocument = {
   documentNumber: string
   issuedDate: string
   notes: string
+}
+
+// BOM component state for an assembled-server line. Stored per parent line
+// so that we can emit additional DispatchLineItems at save time for any
+// REPLACED / REMOVED / ADDED components.
+type BomComponentAction = 'FITTED_AS_PLANNED' | 'REPLACED' | 'REMOVED'
+
+type BomComponentState = {
+  bomItemId: string
+  partName: string
+  partSku: string
+  plannedPartId: string
+  plannedVariantSku: string
+  plannedQty: number
+  fittedQty: number
+  action: BomComponentAction
+  replacedDisplayName?: string
+  replacedVariantId?: string
+  replacedPartId?: string
+  replacedPartName?: string
+  replacedVariantSku?: string
+  replacedCondition?: VariantCondition
+  replacedRate?: number
+  serialNumbersText: string
+  reason?: DispatchVarianceReason
+  notes: string
+}
+
+function bomItemToComponent(item: BOMItem): BomComponentState {
+  return {
+    bomItemId: item.id,
+    partName: item.partName,
+    partSku: item.partSku,
+    plannedPartId: item.partId,
+    plannedVariantSku: item.variantSku,
+    plannedQty: item.quantity,
+    fittedQty: item.quantity,
+    action: 'FITTED_AS_PLANNED',
+    serialNumbersText: '',
+    notes: '',
+  }
 }
 
 const ACTION_OPTIONS: DispatchAction[] = ['PLANNED', 'FITTED_AS_PLANNED', 'ADDED', 'REMOVED', 'REPLACED']
@@ -295,6 +342,18 @@ function DispatchFormPage() {
     return []
   })
 
+  // ── BOM breakdown state (per parent line id) ──
+  // Populated on demand for lines whose parent part has a linked BOM. Each
+  // entry is a list of editable component rows — any REPLACED / REMOVED
+  // component emits an extra DispatchLineItem at save time.
+  const [bomExpanded, setBomExpanded] = useState<Record<string, boolean>>({})
+  const [bomState, setBomState] = useState<Record<string, BomComponentState[]>>({})
+
+  // Picker state for BOM component replacement
+  const [bomReplaceTarget, setBomReplaceTarget] = useState<
+    { lineId: string; bomItemId: string } | null
+  >(null)
+
   // ── Documents ──
   const [documents, setDocuments] = useState<EditorDocument[]>(() =>
     existing ? existing.documents.map(dispatchDocToEditor) : [],
@@ -337,6 +396,55 @@ function DispatchFormPage() {
 
   function removeLine(id: string) {
     setLines((prev) => prev.filter((l) => l.id !== id))
+    setBomState((prev) => {
+      const { [id]: _removed, ...rest } = prev
+      return rest
+    })
+    setBomExpanded((prev) => {
+      const { [id]: _removed, ...rest } = prev
+      return rest
+    })
+  }
+
+  function findBOMForLine(line: EditorLine) {
+    // Match by parent part id (our mock BOMs use parentPartId). Fall back to the
+    // SO line's linked bomId when available.
+    const soLine = selectedSO?.lineItems.find((li) => li.id === line.soLineItemId)
+    if (soLine?.bomId) {
+      const byId = mockBOMs.find((b) => b.id === soLine.bomId || b.bomNumber === soLine.bomId)
+      if (byId) return byId
+    }
+    return mockBOMs.find((b) => b.parentPartId === line.partId && b.type === 'ASSEMBLY')
+  }
+
+  function toggleBomExpansion(line: EditorLine) {
+    const bom = findBOMForLine(line)
+    if (!bom) return
+    setBomExpanded((prev) => ({ ...prev, [line.id]: !prev[line.id] }))
+    setBomState((prev) => {
+      if (prev[line.id]) return prev
+      return { ...prev, [line.id]: bom.items.map(bomItemToComponent) }
+    })
+  }
+
+  function updateBomComponent(
+    lineId: string,
+    bomItemId: string,
+    patch: Partial<BomComponentState>,
+  ) {
+    setBomState((prev) => ({
+      ...prev,
+      [lineId]: (prev[lineId] ?? []).map((c) =>
+        c.bomItemId === bomItemId ? { ...c, ...patch } : c,
+      ),
+    }))
+  }
+
+  function openBomReplacePicker(lineId: string, bomItemId: string) {
+    setBomReplaceTarget({ lineId, bomItemId })
+    setPickerMode('replace')
+    setPickerTargetLineId(null) // disambiguate from regular line replace
+    setPickerOpen(true)
   }
 
   function openAddPicker() {
@@ -352,6 +460,28 @@ function DispatchFormPage() {
   }
 
   function handlePickerSelect(result: PartPickerResult) {
+    // BOM component replacement takes precedence — bomReplaceTarget is only
+    // set when the user clicked "Replace" on a component row.
+    if (bomReplaceTarget) {
+      const { lineId, bomItemId } = bomReplaceTarget
+      const existingComponents = bomState[lineId] ?? []
+      const target = existingComponents.find((c) => c.bomItemId === bomItemId)
+      if (target) {
+        updateBomComponent(lineId, bomItemId, {
+          action: 'REPLACED',
+          replacedDisplayName: `${target.partName} (${target.plannedVariantSku})`,
+          replacedVariantId: result.variantId,
+          replacedPartId: result.partId,
+          replacedPartName: result.partName,
+          replacedVariantSku: result.variantSku,
+          replacedCondition: result.condition,
+          replacedRate: result.sellPrice,
+        })
+      }
+      setBomReplaceTarget(null)
+      setPickerOpen(false)
+      return
+    }
     if (pickerMode === 'add') {
       setLines((prev) => [
         ...prev,
@@ -476,7 +606,41 @@ function DispatchFormPage() {
       updatedAt: new Date().toISOString(),
       notes: notes || undefined,
       invoiceAmount: invoiceAmount ? Number(invoiceAmount) : undefined,
-      lineItems: lines.map(editorToDispatchLine),
+      lineItems: [
+        ...lines.map(editorToDispatchLine),
+        // Emit REPLACED / REMOVED components from any expanded BOMs as
+        // additional variance line items tied back to the parent line.
+        ...lines.flatMap((line) => {
+          const components = bomState[line.id]
+          if (!components) return []
+          return components
+            .filter((c) => c.action !== 'FITTED_AS_PLANNED')
+            .map<DispatchLineItem>((c) => {
+              const isReplaced = c.action === 'REPLACED'
+              return {
+                id: `${line.id}-${c.bomItemId}`,
+                soLineItemId: line.soLineItemId,
+                variantId: isReplaced && c.replacedVariantId ? c.replacedVariantId : line.variantId,
+                condition: (isReplaced && c.replacedCondition) || line.condition,
+                variantSku: isReplaced && c.replacedVariantSku ? c.replacedVariantSku : c.plannedVariantSku,
+                partId: isReplaced && c.replacedPartId ? c.replacedPartId : c.plannedPartId,
+                partName: isReplaced && c.replacedPartName ? c.replacedPartName : c.partName,
+                partSku: c.partSku,
+                category: line.category,
+                brand: line.brand,
+                action: c.action,
+                plannedQty: c.plannedQty,
+                fittedQty: c.action === 'REMOVED' ? 0 : c.fittedQty,
+                serialNumbers: parseSerials(c.serialNumbersText),
+                replacedDisplayName: c.replacedDisplayName,
+                reason: c.reason,
+                notes: c.notes || undefined,
+                rate: c.replacedRate ?? 0,
+                amount: (c.action === 'REMOVED' ? 0 : c.fittedQty) * (c.replacedRate ?? 0),
+              }
+            })
+        }),
+      ],
       documents: documents.map((d) => editorToDispatchDoc(d, storeManager)),
     }
 
@@ -556,7 +720,7 @@ function DispatchFormPage() {
             {selectedSO && (
               <div className="rounded-lg bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
                 Planned: {selectedSO.lineItems.length} lines ·{' '}
-                <Link to={`/crm/sales-orders/${selectedSO.id}`} className="text-primary hover:underline">
+                <Link to={`/crm/sales-orders/${selectedSO.id}`} className="wms-link">
                   View SO &rarr;
                 </Link>
               </div>
@@ -703,15 +867,40 @@ function DispatchFormPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {lines.map((line) => (
-                    <LineEditorRow
-                      key={line.id}
-                      line={line}
-                      onChange={(patch) => updateLine(line.id, patch)}
-                      onRemove={() => removeLine(line.id)}
-                      onReplace={() => openReplacePicker(line.id)}
-                    />
-                  ))}
+                  {lines.map((line) => {
+                    const bom = findBOMForLine(line)
+                    const expanded = !!bomExpanded[line.id]
+                    const components = bomState[line.id]
+                    const componentVariance = (components ?? []).filter(
+                      (c) => c.action !== 'FITTED_AS_PLANNED',
+                    ).length
+                    return (
+                      <LineEditorRow
+                        key={line.id}
+                        line={line}
+                        bomName={bom?.name}
+                        bomExpanded={expanded}
+                        bomComponentVariance={componentVariance}
+                        onToggleBom={bom ? () => toggleBomExpansion(line) : undefined}
+                        onChange={(patch) => updateLine(line.id, patch)}
+                        onRemove={() => removeLine(line.id)}
+                        onReplace={() => openReplacePicker(line.id)}
+                      >
+                        {expanded && bom && components && (
+                          <BomBreakdown
+                            lineId={line.id}
+                            bomName={bom.name}
+                            bomNumber={bom.bomNumber}
+                            components={components}
+                            onUpdateComponent={(bomItemId, patch) =>
+                              updateBomComponent(line.id, bomItemId, patch)
+                            }
+                            onReplace={(bomItemId) => openBomReplacePicker(line.id, bomItemId)}
+                          />
+                        )}
+                      </LineEditorRow>
+                    )
+                  })}
                 </tbody>
                 <tfoot>
                   <tr className="border-t bg-muted/20 font-medium">
@@ -855,16 +1044,27 @@ function LineEditorRow({
   onChange,
   onRemove,
   onReplace,
+  bomName,
+  bomExpanded,
+  bomComponentVariance,
+  onToggleBom,
+  children,
 }: {
   line: EditorLine
   onChange: (patch: Partial<EditorLine>) => void
   onRemove: () => void
   onReplace: () => void
+  bomName?: string
+  bomExpanded?: boolean
+  bomComponentVariance?: number
+  onToggleBom?: () => void
+  children?: React.ReactNode
 }) {
   const showReason = needsReason(line.action)
   const isRemoved = line.action === 'REMOVED'
 
   return (
+    <>
     <tr className={
       isRemoved ? 'bg-[#fff5f8]/40 dark:bg-[#991930]/10' :
       line.action === 'REPLACED' ? 'bg-[#fff8dd]/40 dark:bg-[#b88800]/10' :
@@ -878,6 +1078,26 @@ function LineEditorRow({
           <span className="font-mono">{line.variantSku}</span>
           <Badge variant="outline" className="text-[10px]">{line.condition}</Badge>
         </div>
+        {onToggleBom && bomName && (
+          <button
+            type="button"
+            onClick={onToggleBom}
+            className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium wms-link-btn"
+          >
+            {bomExpanded ? (
+              <ChevronDown className="size-3" />
+            ) : (
+              <ChevronRight className="size-3" />
+            )}
+            <Package2 className="size-3" />
+            {bomExpanded ? 'Hide BOM' : 'View BOM'} · {bomName}
+            {bomComponentVariance ? (
+              <Badge variant="outline" className="ml-1 text-[10px] border-[#f6c000]/60 text-[#8a6a00]">
+                {bomComponentVariance} changed
+              </Badge>
+            ) : null}
+          </button>
+        )}
         {line.action === 'REPLACED' && line.replacedDisplayName && (
           <div className="mt-1 flex items-center gap-1 text-xs text-[#b88800]">
             <ArrowLeftRight className="size-3" />
@@ -980,6 +1200,267 @@ function LineEditorRow({
         </Button>
       </td>
     </tr>
+    {children && (
+      <tr>
+        <td colSpan={8} className="bg-muted/20 p-0">
+          {children}
+        </td>
+      </tr>
+    )}
+    </>
+  )
+}
+
+function BomBreakdown({
+  lineId,
+  bomName,
+  bomNumber,
+  components,
+  onUpdateComponent,
+  onReplace,
+}: {
+  lineId: string
+  bomName: string
+  bomNumber: string
+  components: BomComponentState[]
+  onUpdateComponent: (bomItemId: string, patch: Partial<BomComponentState>) => void
+  onReplace: (bomItemId: string) => void
+}) {
+  const changed = components.filter((c) => c.action !== 'FITTED_AS_PLANNED').length
+  const replacedCount = components.filter((c) => c.action === 'REPLACED').length
+  const removedCount = components.filter((c) => c.action === 'REMOVED').length
+  const resetAll = () => {
+    components.forEach((c) => {
+      onUpdateComponent(c.bomItemId, {
+        action: 'FITTED_AS_PLANNED',
+        fittedQty: c.plannedQty,
+        reason: undefined,
+        notes: '',
+      })
+    })
+  }
+  return (
+    <div className="border-t bg-muted/10 px-4 py-4">
+      {/* Header */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Layers className="size-3.5" />
+          </span>
+          <div>
+            <div className="text-sm font-semibold text-foreground">{bomName}</div>
+            <div className="text-[11px] text-muted-foreground">
+              <span className="font-mono">{bomNumber}</span> · {components.length} component
+              {components.length === 1 ? '' : 's'}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {replacedCount > 0 && (
+            <Badge variant="outline" className="text-[10px] border-[#f6c000]/60 text-[#8a6a00]">
+              {replacedCount} replaced
+            </Badge>
+          )}
+          {removedCount > 0 && (
+            <Badge variant="outline" className="text-[10px] border-destructive/50 text-destructive">
+              {removedCount} removed
+            </Badge>
+          )}
+          {changed === 0 && (
+            <Badge variant="outline" className="text-[10px] border-emerald-500/50 text-emerald-700">
+              All planned
+            </Badge>
+          )}
+          {changed > 0 && (
+            <button
+              type="button"
+              onClick={resetAll}
+              className="wms-link-btn text-[11px]"
+            >
+              Reset all
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Component cards */}
+      <div className="grid gap-2 md:grid-cols-2">
+        {components.map((c) => (
+          <BomComponentCard
+            key={`${lineId}-${c.bomItemId}`}
+            component={c}
+            onUpdate={(patch) => onUpdateComponent(c.bomItemId, patch)}
+            onReplace={() => onReplace(c.bomItemId)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function BomComponentCard({
+  component: c,
+  onUpdate,
+  onReplace,
+}: {
+  component: BomComponentState
+  onUpdate: (patch: Partial<BomComponentState>) => void
+  onReplace: () => void
+}) {
+  const isReplaced = c.action === 'REPLACED'
+  const isRemoved = c.action === 'REMOVED'
+  const isPlanned = c.action === 'FITTED_AS_PLANNED'
+
+  const tone =
+    isRemoved
+      ? 'border-destructive/40 bg-destructive/5'
+      : isReplaced
+        ? 'border-[#f6c000]/50 bg-[#fff8dd]/50'
+        : 'border-border bg-background'
+
+  const stateLabel = isPlanned ? 'Planned' : isReplaced ? 'Replaced' : 'Removed'
+  const stateTone = isPlanned
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    : isReplaced
+      ? 'bg-[#fff5d6] text-[#8a6a00] border-[#f6c000]/50'
+      : 'bg-destructive/10 text-destructive border-destructive/30'
+
+  return (
+    <div className={`rounded-lg border px-3.5 py-3 transition-colors ${tone}`}>
+      {/* Top row: part name + state chip + action buttons */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div
+            className={`text-[13px] font-semibold leading-tight ${isRemoved ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+          >
+            {c.partName}
+          </div>
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <span className="font-mono text-[10px] text-muted-foreground">
+              {c.plannedVariantSku}
+            </span>
+            <span className="text-[10px] text-muted-foreground">·</span>
+            <span className="text-[10px] text-muted-foreground">
+              Qty {c.plannedQty}
+            </span>
+          </div>
+          {isReplaced && c.replacedPartName && (
+            <div className="mt-1.5 flex items-start gap-1 rounded-md bg-background/60 px-2 py-1 text-[11px]">
+              <ArrowLeftRight className="mt-0.5 size-3 shrink-0 text-[#8a6a00]" />
+              <div className="min-w-0">
+                <div className="truncate font-medium text-[#8a6a00]">
+                  {c.replacedPartName}
+                </div>
+                <div className="font-mono text-[10px] text-muted-foreground">
+                  {c.replacedVariantSku}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        <span
+          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${stateTone}`}
+        >
+          {stateLabel}
+        </span>
+      </div>
+
+      {/* Action pill row — Keep / Replace / Remove */}
+      <div className="mt-3 inline-flex rounded-md border bg-muted/40 p-0.5 text-[11px]">
+        <button
+          type="button"
+          onClick={() =>
+            onUpdate({
+              action: 'FITTED_AS_PLANNED',
+              fittedQty: c.plannedQty,
+              reason: undefined,
+              notes: '',
+            })
+          }
+          className={`rounded px-2.5 py-1 font-medium transition-colors ${
+            isPlanned
+              ? 'bg-background text-emerald-700 shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Keep
+        </button>
+        <button
+          type="button"
+          onClick={onReplace}
+          className={`rounded px-2.5 py-1 font-medium transition-colors ${
+            isReplaced
+              ? 'bg-background text-[#8a6a00] shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Replace
+        </button>
+        <button
+          type="button"
+          onClick={() => onUpdate({ action: 'REMOVED', fittedQty: 0 })}
+          className={`rounded px-2.5 py-1 font-medium transition-colors ${
+            isRemoved
+              ? 'bg-background text-destructive shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Remove
+        </button>
+      </div>
+
+      {/* Fitted qty + serials (inline, compact) — hidden when removed */}
+      {!isRemoved && (
+        <div className="mt-3 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2">
+          <span className="text-[11px] font-medium text-muted-foreground">Fitted qty</span>
+          <Input
+            type="number"
+            min={0}
+            className="h-8 w-20 text-right text-xs"
+            value={c.fittedQty}
+            onChange={(e) => onUpdate({ fittedQty: Number(e.target.value) || 0 })}
+          />
+          <span className="text-[11px] font-medium text-muted-foreground">Serial numbers</span>
+          <Input
+            placeholder="SN-001, SN-002…"
+            className="h-8 font-mono text-xs"
+            value={c.serialNumbersText}
+            onChange={(e) => onUpdate({ serialNumbersText: e.target.value })}
+          />
+        </div>
+      )}
+
+      {/* Variance reason + notes — only when Replaced or Removed */}
+      {!isPlanned && (
+        <div className="mt-3 space-y-2 border-t pt-3">
+          <Select
+            value={c.reason ?? ''}
+            onValueChange={(v) =>
+              onUpdate({
+                reason: (v ?? undefined) as DispatchVarianceReason | undefined,
+              })
+            }
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Reason for change…" />
+            </SelectTrigger>
+            <SelectContent>
+              {REASON_OPTIONS.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Notes (optional)"
+            className="h-8 text-xs"
+            value={c.notes}
+            onChange={(e) => onUpdate({ notes: e.target.value })}
+          />
+        </div>
+      )}
+    </div>
   )
 }
 

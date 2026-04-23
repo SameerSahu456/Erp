@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft,
   CalendarDays,
@@ -8,7 +8,6 @@ import {
   Send,
   ChevronDown,
   ChevronRight,
-  Printer,
   Search,
   X,
   Tag,
@@ -19,6 +18,10 @@ import {
   FileText,
   Hash,
   Box,
+  ShoppingCart,
+  RotateCcw,
+  Phone,
+  IdCard,
 } from 'lucide-react'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { toast } from 'sonner'
@@ -26,6 +29,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { BarcodeText } from '@/components/common/BarcodeText'
 import {
   Select,
   SelectContent,
@@ -62,7 +66,7 @@ const INWARD_TYPE_LABELS: Record<InwardType, string> = {
   RENTAL_RETURN: 'Rental Return',
   DEMO_RETURN: 'Demo Return',
   INTERNAL_TRANSFER: 'Internal Transfer',
-  ADVANCE_RETURN: 'Advance Return',
+  ADVANCE_RETURN: 'Return',
   REFURB_PURCHASE: 'Refurb Purchase',
 }
 
@@ -83,28 +87,6 @@ function formatDate(dateStr: string) {
     month: 'short',
     year: 'numeric',
   })
-}
-
-function handlePrintBarcode(barcode: string, model: string, serial: string) {
-  const printWindow = window.open('', '_blank', 'width=400,height=300')
-  if (!printWindow) {
-    toast.error('Please allow popups to print barcodes.')
-    return
-  }
-  printWindow.document.write(`
-    <html>
-      <head><title>Print Barcode</title></head>
-      <body style="font-family: monospace; text-align: center; padding: 40px;">
-        <div style="border: 2px solid #000; padding: 20px; display: inline-block;">
-          <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px;">${barcode}</div>
-          <div style="font-size: 12px; margin-top: 8px; color: #555;">${model}</div>
-          <div style="font-size: 11px; margin-top: 4px; color: #777;">S/N: ${serial}</div>
-        </div>
-        <script>window.onload = function() { window.print(); }</script>
-      </body>
-    </html>
-  `)
-  printWindow.document.close()
 }
 
 function BatchDevicesPage() {
@@ -223,27 +205,95 @@ function BatchDevicesPage() {
   }
 
   // Source-specific attributes — whichever fields were captured for this inward type
-  const sourceItems: { icon: typeof Layers; label: string; value: string }[] = []
+  type SourceItem =
+    | { kind: 'text'; icon: typeof Layers; label: string; value: string }
+    | { kind: 'link'; icon: typeof Layers; label: string; value: string; to: string }
+  const sourceItems: SourceItem[] = []
   if (batch.poNumber) {
-    sourceItems.push({ icon: Hash, label: 'PO Number', value: batch.poNumber })
+    sourceItems.push({
+      kind: 'link',
+      icon: Hash,
+      label: 'Purchase Order',
+      value: batch.poNumber,
+      to: batch.poId ? `/procurement/po/${batch.poId}` : '/procurement/po',
+    })
+  }
+  if (batch.salesOrderNumber) {
+    sourceItems.push({
+      kind: 'link',
+      icon: ShoppingCart,
+      label: 'Sales Order',
+      value: batch.salesOrderNumber,
+      to: batch.salesOrderId ? `/crm/sales-orders/${batch.salesOrderId}` : '/crm/sales-orders',
+    })
+  }
+  if (batch.originType) {
+    sourceItems.push({
+      kind: 'text',
+      icon: RotateCcw,
+      label: 'Origin Type',
+      value: batch.originType,
+    })
   }
   if (batch.vendorName) {
-    sourceItems.push({ icon: Building2, label: 'Vendor', value: batch.vendorName })
+    sourceItems.push({ kind: 'text', icon: Building2, label: 'Vendor', value: batch.vendorName })
   }
   if (batch.sourceType) {
-    sourceItems.push({ icon: Tag, label: 'Source Type', value: batch.sourceType })
+    sourceItems.push({ kind: 'text', icon: Tag, label: 'Source Type', value: batch.sourceType })
   }
   if (batch.sourceName && batch.sourceName !== batch.vendorName) {
     const label =
-      batch.inwardType === 'RENTAL_RETURN' || batch.inwardType === 'ADVANCE_RETURN'
+      batch.inwardType === 'RENTAL_RETURN' ||
+      batch.inwardType === 'ADVANCE_RETURN' ||
+      batch.inwardType === 'DEMO_RETURN'
         ? 'Customer'
         : batch.inwardType === 'INTERNAL_TRANSFER'
-          ? 'Source Department'
+          ? 'Source Warehouse'
           : 'Source'
-    sourceItems.push({ icon: Building2, label, value: batch.sourceName })
+    sourceItems.push({ kind: 'text', icon: Building2, label, value: batch.sourceName })
   }
   if (batch.sourceRef) {
-    sourceItems.push({ icon: Hash, label: 'Reference #', value: batch.sourceRef })
+    const refLabel =
+      batch.inwardType === 'RENTAL_RETURN'
+        ? 'Rental Contract #'
+        : batch.inwardType === 'DEMO_RETURN'
+          ? 'Demo Request #'
+          : batch.inwardType === 'INTERNAL_TRANSFER'
+            ? 'Source Department'
+            : 'Reference #'
+    sourceItems.push({ kind: 'text', icon: Hash, label: refLabel, value: batch.sourceRef })
+  }
+  if (batch.customerContact) {
+    sourceItems.push({
+      kind: 'text',
+      icon: Phone,
+      label: 'Customer Contact',
+      value: batch.customerContact,
+    })
+  }
+  if (batch.employeeName) {
+    sourceItems.push({
+      kind: 'text',
+      icon: User,
+      label: 'Employee',
+      value: batch.employeeName,
+    })
+  }
+  if (batch.employeeId) {
+    sourceItems.push({
+      kind: 'text',
+      icon: IdCard,
+      label: 'Employee ID',
+      value: batch.employeeId,
+    })
+  }
+  if (batch.employeeDept) {
+    sourceItems.push({
+      kind: 'text',
+      icon: Building2,
+      label: 'Employee Dept',
+      value: batch.employeeDept,
+    })
   }
 
   return (
@@ -307,7 +357,16 @@ function BatchDevicesPage() {
                     <item.icon className="mt-0.5 size-4 text-muted-foreground" />
                     <div className="min-w-0">
                       <p className="text-xs text-muted-foreground">{item.label}</p>
-                      <p className="text-sm font-medium break-words">{item.value}</p>
+                      {item.kind === 'link' ? (
+                        <Link
+                          to={item.to}
+                          className="wms-link text-sm font-medium break-words"
+                        >
+                          {item.value}
+                        </Link>
+                      ) : (
+                        <p className="text-sm font-medium break-words">{item.value}</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -400,18 +459,9 @@ function BatchDevicesPage() {
                         {modelDevices.map((d) => (
                           <TableRow key={d.id}>
                             <TableCell>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{d.barcode}</span>
-                                <Button
-                                  size="xs"
-                                  variant="ghost"
-                                  className="size-6 p-0 text-muted-foreground hover:text-foreground"
-                                  onClick={() => handlePrintBarcode(d.barcode, d.model, d.serialNumber)}
-                                  title="Print barcode"
-                                >
-                                  <Printer className="size-3.5" />
-                                </Button>
-                              </div>
+                              <BarcodeText model={d.model} serial={d.serialNumber}>
+                                {d.barcode}
+                              </BarcodeText>
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">{d.serialNumber}</TableCell>
                             <TableCell>

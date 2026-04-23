@@ -1,14 +1,13 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ChevronDown, ChevronRight, Check, X, Minus, Camera, Upload, Printer, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Check, X, Minus, Camera, Upload, Plus, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -66,6 +65,8 @@ const CHECKLIST_GROUPS = INSPECTION_CHECKLIST_ITEMS.reduce<
 const GROUP_ORDER = ['Panels', 'Display', 'Input', 'Audio', 'Power', 'Hardware', 'Ports']
 
 const INSPECTION_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta']
+const DISPLAY_ENGINEERS = ['Karthik Rao', 'Neha Bansal']
+const QC_ENGINEERS = ['Deepak Verma', 'Anita Sharma']
 
 const AVAILABLE_SPARES = [
   'Keyboard', 'Touchpad', 'Screen Panel', 'Battery', 'SSD 256GB', 'SSD 512GB',
@@ -81,28 +82,6 @@ interface SpareRequest {
   qty: number
 }
 
-function handlePrintBarcode(barcode: string, model: string, serial: string) {
-  const printWindow = window.open('', '_blank', 'width=400,height=300')
-  if (!printWindow) {
-    toast.error('Please allow popups to print barcodes.')
-    return
-  }
-  printWindow.document.write(`
-    <html>
-      <head><title>Print Barcode</title></head>
-      <body style="font-family: monospace; text-align: center; padding: 40px;">
-        <div style="border: 2px solid #000; padding: 20px; display: inline-block;">
-          <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px;">${barcode}</div>
-          <div style="font-size: 12px; margin-top: 8px; color: #555;">${model}</div>
-          <div style="font-size: 11px; margin-top: 4px; color: #777;">S/N: ${serial}</div>
-        </div>
-        <script>window.onload = function() { window.print(); }</script>
-      </body>
-    </html>
-  `)
-  printWindow.document.close()
-}
-
 function InspectionPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -115,6 +94,10 @@ function InspectionPage() {
   const [paintPanels, setPaintPanels] = useState<PaintPanelType[]>([])
   const [overallNotes, setOverallNotes] = useState('')
   const [assignments, setAssignments] = useState<Record<string, string>>({})
+  // Per-device engineer assignments captured inside the inspection dialog
+  const [l1l2Engineer, setL1L2Engineer] = useState<string>('')
+  const [displayEngineer, setDisplayEngineer] = useState<string>('')
+  const [qcEngineer, setQcEngineer] = useState<string>('')
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [deviceImages, setDeviceImages] = useState<File[]>([])
 
@@ -263,6 +246,9 @@ function InspectionPage() {
     setOverallNotes('')
     setCollapsedGroups({})
     setDeviceImages([])
+    setL1L2Engineer(assignments[device.id] ?? '')
+    setDisplayEngineer('')
+    setQcEngineer('')
     setInspectionDialogOpen(true)
   }
 
@@ -308,7 +294,7 @@ function InspectionPage() {
               {row.batch !== undefined && (
                 <button
                   type="button"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  className="wms-link text-sm font-medium"
                   onClick={() => {
                     if (device) handleStartInspection(device)
                   }}
@@ -316,17 +302,6 @@ function InspectionPage() {
                   Inspect
                 </button>
               )}
-              <Button
-                size="xs"
-                variant="ghost"
-                className="size-7 p-0 text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  if (device) handlePrintBarcode(device.barcode, device.model, device.serialNumber)
-                }}
-                title="Print barcode"
-              >
-                <Printer className="size-3.5" />
-              </Button>
             </div>
           ),
         }
@@ -418,6 +393,14 @@ function InspectionPage() {
   }
 
   const handleSubmit = () => {
+    if (!l1l2Engineer) {
+      toast.error('Please assign an L1 / L2 engineer before submitting.')
+      return
+    }
+    if (!qcEngineer) {
+      toast.error('Please assign a QC engineer before submitting.')
+      return
+    }
     if (deviceImages.length === 0) {
       toast.error('Please upload at least one device image before submitting.')
       return
@@ -522,6 +505,78 @@ function InspectionPage() {
 
           {/* Scrollable Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            {/* Engineer Assignments */}
+            <div className="space-y-3 rounded-lg border p-4">
+              <div>
+                <Label className="text-sm font-semibold">Engineer Assignments</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Assign the repair engineers and QC engineer for this device. Display engineer is optional and only needed when a display panel is involved.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">
+                    L1 / L2 Engineer <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={l1l2Engineer}
+                    onValueChange={(val) => { if (val) setL1L2Engineer(val) }}
+                  >
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue placeholder="Select engineer…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INSPECTION_ENGINEERS.map((eng) => (
+                        <SelectItem key={eng} value={eng}>
+                          {eng}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">
+                    Display Engineer <span className="text-muted-foreground">(if applicable)</span>
+                  </Label>
+                  <Select
+                    value={displayEngineer}
+                    onValueChange={(val) => { if (val) setDisplayEngineer(val) }}
+                  >
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue placeholder="Select display engineer…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DISPLAY_ENGINEERS.map((eng) => (
+                        <SelectItem key={eng} value={eng}>
+                          {eng}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">
+                    QC Engineer <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={qcEngineer}
+                    onValueChange={(val) => { if (val) setQcEngineer(val) }}
+                  >
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue placeholder="Select QC engineer…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {QC_ENGINEERS.map((eng) => (
+                        <SelectItem key={eng} value={eng}>
+                          {eng}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             {/* Device Images - Mandatory */}
             <div className="space-y-3 rounded-lg border p-4">
               <div className="flex items-center justify-between gap-3">

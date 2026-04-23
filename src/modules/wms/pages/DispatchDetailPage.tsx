@@ -178,7 +178,7 @@ function DispatchDetailPage() {
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             <span>
-              For SO <Link to={`/crm/sales-orders/${dispatch.salesOrderId}`} className="text-primary hover:underline">{dispatch.salesOrderNumber}</Link>
+              For SO <Link to={`/crm/sales-orders/${dispatch.salesOrderId}`} className="wms-link">{dispatch.salesOrderNumber}</Link>
             </span>
             {dispatch.outwardNumber && (
               <>
@@ -186,7 +186,7 @@ function DispatchDetailPage() {
                 <span>
                   Outward{' '}
                   {dispatch.outwardId ? (
-                    <Link to={`/wms/outward/${dispatch.outwardId}`} className="text-primary hover:underline">
+                    <Link to={`/wms/outward/${dispatch.outwardId}`} className="wms-link">
                       {dispatch.outwardNumber}
                     </Link>
                   ) : (
@@ -231,7 +231,7 @@ function DispatchDetailPage() {
                 <dd className="text-sm font-medium">
                   <Link
                     to={`/crm/sales-orders/${dispatch.salesOrderId}`}
-                    className="text-primary hover:underline"
+                    className="wms-link"
                   >
                     {dispatch.salesOrderNumber}
                   </Link>
@@ -245,7 +245,7 @@ function DispatchDetailPage() {
                 <dd className="text-sm font-medium">
                   {dispatch.outwardNumber ? (
                     dispatch.outwardId ? (
-                      <Link to={`/wms/outward/${dispatch.outwardId}`} className="text-primary hover:underline">
+                      <Link to={`/wms/outward/${dispatch.outwardId}`} className="wms-link">
                         {dispatch.outwardNumber}
                       </Link>
                     ) : (

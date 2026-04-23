@@ -160,7 +160,7 @@ export default function OutwardPage() {
           <Link
             to={`/wms/outward/${row.id as string}`}
             onClick={(e) => e.stopPropagation()}
-            className="font-medium text-primary hover:underline"
+            className="font-medium wms-link"
           >
             {value}
           </Link>

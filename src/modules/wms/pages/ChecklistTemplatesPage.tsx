@@ -72,7 +72,7 @@ function ChecklistTemplatesPage() {
       return {
         display: (
           <button
-            className="font-medium text-primary hover:underline"
+            className="font-medium wms-link"
             onClick={(e) => {
               e.stopPropagation()
               navigate(`/wms/checklists/${row.id}/edit`)

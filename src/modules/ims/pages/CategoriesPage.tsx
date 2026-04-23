@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { usePersistedState } from '@/hooks/use-persisted-state'
 import {
   ChevronRight,
@@ -67,13 +67,23 @@ function CategoryNode({ category, depth, expanded, onToggle }: CategoryNodeProps
   const hasSubs = (category.subcategories?.length ?? 0) > 0
   const isOpen = expanded.has(category.id)
   const subCount = category.subcategories?.length ?? 0
+  const navigate = useNavigate()
 
   return (
     <div>
       <div
+        role="button"
+        tabIndex={0}
+        onClick={() => navigate(`/ims/categories/${category.id}`)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            navigate(`/ims/categories/${category.id}`)
+          }
+        }}
         className={cn(
-          'group flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
-          'hover:bg-muted/60',
+          'group flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
+          'hover:bg-muted/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           !category.isActive && 'opacity-50',
         )}
         style={{ marginLeft: depth * 24 }}
@@ -81,7 +91,10 @@ function CategoryNode({ category, depth, expanded, onToggle }: CategoryNodeProps
         {/* Chevron */}
         {hasSubs ? (
           <button
-            onClick={() => onToggle(category.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle(category.id)
+            }}
             className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={isOpen ? 'Collapse' : 'Expand'}
           >
@@ -133,15 +146,17 @@ function CategoryNode({ category, depth, expanded, onToggle }: CategoryNodeProps
         <div className="ml-auto flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <Link
             to={`/ims/categories/${category.id}/edit`}
+            onClick={(e) => e.stopPropagation()}
             title="Edit"
             className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Pencil className="size-3.5" />
           </Link>
           <button
-            onClick={() =>
+            onClick={(e) => {
+              e.stopPropagation()
               toast.success(`Category "${category.name}" deleted`)
-            }
+            }}
             title="Delete"
             className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >

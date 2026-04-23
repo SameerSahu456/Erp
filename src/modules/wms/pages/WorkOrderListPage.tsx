@@ -124,7 +124,7 @@ function WorkOrderListPage() {
     if (key === 'workOrderNumber') {
       return {
         display: (
-          <Link to={`/wms/work-orders/${row.id}`} className="font-medium text-primary hover:underline">
+          <Link to={`/wms/work-orders/${row.id}`} className="font-medium wms-link">
             {value as string}
           </Link>
         ),
@@ -157,7 +157,7 @@ function WorkOrderListPage() {
           <Link
             to={`/wms/bom/${row.bomId}`}
             onClick={(e) => e.stopPropagation()}
-            className="text-xs text-primary hover:underline"
+            className="text-xs wms-link"
           >
             {value as string}
           </Link>
@@ -169,7 +169,7 @@ function WorkOrderListPage() {
         display: (
           <Link
             to={`/wms/work-orders/${row.id}`}
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-medium wms-link"
           >
             <Eye className="size-3.5" />
             View

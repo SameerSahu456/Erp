@@ -742,3 +742,20 @@
 /* Progress bar */
 .bom-prog { height: 6px; background: var(--secondary, #EEF0F3); border-radius: 3px; overflow: hidden; }
 .bom-prog > span { display: block; height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+/* WMS hyperlink — blue accent used across warehouse pages (tasks 11 & 12). */
+.wms-link {
+  color: #175CD3;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.12s ease;
+}
+.wms-link:hover { color: #0F46A6; text-decoration: underline; }
+.wms-link:focus-visible { outline: 2px solid #175CD3; outline-offset: 2px; border-radius: 2px; }
+.wms-link-btn {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: #175CD3; font-weight: 500;
+  transition: color 0.12s ease;
+}
+.wms-link-btn:hover { color: #0F46A6; text-decoration: underline; }
+.wms-link-btn:disabled { color: #98A2B3; cursor: not-allowed; text-decoration: none; }

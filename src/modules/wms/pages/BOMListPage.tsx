@@ -97,7 +97,7 @@ function BOMListPage() {
     if (key === 'bomNumber') {
       return {
         display: (
-          <Link to={`/wms/bom/${row.id}`} className="font-medium text-primary hover:underline">
+          <Link to={`/wms/bom/${row.id}`} className="font-medium wms-link">
             {value as string}
           </Link>
         ),
@@ -130,7 +130,7 @@ function BOMListPage() {
         display: (
           <Link
             to={`/wms/bom/${row.id}`}
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-medium wms-link"
           >
             <Eye className="size-3.5" />
             View

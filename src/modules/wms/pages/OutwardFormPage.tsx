@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { BarcodeText } from '@/components/common/BarcodeText'
 import {
   Select,
   SelectTrigger,
@@ -809,7 +810,7 @@ export default function OutwardFormPage() {
                             onCheckedChange={() => toggleDevice(d.id)}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">{d.barcode}</TableCell>
+                        <TableCell><BarcodeText>{d.barcode}</BarcodeText></TableCell>
                         <TableCell>{d.model}</TableCell>
                         <TableCell>{d.brand}</TableCell>
                         <TableCell>{d.grade ?? '-'}</TableCell>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { usePersistedState } from '@/hooks/use-persisted-state'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
@@ -37,6 +38,7 @@ const MOCK_PMS = [
 const l1Categories = mockCategories.filter((c) => !('parentId' in c) || !c.parentId)
 
 export default function PMAssignmentsPage() {
+  const navigate = useNavigate()
   const [assignments, setAssignments] = useState<PMAssignment[]>([...mockPMAssignments])
 
   // Filters
@@ -278,7 +280,11 @@ export default function PMAssignmentsPage() {
           </thead>
           <tbody>
             {filtered.map((a) => (
-              <tr key={a.id} className="border-b last:border-b-0 hover:bg-muted/30">
+              <tr
+                key={a.id}
+                onClick={() => navigate(`/ims/pm-assignments/${a.id}`)}
+                className="cursor-pointer border-b last:border-b-0 hover:bg-muted/30"
+              >
                 <td className="px-4 py-3 font-medium">{a.categoryName}</td>
                 <td className="px-4 py-3">
                   {a.subcategoryName ?? (
@@ -307,14 +313,20 @@ export default function PMAssignmentsPage() {
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      onClick={() => openEditDialog(a)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openEditDialog(a)
+                      }}
                     >
                       <Pencil className="size-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      onClick={() => handleDelete(a)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(a)
+                      }}
                     >
                       <Trash2 className="size-3.5" />
                     </Button>
@@ -404,15 +416,15 @@ export default function PMAssignmentsPage() {
               </Select>
             </div>
 
-            {/* Variant */}
+            {/* Condition */}
             <div className="space-y-1.5">
-              <Label>Variant</Label>
+              <Label>Condition</Label>
               <Select value={formVariant} onValueChange={(v) => setFormVariant(v as string)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Variants" />
+                  <SelectValue placeholder="All Conditions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">All Variants</SelectItem>
+                  <SelectItem value="__all__">All Conditions</SelectItem>
                   <SelectItem value="new">New</SelectItem>
                   <SelectItem value="refurbished">Refurbished</SelectItem>
                 </SelectContent>

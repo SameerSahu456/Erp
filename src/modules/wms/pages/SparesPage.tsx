@@ -224,7 +224,7 @@ function SparesPage() {
               <button
                 type="button"
                 onClick={() => openFulfillDialog(id)}
-                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                className="text-sm font-medium wms-link"
               >
                 Fulfill
               </button>

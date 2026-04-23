@@ -761,7 +761,10 @@ export interface WarehouseBin {
 }
 
 // ── Enhanced Inward ──
+// ADVANCE_RETURN is now labelled "Return" in the UI; originType captures whether
+// the return originated from a Sale or a prior Return-for-replacement flow.
 export type InwardType = 'PURCHASE_ORDER' | 'RENTAL_RETURN' | 'DEMO_RETURN' | 'INTERNAL_TRANSFER' | 'ADVANCE_RETURN' | 'REFURB_PURCHASE'
+export type ReturnOriginType = 'Sale' | 'Return'
 
 export interface InwardBatchEnhanced {
   id: string
@@ -771,10 +774,21 @@ export interface InwardBatchEnhanced {
   poNumber?: string
   poId?: string
   vendorName?: string
+  // SO linkage (for Return flows where the stock originated from a Sales Order)
+  salesOrderId?: string
+  salesOrderNumber?: string
+  // Return-flow: was the source Sale or a prior Return?
+  originType?: ReturnOriginType
   // Source details
   sourceType: string  // 'Vendor', 'Customer', 'Internal', 'Demo'
   sourceName: string
   sourceRef?: string  // customer name, internal dept, demo ID
+  // Internal transfer — employee moving the stock
+  employeeName?: string
+  employeeId?: string
+  employeeDept?: string
+  // Demo Return — contact info for the customer who had the demo unit
+  customerContact?: string
   // Stock variant this maps to
   stockVariant: 'New' | 'Refurbished' | 'New Pull'
   // Device details

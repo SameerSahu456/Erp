@@ -11,8 +11,7 @@ import {
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
 import { mockStockItems } from '../data/stock-items'
-import { mockParts } from '../data/parts'
-import type { Part, StockItem, VariantCondition } from '@/modules/wms/types'
+import type { StockItem, StockSku, VariantCondition } from '@/modules/wms/types'
 
 const currencyFmt = new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -27,30 +26,22 @@ function conditionVariant(c: VariantCondition | string | undefined): 'success' |
   return 'neutral'
 }
 
-function findMatchingPart(
-  item: StockItem,
-  condition?: VariantCondition,
-): Part | undefined {
-  const skuTail = item.sku.split('-').pop() ?? ''
-  const candidates = mockParts.filter(
-    (p) =>
-      p.name === item.name ||
-      (skuTail && p.sku.includes(skuTail)) ||
-      item.sku.includes(p.sku.split('-').pop() ?? ''),
-  )
-  if (candidates.length === 0) return undefined
-  if (condition) {
-    const exact = candidates.find((p) => p.condition === condition)
-    if (exact) return exact
-  }
-  const parent = candidates.find((p) => (p.productType ?? 'parent') === 'parent')
-  return parent ?? candidates[0]
+function splitLocation(loc: string): { warehouse: string; bin: string } {
+  const [warehouse, ...rest] = loc.split('/')
+  return { warehouse: warehouse ?? loc, bin: rest.join('/') || '—' }
+}
+
+function countAvailable(skus: StockSku[]): number {
+  return skus.filter((s) => s.status === 'In Stock').length
+}
+
+function countAllocated(skus: StockSku[]): number {
+  return skus.filter((s) => s.status === 'Reserved' || s.status === 'Dispatched').length
 }
 
 type EditingCell = { itemId: string; variantType: string } | null
 
 // Demo scope: surface the newest HPE DL360 Gen11 + other Servers on page 1.
-// Non-Servers keep their original order relative to each other.
 const sortedStockItems: StockItem[] = [...mockStockItems].sort((a, b) => {
   const aFeatured = a.id === 'item-016' ? 0 : 1
   const bFeatured = b.id === 'item-016' ? 0 : 1
@@ -106,81 +97,58 @@ export default function StockItemsPage() {
       id: 'items',
       label: `Stock Items (${items.length})`,
       columns: [
-        { key: 'name', label: 'Part No', sortable: true },
+        { key: 'name', label: 'Part', sortable: true },
         { key: 'condition', label: 'Condition', sortable: true, filterable: true },
         { key: 'sku', label: 'SKU', sortable: true },
-        { key: 'aliases', label: 'Alias' },
-        { key: 'category', label: 'Category', sortable: true, filterable: true },
-        { key: 'brand', label: 'Brand', sortable: true, filterable: true },
-        { key: 'type', label: 'Type', sortable: true, filterable: true },
-        { key: 'assembly', label: 'Assembly', sortable: true, filterable: true },
-        { key: 'qty', label: 'Qty', sortable: true, align: 'right' },
+        { key: 'serial', label: 'Serial No' },
         { key: 'price', label: 'Price', sortable: true, align: 'right' },
-        { key: 'status', label: 'Status', sortable: true, filterable: true },
+        { key: 'onHand', label: 'On Hand', sortable: true, align: 'right' },
+        { key: 'available', label: 'Available Qty', sortable: true, align: 'right' },
+        { key: 'allocated', label: 'Allocated', sortable: true, align: 'right' },
+        { key: 'warehouse', label: 'Warehouse', sortable: true, filterable: true },
+        { key: 'location', label: 'Location' },
       ],
       data: items.flatMap((item) => {
-        const newV = item.variants.find((v) => v.type === 'New')
-        const parentPart = findMatchingPart(item)
-        const parentRow = {
-          id: item.id,
-          name: item.name,
-          sku: item.sku,
-          aliases: item.aliases ?? [],
-          category: item.categoryName,
-          brand: item.brand,
-          type: 'Parent',
-          condition: '-',
-          assembly: parentPart?.assemblyType ?? '-',
-          qty: newV?.quantity ?? null,
-          price: newV?.unitPrice ?? null,
-          status: parentPart?.isActive === false ? 'Inactive' : 'Active',
-          _id: item.id,
-          _productType: 'parent',
-          _variantType: newV?.type ?? 'New',
-        }
-        const variantRows = item.variants.map((v) => {
-          const variantPart = findMatchingPart(item, v.type)
+        return item.variants.map((v) => {
+          const available = countAvailable(v.skus)
+          const allocated = countAllocated(v.skus)
+          const locSample = v.skus[0]?.location ?? ''
+          const { bin } = splitLocation(locSample)
+          const distinctLocs = new Set(v.skus.map((s) => s.location))
           return {
             id: `${item.id}__${v.type}`,
             name: item.name,
-            sku: item.sku,
-            aliases: [] as string[],
-            category: item.categoryName,
-            brand: item.brand,
-            type: 'Variant',
             condition: v.type,
-            assembly: variantPart?.assemblyType ?? parentPart?.assemblyType ?? '-',
-            qty: v.quantity,
+            sku: item.sku,
+            serial: v.skus.length > 0 ? `${v.skus.length} units` : '—',
             price: v.unitPrice,
-            status:
-              (variantPart ?? parentPart)?.isActive === false ? 'Inactive' : 'Active',
+            onHand: v.quantity,
+            available,
+            allocated,
+            warehouse: item.location,
+            location: distinctLocs.size > 1 ? `${bin} +${distinctLocs.size - 1} more` : bin,
             _id: item.id,
-            _productType: 'variant',
             _variantType: v.type,
           }
         })
-        return [parentRow, ...variantRows]
       }),
     }
   }, [items])
 
   const cellFormatter: CellFormatter = (value, key, row) => {
     const itemId = (row as Record<string, unknown>)._id as string
-    const productType = (row as Record<string, unknown>)._productType as string
     const variantType = ((row as Record<string, unknown>)._variantType as string) ?? 'New'
 
     if (key === 'name' && typeof value === 'string') {
       return {
         display: (
           <div className="flex items-center gap-2">
-            {productType === 'variant' && (
-              <span
-                title="Variant"
-                className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-              >
-                <GitBranch className="size-3" />
-              </span>
-            )}
+            <span
+              title="Variant"
+              className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+            >
+              <GitBranch className="size-3" />
+            </span>
             <Link
               to={`/ims/stock-items/${itemId}`}
               className="font-medium text-primary hover:underline"
@@ -192,38 +160,7 @@ export default function StockItemsPage() {
       }
     }
 
-    if (key === 'aliases') {
-      const list = value as string[]
-      if (!list || list.length === 0) {
-        return { display: <span className="text-muted-foreground">-</span> }
-      }
-      return {
-        display: (
-          <div className="flex flex-wrap gap-1">
-            {list.slice(0, 3).map((a) => (
-              <span key={a} className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                {a}
-              </span>
-            ))}
-            {list.length > 3 && (
-              <span className="text-xs text-muted-foreground">+{list.length - 3}</span>
-            )}
-          </div>
-        ),
-      }
-    }
-
-    if (key === 'type' && typeof value === 'string') {
-      const isVariant = value === 'Variant'
-      return {
-        display: <StatusBadge variant={isVariant ? 'info' : 'neutral'}>{value}</StatusBadge>,
-      }
-    }
-
     if (key === 'condition') {
-      if (value === '-' || value == null) {
-        return { display: <span className="text-muted-foreground">-</span> }
-      }
       return {
         display: (
           <StatusBadge variant={conditionVariant(value as VariantCondition)}>
@@ -233,34 +170,27 @@ export default function StockItemsPage() {
       }
     }
 
-    if (key === 'assembly') {
-      if (value === '-' || value == null) {
-        return { display: <span className="text-muted-foreground">-</span> }
-      }
-      return {
-        display: (
-          <StatusBadge variant={value === 'Assembled' ? 'success' : 'warning'}>
-            {String(value)}
-          </StatusBadge>
-        ),
-      }
+    if (key === 'sku') {
+      return { display: <span className="font-mono text-xs">{String(value)}</span> }
     }
 
-    if (key === 'status' && typeof value === 'string') {
-      return {
-        display: (
-          <StatusBadge variant={value === 'Active' ? 'success' : 'neutral'}>
-            {value}
-          </StatusBadge>
-        ),
-      }
+    if (key === 'serial') {
+      return { display: <span className="text-xs text-muted-foreground">{String(value)}</span> }
     }
 
-    if (key === 'qty') {
+    if (key === 'onHand' || key === 'available' || key === 'allocated') {
       if (value == null) {
         return { display: <span className="text-muted-foreground">-</span> }
       }
       return { display: <span className="tabular-nums">{String(value)}</span> }
+    }
+
+    if (key === 'warehouse') {
+      return { display: <span className="text-sm">{String(value)}</span> }
+    }
+
+    if (key === 'location') {
+      return { display: <span className="text-xs text-muted-foreground">{String(value)}</span> }
     }
 
     if (key === 'price') {

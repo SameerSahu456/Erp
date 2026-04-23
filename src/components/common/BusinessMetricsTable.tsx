@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Search, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { usePersistedState } from "@/hooks/use-persisted-state"
+import { BarcodeText } from "./BarcodeText"
 
 interface ColumnDef {
   key: string
@@ -250,6 +251,12 @@ function BusinessMetricsTable({
                     {activeTabConfig?.columns.map((col) => {
                       const value = row[col.key]
                       const formatted = cellFormatter ? cellFormatter(value, col.key, row) : null
+                      const rendered = formatted?.display !== undefined
+                        ? formatted.display
+                        : value != null ? String(value) : ""
+                      const isBarcodeCol = col.key === "barcode" && value != null && value !== ""
+                      const model = (row.model ?? row.deviceModel) as string | undefined
+                      const serial = (row.serialNumber ?? row.serial) as string | undefined
                       return (
                         <td
                           key={col.key}
@@ -259,9 +266,13 @@ function BusinessMetricsTable({
                             formatted?.className
                           )}
                         >
-                          {formatted?.display !== undefined
-                            ? formatted.display
-                            : value != null ? String(value) : ""}
+                          {isBarcodeCol ? (
+                            <BarcodeText model={model} serial={serial}>
+                              {rendered}
+                            </BarcodeText>
+                          ) : (
+                            rendered
+                          )}
                         </td>
                       )
                     })}

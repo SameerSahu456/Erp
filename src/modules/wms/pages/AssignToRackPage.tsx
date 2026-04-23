@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Printer } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,28 +37,6 @@ function formatDate(dateStr?: string) {
     month: 'short',
     year: 'numeric',
   })
-}
-
-function handlePrintBarcode(barcode: string, model: string, serial: string) {
-  const printWindow = window.open('', '_blank', 'width=400,height=300')
-  if (!printWindow) {
-    toast.error('Please allow popups to print barcodes.')
-    return
-  }
-  printWindow.document.write(`
-    <html>
-      <head><title>Print Barcode</title></head>
-      <body style="font-family: monospace; text-align: center; padding: 40px;">
-        <div style="border: 2px solid #000; padding: 20px; display: inline-block;">
-          <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px;">${barcode}</div>
-          <div style="font-size: 12px; margin-top: 8px; color: #555;">${model}</div>
-          <div style="font-size: 11px; margin-top: 4px; color: #777;">S/N: ${serial}</div>
-        </div>
-        <script>window.onload = function() { window.print(); }</script>
-      </body>
-    </html>
-  `)
-  printWindow.document.close()
 }
 
 function AssignToRackPage() {
@@ -239,31 +216,19 @@ function AssignToRackPage() {
         return {
           display: (
             <div
-              className="flex items-center gap-1"
+              className="flex items-center gap-3"
               onClick={(e) => e.stopPropagation()}
             >
-              <Button
-                size="xs"
-                variant={hasAssignment ? 'outline' : 'default'}
+              <button
+                type="button"
+                className="wms-link-btn text-sm"
                 onClick={() => {
                   const device = mockDevices.find((d) => d.id === deviceId)
                   if (device) openAssignDialog(device)
                 }}
               >
                 {hasAssignment ? 'Reassign' : 'Assign Rack'}
-              </Button>
-              <Button
-                size="xs"
-                variant="ghost"
-                className="size-7 p-0 text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  const device = mockDevices.find((d) => d.id === deviceId)
-                  if (device) handlePrintBarcode(device.barcode, device.model, device.serialNumber)
-                }}
-                title="Print barcode"
-              >
-                <Printer className="size-3.5" />
-              </Button>
+              </button>
             </div>
           ),
         }

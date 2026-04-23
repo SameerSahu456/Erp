@@ -13,8 +13,6 @@ import {
   MapPin,
   ClipboardCheck,
   AlertCircle,
-  Check,
-  Plus,
   Play,
 } from 'lucide-react'
 
@@ -23,6 +21,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { Timeline, type TimelineEntry } from '@/components/common/Timeline'
 import { EmptyState } from '@/components/common/EmptyState'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
 
 import { mockDevices } from '../data/devices'
@@ -31,12 +36,57 @@ import { mockRepairJobs } from '../data/repairs'
 import { mockPaintJobs } from '../data/paint-jobs'
 import { mockQCRecords } from '../data/qc-records'
 import { mockSpareRequests } from '../data/spare-requests'
+import { mockOutwardRecords } from '../data/outward'
+import { QCDialog } from '../components/QCDialog'
 import {
   DEVICE_STATUS_LABELS,
   DEVICE_STATUS_VARIANT,
+  type Device,
   type DeviceStatus,
   type PaintPanelType,
 } from '../types'
+
+// Some outward records reference device ids that don't exist in mockDevices
+// (dev-031…dev-045 etc.). Construct a minimal Device from the OutwardDevice
+// data so the detail page still renders instead of showing "Device not found".
+function synthesizeDeviceFromOutward(id: string): Device | undefined {
+  for (const outward of mockOutwardRecords) {
+    const od = outward.devices.find((d) => d.deviceId === id)
+    if (!od) continue
+    return {
+      id: od.deviceId,
+      barcode: od.barcode,
+      batchId: '',
+      batchNumber: outward.outwardNumber,
+      category: 'Device',
+      brand: od.brand,
+      model: od.model,
+      serialNumber: od.serialNumber,
+      status:
+        od.qcResult === 'Passed'
+          ? 'READY_FOR_DISPATCH'
+          : od.qcResult === 'Failed'
+            ? 'UNDER_OUTWARD_QC'
+            : 'AWAITING_OUTWARD_QC',
+      grade: od.grade,
+      requiresRepair: false,
+      requiresPaint: false,
+      requiresSpares: false,
+      repairCompleted: true,
+      paintCompleted: true,
+      sparesIssued: true,
+      qcFailCount: 0,
+      outwardQcFailCount: od.qcResult === 'Failed' ? 1 : 0,
+      receivedAt: outward.createdAt,
+      location: outward.customerName,
+    }
+  }
+  return undefined
+}
+
+const L1_L2_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta']
+const DISPLAY_ENGINEERS = ['Karthik Rao', 'Neha Bansal']
+const QC_ENGINEERS = ['Deepak Verma', 'Anita Sharma']
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return '-'
@@ -81,19 +131,10 @@ function DeviceDetailPage() {
       : null
   )
 
-  const device = useMemo(() => mockDevices.find((d) => d.id === id), [id])
-  const [flagOverrides, setFlagOverrides] = useState<{ spares?: boolean; paint?: boolean }>({})
-  const requiresSpares = flagOverrides.spares ?? device?.requiresSpares ?? false
-  const requiresPaint = flagOverrides.paint ?? device?.requiresPaint ?? false
-
-  const toggleFlag = (flag: 'spares' | 'paint') => {
-    const current = flag === 'spares' ? requiresSpares : requiresPaint
-    const next = !current
-    setFlagOverrides((prev) => ({ ...prev, [flag]: next }))
-    toast.success(
-      `${device?.barcode ?? ''}: ${flag === 'spares' ? 'Spares' : 'Paint'} ${next ? 'required' : 'cleared'}`,
-    )
-  }
+  const device = useMemo(
+    () => mockDevices.find((d) => d.id === id) ?? (id ? synthesizeDeviceFromOutward(id) : undefined),
+    [id],
+  )
   const inspection = useMemo(
     () => mockInspections.find((r) => r.deviceId === id),
     [id],
@@ -114,6 +155,34 @@ function DeviceDetailPage() {
     () => mockSpareRequests.filter((s) => s.deviceId === id),
     [id],
   )
+
+  // Engineer assignments derived from repair jobs on this device
+  const l2Job = useMemo(() => repairJobs.find((j) => j.repairType === 'L2'), [repairJobs])
+  const l3Job = useMemo(() => repairJobs.find((j) => j.repairType === 'L3'), [repairJobs])
+  const displayJob = useMemo(
+    () => repairJobs.find((j) => j.repairType === 'DISPLAY'),
+    [repairJobs],
+  )
+
+  const [l1l2Engineer, setL1L2Engineer] = useState<string>(
+    l2Job?.assignedTo ?? l3Job?.assignedTo ?? '',
+  )
+  const [displayEngineer, setDisplayEngineer] = useState<string>(displayJob?.assignedTo ?? '')
+  const [qcEngineer, setQcEngineer] = useState<string>(
+    device?.status === 'AWAITING_QC' || device?.status === 'UNDER_QC'
+      ? device?.assignedTo ?? ''
+      : '',
+  )
+
+  const [qcDialogOpen, setQcDialogOpen] = useState(false)
+  const qcOutwardCtx = useMemo(() => {
+    if (!id) return null
+    for (const outward of mockOutwardRecords) {
+      const od = outward.devices.find((d) => d.deviceId === id)
+      if (od) return { outward, device: od }
+    }
+    return null
+  }, [id])
 
   if (!device) {
     return (
@@ -212,19 +281,7 @@ function DeviceDetailPage() {
 
   const flags: { label: string; completed: boolean; required: boolean }[] = [
     { label: 'Repair', required: device.requiresRepair, completed: device.repairCompleted },
-    { label: 'Paint', required: requiresPaint, completed: device.paintCompleted },
-    { label: 'Spares', required: requiresSpares, completed: device.sparesIssued },
   ]
-
-  // Context-driven visibility:
-  // - inspection / rack: hide both toggles
-  // - spares / qc: hide paint only
-  // - paint: hide spares only
-  // - repair / null: show both
-  const showSparesToggle = from !== 'inspection' && from !== 'paint' && from !== 'rack'
-  const showPaintToggle =
-    from !== 'inspection' && from !== 'spares' && from !== 'qc' && from !== 'rack'
-  const showRequirementsBlock = showSparesToggle || showPaintToggle
 
   const canStartInspection =
     from === 'inspection' && device.status === 'PENDING_INSPECTION'
@@ -232,18 +289,14 @@ function DeviceDetailPage() {
     from === 'repair'
       ? repairJobs.find((j) => j.status === 'Assigned')
       : undefined
+  const canStartQC =
+    from === 'qc' &&
+    (device.status === 'AWAITING_QC' ||
+      device.status === 'UNDER_QC' ||
+      device.status === 'AWAITING_OUTWARD_QC' ||
+      device.status === 'UNDER_OUTWARD_QC')
 
-  const paintPanelJobs = paintJobs.length > 0
-    ? paintJobs
-    : requiresPaint
-      ? (['TOP_COVER', 'BOTTOM_COVER'] as PaintPanelType[]).map((p) => ({
-          id: `paint-placeholder-${p}`,
-          deviceId: device.id,
-          deviceBarcode: device.barcode,
-          panelType: p,
-          status: 'AWAITING_PAINT' as const,
-        }))
-      : []
+  const paintPanelJobs = paintJobs
 
   const handleStartInspection = () => {
     toast.success(`Opening inspection for ${device.barcode}…`)
@@ -254,6 +307,35 @@ function DeviceDetailPage() {
     if (!startableRepair) return
     toast.success(`Opening repair for ${device.barcode}…`)
     navigate(`/wms/repair?open=${startableRepair.id}`)
+  }
+
+  const qcDialogType: 'INWARD' | 'OUTWARD' =
+    device.status === 'AWAITING_OUTWARD_QC' ||
+    device.status === 'UNDER_OUTWARD_QC' ||
+    (!!qcOutwardCtx && device.status !== 'AWAITING_QC' && device.status !== 'UNDER_QC')
+      ? 'OUTWARD'
+      : 'INWARD'
+
+  const handleStartQC = () => {
+    if (!qcEngineer) {
+      toast.error('Assign a QC engineer before starting QC.')
+      return
+    }
+    // Open the same QC popup used on the list page — but keep the user on
+    // the detail page instead of navigating away.
+    setQcDialogOpen(true)
+  }
+
+  const handleEngineerChange = (
+    role: 'l1l2' | 'display' | 'qc',
+    value: string,
+  ) => {
+    if (role === 'l1l2') setL1L2Engineer(value)
+    else if (role === 'display') setDisplayEngineer(value)
+    else setQcEngineer(value)
+    toast.success(
+      `${device.barcode}: ${role === 'l1l2' ? 'L1 / L2' : role === 'display' ? 'Display' : 'QC'} engineer set to ${value}`,
+    )
   }
 
   return (
@@ -282,7 +364,7 @@ function DeviceDetailPage() {
           </div>
         </div>
 
-        {(canStartInspection || startableRepair) && (
+        {(canStartInspection || startableRepair || canStartQC) && (
           <div className="flex shrink-0 items-center gap-2">
             {canStartInspection && (
               <Button onClick={handleStartInspection}>
@@ -294,6 +376,12 @@ function DeviceDetailPage() {
               <Button onClick={handleStartRepair}>
                 <Play className="size-4" />
                 Start Repair
+              </Button>
+            )}
+            {canStartQC && (
+              <Button onClick={handleStartQC}>
+                <Play className="size-4" />
+                Start QC
               </Button>
             )}
           </div>
@@ -317,48 +405,65 @@ function DeviceDetailPage() {
               </div>
             ))}
           </div>
-          {device.assignedTo && (
-            <div className="mt-4 border-t pt-4">
-              <p className="text-xs text-muted-foreground">Assigned to</p>
-              <p className="text-sm font-medium">{device.assignedTo}</p>
-            </div>
-          )}
-
-          {showRequirementsBlock && (
-            <div className="mt-4 border-t pt-4">
-              <p className="text-xs text-muted-foreground mb-2">Requirements</p>
-              <div className="flex flex-wrap gap-2">
-                {showSparesToggle && (
-                  <button
-                    type="button"
-                    onClick={() => toggleFlag('spares')}
-                    className={
-                      requiresSpares
-                        ? 'inline-flex items-center gap-1.5 rounded-full border border-[#f6c000]/60 bg-[#fff5d6] px-3 py-1 text-xs font-medium text-[#8a6a00] hover:bg-[#ffecb3] transition-colors'
-                        : 'inline-flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/40 px-3 py-1 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors'
-                    }
-                  >
-                    {requiresSpares ? <Check className="size-3" /> : <Plus className="size-3" />}
-                    Spares {requiresSpares ? 'required' : 'needed?'}
-                  </button>
-                )}
-                {showPaintToggle && (
-                  <button
-                    type="button"
-                    onClick={() => toggleFlag('paint')}
-                    className={
-                      requiresPaint
-                        ? 'inline-flex items-center gap-1.5 rounded-full border border-[#f6c000]/60 bg-[#fff5d6] px-3 py-1 text-xs font-medium text-[#8a6a00] hover:bg-[#ffecb3] transition-colors'
-                        : 'inline-flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/40 px-3 py-1 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors'
-                    }
-                  >
-                    {requiresPaint ? <Check className="size-3" /> : <Plus className="size-3" />}
-                    Paint {requiresPaint ? 'required' : 'needed?'}
-                  </button>
-                )}
+          <div className="mt-4 border-t pt-4">
+            <p className="text-xs text-muted-foreground mb-3">Engineer Assignments</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-foreground">L1 / L2 Engineer</p>
+                <Select
+                  value={l1l2Engineer}
+                  onValueChange={(val) => { if (val) handleEngineerChange('l1l2', val) }}
+                >
+                  <SelectTrigger className="h-9 w-full text-sm">
+                    <SelectValue placeholder="Assign L1 / L2 engineer…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {L1_L2_ENGINEERS.map((eng) => (
+                      <SelectItem key={eng} value={eng}>
+                        {eng}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-foreground">Display Engineer</p>
+                <Select
+                  value={displayEngineer}
+                  onValueChange={(val) => { if (val) handleEngineerChange('display', val) }}
+                >
+                  <SelectTrigger className="h-9 w-full text-sm">
+                    <SelectValue placeholder="Assign Display engineer…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DISPLAY_ENGINEERS.map((eng) => (
+                      <SelectItem key={eng} value={eng}>
+                        {eng}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-foreground">QC Engineer</p>
+                <Select
+                  value={qcEngineer}
+                  onValueChange={(val) => { if (val) handleEngineerChange('qc', val) }}
+                >
+                  <SelectTrigger className="h-9 w-full text-sm">
+                    <SelectValue placeholder="Assign QC engineer…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QC_ENGINEERS.map((eng) => (
+                      <SelectItem key={eng} value={eng}>
+                        {eng}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 
@@ -472,6 +577,15 @@ function DeviceDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Shared QC popup — opened by Start QC, stays on this detail page. */}
+      <QCDialog
+        open={qcDialogOpen}
+        onOpenChange={setQcDialogOpen}
+        qcType={qcDialogType}
+        device={device}
+        outwardCtx={qcDialogType === 'OUTWARD' ? qcOutwardCtx : null}
+      />
     </div>
   )
 }

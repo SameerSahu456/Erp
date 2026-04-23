@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { toast } from 'sonner'
 import { AlertTriangle } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -37,6 +37,7 @@ const FAILURE_REASONS = [
 ]
 
 function OutwardQCPage() {
+  const navigate = useNavigate()
   const [selectedDevice, setSelectedDevice] = useState<{ device: OutwardDevice; outward: OutwardRecord } | null>(null)
   const [qcResult, setQcResult] = useState<'PASSED' | 'FAILED' | null>(null)
   const [failureReasons, setFailureReasons] = useState<string[]>([])
@@ -64,12 +65,15 @@ function OutwardQCPage() {
     () =>
       stockedDevices.map((d) => ({
         id: d.id,
+        _deviceId: d.id,
+        _stocked: true as const,
         barcode: d.barcode,
         partSerial: `${d.model}\n${d.serialNumber}`,
         brand: d.brand,
         grade: d.grade ?? '-',
         rack: d.rackLocation ?? '-',
         qcPassedAt: d.qcPassedAt ? formatDate(d.qcPassedAt) : '-',
+        actions: '',
       })),
     [stockedDevices],
   )
@@ -138,6 +142,7 @@ function OutwardQCPage() {
           { key: 'grade', label: 'Grade', align: 'center' as const },
           { key: 'rack', label: 'Rack Location' },
           { key: 'qcPassedAt', label: 'Inward QC Passed', sortable: true },
+          { key: 'actions', label: 'Actions' },
         ],
         data: stockedRows,
       },
@@ -165,6 +170,7 @@ function OutwardQCPage() {
           { key: 'brand', label: 'Brand', sortable: true },
           { key: 'grade', label: 'Grade' },
           { key: 'customerName', label: 'Customer' },
+          { key: 'actions', label: 'Actions' },
         ],
         data: pendingRows,
       },
@@ -204,7 +210,7 @@ function OutwardQCPage() {
             display: (
               <Link
                 to={`/wms/outward/${row.id as string}`}
-                className="font-medium text-primary hover:underline"
+                className="font-medium wms-link"
               >
                 {value}
               </Link>
@@ -220,7 +226,7 @@ function OutwardQCPage() {
         return {
           display: (
             <button
-              className="text-primary underline-offset-4 hover:underline font-medium"
+              className="wms-link font-medium"
               onClick={() => handleSelectDevice(row.outwardId as string, row.deviceId as string)}
             >
               {String(value)}
@@ -261,10 +267,45 @@ function OutwardQCPage() {
           display: <StatusBadge variant="warning">{value}</StatusBadge>,
         }
       }
+      if (key === 'actions') {
+        // Stocked (Ready for Outward QC) tab — jump to device detail which shows Start QC + template
+        if (row._stocked) {
+          const deviceId = row._deviceId as string
+          return {
+            display: (
+              <div onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="wms-link-btn text-sm"
+                  onClick={() => navigate(`/wms/devices/${deviceId}?from=qc`)}
+                >
+                  Start Outward QC
+                </button>
+              </div>
+            ),
+          }
+        }
+        // Pending tab — open the inline QC form using the outward + device context
+        if (row.outwardId && row.deviceId) {
+          return {
+            display: (
+              <div onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="wms-link-btn text-sm"
+                  onClick={() => handleSelectDevice(row.outwardId as string, row.deviceId as string)}
+                >
+                  Start Outward QC
+                </button>
+              </div>
+            ),
+          }
+        }
+      }
       return null
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [navigate],
   )
 
   const toggleFailureReason = (reason: string) => {
@@ -321,7 +362,18 @@ function OutwardQCPage() {
       </div>
 
       {/* QC Queue Table */}
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-outward-qc" />
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="wms-outward-qc"
+        onRowClick={(row) => {
+          if (row._stocked && row._deviceId) {
+            navigate(`/wms/devices/${row._deviceId}?from=qc`)
+          } else if (row.deviceId && row.outwardId) {
+            handleSelectDevice(row.outwardId as string, row.deviceId as string)
+          }
+        }}
+      />
 
       {/* QC Form */}
       {selectedDevice && (

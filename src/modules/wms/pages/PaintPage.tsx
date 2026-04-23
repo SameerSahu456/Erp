@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Printer } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -31,26 +30,6 @@ import {
 import type { PaintJob, PaintPanelType } from '../types'
 import { mockPaintJobs } from '../data/paint-jobs'
 import { mockDevices } from '../data/devices'
-
-function handlePrintBarcode(barcode: string) {
-  const printWindow = window.open('', '_blank', 'width=400,height=300')
-  if (!printWindow) {
-    toast.error('Please allow popups to print barcodes.')
-    return
-  }
-  printWindow.document.write(`
-    <html>
-      <head><title>Print Barcode</title></head>
-      <body style="font-family: monospace; text-align: center; padding: 40px;">
-        <div style="border: 2px solid #000; padding: 20px; display: inline-block;">
-          <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px;">${barcode}</div>
-        </div>
-        <script>window.onload = function() { window.print(); }</script>
-      </body>
-    </html>
-  `)
-  printWindow.document.close()
-}
 
 // Group-level status derived from each device's panels:
 // - PENDING: all panels awaiting → show "Send to vendor"
@@ -302,7 +281,6 @@ function PaintPage() {
       if (key === 'actions') {
         const status = row._status as GroupStatus
         const deviceId = row.id as string
-        const barcode = row.barcode as string
         return {
           display: (
             <div
@@ -313,7 +291,7 @@ function PaintPage() {
                 <button
                   type="button"
                   onClick={() => openSendDialog(deviceId)}
-                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                  className="text-sm font-medium wms-link"
                 >
                   Send to vendor
                 </button>
@@ -322,7 +300,7 @@ function PaintPage() {
                 <button
                   type="button"
                   onClick={() => completeGroup(deviceId)}
-                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                  className="text-sm font-medium wms-link"
                 >
                   Complete
                 </button>
@@ -330,15 +308,6 @@ function PaintPage() {
               {status === 'DONE' && (
                 <span className="text-xs text-muted-foreground">—</span>
               )}
-              <Button
-                size="xs"
-                variant="ghost"
-                className="size-7 p-0 text-muted-foreground hover:text-foreground"
-                onClick={() => handlePrintBarcode(barcode)}
-                title="Print barcode"
-              >
-                <Printer className="size-3.5" />
-              </Button>
             </div>
           ),
         }

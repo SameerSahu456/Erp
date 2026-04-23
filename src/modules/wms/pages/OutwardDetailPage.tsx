@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { BarcodeText } from '@/components/common/BarcodeText'
 import { EmptyState } from '@/components/common/EmptyState'
 import { EntityHeader } from '@/modules/crm/components/EntityHeader'
 import { DetailTabs } from '@/modules/crm/components/DetailTabs'
@@ -345,7 +346,7 @@ export default function OutwardDetailPage() {
                       {record.salesOrderId ? (
                         <Link
                           to={`/crm/sales-orders/${record.salesOrderId}`}
-                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                          className="inline-flex items-center gap-1 wms-link"
                         >
                           {record.salesOrderNumber}
                           <ExternalLink className="size-3" />
@@ -365,7 +366,7 @@ export default function OutwardDetailPage() {
                     <dd className="text-sm font-medium">
                       <Link
                         to={`/rentals/contracts/${record.rentalContractId}`}
-                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                        className="inline-flex items-center gap-1 wms-link"
                       >
                         {record.rentalContractId}
                         <ExternalLink className="size-3" />
@@ -382,7 +383,7 @@ export default function OutwardDetailPage() {
                     <dd className="text-sm font-medium">
                       <Link
                         to={`/crm/demo-requests/${record.demoRequestId}`}
-                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                        className="inline-flex items-center gap-1 wms-link"
                       >
                         {record.demoRequestId}
                         <ExternalLink className="size-3" />
@@ -399,7 +400,7 @@ export default function OutwardDetailPage() {
                     <dd className="text-sm font-medium">
                       <Link
                         to={`/wms/dispatches/${linkedDispatch.id}`}
-                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                        className="inline-flex items-center gap-1 wms-link"
                       >
                         {linkedDispatch.dispatchNumber}
                         <ExternalLink className="size-3" />
@@ -477,7 +478,7 @@ export default function OutwardDetailPage() {
                 <div>
                   <dt className="text-xs font-ui text-muted-foreground">Phone</dt>
                   <dd>
-                    <a href={`tel:${record.contactPhone}`} className="text-sm text-primary hover:underline">
+                    <a href={`tel:${record.contactPhone}`} className="text-sm wms-link">
                       {record.contactPhone}
                     </a>
                   </dd>
@@ -671,7 +672,7 @@ export default function OutwardDetailPage() {
           <TableBody>
             {devices.map((d) => (
               <TableRow key={d.deviceId}>
-                <TableCell className="font-medium">{d.barcode}</TableCell>
+                <TableCell><BarcodeText>{d.barcode}</BarcodeText></TableCell>
                 <TableCell>{d.model}</TableCell>
                 <TableCell>{d.brand}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">{d.serialNumber}</TableCell>
@@ -779,7 +780,7 @@ export default function OutwardDetailPage() {
                 {record.logistics.driverName ?? '-'}
                 {record.logistics.driverPhone && (
                   <span className="ml-2 text-muted-foreground">
-                    - <a href={`tel:${record.logistics.driverPhone}`} className="text-primary hover:underline">{record.logistics.driverPhone}</a>
+                    - <a href={`tel:${record.logistics.driverPhone}`} className="wms-link">{record.logistics.driverPhone}</a>
                   </span>
                 )}
               </dd>
@@ -789,7 +790,7 @@ export default function OutwardDetailPage() {
               <dd className="mt-1 text-sm font-medium">
                 {record.logistics.trackingNumber ? (
                   trackingUrl ? (
-                    <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="wms-link">
                       {record.logistics.trackingNumber}
                     </a>
                   ) : (
@@ -922,7 +923,7 @@ export default function OutwardDetailPage() {
                   <TableBody>
                     {ret.devices.map((d) => (
                       <TableRow key={d.deviceId}>
-                        <TableCell className="font-medium">{d.barcode}</TableCell>
+                        <TableCell><BarcodeText>{d.barcode}</BarcodeText></TableCell>
                         <TableCell>{d.model}</TableCell>
                         <TableCell className="text-sm">{d.reason}</TableCell>
                         <TableCell>

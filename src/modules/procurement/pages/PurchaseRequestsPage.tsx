@@ -160,12 +160,15 @@ function PurchaseRequestsPage() {
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          <BusinessMetricsTable
-            tabs={tabs}
-            cellFormatter={cellFormatter}
-            pageSize={10}
-            persistKey="procurement-pr"
-          />
+          <div className="bmt-search-lg">
+            <BusinessMetricsTable
+              tabs={tabs}
+              cellFormatter={cellFormatter}
+              pageSize={10}
+              persistKey="procurement-pr"
+              onRowClick={(row) => navigate(`/procurement/pr/${row['id']}`)}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

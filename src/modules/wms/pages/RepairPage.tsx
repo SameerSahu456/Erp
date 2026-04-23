@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Printer, ChevronDown, ChevronRight, Check, X, Minus, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Check, X, Minus, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -116,26 +116,6 @@ function formatDate(dateStr?: string) {
   })
 }
 
-function handlePrintBarcode(barcode: string) {
-  const printWindow = window.open('', '_blank', 'width=400,height=300')
-  if (!printWindow) {
-    toast.error('Please allow popups to print barcodes.')
-    return
-  }
-  printWindow.document.write(`
-    <html>
-      <head><title>Print Barcode</title></head>
-      <body style="font-family: monospace; text-align: center; padding: 40px;">
-        <div style="border: 2px solid #000; padding: 20px; display: inline-block;">
-          <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px;">${barcode}</div>
-        </div>
-        <script>window.onload = function() { window.print(); }</script>
-      </body>
-    </html>
-  `)
-  printWindow.document.close()
-}
-
 function RepairPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -143,9 +123,6 @@ function RepairPage() {
   const [jobs, setJobs] = useState<RepairJob[]>(
     mockRepairJobs.filter((j) => j.repairType !== 'BATTERY')
   )
-  const [showAssignForm, setShowAssignForm] = useState(false)
-  const [assignDeviceId, setAssignDeviceId] = useState('')
-  const [assignEngineer, setAssignEngineer] = useState('')
 
   // Checklist dialog state
   const [checklistOpen, setChecklistOpen] = useState(false)
@@ -242,30 +219,6 @@ function RepairPage() {
     const reworkCount = jobs.filter((j) => j.isRework).length
     return { total, inProgress, completedToday, reworkCount }
   }, [jobs])
-
-  const unassignedJobs = useMemo(
-    () => jobs.filter((j) => !j.assignedTo || j.assignedTo === 'Unassigned'),
-    [jobs]
-  )
-
-  const handleAssignJob = () => {
-    if (!assignDeviceId || !assignEngineer) {
-      toast.error('Please select both a device and an engineer.')
-      return
-    }
-    setJobs((prev) =>
-      prev.map((job) =>
-        job.id === assignDeviceId
-          ? { ...job, assignedTo: assignEngineer, status: 'Assigned' as const }
-          : job
-      )
-    )
-    const job = jobs.find((j) => j.id === assignDeviceId)
-    toast.success(`${job?.deviceBarcode ?? 'Device'} assigned to ${assignEngineer}`)
-    setAssignDeviceId('')
-    setAssignEngineer('')
-    setShowAssignForm(false)
-  }
 
   const handleAssignEngineerInline = (jobId: string, engineer: string) => {
     setJobs((prev) =>
@@ -490,7 +443,7 @@ function RepairPage() {
               {showStart && (
                 <button
                   type="button"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  className="wms-link text-sm font-medium"
                   onClick={() => {
                     if (job) openChecklist(job)
                   }}
@@ -507,15 +460,6 @@ function RepairPage() {
                   Assemble
                 </button>
               )}
-              <Button
-                size="xs"
-                variant="ghost"
-                className="size-7 p-0 text-muted-foreground hover:text-foreground"
-                onClick={() => handlePrintBarcode(barcode)}
-                title="Print barcode"
-              >
-                <Printer className="size-3.5" />
-              </Button>
             </div>
           ),
         }
@@ -529,7 +473,7 @@ function RepairPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="cpt-page-title">Repair Station</h1>
+        <h1 className="cpt-page-title">Repair</h1>
         <p className="text-sm text-muted-foreground">
           Manage L2, L3, and Display repair jobs. Repair starts once spares are fulfilled and paint is done.
         </p>
@@ -572,59 +516,6 @@ function RepairPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Assign Job */}
-      <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={() => setShowAssignForm(!showAssignForm)}>
-          Assign Job
-        </Button>
-      </div>
-
-      {showAssignForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Assign Repair Job</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Select Device</Label>
-              <Select value={assignDeviceId} onValueChange={(val) => setAssignDeviceId(val ?? '')}>
-                <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Select unassigned device..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {unassignedJobs.map((job) => (
-                    <SelectItem key={job.id} value={job.id}>
-                      {job.deviceBarcode} - {REPAIR_TYPE_LABELS[job.repairType]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Select Engineer</Label>
-              <Select value={assignEngineer} onValueChange={(val) => setAssignEngineer(val ?? '')}>
-                <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Select engineer..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {REPAIR_ENGINEERS.map((eng) => (
-                    <SelectItem key={eng} value={eng}>
-                      {eng}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleAssignJob}>Assign</Button>
-              <Button variant="outline" onClick={() => setShowAssignForm(false)}>
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Repair Jobs Table */}
       <BusinessMetricsTable

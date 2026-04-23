@@ -17,7 +17,7 @@ const INWARD_TYPE_LABELS: Record<InwardType, string> = {
   RENTAL_RETURN: 'Rental Return',
   DEMO_RETURN: 'Demo Return',
   INTERNAL_TRANSFER: 'Internal Transfer',
-  ADVANCE_RETURN: 'Advance Return',
+  ADVANCE_RETURN: 'Return',
   REFURB_PURCHASE: 'Refurb Purchase',
 }
 
@@ -95,7 +95,7 @@ function InwardPage() {
           <Link
             to={`/wms/inward/${row.id}/devices`}
             onClick={(e) => e.stopPropagation()}
-            className="font-medium text-primary hover:underline"
+            className="font-medium wms-link"
           >
             {value as string}
           </Link>

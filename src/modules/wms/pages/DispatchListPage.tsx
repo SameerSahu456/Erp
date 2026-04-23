@@ -78,7 +78,7 @@ const cellFormatter: CellFormatter = (value, key, row) => {
   if (key === 'dispatchNumber' && typeof value === 'string') {
     return {
       display: (
-        <Link to={`/wms/dispatches/${row['id']}`} className="font-medium text-primary hover:underline">
+        <Link to={`/wms/dispatches/${row['id']}`} className="font-medium wms-link">
           {value}
         </Link>
       ),
@@ -89,7 +89,7 @@ const cellFormatter: CellFormatter = (value, key, row) => {
     const outwardId = row['outwardId']
     return {
       display: outwardId ? (
-        <Link to={`/wms/outward/${outwardId}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+        <Link to={`/wms/outward/${outwardId}`} className="wms-link" onClick={(e) => e.stopPropagation()}>
           {value}
         </Link>
       ) : (
