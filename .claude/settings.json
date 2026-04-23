@@ -30,7 +30,26 @@
       "Bash(sort -rn grep -oE \"^src/[^\\(]+\" /tmp/after-errors.txt)",
       "Bash(python3 /tmp/gen_hpe_data.py)",
       "Bash(pkill -f \"vite.*5174\")",
-      "Bash(grep -E \"\\\\.\\(jsx|js|tsx|ts\\)$\")"
+      "Bash(grep -E \"\\\\.\\(jsx|js|tsx|ts\\)$\")",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(grep -n \"^ *</Card>\\\\|^ *</div>$\\\\|^  \\)\\\\|^}$\\\\|<Timeline\\\\|Workflow History\" /Users/macbookpro/Documents/erp-demo/src/modules/wms/pages/DeviceDetailPage.tsx)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(cp \"/Users/macbookpro/.claude/projects/-Users-macbookpro-Documents-erp-demo/7d998cde-c0e0-4027-8199-65fd7d4d4dff/tool-results/webfetch-1776956259706-f8cw81.bin\" /tmp/design.gz)",
+      "Bash(mkdir -p design_extract)",
+      "Bash(gunzip -c design.gz)",
+      "Bash(tar -xf /tmp/design.tar)",
+      "Bash(tar -tvf /tmp/design.tar)",
+      "Bash(gunzip -kf -c design.gz)",
+      "Bash(tar -tvf design.tar)",
+      "Bash(/usr/bin/head -n 566 /Users/macbookpro/Documents/erp-demo/src/styles/themes.css)",
+      "Bash(/bin/mv /tmp/themes-trimmed.css /Users/macbookpro/Documents/erp-demo/src/styles/themes.css)",
+      "Bash(/usr/bin/tail -2 /Users/macbookpro/Documents/erp-demo/src/styles/themes.css)",
+      "Bash(/bin/rm -f /Users/macbookpro/Documents/erp-demo/src/styles/new-ux.css /Users/macbookpro/Documents/erp-demo/src/styles/new-ui-kit.css /Users/macbookpro/Documents/erp-demo/src/components/layout/NewUxAppShell.tsx)",
+      "Bash(/bin/rm -rf /Users/macbookpro/Documents/erp-demo/src/modules/new-ui-ux)",
+      "Bash(/bin/ls -la /Users/macbookpro/Documents/erp-demo/src/styles /Users/macbookpro/Documents/erp-demo/src/components/layout)",
+      "Bash(/usr/bin/grep -iE \"new-ux|new-ui-kit|NewUxAppShell\")",
+      "Bash(/bin/ls /Users/macbookpro/Documents/erp-demo/src/modules/new-ui-ux)"
     ]
   }
 }

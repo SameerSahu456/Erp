@@ -166,6 +166,7 @@ const AssignToRackPage = lazy(() => import('@/modules/wms/pages/AssignToRackPage
 const DeviceDetailPage = lazy(() => import('@/modules/wms/pages/DeviceDetailPage'))
 const DevicesAssignmentPage = lazy(() => import('@/modules/wms/pages/DevicesAssignmentPage'))
 
+
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return (
     <Suspense
