@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
 import {
   ArrowLeft,
@@ -15,11 +16,14 @@ import {
   Clock,
   Truck,
   RotateCcw,
+  ShoppingCart,
+  FileText,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { demoRequests } from '../data/demo-requests'
+import { salesOrders } from '../data/sales-orders'
 import type { DemoRequestStatus } from '../types'
 
 function formatDate(dateStr: string) {
@@ -28,6 +32,14 @@ function formatDate(dateStr: string) {
     month: 'short',
     year: 'numeric',
   })
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
 
 function formatDateTime(dateStr: string) {
@@ -82,6 +94,7 @@ function getActiveStage(status: DemoRequestStatus): number {
 function DemoRequestDetailPage() {
   const { id } = useParams<{ id: string }>()
   const goBack = useNavigateBack('/crm/demo-requests')
+  const navigate = useNavigate()
 
   const demo = useMemo(() => demoRequests.find((d) => d.id === id), [id])
 
@@ -100,6 +113,32 @@ function DemoRequestDetailPage() {
   const isRejected = demo.status === 'PM Rejected'
   const isOverdue = demo.isOverdue
   const totalItems = demo.items.reduce((s, i) => s + i.qty, 0)
+  const approvedTotal = demo.items.reduce((s, i) => s + (i.unitPrice ?? 0) * i.qty, 0)
+  const SO_ELIGIBLE_STATUSES: DemoRequestStatus[] = [
+    'PM Approved',
+    'Dispatched',
+    'With Customer',
+    'Return Overdue',
+    'Returned',
+    'Closed',
+  ]
+  const canCreateSO = SO_ELIGIBLE_STATUSES.includes(demo.status) && !demo.salesOrderId
+
+  function handleCreateSO() {
+    if (!demo) return
+    if (demo.salesOrderId) {
+      toast.info('A sales order has already been created for this demo')
+      navigate(`/crm/sales-orders/${demo.salesOrderId}`)
+      return
+    }
+    if (demo.items.length === 0) {
+      toast.error('Demo request has no line items to convert')
+      return
+    }
+    // Route to the same Closed-Won wizard used for leads/deals — pre-filled
+    // with the demo's account, contact, line items and PM-approved pricing.
+    navigate(`/crm/demo-requests/${demo.id}/close-won?type=demo`)
+  }
 
   return (
     <div className="space-y-6">
@@ -119,7 +158,50 @@ function DemoRequestDetailPage() {
             {demo.accountName} &middot; {totalItems} item{totalItems > 1 ? 's' : ''}
           </p>
         </div>
+        {canCreateSO && (
+          <Button onClick={handleCreateSO} className="shrink-0">
+            <ShoppingCart className="size-4" />
+            Create SO
+          </Button>
+        )}
       </div>
+
+      {/* Linked SO / PO banner — shown after conversion */}
+      {demo.salesOrderId && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[#50cd89]/40 bg-[#e8fff3] px-4 py-3">
+          <CheckCircle2 className="size-5 text-[#0b5c22] shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-[#0b5c22]">
+              Converted to sales order
+            </p>
+            <p className="text-xs text-[#0b5c22]/80">
+              SO {demo.salesOrderNumber} created from this demo. A back-to-back PO was raised on the vendor.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={`/crm/sales-orders/${demo.salesOrderId}`}
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+            >
+              <ShoppingCart className="size-3.5" />
+              View SO
+            </Link>
+            {(() => {
+              const linkedSO = salesOrders.find((s) => s.id === demo.salesOrderId)
+              if (!linkedSO?.purchaseOrderId) return null
+              return (
+                <Link
+                  to={`/procurement/po/${linkedSO.purchaseOrderId}`}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+                >
+                  <FileText className="size-3.5" />
+                  View PO
+                </Link>
+              )
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* Overdue alert */}
       {isOverdue && (
@@ -306,28 +388,50 @@ function DemoRequestDetailPage() {
           </h2>
         </div>
         <div className="divide-y">
-          {demo.items.map((item) => (
-            <div key={item.id} className="flex items-center gap-4 px-6 py-4">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium">{item.partName}</p>
-                <p className="text-sm text-muted-foreground">
-                  {item.brand} · {item.partSku} · {item.category}
-                </p>
-                {item.serialNumbers && item.serialNumbers.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {item.serialNumbers.map((sn) => (
-                      <span key={sn} className="rounded bg-muted px-2 py-0.5 text-xs font-mono">
-                        {sn}
-                      </span>
-                    ))}
-                  </div>
-                )}
+          {demo.items.map((item) => {
+            const lineAmount = (item.unitPrice ?? 0) * item.qty
+            return (
+              <div key={item.id} className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-6 py-4">
+                <div className="min-w-0">
+                  <p className="font-medium">{item.partName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.brand} · {item.partSku} · {item.category}
+                  </p>
+                  {item.serialNumbers && item.serialNumbers.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {item.serialNumbers.map((sn) => (
+                        <span key={sn} className="rounded bg-muted px-2 py-0.5 text-xs font-mono">
+                          {sn}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-xs text-muted-foreground">Qty</p>
+                  <p className="text-base font-semibold">&times;{item.qty}</p>
+                </div>
+                <div className="shrink-0 text-right w-32">
+                  <p className="text-xs text-muted-foreground">Unit Price</p>
+                  <p className="text-sm font-medium tabular-nums">
+                    {formatCurrency(item.unitPrice ?? 0)}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right w-32">
+                  <p className="text-xs text-muted-foreground">Amount</p>
+                  <p className="text-sm font-semibold tabular-nums">
+                    {formatCurrency(lineAmount)}
+                  </p>
+                </div>
               </div>
-              <div className="text-right shrink-0">
-                <p className="text-lg font-semibold">&times;{item.qty}</p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
+        </div>
+        <div className="flex items-center justify-between border-t bg-muted/30 px-6 py-3">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Approved Total
+          </span>
+          <span className="text-base font-semibold tabular-nums">{formatCurrency(approvedTotal)}</span>
         </div>
       </div>
 

@@ -25,6 +25,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 
 import { useDispatches } from '../data/dispatches'
 import type {
@@ -165,18 +166,17 @@ function DispatchDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Back + header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={goBack}>
-            <ArrowLeft className="mr-1 size-4" />
-            Back to dispatches
-          </Button>
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-display font-semibold">{dispatch.dispatchNumber}</h2>
-            <StatusBadge variant={STATUS_VARIANT[dispatch.status]}>{dispatch.status}</StatusBadge>
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+      <PageHeader
+        title={dispatch.dispatchNumber}
+        status={{ label: dispatch.status, variant: STATUS_VARIANT[dispatch.status] }}
+        breadcrumbs={[
+          { label: 'WMS' },
+          { label: 'Dispatches', href: '/wms/dispatches' },
+          { label: dispatch.dispatchNumber },
+        ]}
+        backHref="/wms/dispatches"
+        meta={
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             <span>
               For SO <Link to={`/crm/sales-orders/${dispatch.salesOrderId}`} className="wms-link">{dispatch.salesOrderNumber}</Link>
             </span>
@@ -198,16 +198,18 @@ function DispatchDetailPage() {
             <span>·</span>
             <span>{dispatch.accountName}</span>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate(`/wms/dispatches/${dispatch.id}/edit`)}>
-            Edit
-          </Button>
-          <Button size="sm" disabled>
-            Advance status
-          </Button>
-        </div>
-      </div>
+        }
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/wms/dispatches/${dispatch.id}/edit`)}>
+              Edit
+            </Button>
+            <Button size="sm" disabled>
+              Advance status
+            </Button>
+          </>
+        }
+      />
 
       {/* Status stepper */}
       <Card>

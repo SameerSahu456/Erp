@@ -156,4 +156,21 @@ export const mockRepairJobs: RepairJob[] = [
     notes: 'Repair not economically viable — multiple component failures',
     issues: ['Motherboard corrosion', 'Multiple port failures', 'Battery swollen'],
   },
+  // Component-scoped server repair — targets a single CPU slot on dev-srv-002
+  // (Dell PowerEdge R750xs). Populates componentSlotId/componentPartName so the
+  // repair card can distinguish this from a device-wide repair.
+  {
+    id: 'repair-013',
+    deviceId: 'dev-srv-002',
+    deviceBarcode: 'S-DEL-7002',
+    repairType: 'L3',
+    assignedTo: 'Deepak Joshi',
+    status: 'In Progress',
+    isRework: false,
+    reworkCount: 0,
+    startedAt: '2026-04-10T09:00:00Z',
+    notes: 'CPU Socket 1: thermal throttling under load — reseat + new thermal compound; bench test at 100% TDP',
+    componentSlotId: 'dev-srv-002:BOM-001-I01:1',
+    componentPartName: 'Intel Xeon Silver 4314 CPU #1',
+  },
 ]

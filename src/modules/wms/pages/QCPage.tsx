@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { Server } from 'lucide-react'
 
 import {
   Select,
@@ -16,6 +17,7 @@ import {
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
 import { QCDialog } from '../components/QCDialog'
+import { PageHeader } from '@/components/page'
 
 import { mockDevices } from '../data/devices'
 import { mockQCRecords } from '../data/qc-records'
@@ -73,6 +75,7 @@ function QCPage() {
         barcode: d.barcode,
         partSerial: `${d.model}\n${d.serialNumber}`,
         biosNo: d.biosNo ?? '-',
+        category: d.category,
         brand: d.brand,
         rework: d.qcFailCount,
         assignedTo: qcAssignments[d.id] ?? d.assignedTo ?? '',
@@ -91,6 +94,7 @@ function QCPage() {
           barcode: r.deviceBarcode,
           partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
           biosNo: device?.biosNo ?? '-',
+          category: device?.category ?? '-',
           result: r.result,
           grade: r.grade ?? '-',
           rework: device?.qcFailCount ?? 0,
@@ -99,61 +103,6 @@ function QCPage() {
         }
       }),
     [inwardQCRecords],
-  )
-
-  // ── Outward QC ─────────────────────────────────────────────────────────
-  const outwardPendingOutwards = useMemo(
-    () => mockOutwardRecords.filter((r) => r.status === 'Pending QC' || r.status === 'Packed'),
-    [],
-  )
-  const outwardQCRecords = useMemo(
-    () => mockQCRecords.filter((r) => r.qcType === 'OUTWARD'),
-    [],
-  )
-
-  const outwardPendingRows = useMemo(() => {
-    const rows: Record<string, unknown>[] = []
-    outwardPendingOutwards.forEach((outward) => {
-      outward.devices
-        .filter((d) => d.qcResult === 'Pending')
-        .forEach((device) => {
-          const base = mockDevices.find((x) => x.id === device.deviceId)
-          rows.push({
-            id: `${outward.id}-${device.deviceId}`,
-            _deviceId: device.deviceId,
-            _qcType: 'OUTWARD' as const,
-            _outwardId: outward.id,
-            outwardNumber: outward.outwardNumber,
-            customerName: outward.customerName,
-            barcode: device.barcode,
-            partSerial: `${device.model}\n${device.serialNumber}`,
-            biosNo: base?.biosNo ?? '-',
-            grade: device.grade ?? '-',
-            rework: base?.outwardQcFailCount ?? 0,
-          })
-        })
-    })
-    return rows
-  }, [outwardPendingOutwards])
-
-  const outwardCompletedRows = useMemo(
-    () =>
-      outwardQCRecords.map((r) => {
-        const device = mockDevices.find((d) => d.id === r.deviceId)
-        return {
-          id: r.id,
-          _deviceId: r.deviceId,
-          barcode: r.deviceBarcode,
-          partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
-          biosNo: device?.biosNo ?? '-',
-          result: r.result,
-          rework: device?.outwardQcFailCount ?? 0,
-          inspectedBy: r.inspectedBy,
-          date: formatDate(r.inspectedAt),
-          notes: r.notes ?? '-',
-        }
-      }),
-    [outwardQCRecords],
   )
 
   const inwardTabs: TabConfig[] = useMemo(
@@ -165,6 +114,7 @@ function QCPage() {
           { key: 'barcode', label: 'Barcode', sortable: true },
           { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
+          { key: 'category', label: 'Category', sortable: true },
           { key: 'brand', label: 'Brand', sortable: true },
           { key: 'rework', label: 'Rework', align: 'center' as const, sortable: true },
           { key: 'assignedTo', label: 'Assigned To' },
@@ -179,6 +129,7 @@ function QCPage() {
           { key: 'barcode', label: 'Device Barcode', sortable: true },
           { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
+          { key: 'category', label: 'Category', sortable: true },
           { key: 'result', label: 'Result' },
           { key: 'grade', label: 'Grade' },
           { key: 'rework', label: 'Rework', align: 'center' as const },
@@ -189,41 +140,6 @@ function QCPage() {
       },
     ],
     [inwardPendingRows, inwardCompletedRows],
-  )
-
-  const outwardTabs: TabConfig[] = useMemo(
-    () => [
-      {
-        id: 'outward-pending',
-        label: `Pending (${outwardPendingRows.length})`,
-        columns: [
-          { key: 'outwardNumber', label: 'Outward #', sortable: true },
-          { key: 'barcode', label: 'Barcode', sortable: true },
-          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
-          { key: 'biosNo', label: 'BIOS No', sortable: true },
-          { key: 'customerName', label: 'Customer', sortable: true },
-          { key: 'grade', label: 'Grade' },
-          { key: 'rework', label: 'Rework', align: 'center' as const },
-          { key: 'actions', label: 'Actions' },
-        ],
-        data: outwardPendingRows,
-      },
-      {
-        id: 'outward-completed',
-        label: `Completed (${outwardCompletedRows.length})`,
-        columns: [
-          { key: 'barcode', label: 'Device Barcode', sortable: true },
-          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
-          { key: 'biosNo', label: 'BIOS No', sortable: true },
-          { key: 'result', label: 'Result' },
-          { key: 'rework', label: 'Rework', align: 'center' as const },
-          { key: 'inspectedBy', label: 'Inspected By' },
-          { key: 'date', label: 'Date', sortable: true },
-        ],
-        data: outwardCompletedRows,
-      },
-    ],
-    [outwardPendingRows, outwardCompletedRows],
   )
 
   const handleStartInwardQC = (device: Device) => {
@@ -282,11 +198,21 @@ function QCPage() {
       }
       if (key === 'partSerial') {
         const [part, serial] = String(value).split('\n')
+        const deviceId = (row._deviceId ?? row.id) as string
+        const device = mockDevices.find((d) => d.id === deviceId)
+        const isAssembly = device?.deviceKind === 'ASSEMBLY'
         return {
           display: (
             <div className="flex flex-col leading-tight">
-              <span className="font-medium">{part}</span>
-              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
+              <span className="flex items-center gap-1.5 font-medium">
+                {isAssembly && (
+                  <Server className="size-3.5 text-primary" aria-label="Assembly" />
+                )}
+                {part}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                S/N: {serial}
+              </span>
             </div>
           ),
         }
@@ -380,15 +306,14 @@ function QCPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="cpt-page-title">Quality Control</h1>
-        <p className="text-sm text-muted-foreground">
-          Inward QC gates rack assignment. Outward QC gates dispatch — failed devices are sent back to repair.
-        </p>
-      </div>
+      <PageHeader
+        title="Quality Control"
+        subtitle="Inward QC gates rack assignment. Failed devices are sent back to repair."
+        breadcrumbs={[{ label: 'WMS' }, { label: 'QC' }]}
+      />
 
       {/* Inward QC — gates rack assignment */}
-      <div className="space-y-3">
+      <section className="space-y-3">
         <div>
           <h2 className="text-lg font-semibold">Inward QC</h2>
           <p className="text-sm text-muted-foreground">
@@ -400,24 +325,12 @@ function QCPage() {
           cellFormatter={cellFormatter}
           persistKey="wms-qc-inward"
           onRowClick={(row) => navigate(`/wms/devices/${row._deviceId}?from=qc`)}
+          emptyState={{
+            title: 'No devices awaiting inward QC',
+            description: 'Repaired devices will appear here once ready for a quality check.',
+          }}
         />
-      </div>
-
-      {/* Outward QC — gates dispatch */}
-      <div className="space-y-3">
-        <div>
-          <h2 className="text-lg font-semibold">Outward QC</h2>
-          <p className="text-sm text-muted-foreground">
-            Pre-dispatch check. Only devices that pass Outward QC are eligible for outward; failed devices are sent back to repair.
-          </p>
-        </div>
-        <BusinessMetricsTable
-          tabs={outwardTabs}
-          cellFormatter={cellFormatter}
-          persistKey="wms-qc-outward"
-          onRowClick={(row) => navigate(`/wms/devices/${row._deviceId}?from=qc`)}
-        />
-      </div>
+      </section>
 
       {/* Shared QC dialog — same popup used from the device detail page. */}
       <QCDialog

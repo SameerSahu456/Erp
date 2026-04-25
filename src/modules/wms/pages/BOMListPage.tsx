@@ -10,6 +10,7 @@ import {
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
 import { StatsRow, type StatCardData } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
 import { mockBOMs } from '../data/boms'
 import type { BOMStatus, BOMType } from '../types'
 
@@ -142,25 +143,33 @@ function BOMListPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">
-          Bill of Materials
-        </h1>
+    <ListPageShell
+      title="Bill of Materials"
+      subtitle="BOM templates used to assemble devices and kits."
+      breadcrumbs={[{ label: 'WMS' }, { label: 'BOM' }]}
+      actions={
         <Button onClick={() => navigate('/wms/bom/new')}>
           <Plus className="size-4" data-icon="inline-start" />
           Create BOM
         </Button>
-      </div>
-
-      <StatsRow stats={stats} />
+      }
+      stats={<StatsRow stats={stats} />}
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         persistKey="wms-bom"
         onRowClick={(row) => navigate(`/wms/bom/${row.id}`)}
+        emptyState={{
+          title: 'No BOMs yet',
+          description: 'Create a BOM to define the parts and steps needed to assemble a device or kit.',
+          action: {
+            label: 'Create BOM',
+            onClick: () => navigate('/wms/bom/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

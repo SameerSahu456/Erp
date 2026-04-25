@@ -29,6 +29,7 @@ import {
   SelectItem,
 } from '@/components/ui/select'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/page'
 
 import { mockVendors } from '@/modules/procurement/data/vendors'
 import { mockPurchaseRequests } from '@/modules/procurement/data/purchase-requests'
@@ -146,36 +147,36 @@ function POFormPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Back"
-            onClick={goBack}
-          >
-            <ArrowLeft className="size-4" />
+      <PageHeader
+        title="Create Purchase Order"
+        subtitle="Pick a vendor, add line items, and issue the PO."
+        breadcrumbs={[
+          { label: 'Procurement' },
+          { label: 'Purchase Orders', href: '/procurement/po' },
+          { label: 'New' },
+        ]}
+        backHref="/procurement/po"
+        badges={
+          <>
+            {sourcePR && (
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                From {sourcePR.prNumber}
+              </span>
+            )}
+            {sourcePart && (
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                For {sourcePart.sku}
+              </span>
+            )}
+          </>
+        }
+        actions={
+          <Button variant="outline" size="sm" onClick={goBack}>
+            <X className="mr-1.5 size-4" />
+            Cancel
           </Button>
-          <h2 className="cpt-page-title">
-            Create Purchase Order
-          </h2>
-          {sourcePR && (
-            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              From {sourcePR.prNumber}
-            </span>
-          )}
-          {sourcePart && (
-            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              For {sourcePart.sku}
-            </span>
-          )}
-        </div>
-        <Button variant="outline" size="sm" onClick={goBack}>
-          <X className="mr-1.5 size-4" />
-          Cancel
-        </Button>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left column */}
@@ -259,7 +260,7 @@ function POFormPage() {
                         Part
                       </th>
                       <th className="min-w-[120px] px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        SKU
+                        Part no
                       </th>
                       <th className="w-20 px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Qty
@@ -291,7 +292,7 @@ function POFormPage() {
                           </td>
                           <td className="px-2 py-2">
                             <Input
-                              placeholder="SKU"
+                              placeholder="Part no"
                               value={item.partSku}
                               onChange={(e) => updateItem(item.id, 'partSku', e.target.value)}
                             />

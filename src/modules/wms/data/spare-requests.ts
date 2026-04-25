@@ -11,6 +11,11 @@ export interface SpareRequest {
   requestedBy: string
   requestedAt: string
   fulfilledAt?: string
+  // Component-scoped spare (set when the request targets one slot of an ASSEMBLY device)
+  componentSlotId?: string
+  componentPosition?: string   // denormalized from DeviceComponent.position, e.g. 'CPU Socket 1'
+  replacementPartId?: string   // target part chosen by inspector (may differ from the failed SKU)
+  replacementPartSku?: string
 }
 
 export const mockSpareRequests: SpareRequest[] = [
@@ -80,5 +85,23 @@ export const mockSpareRequests: SpareRequest[] = [
     status: 'Requested',
     requestedBy: 'Suresh Nair',
     requestedAt: '2026-04-16T08:30:00Z',
+  },
+  // Component-scoped server spare — replacement DIMM for a failed RAM slot on
+  // dev-srv-003 (Dell PowerEdge R750xs). Uses the assembly-aware fields so the
+  // Spares page can show the slot and intended replacement SKU.
+  {
+    id: 'sr-007',
+    deviceId: 'dev-srv-003',
+    deviceBarcode: 'S-DEL-7003',
+    model: 'PowerEdge R750xs',
+    spareName: 'Samsung 32GB DDR4-3200 RDIMM ECC',
+    qty: 1,
+    status: 'Ordered',
+    requestedBy: 'Ravi Kumar',
+    requestedAt: '2026-04-09T10:15:00Z',
+    componentSlotId: 'dev-srv-003:BOM-001-I02:3',
+    componentPosition: 'DIMM Slot A3',
+    replacementPartId: 'COMP-003',
+    replacementPartSku: 'RAM-SAM-32G-ECC',
   },
 ]

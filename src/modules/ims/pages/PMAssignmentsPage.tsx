@@ -1,11 +1,14 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { usePersistedState } from '@/hooks/use-persisted-state'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ListPageShell } from '@/components/page'
 import {
   Select,
   SelectContent,
@@ -39,6 +42,7 @@ const l1Categories = mockCategories.filter((c) => !('parentId' in c) || !c.paren
 
 export default function PMAssignmentsPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [assignments, setAssignments] = useState<PMAssignment[]>([...mockPMAssignments])
 
   // Filters
@@ -56,6 +60,10 @@ export default function PMAssignmentsPage() {
   const [formOemId, setFormOemId] = useState('__all__')
   const [formVariant, setFormVariant] = useState('__all__')
   const [formPmId, setFormPmId] = useState('__none__')
+  const [formCanView, setFormCanView] = useState(true)
+  const [formCanEdit, setFormCanEdit] = useState(false)
+  const [formStartDate, setFormStartDate] = useState('')
+  const [formEndDate, setFormEndDate] = useState('')
 
   // Derived: subcategories of selected category
   const availableSubcategories = useMemo(() => {
@@ -97,6 +105,10 @@ export default function PMAssignmentsPage() {
     setFormOemId('__all__')
     setFormVariant('__all__')
     setFormPmId('__none__')
+    setFormCanView(true)
+    setFormCanEdit(false)
+    setFormStartDate('')
+    setFormEndDate('')
     setEditingId(null)
   }
 
@@ -112,8 +124,21 @@ export default function PMAssignmentsPage() {
     setFormOemId(assignment.oemId ?? '__all__')
     setFormVariant(assignment.variant ?? '__all__')
     setFormPmId(assignment.pmId)
+    setFormCanView(assignment.canView)
+    setFormCanEdit(assignment.canEdit)
+    setFormStartDate(assignment.startDate ?? '')
+    setFormEndDate(assignment.endDate ?? '')
     setDialogOpen(true)
   }
+
+  useEffect(() => {
+    const editId = searchParams.get('edit')
+    if (!editId) return
+    const target = assignments.find((a) => a.id === editId)
+    if (target) openEditDialog(target)
+    setSearchParams({}, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   const handleSave = () => {
     if (!formCategoryId || formCategoryId === '__none__') {
@@ -138,6 +163,11 @@ export default function PMAssignmentsPage() {
 
     if (!category || !pm) return
 
+    if (formStartDate && formEndDate && formStartDate > formEndDate) {
+      toast.error('End date cannot be before start date')
+      return
+    }
+
     const now = new Date().toISOString()
 
     if (editingId) {
@@ -156,6 +186,10 @@ export default function PMAssignmentsPage() {
                 pmId: pm.id,
                 pmName: pm.name,
                 pmEmail: pm.email,
+                canView: formCanView,
+                canEdit: formCanEdit,
+                startDate: formStartDate || null,
+                endDate: formEndDate || null,
                 updatedAt: now,
               }
             : a
@@ -175,6 +209,10 @@ export default function PMAssignmentsPage() {
         pmId: pm.id,
         pmName: pm.name,
         pmEmail: pm.email,
+        canView: formCanView,
+        canEdit: formCanEdit,
+        startDate: formStartDate || null,
+        endDate: formEndDate || null,
         createdAt: now,
         updatedAt: now,
       }
@@ -205,73 +243,76 @@ export default function PMAssignmentsPage() {
     setDialogOpen(open)
   }
 
+  const toolbar = (
+    <div className="flex flex-wrap items-center gap-3">
+      <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v ?? 'all')}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="Category" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Categories</SelectItem>
+          {uniqueCategories.map((c) => (
+            <SelectItem key={c} value={c}>
+              {c}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={oemFilter} onValueChange={(v) => setOemFilter(v ?? 'all')}>
+        <SelectTrigger className="w-36">
+          <SelectValue placeholder="OEM" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All OEMs</SelectItem>
+          {uniqueOems.map((o) => (
+            <SelectItem key={o} value={o}>
+              {o}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={pmFilter} onValueChange={(v) => setPmFilter(v ?? 'all')}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="PM" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All PMs</SelectItem>
+          {uniquePms.map((pm) => (
+            <SelectItem key={pm} value={pm}>
+              {pm}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">
-          PM Assignments
-        </h1>
+    <>
+    <ListPageShell
+      title="PM Assignments"
+      subtitle="Product Manager ownership for category / OEM / variant combinations."
+      breadcrumbs={[{ label: 'IMS' }, { label: 'PM Assignments' }]}
+      actions={
         <Button onClick={openAddDialog}>
           <Plus className="mr-1.5 size-4" />
           Add Assignment
         </Button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v ?? 'all')}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {uniqueCategories.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={oemFilter} onValueChange={(v) => setOemFilter(v ?? 'all')}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="OEM" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All OEMs</SelectItem>
-            {uniqueOems.map((o) => (
-              <SelectItem key={o} value={o}>
-                {o}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={pmFilter} onValueChange={(v) => setPmFilter(v ?? 'all')}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="PM" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All PMs</SelectItem>
-            {uniquePms.map((pm) => (
-              <SelectItem key={pm} value={pm}>
-                {pm}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      }
+      toolbar={toolbar}
+    >
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="px-4 py-3 text-left font-medium">Category</th>
               <th className="px-4 py-3 text-left font-medium">Subcategory</th>
               <th className="px-4 py-3 text-left font-medium">OEM</th>
-              <th className="px-4 py-3 text-left font-medium">Variant</th>
+              <th className="px-4 py-3 text-left font-medium">Condition</th>
               <th className="px-4 py-3 text-left font-medium">Assigned PM</th>
               <th className="px-4 py-3 text-left font-medium">PM Email</th>
               <th className="px-4 py-3 text-left font-medium">Last Updated</th>
@@ -298,7 +339,13 @@ export default function PMAssignmentsPage() {
                 </td>
                 <td className="px-4 py-3">
                   {a.variant ? (
-                    <span className="capitalize">{a.variant}</span>
+                    <span>
+                      {a.variant === 'new'
+                        ? 'New'
+                        : a.variant === 'refurbished'
+                        ? 'Refurbished'
+                        : 'New Pull'}
+                    </span>
                   ) : (
                     <span className="text-muted-foreground">All</span>
                   )}
@@ -344,10 +391,11 @@ export default function PMAssignmentsPage() {
           </tbody>
         </table>
       </div>
+    </ListPageShell>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editingId ? 'Edit Assignment' : 'Add Assignment'}
@@ -427,6 +475,7 @@ export default function PMAssignmentsPage() {
                   <SelectItem value="__all__">All Conditions</SelectItem>
                   <SelectItem value="new">New</SelectItem>
                   <SelectItem value="refurbished">Refurbished</SelectItem>
+                  <SelectItem value="new-pull">New Pull</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -447,6 +496,49 @@ export default function PMAssignmentsPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Permissions */}
+            <div className="space-y-2">
+              <Label>Permissions</Label>
+              <div className="flex items-center gap-6">
+                <label className="flex cursor-pointer items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={formCanView}
+                    onCheckedChange={(checked) => setFormCanView(checked === true)}
+                  />
+                  Can view
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={formCanEdit}
+                    onCheckedChange={(checked) => setFormCanEdit(checked === true)}
+                  />
+                  Can edit
+                </label>
+              </div>
+            </div>
+
+            {/* Start / End dates */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="pma-start-date">Start date</Label>
+                <Input
+                  id="pma-start-date"
+                  type="date"
+                  value={formStartDate}
+                  onChange={(e) => setFormStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="pma-end-date">End date</Label>
+                <Input
+                  id="pma-end-date"
+                  type="date"
+                  value={formEndDate}
+                  onChange={(e) => setFormEndDate(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => handleDialogClose(false)}>
@@ -458,6 +550,6 @@ export default function PMAssignmentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }

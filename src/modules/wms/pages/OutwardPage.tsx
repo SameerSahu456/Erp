@@ -5,6 +5,7 @@ import { Plus, Truck, ClipboardCheck, PackageCheck, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -239,19 +240,18 @@ export default function OutwardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">
-          Dispatch Management
-        </h1>
+    <ListPageShell
+      title="Dispatch Management"
+      subtitle="Outward records — sales, rentals, transfers, and demo dispatches."
+      breadcrumbs={[{ label: 'WMS' }, { label: 'Outward' }]}
+      actions={
         <Button render={<Link to="/wms/outward/new" />}>
           <Plus className="mr-2 size-4" />
-          Create Dispatch
+          Create Outward
         </Button>
-      </div>
-
-      <StatsRow stats={stats} />
-
+      }
+      stats={<StatsRow stats={stats} />}
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
@@ -260,7 +260,15 @@ export default function OutwardPage() {
           if (row.returnNumber) return
           navigate(`/wms/outward/${row.id}`)
         }}
+        emptyState={{
+          title: 'No outward records yet',
+          description: 'Create a dispatch to reserve devices and send them to customers.',
+          action: {
+            label: 'Create Outward',
+            onClick: () => navigate('/wms/outward/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }

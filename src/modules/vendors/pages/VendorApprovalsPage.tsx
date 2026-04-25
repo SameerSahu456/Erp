@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
+import { PageHeader } from '@/components/page'
 import {
   Select,
   SelectTrigger,
@@ -67,9 +68,14 @@ function VendorApprovalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Vendor Approvals</h2>
-      </div>
+      <PageHeader
+        title="Vendor Approvals"
+        subtitle="Review submitted vendor registrations and approve or reject with comments."
+        breadcrumbs={[
+          { label: 'Vendors', href: '/vendors' },
+          { label: 'Approvals' },
+        ]}
+      />
 
       {/* Filter */}
       <div className="flex items-center gap-3">

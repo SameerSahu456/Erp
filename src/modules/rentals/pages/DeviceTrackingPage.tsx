@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -172,50 +173,60 @@ export default function DeviceTrackingPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="cpt-page-title">
-        Device Tracking
-      </h1>
-
-      <StatsRow
-        stats={[
-          { label: 'Total On Rent', value: devices.length, icon: Monitor },
-          {
-            label: 'Overdue Returns',
-            value: overdueCount,
-            icon: AlertTriangle,
-            className: overdueCount > 0 ? 'border-destructive/40' : undefined,
-          },
-          { label: 'Avg Utilization', value: `${utilization}%`, icon: Activity },
-          { label: 'Revenue / Device', value: formatCurrency(revenuePerDevice), icon: IndianRupee },
-        ]}
+    <ListPageShell
+      title="Device Tracking"
+      subtitle="Devices currently on rent, overdue returns, and utilization."
+      breadcrumbs={[{ label: 'Rentals' }, { label: 'Device Tracking' }]}
+      actions={
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toast.info('Return reminder emails sent')}
+          >
+            Send Return Reminder
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toast.info('Extend dialog would open here')}
+          >
+            Extend
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toast.info('Devices marked as returned')}
+          >
+            Mark Returned
+          </Button>
+        </>
+      }
+      stats={
+        <StatsRow
+          stats={[
+            { label: 'Total On Rent', value: devices.length, icon: Monitor },
+            {
+              label: 'Overdue Returns',
+              value: overdueCount,
+              icon: AlertTriangle,
+              className: overdueCount > 0 ? 'border-destructive/40' : undefined,
+            },
+            { label: 'Avg Utilization', value: `${utilization}%`, icon: Activity },
+            { label: 'Revenue / Device', value: formatCurrency(revenuePerDevice), icon: IndianRupee },
+          ]}
+        />
+      }
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="rentals-tracking"
+        emptyState={{
+          title: 'No devices on rent right now',
+          description: 'Devices dispatched against rental contracts will appear here for tracking.',
+        }}
       />
-
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => toast.info('Return reminder emails sent')}
-        >
-          Send Return Reminder
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => toast.info('Extend dialog would open here')}
-        >
-          Extend
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => toast.info('Devices marked as returned')}
-        >
-          Mark Returned
-        </Button>
-      </div>
-
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-tracking" />
-    </div>
+    </ListPageShell>
   )
 }

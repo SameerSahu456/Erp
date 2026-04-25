@@ -278,7 +278,7 @@ function QuoteView(){
           <table className="tbl">
             <thead>
               <tr>
-                <th>SKU / Item</th>
+                <th>Part no / Item</th>
                 <th className="right">Qty</th>
                 <th className="right">Rate</th>
                 <th className="right">Tax</th>

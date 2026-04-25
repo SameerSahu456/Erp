@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import {
   Table,
   TableHeader,
@@ -53,10 +54,14 @@ function InventoryReconciliationPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Inventory Reconciliation</h2>
-        <Button disabled={varianceItems.length === 0}>Submit Adjustment</Button>
-      </div>
+      <PageHeader
+        title="Inventory Reconciliation"
+        subtitle="Compare physical counts against system records and submit adjustments."
+        breadcrumbs={[{ label: 'Reconciliation' }, { label: 'Inventory' }]}
+        actions={
+          <Button disabled={varianceItems.length === 0}>Submit Adjustment</Button>
+        }
+      />
 
       <StatsRow
         stats={[

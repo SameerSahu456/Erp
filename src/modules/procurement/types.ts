@@ -71,11 +71,28 @@ export interface PurchaseOrderItem {
   purchaseType?: PurchaseType  // Local / Import sourcing tag
 }
 
+export interface PurchaseOrderVersionSnapshot {
+  version: number
+  amendedAt: string
+  amendedBy: string
+  reason?: string
+  items: PurchaseOrderItem[]
+  subtotal: number
+  taxAmount: number
+  discount: number
+  grandTotal: number
+  status: POStatus
+  expectedDelivery: string
+}
+
 export interface PurchaseOrder {
   id: string
   poNumber: string  // PO-2026-001
   prId?: string
   prNumber?: string
+  // Back-link to originating Sales Order (e.g. demo-to-SO conversion creates a back-to-back PO)
+  salesOrderId?: string
+  salesOrderNumber?: string
   vendorId: string
   vendorName: string
   vendorContact: string
@@ -100,6 +117,9 @@ export interface PurchaseOrder {
   notes?: string
   createdBy: string
   createdAt: string
+  // Amendment tracking — id/poNumber stay stable across amendments; version bumps on each amend.
+  version: number
+  versionHistory?: PurchaseOrderVersionSnapshot[]
 }
 
 // ── Vendor ──

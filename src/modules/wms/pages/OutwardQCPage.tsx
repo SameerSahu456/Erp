@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -354,12 +355,11 @@ function OutwardQCPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="cpt-page-title">Outward QC</h1>
-        <p className="text-sm text-muted-foreground">
-          Pre-dispatch quality check. Devices grouped by outward record.
-        </p>
-      </div>
+      <PageHeader
+        title="Outward QC"
+        subtitle="Pre-dispatch quality check. Devices grouped by outward record."
+        breadcrumbs={[{ label: 'WMS' }, { label: 'Outward QC' }]}
+      />
 
       {/* QC Queue Table */}
       <BusinessMetricsTable
@@ -372,6 +372,10 @@ function OutwardQCPage() {
           } else if (row.deviceId && row.outwardId) {
             handleSelectDevice(row.outwardId as string, row.deviceId as string)
           }
+        }}
+        emptyState={{
+          title: 'No devices awaiting outward QC',
+          description: 'Outward records appear here once devices are reserved for dispatch.',
         }}
       />
 

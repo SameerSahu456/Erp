@@ -1,21 +1,28 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { toast } from 'sonner'
 import {
-  ArrowLeft,
   Save,
   Plus,
   Trash2,
-  ArrowLeftRight,
   Ticket,
   X as XIcon,
   ClipboardList,
-  AlertTriangle,
   ChevronDown,
   ChevronRight,
   Package2,
   Layers,
+  Check,
+  UploadCloud,
+  FileText,
+  Monitor,
+  Receipt,
+  Clock,
+  ArrowLeftRight,
+  RotateCcw,
+  MapPin,
+  type LucideIcon,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -23,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { PageHeader } from '@/components/page'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -31,11 +39,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { cn } from '@/lib/utils'
 
-import { PartPickerDialog } from '@/modules/crm/components/PartPickerDialog'
-import type { PartPickerResult } from '@/modules/crm/components/PartPickerDialog'
 import { salesOrders } from '@/modules/crm/data/sales-orders'
-import { getVariantById } from '@/modules/ims/data/variants'
+import { demoRequests } from '@/modules/crm/data/demo-requests'
+import { mockParts } from '@/modules/ims/data/parts'
+import { mockVariants } from '@/modules/ims/data/variants'
 import {
   getDispatchById,
   upsertDispatch,
@@ -43,6 +60,8 @@ import {
   nextOutwardNumber,
 } from '../data/dispatches'
 import { mockBOMs } from '../data/boms'
+import { mockReplacementRequests } from '../data/replacement-requests'
+import { AssignRackDialog, type RackAssignment } from '../components/AssignRackDialog'
 import type {
   Dispatch,
   DispatchAction,
@@ -52,7 +71,7 @@ import type {
   DispatchVarianceReason,
   DispatchDocumentType,
   VariantCondition,
-  BOMItem,
+  BillOfMaterials,
 } from '../types'
 import { DISPATCH_REQUEST_STATUSES } from '../types'
 
@@ -87,71 +106,38 @@ type EditorDocument = {
   documentNumber: string
   issuedDate: string
   notes: string
+  fileName?: string
+  fileSize?: number
 }
 
 // BOM component state for an assembled-server line. Stored per parent line
-// so that we can emit additional DispatchLineItems at save time for any
-// REPLACED / REMOVED / ADDED components.
-type BomComponentAction = 'FITTED_AS_PLANNED' | 'REPLACED' | 'REMOVED'
-
+// so that we can emit additional DispatchLineItems at save time. Each row is
+// either an original component (kept or removed) or a freshly added one.
 type BomComponentState = {
   bomItemId: string
   partName: string
   partSku: string
-  plannedPartId: string
-  plannedVariantSku: string
-  plannedQty: number
-  fittedQty: number
-  action: BomComponentAction
-  replacedDisplayName?: string
-  replacedVariantId?: string
-  replacedPartId?: string
-  replacedPartName?: string
-  replacedVariantSku?: string
-  replacedCondition?: VariantCondition
-  replacedRate?: number
-  serialNumbersText: string
-  reason?: DispatchVarianceReason
-  notes: string
+  partId: string
+  variantId: string
+  variantSku: string
+  condition: VariantCondition
+  qty: number
+  rate: number
+  // Optional rack location for picking the component during assembly,
+  // e.g. "Mumbai · Row1 · A · Bin2".
+  rackLocation?: string
 }
 
-function bomItemToComponent(item: BOMItem): BomComponentState {
-  return {
-    bomItemId: item.id,
-    partName: item.partName,
-    partSku: item.partSku,
-    plannedPartId: item.partId,
-    plannedVariantSku: item.variantSku,
-    plannedQty: item.quantity,
-    fittedQty: item.quantity,
-    action: 'FITTED_AS_PLANNED',
-    serialNumbersText: '',
-    notes: '',
-  }
-}
-
-const ACTION_OPTIONS: DispatchAction[] = ['PLANNED', 'FITTED_AS_PLANNED', 'ADDED', 'REMOVED', 'REPLACED']
-const REASON_OPTIONS: DispatchVarianceReason[] = [
-  'Faulty Part',
-  'Damaged on Receipt',
-  'Cheaper Alternative',
-  'Better Spec Available',
-  'Customer Requested Change',
-  'Out of Stock',
-  'Other',
-]
 const DOC_TYPE_OPTIONS: DispatchDocumentType[] = [
   'Invoice',
   'E-way Bill',
   'Delivery Challan',
-  'Warranty Card',
-  'Service Agreement',
-  'Other',
 ]
 
-// Lines needing a variance reason
-function needsReason(action: DispatchAction): boolean {
-  return action === 'ADDED' || action === 'REMOVED' || action === 'REPLACED'
+const DOC_TYPE_HINTS: Partial<Record<DispatchDocumentType, string>> = {
+  'Invoice': 'Tally invoice / customer billing',
+  'E-way Bill': 'State e-way bill for transport',
+  'Delivery Challan': 'Goods movement challan',
 }
 
 // ── Layout helpers (mirror OutwardFormPage styling) ─────────────────────────
@@ -214,6 +200,75 @@ function parseSerials(text: string): string[] {
     .filter(Boolean)
 }
 
+// ── Source-type tile config ─────────────────────────────────────────────────
+type DispatchSourceType =
+  | 'SALES'
+  | 'RENTAL'
+  | 'DEMO'
+  | 'INTERNAL_TRANSFER'
+  | 'RETURN_REPLACEMENT'
+
+const DISPATCH_SOURCE_OPTIONS: {
+  value: DispatchSourceType
+  label: string
+  description: string
+  icon: LucideIcon
+}[] = [
+  {
+    value: 'SALES',
+    label: 'Sales',
+    description: 'Ship against a Sales Order',
+    icon: Receipt,
+  },
+  {
+    value: 'RENTAL',
+    label: 'Rental',
+    description: 'Ship against a rental order',
+    icon: Clock,
+  },
+  {
+    value: 'DEMO',
+    label: 'Demo',
+    description: 'Send device for demonstration',
+    icon: Monitor,
+  },
+  {
+    value: 'INTERNAL_TRANSFER',
+    label: 'Internal Transfer',
+    description: 'Issue to an employee',
+    icon: ArrowLeftRight,
+  },
+  {
+    value: 'RETURN_REPLACEMENT',
+    label: 'Replacement',
+    description: 'Replace a dispatched device',
+    icon: RotateCcw,
+  },
+]
+
+function buildPlannedLinesFromDemo(demoRequestId: string): EditorLine[] {
+  const dr = demoRequests.find((d) => d.id === demoRequestId)
+  if (!dr) return []
+  return dr.items.map((li) => ({
+    id: genId('EL'),
+    variantId: li.variantId,
+    condition: li.condition,
+    variantSku: li.variantSku,
+    partId: li.partId,
+    partName: li.partName,
+    partSku: li.partSku,
+    category: li.category,
+    brand: li.brand,
+    action: 'PLANNED' as DispatchAction,
+    plannedQty: li.qty,
+    fittedQty: li.qty,
+    serialNumbersText: (li.serialNumbers ?? []).join(', '),
+    replacedSerialNumbersText: '',
+    notes: '',
+    rate: 0,
+  }))
+}
+
 function buildPlannedLinesFromSO(salesOrderId: string): EditorLine[] {
   const so = salesOrders.find((o) => o.id === salesOrderId)
   if (!so) return []
@@ -236,6 +291,58 @@ function buildPlannedLinesFromSO(salesOrderId: string): EditorLine[] {
     notes: '',
     rate: li.rate,
   }))
+}
+
+// Find the assembly BOM tied to a planned line. Prefer the SO line's explicit
+// bomId; otherwise fall back to the first ASSEMBLY BOM whose parent matches.
+function findBOMForPlannedLine(
+  line: EditorLine,
+  so: ReturnType<typeof salesOrders.find>,
+): BillOfMaterials | undefined {
+  const soLine = so?.lineItems.find((li) => li.id === line.soLineItemId)
+  if (soLine?.bomId) {
+    const byId = mockBOMs.find((b) => b.id === soLine.bomId || b.bomNumber === soLine.bomId)
+    if (byId) return byId
+  }
+  return mockBOMs.find((b) => b.parentPartId === line.partId && b.type === 'ASSEMBLY')
+}
+
+// Convert a BOM definition into the editable per-line component state used by
+// the dispatch form. Used to auto-populate components when a server line with
+// an assembled BOM is added.
+function bomItemsToComponentState(bom: BillOfMaterials): BomComponentState[] {
+  return bom.items.map((item) => {
+    const variant = mockVariants.find((v) => v.id === item.variantId)
+    return {
+      bomItemId: item.id,
+      partName: item.partName,
+      partSku: item.partSku,
+      partId: item.partId,
+      variantId: item.variantId,
+      variantSku: item.variantSku,
+      condition: item.condition,
+      qty: item.quantity,
+      rate: variant?.sellPrice ?? 0,
+    }
+  })
+}
+
+// Walk a freshly-built set of planned lines and pre-populate the per-line BOM
+// component state for any line whose part has an assembled BOM. The breakdown
+// stays collapsed by default — the user opens it via the "View BOM" toggle —
+// but the components are ready to render the moment they do.
+function buildBomStateForLines(
+  lines: EditorLine[],
+  so: ReturnType<typeof salesOrders.find>,
+): { expanded: Record<string, boolean>; state: Record<string, BomComponentState[]> } {
+  const expanded: Record<string, boolean> = {}
+  const state: Record<string, BomComponentState[]> = {}
+  lines.forEach((line) => {
+    const bom = findBOMForPlannedLine(line, so)
+    if (!bom) return
+    state[line.id] = bomItemsToComponentState(bom)
+  })
+  return { expanded, state }
 }
 
 function dispatchLineToEditor(li: DispatchLineItem): EditorLine {
@@ -298,6 +405,7 @@ function dispatchDocToEditor(d: DispatchDocument): EditorDocument {
     documentNumber: d.documentNumber,
     issuedDate: d.issuedDate ?? '',
     notes: d.notes ?? '',
+    fileName: d.fileName,
   }
 }
 
@@ -307,10 +415,154 @@ function editorToDispatchDoc(d: EditorDocument, uploadedBy: string): DispatchDoc
     type: d.type,
     documentNumber: d.documentNumber,
     issuedDate: d.issuedDate || undefined,
+    fileName: d.fileName,
     uploadedBy,
     uploadedAt: new Date().toISOString(),
     notes: d.notes || undefined,
   }
+}
+
+function inferDocType(fileName: string): DispatchDocumentType {
+  const n = fileName.toLowerCase()
+  if (n.includes('eway') || n.includes('e-way')) return 'E-way Bill'
+  if (n.includes('challan') || n.includes('dc')) return 'Delivery Challan'
+  if (n.includes('warranty')) return 'Warranty Card'
+  if (n.includes('agreement') || n.includes('sla')) return 'Service Agreement'
+  if (n.includes('invoice') || n.includes('inv')) return 'Invoice'
+  return 'Invoice'
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function DocTypeSlot({
+  type,
+  hint,
+  docs,
+  onAddFiles,
+  onUpdate,
+  onRemove,
+}: {
+  type: DispatchDocumentType
+  hint: string
+  docs: EditorDocument[]
+  onAddFiles: (files: FileList | File[], type: DispatchDocumentType) => void
+  onUpdate: (id: string, patch: Partial<EditorDocument>) => void
+  onRemove: (id: string) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dragging, setDragging] = useState(false)
+
+  return (
+    <div className="grid gap-3 px-4 py-3 md:grid-cols-[200px_1fr]">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{type}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+      </div>
+      <div className="space-y-2">
+        {docs.length === 0 ? (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => inputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                inputRef.current?.click()
+              }
+            }}
+            onDragOver={(e) => {
+              e.preventDefault()
+              if (!dragging) setDragging(true)
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDragging(false)
+              if (e.dataTransfer.files?.length) onAddFiles(e.dataTransfer.files, type)
+            }}
+            className={cn(
+              'flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border-2 border-dashed px-3 py-3 text-xs transition-colors',
+              dragging
+                ? 'border-primary bg-primary/5'
+                : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30',
+            )}
+          >
+            <UploadCloud className="size-4 text-muted-foreground" />
+            <span className="font-medium text-foreground">Click to upload</span>
+            <span className="text-muted-foreground">or drag &amp; drop</span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {docs.map((doc) => (
+              <div key={doc.id} className="space-y-2 rounded-md border bg-muted/20 p-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span className="truncate font-medium">{doc.fileName ?? 'No file attached'}</span>
+                  {doc.fileSize !== undefined && (
+                    <span className="text-muted-foreground">· {formatFileSize(doc.fileSize)}</span>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="ml-auto text-muted-foreground hover:text-destructive"
+                    onClick={() => onRemove(doc.id)}
+                    aria-label="Remove document"
+                  >
+                    <XIcon className="size-3" />
+                  </Button>
+                </div>
+                <div className="grid gap-2 md:grid-cols-[1fr_140px_1fr]">
+                  <Input
+                    placeholder="Document number"
+                    className="h-8 font-mono text-xs"
+                    value={doc.documentNumber}
+                    onChange={(e) => onUpdate(doc.id, { documentNumber: e.target.value })}
+                  />
+                  <Input
+                    type="date"
+                    className="h-8 text-xs"
+                    value={doc.issuedDate}
+                    onChange={(e) => onUpdate(doc.id, { issuedDate: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Notes"
+                    className="h-8 text-xs"
+                    value={doc.notes}
+                    onChange={(e) => onUpdate(doc.id, { notes: e.target.value })}
+                  />
+                </div>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => inputRef.current?.click()}
+            >
+              <Plus className="mr-1 size-3" />
+              Add another
+            </Button>
+          </div>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept=".pdf,image/*"
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files?.length) onAddFiles(e.target.files, type)
+            if (inputRef.current) inputRef.current.value = ''
+          }}
+        />
+      </div>
+    </div>
+  )
 }
 
 function DispatchFormPage() {
@@ -321,6 +573,17 @@ function DispatchFormPage() {
   const initialSO = search.get('so') ?? ''
   const existing = editId ? getDispatchById(editId) : undefined
   const isEditMode = !!existing
+
+  // ── Source type ──
+  // Dispatches can ship against a Sales Order (default) or a Demo Request.
+  // Stored only on the form for now — saved Dispatch records don't yet carry
+  // a sourceType field, so re-opening a Demo dispatch currently lands on SALES.
+  const [sourceType, setSourceType] = useState<DispatchSourceType>('SALES')
+  const [demoRequestId, setDemoRequestId] = useState<string>('')
+  const [rentalSalesOrderId, setRentalSalesOrderId] = useState<string>('')
+  const [employeeName, setEmployeeName] = useState<string>('')
+  const [employeeEmail, setEmployeeEmail] = useState<string>('')
+  const [replacementRequestId, setReplacementRequestId] = useState<string>('')
 
   // ── Header fields ──
   const [salesOrderId, setSalesOrderId] = useState<string>(existing?.salesOrderId ?? initialSO)
@@ -343,16 +606,38 @@ function DispatchFormPage() {
   })
 
   // ── BOM breakdown state (per parent line id) ──
-  // Populated on demand for lines whose parent part has a linked BOM. Each
-  // entry is a list of editable component rows — any REPLACED / REMOVED
-  // component emits an extra DispatchLineItem at save time.
-  const [bomExpanded, setBomExpanded] = useState<Record<string, boolean>>({})
-  const [bomState, setBomState] = useState<Record<string, BomComponentState[]>>({})
+  // When an SO is selected, components are pre-filled for any line whose part
+  // has an ASSEMBLY BOM, but the breakdown stays collapsed — the user opens it
+  // via "View BOM". Once open, they can remove components (which prompts for a
+  // return rack) and add new ones. Adds emit ADDED dispatch lines and removals
+  // emit REMOVED dispatch lines at save time.
+  const initialBomState = useMemo(() => {
+    if (existing || !initialSO) return { expanded: {}, state: {} }
+    const so = salesOrders.find((o) => o.id === initialSO)
+    return buildBomStateForLines(lines, so)
+    // Only run for the initial mount — subsequent changes go through handleSOChange.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const [bomExpanded, setBomExpanded] = useState<Record<string, boolean>>(initialBomState.expanded)
+  const [bomState, setBomState] = useState<Record<string, BomComponentState[]>>(initialBomState.state)
 
-  // Picker state for BOM component replacement
-  const [bomReplaceTarget, setBomReplaceTarget] = useState<
-    { lineId: string; bomItemId: string } | null
-  >(null)
+  // Components the user has removed from a BOM. Kept around so we can emit
+  // REMOVED dispatch lines at save time with the return-rack location captured
+  // when the user clicked the X on the component row.
+  const [removedBomComponents, setRemovedBomComponents] = useState<
+    Record<string, BomComponentState[]>
+  >({})
+
+  // ── Rack picker (per BOM component) ──
+  // Opened by clicking the X on a BOM component row. After the user picks a
+  // rack, the component is removed from the active list and recorded with the
+  // chosen return location.
+  const [rackTarget, setRackTarget] = useState<{
+    lineId: string
+    bomItemId: string
+    title: string
+    subtitle: string
+  } | null>(null)
 
   // ── Documents ──
   const [documents, setDocuments] = useState<EditorDocument[]>(() =>
@@ -377,17 +662,54 @@ function DispatchFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId])
 
-  // ── Picker state ──
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const [pickerMode, setPickerMode] = useState<'add' | 'replace'>('add')
-  const [pickerTargetLineId, setPickerTargetLineId] = useState<string | null>(null)
-
   const selectedSO = useMemo(() => salesOrders.find((o) => o.id === salesOrderId), [salesOrderId])
+  const selectedDemo = useMemo(
+    () => demoRequests.find((d) => d.id === demoRequestId),
+    [demoRequestId],
+  )
 
   function handleSOChange(value: string | null) {
     const next = value ?? ''
     setSalesOrderId(next)
-    setLines(next ? buildPlannedLinesFromSO(next) : [])
+    setRemovedBomComponents({})
+    if (!next) {
+      setLines([])
+      setBomExpanded({})
+      setBomState({})
+      return
+    }
+    const so = salesOrders.find((o) => o.id === next)
+    const newLines = buildPlannedLinesFromSO(next)
+    setLines(newLines)
+    const { expanded, state } = buildBomStateForLines(newLines, so)
+    setBomExpanded(expanded)
+    setBomState(state)
+  }
+
+  function handleDemoChange(value: string | null) {
+    const next = value ?? ''
+    setDemoRequestId(next)
+    setLines(next ? buildPlannedLinesFromDemo(next) : [])
+    // Pull customer's shipping address from the demo unless the user already typed one.
+    const dr = next ? demoRequests.find((d) => d.id === next) : undefined
+    if (dr && !shippingAddress) setShippingAddress(dr.shippingAddress)
+  }
+
+  function handleSourceTypeChange(next: DispatchSourceType) {
+    if (next === sourceType) return
+    setSourceType(next)
+    // Clear the other source's selection + reset the lines table so the
+    // user starts the new flow from a clean slate.
+    setSalesOrderId('')
+    setDemoRequestId('')
+    setRentalSalesOrderId('')
+    setEmployeeName('')
+    setEmployeeEmail('')
+    setReplacementRequestId('')
+    setLines([])
+    setBomExpanded({})
+    setBomState({})
+    setRemovedBomComponents({})
   }
 
   function updateLine(id: string, patch: Partial<EditorLine>) {
@@ -404,17 +726,14 @@ function DispatchFormPage() {
       const { [id]: _removed, ...rest } = prev
       return rest
     })
+    setRemovedBomComponents((prev) => {
+      const { [id]: _removed, ...rest } = prev
+      return rest
+    })
   }
 
   function findBOMForLine(line: EditorLine) {
-    // Match by parent part id (our mock BOMs use parentPartId). Fall back to the
-    // SO line's linked bomId when available.
-    const soLine = selectedSO?.lineItems.find((li) => li.id === line.soLineItemId)
-    if (soLine?.bomId) {
-      const byId = mockBOMs.find((b) => b.id === soLine.bomId || b.bomNumber === soLine.bomId)
-      if (byId) return byId
-    }
-    return mockBOMs.find((b) => b.parentPartId === line.partId && b.type === 'ASSEMBLY')
+    return findBOMForPlannedLine(line, selectedSO)
   }
 
   function toggleBomExpansion(line: EditorLine) {
@@ -423,7 +742,9 @@ function DispatchFormPage() {
     setBomExpanded((prev) => ({ ...prev, [line.id]: !prev[line.id] }))
     setBomState((prev) => {
       if (prev[line.id]) return prev
-      return { ...prev, [line.id]: bom.items.map(bomItemToComponent) }
+      // First time the BOM is opened — pre-populate from the BOM definition so
+      // the user sees what the assembly contains and can edit from there.
+      return { ...prev, [line.id]: bomItemsToComponentState(bom) }
     })
   }
 
@@ -440,97 +761,56 @@ function DispatchFormPage() {
     }))
   }
 
-  function openBomReplacePicker(lineId: string, bomItemId: string) {
-    setBomReplaceTarget({ lineId, bomItemId })
-    setPickerMode('replace')
-    setPickerTargetLineId(null) // disambiguate from regular line replace
-    setPickerOpen(true)
+  function removeBomComponent(lineId: string, bomItemId: string) {
+    setBomState((prev) => ({
+      ...prev,
+      [lineId]: (prev[lineId] ?? []).filter((c) => c.bomItemId !== bomItemId),
+    }))
   }
 
-  function openAddPicker() {
-    setPickerMode('add')
-    setPickerTargetLineId(null)
-    setPickerOpen(true)
-  }
-
-  function openReplacePicker(lineId: string) {
-    setPickerMode('replace')
-    setPickerTargetLineId(lineId)
-    setPickerOpen(true)
-  }
-
-  function handlePickerSelect(result: PartPickerResult) {
-    // BOM component replacement takes precedence — bomReplaceTarget is only
-    // set when the user clicked "Replace" on a component row.
-    if (bomReplaceTarget) {
-      const { lineId, bomItemId } = bomReplaceTarget
-      const existingComponents = bomState[lineId] ?? []
-      const target = existingComponents.find((c) => c.bomItemId === bomItemId)
-      if (target) {
-        updateBomComponent(lineId, bomItemId, {
-          action: 'REPLACED',
-          replacedDisplayName: `${target.partName} (${target.plannedVariantSku})`,
-          replacedVariantId: result.variantId,
-          replacedPartId: result.partId,
-          replacedPartName: result.partName,
-          replacedVariantSku: result.variantSku,
-          replacedCondition: result.condition,
-          replacedRate: result.sellPrice,
-        })
-      }
-      setBomReplaceTarget(null)
-      setPickerOpen(false)
-      return
-    }
-    if (pickerMode === 'add') {
-      setLines((prev) => [
+  function addBomComponent(lineId: string, variantId: string) {
+    const variant = mockVariants.find((v) => v.id === variantId)
+    if (!variant) return
+    const part = mockParts.find((p) => p.id === variant.partId)
+    if (!part) return
+    setBomState((prev) => {
+      const existing = prev[lineId] ?? []
+      if (existing.some((c) => c.variantId === variantId)) return prev
+      return {
         ...prev,
-        {
-          id: genId('EL'),
-          variantId: result.variantId,
-          condition: result.condition,
-          variantSku: result.variantSku,
-          partId: result.partId,
-          partName: result.partName,
-          partSku: result.partSku,
-          category: result.category,
-          brand: result.brand,
-          action: 'ADDED',
-          plannedQty: 0,
-          fittedQty: 1,
-          serialNumbersText: '',
-          replacedSerialNumbersText: '',
-          notes: '',
-          rate: result.sellPrice,
-        },
-      ])
-    } else if (pickerMode === 'replace' && pickerTargetLineId) {
-      // Replace: swap the picked variant in as the fitted variant; the original stays as "replaced"
-      const target = lines.find((l) => l.id === pickerTargetLineId)
-      if (!target) return
-      const originalVariant = getVariantById(target.variantId)
-      updateLine(pickerTargetLineId, {
-        variantId: result.variantId,
-        condition: result.condition,
-        variantSku: result.variantSku,
-        partId: result.partId,
-        partName: result.partName,
-        partSku: result.partSku,
-        category: result.category,
-        brand: result.brand,
-        action: 'REPLACED',
-        rate: result.sellPrice,
-        replacedVariantId: target.variantId,
-        replacedDisplayName: originalVariant?.displayName ?? `${target.partName} · ${target.condition}`,
-      })
-    }
-    setPickerOpen(false)
+        [lineId]: [
+          ...existing,
+          {
+            bomItemId: genId('BC'),
+            partName: part.name,
+            partSku: part.sku,
+            partId: part.id,
+            variantId: variant.id,
+            variantSku: variant.variantSku,
+            condition: variant.condition,
+            qty: 1,
+            rate: variant.sellPrice,
+          },
+        ],
+      }
+    })
   }
 
-  function addDocument() {
+  function addDocumentsFromFiles(fileList: FileList | File[], type?: DispatchDocumentType) {
+    const files = Array.from(fileList)
+    if (files.length === 0) return
+    const today = new Date().toISOString().split('T')[0]
     setDocuments((prev) => [
       ...prev,
-      { id: genId('DOC'), type: 'Invoice', documentNumber: '', issuedDate: '', notes: '' },
+      ...files.map((f) => ({
+        id: genId('DOC'),
+        type: type ?? inferDocType(f.name),
+        documentNumber: '',
+        issuedDate: today,
+        notes: '',
+        fileName: f.name,
+        fileSize: f.size,
+      })),
     ])
   }
 
@@ -543,8 +823,12 @@ function DispatchFormPage() {
   }
 
   function handleSave() {
-    if (!salesOrderId) {
+    if (sourceType === 'SALES' && !salesOrderId) {
       toast.error('Select a Sales Order first')
+      return
+    }
+    if (sourceType === 'DEMO' && !demoRequestId) {
+      toast.error('Select a Demo Request first')
       return
     }
     if (!storeManager) {
@@ -555,16 +839,15 @@ function DispatchFormPage() {
       toast.error('Add at least one line item')
       return
     }
-    const varianceLines = lines.filter((l) => needsReason(l.action))
-    const missingReason = varianceLines.filter((l) => !l.reason)
-    if (missingReason.length > 0) {
-      toast.error(`${missingReason.length} variance line${missingReason.length === 1 ? '' : 's'} missing a reason`)
+
+    const so = sourceType === 'SALES' ? selectedSO : undefined
+    if (sourceType === 'SALES' && !so) {
+      toast.error('Sales Order not found')
       return
     }
-
-    const so = selectedSO
-    if (!so) {
-      toast.error('Sales Order not found')
+    const dr = sourceType === 'DEMO' ? selectedDemo : undefined
+    if (sourceType === 'DEMO' && !dr) {
+      toast.error('Demo Request not found')
       return
     }
 
@@ -581,16 +864,29 @@ function DispatchFormPage() {
           return { id: n.id, number: n.outwardNumber }
         })()
 
+    // Source-derived header fields. Demo dispatches reuse salesOrderNumber as
+    // the visible source label until the Dispatch model gains a sourceType field.
+    const sourceHeader = so
+      ? {
+          salesOrderId: so.id,
+          salesOrderNumber: so.orderNumber,
+          accountId: so.accountId,
+          accountName: so.accountName,
+        }
+      : {
+          salesOrderId: '',
+          salesOrderNumber: dr!.demoNumber,
+          accountId: dr!.accountId,
+          accountName: dr!.accountName,
+        }
+
     const next: Dispatch = {
       id,
       dispatchNumber,
-      salesOrderId,
-      salesOrderNumber: so.orderNumber,
+      ...sourceHeader,
       outwardId: outward.id,
       outwardNumber: outward.number,
-      accountId: so.accountId,
-      accountName: so.accountName,
-      shippingAddress: shippingAddress || undefined,
+      shippingAddress: shippingAddress || dr?.shippingAddress || undefined,
       status,
       externalTicketNumber: externalTicketNumber || undefined,
       externalSystem: externalSystem || undefined,
@@ -608,48 +904,63 @@ function DispatchFormPage() {
       invoiceAmount: invoiceAmount ? Number(invoiceAmount) : undefined,
       lineItems: [
         ...lines.map(editorToDispatchLine),
-        // Emit REPLACED / REMOVED components from any expanded BOMs as
-        // additional variance line items tied back to the parent line.
+        // Emit BOM components as ADDED dispatch lines tied back to the parent.
         ...lines.flatMap((line) => {
           const components = bomState[line.id]
           if (!components) return []
-          return components
-            .filter((c) => c.action !== 'FITTED_AS_PLANNED')
-            .map<DispatchLineItem>((c) => {
-              const isReplaced = c.action === 'REPLACED'
-              return {
-                id: `${line.id}-${c.bomItemId}`,
-                soLineItemId: line.soLineItemId,
-                variantId: isReplaced && c.replacedVariantId ? c.replacedVariantId : line.variantId,
-                condition: (isReplaced && c.replacedCondition) || line.condition,
-                variantSku: isReplaced && c.replacedVariantSku ? c.replacedVariantSku : c.plannedVariantSku,
-                partId: isReplaced && c.replacedPartId ? c.replacedPartId : c.plannedPartId,
-                partName: isReplaced && c.replacedPartName ? c.replacedPartName : c.partName,
-                partSku: c.partSku,
-                category: line.category,
-                brand: line.brand,
-                action: c.action,
-                plannedQty: c.plannedQty,
-                fittedQty: c.action === 'REMOVED' ? 0 : c.fittedQty,
-                serialNumbers: parseSerials(c.serialNumbersText),
-                replacedDisplayName: c.replacedDisplayName,
-                reason: c.reason,
-                notes: c.notes || undefined,
-                rate: c.replacedRate ?? 0,
-                amount: (c.action === 'REMOVED' ? 0 : c.fittedQty) * (c.replacedRate ?? 0),
-              }
-            })
+          return components.map<DispatchLineItem>((c) => ({
+            id: `${line.id}-${c.bomItemId}`,
+            soLineItemId: line.soLineItemId,
+            variantId: c.variantId,
+            condition: c.condition,
+            variantSku: c.variantSku,
+            partId: c.partId,
+            partName: c.partName,
+            partSku: c.partSku,
+            category: line.category,
+            brand: line.brand,
+            action: 'ADDED' as DispatchAction,
+            plannedQty: 0,
+            fittedQty: c.qty,
+            rate: c.rate,
+            amount: c.qty * c.rate,
+            notes: c.rackLocation ? `Pick from ${c.rackLocation}` : undefined,
+          }))
+        }),
+        // Emit components the user removed from the BOM as REMOVED dispatch
+        // lines. The rack picked at remove-time is recorded in notes so the
+        // warehouse team knows where the leftover part should be returned.
+        ...lines.flatMap((line) => {
+          const removed = removedBomComponents[line.id]
+          if (!removed) return []
+          return removed.map<DispatchLineItem>((c) => ({
+            id: `${line.id}-${c.bomItemId}-removed`,
+            soLineItemId: line.soLineItemId,
+            variantId: c.variantId,
+            condition: c.condition,
+            variantSku: c.variantSku,
+            partId: c.partId,
+            partName: c.partName,
+            partSku: c.partSku,
+            category: line.category,
+            brand: line.brand,
+            action: 'REMOVED' as DispatchAction,
+            plannedQty: c.qty,
+            fittedQty: 0,
+            rate: 0,
+            amount: 0,
+            notes: c.rackLocation ? `Returned to ${c.rackLocation}` : undefined,
+          }))
         }),
       ],
       documents: documents.map((d) => editorToDispatchDoc(d, storeManager)),
     }
 
     upsertDispatch(next)
-    const variance = varianceLines.length
     toast.success(
       isEditMode
-        ? `Saved ${dispatchNumber} · ${lines.length} lines, ${variance} variance${variance === 1 ? '' : 's'}`
-        : `Created ${dispatchNumber} · ${lines.length} lines, ${variance} variance${variance === 1 ? '' : 's'}`,
+        ? `Saved ${dispatchNumber} · ${lines.length} lines`
+        : `Created ${dispatchNumber} · ${lines.length} lines`,
     )
     navigate(`/wms/dispatches/${id}`)
   }
@@ -657,72 +968,216 @@ function DispatchFormPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   const fittedTotal = lines.reduce((sum, l) => sum + l.fittedQty * l.rate, 0)
-  const varianceCount = lines.filter((l) => needsReason(l.action)).length
 
   const nextNumbers = !isEditMode ? nextDispatchNumber() : null
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-24">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={goBack}>
-            <ArrowLeft />
-          </Button>
-          <div>
-            <h1 className="cpt-page-title">
-              {isEditMode ? `Edit ${existing!.dispatchNumber}` : 'New Dispatch Request'}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Record what was actually fitted against the SO plan. Required fields are marked with an asterisk (<span className="text-destructive">*</span>).
-            </p>
-          </div>
-        </div>
-        {nextNumbers && (
-          <div className="hidden sm:flex flex-col items-end gap-1">
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Dispatch #
-            </span>
-            <span className="font-mono text-sm font-semibold">{nextNumbers.dispatchNumber}</span>
-          </div>
-        )}
-      </div>
+    <div className="space-y-6 pb-24">
+      <PageHeader
+        title={isEditMode ? `Edit ${existing!.dispatchNumber}` : 'Create Dispatch Request'}
+        subtitle="Record what was actually fitted against the SO plan. Required fields are marked with an asterisk (*)."
+        breadcrumbs={[
+          { label: 'WMS' },
+          { label: 'Dispatches', href: '/wms/dispatches' },
+          { label: isEditMode ? existing!.dispatchNumber : 'New' },
+        ]}
+        backHref="/wms/dispatches"
+        actions={
+          nextNumbers ? (
+            <div className="hidden sm:flex flex-col items-end gap-1">
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                Dispatch #
+              </span>
+              <span className="font-mono text-sm font-semibold">{nextNumbers.dispatchNumber}</span>
+            </div>
+          ) : null
+        }
+      />
 
-      {/* 1. Source — Sales Order */}
+      {/* 1. Dispatch Info */}
       <Card>
         <CardHeader>
           <SectionHeader
             step={1}
-            title="Sales Order"
-            description="Pick the SO this dispatch ships against. Lines will auto-populate from the SO plan."
+            title="Dispatch Info"
+            description="Pick what this dispatch ships against. Lines will auto-populate from the chosen source."
           />
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Source-type tile selector */}
           <div className="space-y-2">
-            <FieldLabel required>Sales Order</FieldLabel>
-            <Select value={salesOrderId || undefined} onValueChange={handleSOChange}>
-              <SelectTrigger className="h-11 w-full text-sm">
-                <SelectValue placeholder="Select a Sales Order…" />
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                {salesOrders.map((so) => (
-                  <SelectItem key={so.id} value={so.id}>
-                    <span className="flex w-full min-w-0 items-center gap-2">
-                      <span className="font-mono text-[12px] shrink-0">{so.orderNumber}</span>
-                      <span className="truncate text-muted-foreground">
-                        {so.accountName}
-                      </span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedSO && (
-              <div className="rounded-lg bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                Planned: {selectedSO.lineItems.length} lines ·{' '}
-                <Link to={`/crm/sales-orders/${selectedSO.id}`} className="wms-link">
-                  View SO &rarr;
-                </Link>
+            <FieldLabel required>Type</FieldLabel>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {DISPATCH_SOURCE_OPTIONS.map((opt) => {
+                const Icon = opt.icon
+                const selected = sourceType === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleSourceTypeChange(opt.value)}
+                    aria-pressed={selected}
+                    className={cn(
+                      'relative flex flex-col items-start gap-1 rounded-lg border p-2.5 text-left transition-colors',
+                      selected
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                        : 'border-border hover:border-primary/40 hover:bg-muted/40',
+                    )}
+                  >
+                    <div className="flex w-full items-center justify-between">
+                      <Icon className={cn('size-4', selected ? 'text-primary' : 'text-muted-foreground')} />
+                      {selected && <Check className="size-3.5 text-primary" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className={cn('text-[13px] font-semibold leading-tight', selected ? 'text-primary' : 'text-foreground')}>
+                        {opt.label}
+                      </p>
+                      <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                        {opt.description}
+                      </p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Conditional source picker — grouped in a contextual sub-section */}
+          <div className="rounded-lg border border-dashed bg-muted/20 p-3 space-y-3">
+            {sourceType === 'SALES' && (
+              <div className="space-y-2">
+                <FieldLabel required>Sales Order</FieldLabel>
+                <Select value={salesOrderId || undefined} onValueChange={handleSOChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a Sales Order…" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {salesOrders.map((so) => (
+                      <SelectItem key={so.id} value={so.id}>
+                        <span className="flex w-full min-w-0 items-center gap-2">
+                          <span className="font-mono text-[12px] shrink-0">{so.orderNumber}</span>
+                          <span className="truncate text-muted-foreground">
+                            {so.accountName}
+                          </span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedSO && (
+                  <p className="text-xs text-muted-foreground">
+                    Planned: {selectedSO.lineItems.length} line{selectedSO.lineItems.length === 1 ? '' : 's'} ·{' '}
+                    <Link to={`/crm/sales-orders/${selectedSO.id}`} className="wms-link">
+                      View SO &rarr;
+                    </Link>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {sourceType === 'RENTAL' && (
+              <div className="space-y-2">
+                <FieldLabel required>Sales Order (Rental)</FieldLabel>
+                <Select
+                  value={rentalSalesOrderId || undefined}
+                  onValueChange={(v) => setRentalSalesOrderId(v ?? '')}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a Sales Order…" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {salesOrders.map((so) => (
+                      <SelectItem key={so.id} value={so.id}>
+                        <span className="flex w-full min-w-0 items-center gap-2">
+                          <span className="font-mono text-[12px] shrink-0">{so.orderNumber}</span>
+                          <span className="truncate text-muted-foreground">
+                            {so.accountName}
+                          </span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {sourceType === 'DEMO' && (
+              <div className="space-y-2">
+                <FieldLabel required>Demo Request</FieldLabel>
+                <Select value={demoRequestId || undefined} onValueChange={handleDemoChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a Demo Request…" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {demoRequests.map((dr) => (
+                      <SelectItem key={dr.id} value={dr.id}>
+                        <span className="flex w-full min-w-0 items-center gap-2">
+                          <span className="font-mono text-[12px] shrink-0">{dr.demoNumber}</span>
+                          <span className="truncate text-muted-foreground">{dr.accountName}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedDemo && (
+                  <p className="text-xs text-muted-foreground">
+                    Planned: {selectedDemo.items.length} item
+                    {selectedDemo.items.length === 1 ? '' : 's'} ·{' '}
+                    {selectedDemo.items.reduce((n, i) => n + i.qty, 0)} unit
+                    {selectedDemo.items.reduce((n, i) => n + i.qty, 0) === 1 ? '' : 's'}
+                    {selectedDemo.expectedReturnDate
+                      ? ` · expected return ${selectedDemo.expectedReturnDate}`
+                      : ''}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {sourceType === 'INTERNAL_TRANSFER' && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <FieldLabel required>Employee Name</FieldLabel>
+                  <Input
+                    value={employeeName}
+                    onChange={(e) => setEmployeeName(e.target.value)}
+                    placeholder="e.g. Ravi Kumar"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel>Employee Email</FieldLabel>
+                  <Input
+                    type="email"
+                    value={employeeEmail}
+                    onChange={(e) => setEmployeeEmail(e.target.value)}
+                    placeholder="name@company.com"
+                  />
+                </div>
+              </div>
+            )}
+
+            {sourceType === 'RETURN_REPLACEMENT' && (
+              <div className="space-y-2">
+                <FieldLabel required>Replacement Request</FieldLabel>
+                <Select
+                  value={replacementRequestId || undefined}
+                  onValueChange={(v) => setReplacementRequestId(v ?? '')}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a Replacement Request…" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {mockReplacementRequests.map((rr) => (
+                      <SelectItem key={rr.id} value={rr.id}>
+                        <span className="flex w-full min-w-0 items-center gap-2">
+                          <span className="font-mono text-[12px] shrink-0">{rr.requestNumber}</span>
+                          <span className="truncate text-muted-foreground">
+                            {rr.customer} · {rr.originalPartName}
+                          </span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
@@ -810,36 +1265,17 @@ function DispatchFormPage() {
         </CardContent>
       </Card>
 
-      {/* Variance summary */}
-      {varianceCount > 0 && (
-        <div className="rounded-lg border border-[#f6c000]/40 bg-[#fff8dd] px-4 py-2 text-xs dark:bg-[#b88800]/10">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="size-4 text-[#b88800]" />
-            <span className="font-medium text-[#604400] dark:text-[#f6c000]">
-              {varianceCount} line{varianceCount === 1 ? '' : 's'} have variance vs. SO plan.
-              Each needs a reason before save.
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* 3. Line items editor */}
       <Card>
         <CardHeader>
           <SectionHeader
             step={3}
             title="Line Items"
-            description="Capture each fitted variant. Flag ADDED / REMOVED / REPLACED and give a reason when it differs from the SO plan."
+            description="Auto-populated from the source above. Adjust qty if needed; lines you don't ship can be removed."
             trailing={
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  {lines.length} line{lines.length === 1 ? '' : 's'}
-                </span>
-                <Button variant="outline" size="sm" onClick={openAddPicker}>
-                  <Plus className="mr-1 size-3.5" />
-                  Add line
-                </Button>
-              </div>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {lines.length} line{lines.length === 1 ? '' : 's'}
+              </span>
             }
           />
         </CardHeader>
@@ -847,9 +1283,9 @@ function DispatchFormPage() {
           {lines.length === 0 ? (
             <div className="py-10 text-center text-sm text-muted-foreground">
               <ClipboardList className="mx-auto mb-2 size-6" />
-              {salesOrderId
-                ? 'No lines yet. Click "Add line" to pick a variant.'
-                : 'Select a Sales Order above to auto-fill planned lines.'}
+              {sourceType === 'DEMO'
+                ? 'Select a Demo Request above to auto-fill lines.'
+                : 'Select a Sales Order above to auto-fill lines.'}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -857,12 +1293,7 @@ function DispatchFormPage() {
                 <thead>
                   <tr className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
                     <th className="px-3 py-2 text-left font-medium">Variant</th>
-                    <th className="px-3 py-2 text-left font-medium">Action</th>
-                    <th className="px-3 py-2 text-right font-medium">Planned</th>
-                    <th className="px-3 py-2 text-right font-medium">Fitted</th>
-                    <th className="px-3 py-2 text-left font-medium">Serials (fitted)</th>
-                    <th className="px-3 py-2 text-left font-medium">Reason / Notes</th>
-                    <th className="px-3 py-2 text-right font-medium">Rate</th>
+                    <th className="px-3 py-2 text-right font-medium">Qty</th>
                     <th className="w-10 px-1 py-2" />
                   </tr>
                 </thead>
@@ -871,20 +1302,16 @@ function DispatchFormPage() {
                     const bom = findBOMForLine(line)
                     const expanded = !!bomExpanded[line.id]
                     const components = bomState[line.id]
-                    const componentVariance = (components ?? []).filter(
-                      (c) => c.action !== 'FITTED_AS_PLANNED',
-                    ).length
                     return (
                       <LineEditorRow
                         key={line.id}
                         line={line}
                         bomName={bom?.name}
                         bomExpanded={expanded}
-                        bomComponentVariance={componentVariance}
+                        bomComponentCount={components?.length}
                         onToggleBom={bom ? () => toggleBomExpansion(line) : undefined}
                         onChange={(patch) => updateLine(line.id, patch)}
                         onRemove={() => removeLine(line.id)}
-                        onReplace={() => openReplacePicker(line.id)}
                       >
                         {expanded && bom && components && (
                           <BomBreakdown
@@ -895,24 +1322,21 @@ function DispatchFormPage() {
                             onUpdateComponent={(bomItemId, patch) =>
                               updateBomComponent(line.id, bomItemId, patch)
                             }
-                            onReplace={(bomItemId) => openBomReplacePicker(line.id, bomItemId)}
+                            onAddComponent={(variantId) => addBomComponent(line.id, variantId)}
+                            onAssignRack={(component) =>
+                              setRackTarget({
+                                lineId: line.id,
+                                bomItemId: component.bomItemId,
+                                title: component.partName,
+                                subtitle: component.variantSku,
+                              })
+                            }
                           />
                         )}
                       </LineEditorRow>
                     )
                   })}
                 </tbody>
-                <tfoot>
-                  <tr className="border-t bg-muted/20 font-medium">
-                    <td colSpan={6} className="px-3 py-2 text-right">
-                      Fitted value:
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      ₹{fittedTotal.toLocaleString('en-IN')}
-                    </td>
-                    <td />
-                  </tr>
-                </tfoot>
               </table>
             </div>
           )}
@@ -925,60 +1349,28 @@ function DispatchFormPage() {
           <SectionHeader
             step={4}
             title="Documents"
-            description="Attach Invoice, E-way Bill, Delivery Challan, etc. once billing is done."
+            description="Drop the right file into each slot once billing is done."
             trailing={
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  {documents.length} attached
-                </span>
-                <Button variant="outline" size="sm" onClick={addDocument}>
-                  <Plus className="mr-1 size-3.5" />
-                  Attach
-                </Button>
-              </div>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {documents.length} attached
+              </span>
             }
           />
         </CardHeader>
         <CardContent className="p-0 border-t">
-          {documents.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              No documents yet. Click “Attach” to add an Invoice, E-way Bill, Delivery Challan, etc.
-            </div>
-          ) : (
-            <div className="divide-y">
-              {documents.map((doc) => (
-                <div key={doc.id} className="grid items-center gap-2 px-4 py-2 md:grid-cols-[140px_1fr_140px_1fr_40px]">
-                  <Select value={doc.type} onValueChange={(v) => updateDocument(doc.id, { type: (v ?? 'Invoice') as DispatchDocumentType })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {DOC_TYPE_OPTIONS.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    placeholder="Document number"
-                    className="font-mono"
-                    value={doc.documentNumber}
-                    onChange={(e) => updateDocument(doc.id, { documentNumber: e.target.value })}
-                  />
-                  <Input
-                    type="date"
-                    value={doc.issuedDate}
-                    onChange={(e) => updateDocument(doc.id, { issuedDate: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Notes"
-                    value={doc.notes}
-                    onChange={(e) => updateDocument(doc.id, { notes: e.target.value })}
-                  />
-                  <Button variant="ghost" size="icon-sm" onClick={() => removeDocument(doc.id)} className="text-muted-foreground hover:text-destructive">
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="divide-y">
+            {DOC_TYPE_OPTIONS.map((t) => (
+              <DocTypeSlot
+                key={t}
+                type={t}
+                hint={DOC_TYPE_HINTS[t] ?? ''}
+                docs={documents.filter((d) => d.type === t)}
+                onAddFiles={addDocumentsFromFiles}
+                onUpdate={updateDocument}
+                onRemove={removeDocument}
+              />
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -1001,30 +1393,16 @@ function DispatchFormPage() {
         </CardContent>
       </Card>
 
-      <PartPickerDialog
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
-        onSelect={handlePickerSelect}
-        title={pickerMode === 'add' ? 'Add line item' : 'Pick replacement variant'}
-      />
-
       {/* Sticky footer */}
       <div className="sticky bottom-0 -mx-4 sm:-mx-6 border-t bg-background/95 px-4 sm:px-6 py-3 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-muted-foreground">
-            {varianceCount > 0 ? (
-              <span className="flex items-center gap-1.5 text-[#b88800]">
-                <AlertTriangle className="size-3.5" />
-                {varianceCount} variance line{varianceCount === 1 ? '' : 's'} need{varianceCount === 1 ? 's' : ''} a reason before save
+            <span>
+              Fitted value:{' '}
+              <span className="font-medium text-foreground tabular-nums">
+                ₹{fittedTotal.toLocaleString('en-IN')}
               </span>
-            ) : (
-              <span>
-                Fitted value:{' '}
-                <span className="font-medium text-foreground tabular-nums">
-                  ₹{fittedTotal.toLocaleString('en-IN')}
-                </span>
-              </span>
-            )}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={goBack}>Cancel</Button>
@@ -1035,6 +1413,35 @@ function DispatchFormPage() {
           </div>
         </div>
       </div>
+
+      <AssignRackDialog
+        open={!!rackTarget}
+        onOpenChange={(open) => {
+          if (!open) setRackTarget(null)
+        }}
+        subject={
+          rackTarget
+            ? { title: rackTarget.title, subtitle: rackTarget.subtitle, badge: 'Return to rack' }
+            : undefined
+        }
+        resetKey={rackTarget ? `${rackTarget.lineId}-${rackTarget.bomItemId}` : undefined}
+        onAssigned={(assignment: RackAssignment) => {
+          if (!rackTarget) return
+          const { lineId, bomItemId } = rackTarget
+          const location = `${assignment.warehouse} · ${assignment.row} · ${assignment.rack} · ${assignment.bin}`
+          // Record the removed component with its return location, then drop it
+          // from the active list so the BOM reflects what's actually shipping.
+          const removed = bomState[lineId]?.find((c) => c.bomItemId === bomItemId)
+          if (removed) {
+            setRemovedBomComponents((prev) => ({
+              ...prev,
+              [lineId]: [...(prev[lineId] ?? []), { ...removed, rackLocation: location }],
+            }))
+          }
+          removeBomComponent(lineId, bomItemId)
+          setRackTarget(null)
+        }}
+      />
     </div>
   )
 }
@@ -1043,37 +1450,26 @@ function LineEditorRow({
   line,
   onChange,
   onRemove,
-  onReplace,
   bomName,
   bomExpanded,
-  bomComponentVariance,
+  bomComponentCount,
   onToggleBom,
   children,
 }: {
   line: EditorLine
   onChange: (patch: Partial<EditorLine>) => void
   onRemove: () => void
-  onReplace: () => void
   bomName?: string
   bomExpanded?: boolean
-  bomComponentVariance?: number
+  bomComponentCount?: number
   onToggleBom?: () => void
   children?: React.ReactNode
 }) {
-  const showReason = needsReason(line.action)
-  const isRemoved = line.action === 'REMOVED'
-
   return (
     <>
-    <tr className={
-      isRemoved ? 'bg-[#fff5f8]/40 dark:bg-[#991930]/10' :
-      line.action === 'REPLACED' ? 'bg-[#fff8dd]/40 dark:bg-[#b88800]/10' :
-      line.action === 'ADDED' ? 'bg-[#eef5ff]/40 dark:bg-[#0d4b94]/10' : ''
-    }>
+    <tr>
       <td className="px-3 py-2">
-        <div className={`text-sm font-medium ${isRemoved ? 'line-through text-muted-foreground' : ''}`}>
-          {line.partName}
-        </div>
+        <div className="text-sm font-medium">{line.partName}</div>
         <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className="font-mono">{line.variantSku}</span>
           <Badge variant="outline" className="text-[10px]">{line.condition}</Badge>
@@ -1091,107 +1487,21 @@ function LineEditorRow({
             )}
             <Package2 className="size-3" />
             {bomExpanded ? 'Hide BOM' : 'View BOM'} · {bomName}
-            {bomComponentVariance ? (
-              <Badge variant="outline" className="ml-1 text-[10px] border-[#f6c000]/60 text-[#8a6a00]">
-                {bomComponentVariance} changed
+            {bomComponentCount ? (
+              <Badge variant="outline" className="ml-1 text-[10px]">
+                {bomComponentCount} component{bomComponentCount === 1 ? '' : 's'}
               </Badge>
             ) : null}
           </button>
         )}
-        {line.action === 'REPLACED' && line.replacedDisplayName && (
-          <div className="mt-1 flex items-center gap-1 text-xs text-[#b88800]">
-            <ArrowLeftRight className="size-3" />
-            Replaces: {line.replacedDisplayName}
-          </div>
-        )}
       </td>
-      <td className="px-3 py-2">
-        <div className="flex items-center gap-1">
-          <Select value={line.action} onValueChange={(v) => onChange({ action: (v ?? 'PLANNED') as DispatchAction })}>
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ACTION_OPTIONS.map((a) => (
-                <SelectItem key={a} value={a}>
-                  {a.replace(/_/g, ' ')}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {line.action === 'REPLACED' && (
-            <Button variant="ghost" size="icon-sm" onClick={onReplace} title="Pick different replacement">
-              <ArrowLeftRight className="size-3.5" />
-            </Button>
-          )}
-          {line.action !== 'REPLACED' && line.soLineItemId && (
-            <Button variant="ghost" size="icon-sm" onClick={onReplace} title="Replace with different variant">
-              <ArrowLeftRight className="size-3.5 text-muted-foreground" />
-            </Button>
-          )}
-        </div>
-      </td>
-      <td className="px-3 py-2 text-right tabular-nums">{line.plannedQty || '—'}</td>
       <td className="px-3 py-2">
         <Input
           type="number"
           min={0}
-          className="h-8 w-16 text-right text-xs"
+          className="h-8 w-16 ml-auto text-right text-xs"
           value={line.fittedQty}
           onChange={(e) => onChange({ fittedQty: Number(e.target.value) || 0 })}
-          disabled={isRemoved}
-        />
-      </td>
-      <td className="px-3 py-2">
-        <Input
-          placeholder="SN-001, SN-002 ..."
-          className="h-8 font-mono text-xs"
-          value={line.serialNumbersText}
-          onChange={(e) => onChange({ serialNumbersText: e.target.value })}
-          disabled={isRemoved}
-        />
-        {parseSerials(line.serialNumbersText).length > 0 && (
-          <div className="mt-1 text-[10px] text-muted-foreground">
-            {parseSerials(line.serialNumbersText).length} serial{parseSerials(line.serialNumbersText).length === 1 ? '' : 's'}
-          </div>
-        )}
-      </td>
-      <td className="px-3 py-2">
-        {showReason ? (
-          <div className="space-y-1">
-            <Select value={line.reason ?? ''} onValueChange={(v) => onChange({ reason: (v ?? undefined) as DispatchVarianceReason | undefined })}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Reason..." />
-              </SelectTrigger>
-              <SelectContent>
-                {REASON_OPTIONS.map((r) => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="Notes"
-              className="h-8 text-xs"
-              value={line.notes}
-              onChange={(e) => onChange({ notes: e.target.value })}
-            />
-          </div>
-        ) : (
-          <Input
-            placeholder="Notes (optional)"
-            className="h-8 text-xs"
-            value={line.notes}
-            onChange={(e) => onChange({ notes: e.target.value })}
-          />
-        )}
-      </td>
-      <td className="px-3 py-2">
-        <Input
-          type="number"
-          min={0}
-          className="h-8 w-24 text-right text-xs"
-          value={line.rate}
-          onChange={(e) => onChange({ rate: Number(e.target.value) || 0 })}
         />
       </td>
       <td className="px-1 py-2">
@@ -1202,7 +1512,7 @@ function LineEditorRow({
     </tr>
     {children && (
       <tr>
-        <td colSpan={8} className="bg-muted/20 p-0">
+        <td colSpan={3} className="bg-muted/20 p-0">
           {children}
         </td>
       </tr>
@@ -1217,247 +1527,183 @@ function BomBreakdown({
   bomNumber,
   components,
   onUpdateComponent,
-  onReplace,
+  onAddComponent,
+  onAssignRack,
 }: {
   lineId: string
   bomName: string
   bomNumber: string
   components: BomComponentState[]
   onUpdateComponent: (bomItemId: string, patch: Partial<BomComponentState>) => void
-  onReplace: (bomItemId: string) => void
+  onAddComponent: (variantId: string) => void
+  onAssignRack: (component: BomComponentState) => void
 }) {
-  const changed = components.filter((c) => c.action !== 'FITTED_AS_PLANNED').length
-  const replacedCount = components.filter((c) => c.action === 'REPLACED').length
-  const removedCount = components.filter((c) => c.action === 'REMOVED').length
-  const resetAll = () => {
-    components.forEach((c) => {
-      onUpdateComponent(c.bomItemId, {
-        action: 'FITTED_AS_PLANNED',
-        fittedQty: c.plannedQty,
-        reason: undefined,
-        notes: '',
-      })
-    })
-  }
+  const selectedVariantIds = useMemo(
+    () => new Set(components.map((c) => c.variantId)),
+    [components],
+  )
   return (
     <div className="border-t bg-muted/10 px-4 py-4">
-      {/* Header */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <Layers className="size-3.5" />
-          </span>
-          <div>
-            <div className="text-sm font-semibold text-foreground">{bomName}</div>
-            <div className="text-[11px] text-muted-foreground">
-              <span className="font-mono">{bomNumber}</span> · {components.length} component
-              {components.length === 1 ? '' : 's'}
-            </div>
+      <div className="mb-3 flex items-center gap-2">
+        <span className="inline-flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <Layers className="size-3.5" />
+        </span>
+        <div>
+          <div className="text-sm font-semibold text-foreground">{bomName}</div>
+          <div className="text-[11px] text-muted-foreground">
+            <span className="font-mono">{bomNumber}</span> · {components.length} component
+            {components.length === 1 ? '' : 's'}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {replacedCount > 0 && (
-            <Badge variant="outline" className="text-[10px] border-[#f6c000]/60 text-[#8a6a00]">
-              {replacedCount} replaced
-            </Badge>
-          )}
-          {removedCount > 0 && (
-            <Badge variant="outline" className="text-[10px] border-destructive/50 text-destructive">
-              {removedCount} removed
-            </Badge>
-          )}
-          {changed === 0 && (
-            <Badge variant="outline" className="text-[10px] border-emerald-500/50 text-emerald-700">
-              All planned
-            </Badge>
-          )}
-          {changed > 0 && (
-            <button
-              type="button"
-              onClick={resetAll}
-              className="wms-link-btn text-[11px]"
-            >
-              Reset all
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Component cards */}
-      <div className="grid gap-2 md:grid-cols-2">
-        {components.map((c) => (
-          <BomComponentCard
-            key={`${lineId}-${c.bomItemId}`}
-            component={c}
-            onUpdate={(patch) => onUpdateComponent(c.bomItemId, patch)}
-            onReplace={() => onReplace(c.bomItemId)}
-          />
-        ))}
+      <div className="w-full">
+        <BomComponentSearch
+          excludeVariantIds={selectedVariantIds}
+          onPick={(variantId) => onAddComponent(variantId)}
+          isEmpty={components.length === 0}
+        />
       </div>
+
+      {components.length > 0 && (
+        <div className="mt-4 overflow-hidden rounded-md border bg-background">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="px-3 py-2 text-left font-medium">Component</th>
+                <th className="px-3 py-2 text-right font-medium">Qty</th>
+                <th className="w-10 px-1 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {components.map((c) => (
+                <tr key={`${lineId}-${c.bomItemId}`}>
+                  <td className="px-3 py-2">
+                    <div className="text-[13px] font-medium">{c.partName}</div>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <span className="font-mono">{c.variantSku}</span>
+                      <Badge variant="outline" className="text-[10px]">{c.condition}</Badge>
+                      {c.rackLocation && (
+                        <Badge variant="secondary" className="gap-1 text-[10px] font-normal">
+                          <MapPin className="size-3" />
+                          {c.rackLocation}
+                        </Badge>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      className="h-8 w-16 ml-auto text-right text-xs"
+                      value={c.qty}
+                      onChange={(e) =>
+                        onUpdateComponent(c.bomItemId, { qty: Number(e.target.value) || 0 })
+                      }
+                    />
+                  </td>
+                  <td className="px-1 py-2">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => onAssignRack(c)}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Remove component"
+                      title="Remove component (assign return rack)"
+                    >
+                      <XIcon className="size-4" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
 
-function BomComponentCard({
-  component: c,
-  onUpdate,
-  onReplace,
+function BomComponentSearch({
+  excludeVariantIds,
+  onPick,
+  isEmpty,
 }: {
-  component: BomComponentState
-  onUpdate: (patch: Partial<BomComponentState>) => void
-  onReplace: () => void
+  excludeVariantIds: Set<string>
+  onPick: (variantId: string) => void
+  isEmpty: boolean
 }) {
-  const isReplaced = c.action === 'REPLACED'
-  const isRemoved = c.action === 'REMOVED'
-  const isPlanned = c.action === 'FITTED_AS_PLANNED'
+  const [query, setQuery] = useState('')
 
-  const tone =
-    isRemoved
-      ? 'border-destructive/40 bg-destructive/5'
-      : isReplaced
-        ? 'border-[#f6c000]/50 bg-[#fff8dd]/50'
-        : 'border-border bg-background'
-
-  const stateLabel = isPlanned ? 'Planned' : isReplaced ? 'Replaced' : 'Removed'
-  const stateTone = isPlanned
-    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-    : isReplaced
-      ? 'bg-[#fff5d6] text-[#8a6a00] border-[#f6c000]/50'
-      : 'bg-destructive/10 text-destructive border-destructive/30'
+  const options = useMemo(() => {
+    const partMap = new Map(mockParts.map((p) => [p.id, p]))
+    return mockVariants
+      .map((v) => {
+        const part = partMap.get(v.partId)
+        if (!part) return null
+        return {
+          variantId: v.id,
+          variantSku: v.variantSku,
+          partName: part.name,
+          partSku: part.sku,
+          condition: v.condition,
+          category: part.categoryName,
+          brand: part.brand,
+        }
+      })
+      .filter((o): o is NonNullable<typeof o> => o !== null)
+  }, [])
 
   return (
-    <div className={`rounded-lg border px-3.5 py-3 transition-colors ${tone}`}>
-      {/* Top row: part name + state chip + action buttons */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div
-            className={`text-[13px] font-semibold leading-tight ${isRemoved ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-          >
-            {c.partName}
-          </div>
-          <div className="mt-0.5 flex items-center gap-1.5">
-            <span className="font-mono text-[10px] text-muted-foreground">
-              {c.plannedVariantSku}
-            </span>
-            <span className="text-[10px] text-muted-foreground">·</span>
-            <span className="text-[10px] text-muted-foreground">
-              Qty {c.plannedQty}
-            </span>
-          </div>
-          {isReplaced && c.replacedPartName && (
-            <div className="mt-1.5 flex items-start gap-1 rounded-md bg-background/60 px-2 py-1 text-[11px]">
-              <ArrowLeftRight className="mt-0.5 size-3 shrink-0 text-[#8a6a00]" />
-              <div className="min-w-0">
-                <div className="truncate font-medium text-[#8a6a00]">
-                  {c.replacedPartName}
-                </div>
-                <div className="font-mono text-[10px] text-muted-foreground">
-                  {c.replacedVariantSku}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        <span
-          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${stateTone}`}
-        >
-          {stateLabel}
-        </span>
-      </div>
-
-      {/* Action pill row — Keep / Replace / Remove */}
-      <div className="mt-3 inline-flex rounded-md border bg-muted/40 p-0.5 text-[11px]">
-        <button
-          type="button"
-          onClick={() =>
-            onUpdate({
-              action: 'FITTED_AS_PLANNED',
-              fittedQty: c.plannedQty,
-              reason: undefined,
-              notes: '',
-            })
+    <div className="rounded-lg border bg-background shadow-sm">
+      <Command shouldFilter={true}>
+        <CommandInput
+          value={query}
+          onValueChange={setQuery}
+          placeholder={
+            isEmpty ? 'Search parts to add to this BOM…' : 'Search to add another component…'
           }
-          className={`rounded px-2.5 py-1 font-medium transition-colors ${
-            isPlanned
-              ? 'bg-background text-emerald-700 shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Keep
-        </button>
-        <button
-          type="button"
-          onClick={onReplace}
-          className={`rounded px-2.5 py-1 font-medium transition-colors ${
-            isReplaced
-              ? 'bg-background text-[#8a6a00] shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Replace
-        </button>
-        <button
-          type="button"
-          onClick={() => onUpdate({ action: 'REMOVED', fittedQty: 0 })}
-          className={`rounded px-2.5 py-1 font-medium transition-colors ${
-            isRemoved
-              ? 'bg-background text-destructive shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Remove
-        </button>
-      </div>
-
-      {/* Fitted qty + serials (inline, compact) — hidden when removed */}
-      {!isRemoved && (
-        <div className="mt-3 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2">
-          <span className="text-[11px] font-medium text-muted-foreground">Fitted qty</span>
-          <Input
-            type="number"
-            min={0}
-            className="h-8 w-20 text-right text-xs"
-            value={c.fittedQty}
-            onChange={(e) => onUpdate({ fittedQty: Number(e.target.value) || 0 })}
-          />
-          <span className="text-[11px] font-medium text-muted-foreground">Serial numbers</span>
-          <Input
-            placeholder="SN-001, SN-002…"
-            className="h-8 font-mono text-xs"
-            value={c.serialNumbersText}
-            onChange={(e) => onUpdate({ serialNumbersText: e.target.value })}
-          />
-        </div>
-      )}
-
-      {/* Variance reason + notes — only when Replaced or Removed */}
-      {!isPlanned && (
-        <div className="mt-3 space-y-2 border-t pt-3">
-          <Select
-            value={c.reason ?? ''}
-            onValueChange={(v) =>
-              onUpdate({
-                reason: (v ?? undefined) as DispatchVarianceReason | undefined,
-              })
-            }
-          >
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Reason for change…" />
-            </SelectTrigger>
-            <SelectContent>
-              {REASON_OPTIONS.map((r) => (
-                <SelectItem key={r} value={r}>
-                  {r}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            placeholder="Notes (optional)"
-            className="h-8 text-xs"
-            value={c.notes}
-            onChange={(e) => onUpdate({ notes: e.target.value })}
-          />
+        />
+        {query.length > 0 && (
+          <CommandList className="max-h-64">
+            <CommandEmpty>No matching parts.</CommandEmpty>
+            <CommandGroup>
+              {options.map((o) => {
+                const isSelected = excludeVariantIds.has(o.variantId)
+                return (
+                  <CommandItem
+                    key={o.variantId}
+                    value={`${o.partName} ${o.partSku} ${o.variantSku} ${o.brand} ${o.category}`}
+                    disabled={isSelected}
+                    onSelect={() => {
+                      if (isSelected) return
+                      onPick(o.variantId)
+                      setQuery('')
+                    }}
+                  >
+                    <div className={cn('flex w-full min-w-0 items-center gap-2', isSelected && 'opacity-50')}>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13px] font-medium">{o.partName}</div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <span className="font-mono">{o.variantSku}</span>
+                          <span>·</span>
+                          <span>{o.condition}</span>
+                          <span>·</span>
+                          <span className="truncate">{o.brand}</span>
+                        </div>
+                      </div>
+                      {isSelected && <Check className="size-3.5 shrink-0 text-primary" />}
+                    </div>
+                  </CommandItem>
+                )
+              })}
+            </CommandGroup>
+          </CommandList>
+        )}
+      </Command>
+      {isEmpty && query.length === 0 && (
+        <div className="border-t px-3 py-2 text-center text-[11px] text-muted-foreground">
+          No components yet. Type above to search and add parts.
         </div>
       )}
     </div>

@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import {
-  ArrowLeft,
   CalendarDays,
   Package,
   Layers,
@@ -30,6 +29,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { BarcodeText } from '@/components/common/BarcodeText'
+import { PageHeader } from '@/components/page'
 import {
   Select,
   SelectContent,
@@ -68,6 +68,7 @@ const INWARD_TYPE_LABELS: Record<InwardType, string> = {
   INTERNAL_TRANSFER: 'Internal Transfer',
   ADVANCE_RETURN: 'Return',
   REFURB_PURCHASE: 'Refurb Purchase',
+  REPLACEMENT: 'Replacement',
 }
 
 const INWARD_TYPE_VARIANT: Record<InwardType, 'success' | 'warning' | 'info' | 'neutral'> = {
@@ -77,6 +78,7 @@ const INWARD_TYPE_VARIANT: Record<InwardType, 'success' | 'warning' | 'info' | '
   INTERNAL_TRANSFER: 'success',
   ADVANCE_RETURN: 'success',
   REFURB_PURCHASE: 'info',
+  REPLACEMENT: 'warning',
 }
 
 const MOCK_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta', 'Meera Joshi', 'Arjun Patel']
@@ -298,35 +300,32 @@ function BatchDevicesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-3">
-          <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={goBack}>
-            <ArrowLeft />
-          </Button>
-          <div className="min-w-0 space-y-1">
-            <div className="flex items-center gap-3">
-              <h1 className="cpt-page-title">
-                {batch.batchNumber}
-              </h1>
-              <StatusBadge variant={batch.status === 'Open' ? 'success' : 'neutral'}>
-                {batch.status}
-              </StatusBadge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              <StatusBadge variant={INWARD_TYPE_VARIANT[batch.inwardType]}>
-                {INWARD_TYPE_LABELS[batch.inwardType]}
-              </StatusBadge>
-            </p>
-          </div>
-        </div>
-        {hasReceivedDevices && (
-          <Button onClick={handleSendAllToInspection}>
-            <Send className="size-4" data-icon="inline-start" />
-            Send All to Inspection
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={batch.batchNumber}
+        status={{
+          label: batch.status,
+          variant: batch.status === 'Open' ? 'success' : 'neutral',
+        }}
+        badges={
+          <StatusBadge variant={INWARD_TYPE_VARIANT[batch.inwardType]}>
+            {INWARD_TYPE_LABELS[batch.inwardType]}
+          </StatusBadge>
+        }
+        breadcrumbs={[
+          { label: 'WMS' },
+          { label: 'Inward', href: '/wms/inward' },
+          { label: batch.batchNumber },
+        ]}
+        backHref="/wms/inward"
+        actions={
+          hasReceivedDevices ? (
+            <Button onClick={handleSendAllToInspection}>
+              <Send className="size-4" data-icon="inline-start" />
+              Send All to Inspection
+            </Button>
+          ) : null
+        }
+      />
 
       {/* Batch Info Card */}
       <Card>
@@ -393,38 +392,42 @@ function BatchDevicesPage() {
 
       {/* Device List grouped by Model */}
       {devices.length > 0 ? (
-        <div className="space-y-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Devices by Model
-            </h2>
-            <div className="bmt-search-lg w-full sm:max-w-md">
-              <div className="cpt-search-field">
-                <Search className="size-[14px] opacity-60" />
-                <input
-                  placeholder="Search by barcode, serial, model, or engineer…"
-                  value={deviceSearch}
-                  onChange={(e) => setDeviceSearch(e.target.value)}
-                />
-                {deviceSearch && (
-                  <button
-                    type="button"
-                    onClick={() => setDeviceSearch('')}
-                    className="opacity-40 transition-opacity hover:opacity-70"
-                    aria-label="Clear search"
-                  >
-                    <X className="size-3.5" />
-                  </button>
-                )}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Layers className="size-4 text-muted-foreground" />
+                Devices by Model
+              </CardTitle>
+              <div className="bmt-search-lg w-full sm:max-w-md">
+                <div className="cpt-search-field">
+                  <Search className="size-[14px] opacity-60" />
+                  <input
+                    placeholder="Search by barcode, serial, model, or engineer…"
+                    value={deviceSearch}
+                    onChange={(e) => setDeviceSearch(e.target.value)}
+                  />
+                  {deviceSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setDeviceSearch('')}
+                      className="opacity-40 transition-opacity hover:opacity-70"
+                      aria-label="Clear search"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-          {Object.keys(devicesByModel).length === 0 ? (
-            <div className="rounded-md border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
-              No devices match &ldquo;{deviceSearch}&rdquo;.
-            </div>
-          ) : null}
-          {Object.entries(devicesByModel).map(([modelKey, modelDevices]) => {
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {Object.keys(devicesByModel).length === 0 ? (
+              <div className="rounded-md border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                No devices match &ldquo;{deviceSearch}&rdquo;.
+              </div>
+            ) : null}
+            {Object.entries(devicesByModel).map(([modelKey, modelDevices]) => {
             const isCollapsed = collapsedModels[modelKey] ?? false
             return (
               <Collapsible key={modelKey} open={!isCollapsed}>
@@ -509,7 +512,8 @@ function BatchDevicesPage() {
               </Collapsible>
             )
           })}
-        </div>
+          </CardContent>
+        </Card>
       ) : (
         <EmptyState
           title="No devices yet"

@@ -20,6 +20,7 @@ import type { WizardStepProps } from '@/components/common/MultiStepWizard'
 import { WorkflowStepper } from '@/components/common/WorkflowStepper'
 import type { StepConfig } from '@/components/common/WorkflowStepper'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import { mockPMAssignments } from '@/modules/ims/data/pm-assignments'
 import type { PMAssignment } from '@/modules/ims/data/pm-assignments'
 
@@ -313,7 +314,7 @@ function PRFormPage() {
               <tr className="border-b bg-muted/50">
                 <th className="w-10 px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">#</th>
                 <th className="min-w-[200px] px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Part</th>
-                <th className="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">SKU</th>
+                <th className="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Part no</th>
                 <th className="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Category</th>
                 <th className="w-24 px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Qty</th>
                 <th className="w-32 px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Est. Unit Cost</th>
@@ -553,12 +554,21 @@ function PRFormPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="cpt-page-title">Create Purchase Request</h2>
-        <Button variant="outline" onClick={goBack}>
-          Cancel
-        </Button>
-      </div>
+      <PageHeader
+        title="Create Purchase Request"
+        subtitle="Fill in request info, line items, approval chain, then review and submit."
+        breadcrumbs={[
+          { label: 'Procurement' },
+          { label: 'Purchase Requests', href: '/procurement/pr' },
+          { label: 'New' },
+        ]}
+        backHref="/procurement/pr"
+        actions={
+          <Button variant="outline" onClick={goBack}>
+            Cancel
+          </Button>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">

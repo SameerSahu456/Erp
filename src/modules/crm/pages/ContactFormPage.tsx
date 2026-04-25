@@ -2,11 +2,10 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -15,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
-import { EntityHeader } from '../components/EntityHeader'
+import { FormPageShell } from '@/components/page'
 import { contacts } from '../data/contacts'
 import { accounts } from '../data/accounts'
 
@@ -55,13 +54,33 @@ function ContactFormPage() {
     goBack()
   }
 
-  return (
-    <div className="space-y-6">
-      <EntityHeader
-        title={isEdit ? `Edit Contact: ${existingContact.name}` : 'Create Contact'}
-        backHref={backHref}
-      />
+  const canSave = Boolean(name.trim() && email.trim())
 
+  return (
+    <FormPageShell
+      title={isEdit ? `Edit Contact: ${existingContact.name}` : 'Create Contact'}
+      subtitle={isEdit ? 'Update contact details and assignments.' : 'Add a new contact to an account.'}
+      breadcrumbs={
+        isEdit
+          ? [
+              { label: 'CRM' },
+              { label: 'Contacts', href: '/crm/contacts' },
+              { label: existingContact.name, href: `/crm/contacts/${contactId}` },
+              { label: 'Edit' },
+            ]
+          : [
+              { label: 'CRM' },
+              { label: 'Contacts', href: '/crm/contacts' },
+              { label: 'New Contact' },
+            ]
+      }
+      backHref={backHref}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      canSave={canSave}
+      saveLabel={isEdit ? 'Save Changes' : 'Create Contact'}
+      footerLeft={!canSave ? <span className="text-destructive/80">Name and email are required.</span> : undefined}
+    >
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit Contact Details' : 'New Contact Details'}</CardTitle>
@@ -180,16 +199,8 @@ function ContactFormPage() {
             />
           </div>
         </CardContent>
-        <CardFooter className="justify-end gap-2">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={!name.trim() || !email.trim()}>
-            {isEdit ? 'Save Changes' : 'Create Contact'}
-          </Button>
-        </CardFooter>
       </Card>
-    </div>
+    </FormPageShell>
   )
 }
 

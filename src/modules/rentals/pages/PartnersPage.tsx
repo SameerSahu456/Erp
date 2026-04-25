@@ -4,6 +4,9 @@ import { toast } from 'sonner'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
 import { BusinessMetricsTable, type TabConfig, type CellFormatter } from '@/components/common/BusinessMetricsTable'
+import { ListPageShell } from '@/components/page'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
 import type { DataCardProps } from '@/components/common/DataCard'
 import { mockRentalPartners } from '../data/tickets'
 import type { RentalPartner } from '../types'
@@ -78,18 +81,28 @@ function PartnersPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="cpt-page-header">
-        <div>
-          <h1 className="cpt-page-title">Channel Partners</h1>
-          <div className="cpt-page-sub">Manage channel partners, credit limits, KYC, and deployed asset tracking</div>
-        </div>
-        <button className="cpt-btn cpt-btn-primary" onClick={() => toast.success('Partner onboarding started')}>+ Onboard Partner</button>
-      </div>
-
-      <StatsRow stats={kpiStats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-partners" />
-    </div>
+    <ListPageShell
+      title="Channel Partners"
+      subtitle="Manage channel partners, credit limits, KYC, and deployed asset tracking."
+      breadcrumbs={[{ label: 'Rentals' }, { label: 'Partners' }]}
+      actions={
+        <Button size="sm" onClick={() => toast.success('Partner onboarding started')}>
+          <Plus className="mr-1.5 size-4" />
+          Onboard Partner
+        </Button>
+      }
+      stats={<StatsRow stats={kpiStats} />}
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="rentals-partners"
+        emptyState={{
+          title: 'No channel partners yet',
+          description: 'Onboard partners to expand your rental distribution network.',
+        }}
+      />
+    </ListPageShell>
   )
 }
 

@@ -4,6 +4,7 @@ import { MapPin, User, Users } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress'
+import { PageHeader } from '@/components/page'
 
 import { mockWarehouses } from '../data/warehouses'
 import type { Warehouse, WarehouseRack } from '../types'
@@ -223,9 +224,11 @@ function WarehouseTab({ warehouse }: { warehouse: Warehouse }) {
 function WarehouseLocationsPage() {
   return (
     <div className="space-y-6">
-      <h1 className="cpt-page-title">
-        Warehouse Locations
-      </h1>
+      <PageHeader
+        title="Warehouse Locations"
+        subtitle="Racks, zones, and utilization for each warehouse."
+        breadcrumbs={[{ label: 'WMS' }, { label: 'Locations' }]}
+      />
 
       <Tabs defaultValue={mockWarehouses[0]?.id ?? 'wh-001'}>
         <TabsList>

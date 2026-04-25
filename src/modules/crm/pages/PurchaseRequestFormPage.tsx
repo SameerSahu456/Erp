@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -15,10 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
-import { EntityHeader } from '../components/EntityHeader'
+import { FormPageShell } from '@/components/page'
 import { purchaseRequests } from '../data/purchase-requests'
 import { salesOrders } from '../data/sales-orders'
 import { IMS_CATEGORIES } from '../types'
@@ -115,39 +114,62 @@ function PurchaseRequestFormPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <EntityHeader
-        title={isEdit ? `Edit PR: ${existingPR.prNumber}` : 'Create Purchase Request'}
-        backHref={backHref}
-      />
-
-      {/* Header Info */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-ui text-muted-foreground">PR #:</span>
-          <span className="text-sm font-medium">{prNumber}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-ui text-muted-foreground">Status:</span>
-          <StatusBadge variant={getStatusVariant(status)}>{status}</StatusBadge>
-        </div>
-        {linkedSO && (
+    <FormPageShell
+      title={isEdit ? `Edit PR: ${existingPR.prNumber}` : 'Create Purchase Request'}
+      subtitle={isEdit ? 'Update items, justification, and assignments.' : 'Request the procurement team to source items for an order.'}
+      breadcrumbs={
+        isEdit
+          ? [
+              { label: 'CRM' },
+              { label: 'Purchase Requests', href: '/crm/purchase-requests' },
+              { label: existingPR.prNumber },
+              { label: 'Edit' },
+            ]
+          : [
+              { label: 'CRM' },
+              { label: 'Purchase Requests', href: '/crm/purchase-requests' },
+              { label: 'New PR' },
+            ]
+      }
+      status={{ label: status, variant: getStatusVariant(status) }}
+      meta={
+        <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-ui text-muted-foreground">Linked SO:</span>
-            <Link
-              to={`/crm/sales-orders/${linkedSO.id}/edit`}
-              className="text-sm text-primary hover:underline"
-            >
-              {linkedSO.orderNumber}
-            </Link>
+            <span className="text-xs font-ui text-muted-foreground">PR #:</span>
+            <span className="text-sm font-medium">{prNumber}</span>
           </div>
-        )}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-ui text-muted-foreground">Requested By:</span>
-          <span className="text-sm">{requestedBy}</span>
+          {linkedSO && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-ui text-muted-foreground">Linked SO:</span>
+              <Link
+                to={`/crm/sales-orders/${linkedSO.id}/edit`}
+                className="text-sm text-primary hover:underline"
+              >
+                {linkedSO.orderNumber}
+              </Link>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-ui text-muted-foreground">Requested By:</span>
+            <span className="text-sm">{requestedBy}</span>
+          </div>
         </div>
-      </div>
-
+      }
+      backHref={backHref}
+      footerActions={
+        <>
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button variant="outline" onClick={handleSaveDraft}>
+            Save Draft
+          </Button>
+          <Button onClick={handleSubmit}>
+            Submit to Procurement
+          </Button>
+        </>
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit Purchase Request' : 'New Purchase Request'}</CardTitle>
@@ -324,19 +346,8 @@ function PurchaseRequestFormPage() {
             />
           </div>
         </CardContent>
-        <CardFooter className="justify-end gap-2">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button variant="outline" onClick={handleSaveDraft}>
-            Save Draft
-          </Button>
-          <Button onClick={handleSubmit}>
-            Submit to Procurement
-          </Button>
-        </CardFooter>
       </Card>
-    </div>
+    </FormPageShell>
   )
 }
 

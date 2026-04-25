@@ -3,6 +3,7 @@ import { Package, AlertTriangle, FolderTree, IndianRupee } from 'lucide-react'
 
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -137,15 +138,21 @@ export default function ImsDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="cpt-page-title">
-        Inventory Management
-      </h1>
+      <PageHeader
+        title="Inventory Management"
+        subtitle="Overview of stock items, low-stock alerts, and inventory value."
+        breadcrumbs={[{ label: 'IMS' }, { label: 'Dashboard' }]}
+      />
 
       <StatsRow stats={stats} />
 
       <BusinessMetricsTable
         tabs={[summaryTab, lowStockTab]}
         cellFormatter={cellFormatter}
+        emptyState={{
+          title: 'No stock items yet',
+          description: 'Add stock items to start tracking inventory levels.',
+        }}
       />
     </div>
   )

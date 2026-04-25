@@ -109,7 +109,7 @@ function Topbar({ onToggleSidebar, onSignOut }){
       <button className="icon-btn" onClick={onToggleSidebar} title="Toggle sidebar"><Icon name="menu"/></button>
       <div className="topbar-search">
         <Icon name="search" size={15}/>
-        <input placeholder="Search customers, SKUs, orders, reports…"/>
+        <input placeholder="Search customers, Part nos, orders, reports…"/>
         <kbd>⌘K</kbd>
       </div>
       <div className="topbar-actions">

@@ -13,6 +13,8 @@ import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
 import type { TabConfig, CellFormatter } from "@/components/common/BusinessMetricsTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import type { StatusBadgeVariant } from "@/components/common/StatusBadge"
+import { StatsRow } from "@/components/common/StatsRow"
+import { ListPageShell } from "@/components/page"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
@@ -462,89 +464,67 @@ function LeadsPage() {
     </aside>
   )
 
+  const headerActions = (
+    <>
+      <div className="flex overflow-hidden rounded-md border border-border">
+        <Button
+          variant={view === "kanban" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setView("kanban")}
+          className="rounded-none border-0"
+          aria-label="Kanban view"
+          aria-pressed={view === "kanban"}
+        >
+          <LayoutGrid className="size-4" />
+        </Button>
+        <Button
+          variant={view === "list" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setView("list")}
+          className="rounded-none border-0"
+          aria-label="List view"
+          aria-pressed={view === "list"}
+        >
+          <List className="size-4" />
+        </Button>
+      </div>
+      <Button onClick={() => navigate("/crm/leads/new")}>
+        <Plus className="mr-1 size-4" />
+        Add Lead
+      </Button>
+    </>
+  )
+
+  const kpiStats = [
+    { label: "Total Leads", value: summaryStats.total, icon: Users },
+    { label: "Active", value: summaryStats.active, icon: Target },
+    {
+      label: "Pipeline Value",
+      value: formatCurrency(summaryStats.totalValue),
+      icon: DollarSign,
+    },
+    {
+      label: "Won Value",
+      value: formatCurrency(summaryStats.wonValue),
+      icon: DollarSign,
+    },
+    {
+      label: "Win Rate",
+      value: `${summaryStats.convRate.toFixed(0)}%`,
+      icon: TrendingUp,
+    },
+  ]
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Leads</h2>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-md border">
-            <Button
-              variant={view === "kanban" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setView("kanban")}
-              className="rounded-r-none"
-            >
-              <LayoutGrid className="size-4" />
-            </Button>
-            <Button
-              variant={view === "list" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setView("list")}
-              className="rounded-l-none"
-            >
-              <List className="size-4" />
-            </Button>
-          </div>
-          <Button onClick={() => navigate("/crm/leads/new")}>
-            <Plus className="mr-1 size-4" />
-            Add Lead
-          </Button>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <Card size="sm">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <Users className="size-4 text-primary" />
-              <p className="text-xs font-ui text-muted-foreground">Total Leads</p>
-            </div>
-            <p className="mt-1 text-2xl font-semibold">{summaryStats.total}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <Target className="size-4 text-blue-600" />
-              <p className="text-xs font-ui text-muted-foreground">Active</p>
-            </div>
-            <p className="mt-1 text-2xl font-semibold">{summaryStats.active}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="size-4 text-emerald-600" />
-              <p className="text-xs font-ui text-muted-foreground">Pipeline Value</p>
-            </div>
-            <p className="mt-1 text-2xl font-semibold">{formatCurrency(summaryStats.totalValue)}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="size-4 text-green-600" />
-              <p className="text-xs font-ui text-muted-foreground">Won Value</p>
-            </div>
-            <p className="mt-1 text-2xl font-semibold text-status-success-text">{formatCurrency(summaryStats.wonValue)}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="size-4 text-purple-600" />
-              <p className="text-xs font-ui text-muted-foreground">Win Rate</p>
-            </div>
-            <p className="mt-1 text-2xl font-semibold">{summaryStats.convRate.toFixed(0)}%</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Content */}
-      <div className="space-y-3">
-        {searchBar}
+    <>
+      <ListPageShell
+        title="Leads"
+        subtitle="Pipeline of qualified and in-progress opportunities."
+        breadcrumbs={[{ label: 'CRM' }, { label: 'Leads' }]}
+        actions={headerActions}
+        stats={<StatsRow stats={kpiStats} />}
+        toolbar={searchBar}
+      >
         <div className="flex gap-3">
           {filtersOpen && filterPanel}
           <div className="flex-1 min-w-0">
@@ -562,12 +542,20 @@ function LeadsPage() {
                 pageSize={10}
                 persistKey="crm-leads"
                 onRowClick={(row) => navigate(`/crm/leads/${row.id}`)}
+                emptyState={{
+                  title: 'No leads yet',
+                  description: 'Create your first lead to start tracking opportunities.',
+                  action: {
+                    label: 'Add Lead',
+                    onClick: () => navigate('/crm/leads/new'),
+                  },
+                }}
               />
             )}
           </div>
         </div>
-      </div>
-      {/* Closed Lost Reason */}
+      </ListPageShell>
+
       {pendingClosedLost && (
         <LostReasonDialog
           open={lostReasonOpen}
@@ -580,7 +568,7 @@ function LeadsPage() {
           onConfirm={handleClosedLostConfirm}
         />
       )}
-    </div>
+    </>
   )
 }
 

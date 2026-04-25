@@ -5,6 +5,7 @@ import { USER_ROLES, type UserRole } from '@/types/auth'
 import { ROLE_HIERARCHY } from '@/constants/roles'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/page'
 import {
   Table,
   TableHeader,
@@ -111,7 +112,11 @@ export default function RolesPermissionsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold">Roles & Permissions</h1>
+      <PageHeader
+        title="Roles & Permissions"
+        subtitle="Role hierarchy and permission matrix across modules."
+        breadcrumbs={[{ label: 'Settings' }, { label: 'Roles' }]}
+      />
 
       {/* Section 1: Role List */}
       <Card>

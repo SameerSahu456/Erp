@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { StatsRow } from '@/components/common/StatsRow'
+import { PageHeader } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -126,6 +128,7 @@ function DevicesAssignmentPage() {
           _repairTab: tab,
           barcode: job.deviceBarcode,
           partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
+          category: device?.category ?? '-',
           brand: device?.brand ?? '-',
           batch: device?.batchNumber ?? '-',
           jobStatus: job.status,
@@ -158,6 +161,7 @@ function DevicesAssignmentPage() {
           _allTab: true as const,
           barcode: d.barcode,
           partSerial: `${d.model}\n${d.serialNumber}`,
+          category: d.category,
           brand: d.brand,
           batch: d.batchNumber,
           status: d.status,
@@ -184,6 +188,7 @@ function DevicesAssignmentPage() {
   const repairColumns = [
     { key: 'barcode', label: 'Barcode', sortable: true },
     { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+    { key: 'category', label: 'Category', sortable: true },
     { key: 'brand', label: 'Brand', sortable: true },
     { key: 'batch', label: 'Batch' },
     { key: 'jobStatus', label: 'Job Status' },
@@ -194,6 +199,7 @@ function DevicesAssignmentPage() {
   const allColumns = [
     { key: 'barcode', label: 'Barcode', sortable: true },
     { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+    { key: 'category', label: 'Category', sortable: true },
     { key: 'brand', label: 'Brand', sortable: true },
     { key: 'batch', label: 'Batch' },
     { key: 'status', label: 'Status' },
@@ -404,63 +410,30 @@ function DevicesAssignmentPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="cpt-page-title">Devices</h1>
-        <p className="text-sm text-muted-foreground">
-          Store manager assigns each device to an L1/L2, L3, or Display repair engineer, plus a QC engineer.
-        </p>
-      </div>
+      <PageHeader
+        title="Devices"
+        subtitle="Store manager assigns each device to an L1/L2, L3, or Display repair engineer, plus a QC engineer."
+        breadcrumbs={[{ label: 'WMS' }, { label: 'Devices' }]}
+      />
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <Wrench className="size-3.5" /> L2 Pending
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-[#f6c000]">{l2UnassignedCount}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <Cpu className="size-3.5" /> L3 Pending
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-destructive">{l3UnassignedCount}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <Monitor className="size-3.5" /> Display Pending
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-[#f6c000]">{displayUnassignedCount}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <CheckCircle2 className="size-3.5" /> Total Devices
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-blue-600">{allDeviceRows.length}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsRow
+        stats={[
+          { label: 'L2 Pending', value: l2UnassignedCount, icon: Wrench },
+          { label: 'L3 Pending', value: l3UnassignedCount, icon: Cpu },
+          { label: 'Display Pending', value: displayUnassignedCount, icon: Monitor },
+          { label: 'Total Devices', value: allDeviceRows.length, icon: CheckCircle2 },
+        ]}
+      />
 
-      {/* Table */}
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         persistKey="wms-devices-assignment"
         onRowClick={(row) => navigate(`/wms/devices/${row._deviceId}`)}
+        emptyState={{
+          title: 'No devices to assign',
+          description: 'Devices appear here after inward receipt — assign repair and QC engineers to move them through the pipeline.',
+        }}
       />
     </div>
   )

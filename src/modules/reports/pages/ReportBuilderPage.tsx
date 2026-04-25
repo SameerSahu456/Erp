@@ -25,6 +25,7 @@ import {
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { EmptyState } from '@/components/common/EmptyState'
+import { PageHeader } from '@/components/page'
 
 import {
   REPORT_CATEGORIES,
@@ -154,7 +155,11 @@ export default function ReportBuilderPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold">Reports</h1>
+      <PageHeader
+        title="Reports"
+        subtitle="Build and run reports across sales, inventory, finance, and operations."
+        breadcrumbs={[{ label: 'Reports' }]}
+      />
 
       <div className="flex gap-6">
         {/* Left sidebar - report navigation tree */}

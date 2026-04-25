@@ -8,6 +8,7 @@ import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 
 import { useDispatches } from '../data/dispatches'
 import type { Dispatch, DispatchRequestStatus } from '../types'
@@ -144,37 +145,43 @@ function DispatchListPage() {
   const totalInvoiced = dispatches.reduce((sum, d) => sum + (d.invoiceAmount ?? 0), 0)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-display font-semibold">WMS Outward &mdash; Dispatch Requests</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            SO-level dispatch requests with external assembly tracking, billing documents, and Remove / Add / Replace variance capture.
-          </p>
-        </div>
+    <ListPageShell
+      title="Dispatch Requests"
+      subtitle="SO-level dispatch requests with external assembly tracking, billing documents, and variance capture."
+      breadcrumbs={[{ label: 'WMS' }, { label: 'Outward', href: '/wms/outward' }, { label: 'Dispatches' }]}
+      actions={
         <Button onClick={() => navigate('/wms/dispatches/new')}>
           <Plus className="mr-1 size-4" />
-          New Dispatch Request
+          Create Dispatch Request
         </Button>
-      </div>
-
-      <StatsRow
-        stats={[
-          { label: 'Pending Assembly', value: pending, icon: ClipboardList },
-          { label: 'In Flight', value: inFlight, icon: Truck },
-          { label: 'Delivered / Closed', value: delivered, icon: CheckCircle2 },
-          { label: 'Total Invoiced', value: formatCurrency(totalInvoiced), icon: FileCheck },
-        ]}
-      />
-
+      }
+      stats={
+        <StatsRow
+          stats={[
+            { label: 'Pending Assembly', value: pending, icon: ClipboardList },
+            { label: 'In Flight', value: inFlight, icon: Truck },
+            { label: 'Delivered / Closed', value: delivered, icon: CheckCircle2 },
+            { label: 'Total Invoiced', value: formatCurrency(totalInvoiced), icon: FileCheck },
+          ]}
+        />
+      }
+    >
       <BusinessMetricsTable
         tabs={[tab]}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="wms-dispatches"
         onRowClick={(row) => navigate(`/wms/dispatches/${row.id}`)}
+        emptyState={{
+          title: 'No dispatch requests yet',
+          description: 'Create a dispatch request to track assembly and delivery for a sales order.',
+          action: {
+            label: 'Create Dispatch Request',
+            onClick: () => navigate('/wms/dispatches/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

@@ -35,7 +35,7 @@ export function Header() {
         <div className="hidden md:flex items-center gap-2.5 flex-1 max-w-[520px] ml-5 bg-secondary/60 border border-transparent hover:border-border focus-within:border-primary focus-within:bg-card focus-within:shadow-sm rounded-lg px-3 py-[7px] text-muted-foreground text-[13px] transition-all">
           <Search className="size-[15px] shrink-0 opacity-60" />
           <input
-            placeholder="Search customers, SKUs, orders, reports…"
+            placeholder="Search customers, Part nos, orders, reports…"
             className="flex-1 bg-transparent border-none outline-none text-foreground text-[13px] placeholder:text-muted-foreground/60"
           />
           <kbd className="hidden lg:inline font-mono text-[10px] text-muted-foreground bg-card border border-border px-1.5 py-0.5 rounded-md">⌘K</kbd>

@@ -19,21 +19,7 @@ import {
 
 import { mockSalesInvoices } from '@/modules/invoices/data/sales-invoices'
 import { mockCreditNotes } from '@/modules/invoices/data/credit-notes'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
-
-const formatCurrencyDecimal = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)
+import { formatINR as formatCurrency, formatINR as formatCurrencyDecimal } from '@/lib/currency'
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -340,7 +326,7 @@ function SalesInvoiceDetailPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <DetailTabs tabs={tabs} defaultTab="preview" />
+          <DetailTabs cardContent tabs={tabs} defaultTab="preview" />
         </div>
 
         <div className="space-y-4">

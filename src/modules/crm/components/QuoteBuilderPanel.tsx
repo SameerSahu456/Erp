@@ -8,6 +8,7 @@ import {
   Plus,
   Trash2,
   Package,
+  Package2,
   FileText,
   Cpu,
   Check,
@@ -39,6 +40,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { TotalsSection } from './TotalsSection'
 import { PartPickerDialog } from './PartPickerDialog'
 import { SwapComponentDialog } from './SwapComponentDialog'
+import { PartLineFields, PartCombobox, type PickedPart } from './PartLineFields'
 import type { PartPickerResult } from './PartPickerDialog'
 import type { SwapResult } from './SwapComponentDialog'
 import { accounts } from '../data/accounts'
@@ -112,6 +114,8 @@ interface QuoteBuilderPanelProps {
   dealId?: string
   accountId?: string
   accountName?: string
+  /** When 'embedded', hides duplicate header/footer fields (used inside Sales Order form). */
+  mode?: 'standalone' | 'embedded'
 }
 
 // ── Helpers ──
@@ -142,7 +146,7 @@ function buildBomConfigs(bomItems: BOMItem[]): BOMComponentConfig[] {
 function createEmptyLineItem(): QuoteBuilderLineItem {
   return {
     id: genId(),
-    type: 'description',
+    type: 'ims_part',
     qty: 1,
     rate: 0,
     bomComponents: [],
@@ -166,7 +170,8 @@ const partsWithBOM = mockBOMs
 
 // ── Main Component ──
 
-export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, accountName }: QuoteBuilderPanelProps) {
+export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, accountName, mode = 'standalone' }: QuoteBuilderPanelProps) {
+  const isEmbedded = mode === 'embedded'
   const [quoteNumber] = useState(`Q-2026-${String(Math.floor(Math.random() * 9000) + 1000)}`)
   const [selectedAccountId, setSelectedAccountId] = useState(propAccountId ?? '')
   const [validUntil, setValidUntil] = useState('')
@@ -197,31 +202,53 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
     setLineItems((prev) => prev.filter((li) => li.id !== id))
   }
 
-  function switchLineItemType(id: string, type: LineItemType) {
-    setLineItems((prev) =>
-      prev.map((li) =>
-        li.id === id
-          ? {
-              ...li,
-              type,
-              // Reset fields when switching
-              partId: undefined,
-              partName: undefined,
-              partSku: undefined,
-              category: undefined,
-              brand: undefined,
-              bomId: undefined,
-              bomName: undefined,
-              itemName: undefined,
-              itemDescription: undefined,
-              bomComponents: [],
-              additionalComponents: [],
-              isBomExpanded: false,
-              rate: 0,
-            }
-          : li
-      )
-    )
+  function applyLineItemPartChange(
+    id: string,
+    next: { partId?: string; partSku?: string; partName?: string; description: string },
+    picked?: PickedPart | null
+  ) {
+    if (picked) {
+      const bom = partsWithBOM.find((b) => b.partId === picked.id)
+      updateLineItem(id, {
+        type: 'ims_part',
+        partId: picked.id,
+        partName: picked.name,
+        partSku: picked.sku,
+        category: picked.categoryName,
+        brand: picked.brand,
+        variantType: picked.condition,
+        rate: picked.sellPrice ?? 0,
+        bomId: bom?.bomId,
+        bomName: bom?.bomName,
+        bomComponents: bom ? buildBomConfigs(bom.items) : [],
+        isBomExpanded: false,
+        itemDescription: next.description,
+      })
+      return
+    }
+
+    if (picked === null) {
+      // Explicit clear-part
+      updateLineItem(id, {
+        type: 'description',
+        partId: undefined,
+        partName: undefined,
+        partSku: undefined,
+        category: undefined,
+        brand: undefined,
+        variantType: undefined,
+        bomId: undefined,
+        bomName: undefined,
+        bomComponents: [],
+        additionalComponents: [],
+        isBomExpanded: false,
+        itemDescription: next.description,
+      })
+      return
+    }
+
+    // Description-only edit
+    updateLineItem(id, { itemDescription: next.description })
   }
 
   function openPartPicker(lineItemId: string, mode: 'main' | 'additional' = 'main', additionalCompId?: string) {
@@ -606,58 +633,60 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
   return (
     <>
       <div className="space-y-8">
-        {/* Header Fields */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="font-ui">Quote Number</Label>
-              <Input value={quoteNumber} readOnly className="bg-muted/50" />
+        {/* Header Fields — hidden when embedded inside Sales Order form (duplicates SO header) */}
+        {!isEmbedded && (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="font-ui">Quote Number</Label>
+                <Input value={quoteNumber} readOnly className="bg-muted/50" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-ui">
+                  Account <span className="text-destructive">*</span>
+                </Label>
+                {accountName ? (
+                  <Input value={accountName} readOnly className="bg-muted/50" />
+                ) : (
+                  <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-ui">Valid Until</Label>
+                <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="font-ui">
-                Account <span className="text-destructive">*</span>
-              </Label>
-              {accountName ? (
-                <Input value={accountName} readOnly className="bg-muted/50" />
-              ) : (
-                <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((acc) => (
-                      <SelectItem key={acc.id} value={acc.id}>
-                        {acc.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="font-ui">Status</Label>
+                <Input value="Draft" readOnly className="bg-muted/50" />
+              </div>
+              {leadId && (
+                <div className="space-y-1.5">
+                  <Label className="font-ui">Lead</Label>
+                  <Input value={leadId} readOnly className="bg-muted/50" />
+                </div>
+              )}
+              {dealId && (
+                <div className="space-y-1.5">
+                  <Label className="font-ui">Deal</Label>
+                  <Input value={dealId} readOnly className="bg-muted/50" />
+                </div>
               )}
             </div>
-            <div className="space-y-1.5">
-              <Label className="font-ui">Valid Until</Label>
-              <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
-            </div>
           </div>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="font-ui">Status</Label>
-              <Input value="Draft" readOnly className="bg-muted/50" />
-            </div>
-            {leadId && (
-              <div className="space-y-1.5">
-                <Label className="font-ui">Lead</Label>
-                <Input value={leadId} readOnly className="bg-muted/50" />
-              </div>
-            )}
-            {dealId && (
-              <div className="space-y-1.5">
-                <Label className="font-ui">Deal</Label>
-                <Input value={dealId} readOnly className="bg-muted/50" />
-              </div>
-            )}
-          </div>
-        </div>
+        )}
 
         {/* ── Line Items ── */}
         <div>
@@ -669,6 +698,7 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
             {lineItems.map((li, idx) => {
               const bom = li.bomId ? partsWithBOM.find((b) => b.bomId === li.bomId) : null
               const configSummary = getConfigSummary(li)
+              const addedCount = li.additionalComponents.length
               const amount = li.qty * li.rate
 
               return (
@@ -682,112 +712,56 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                           {idx + 1}
                         </div>
 
-                        {/* Type toggle */}
-                        <div className="flex shrink-0 rounded-lg border p-0.5">
-                          <button
-                            type="button"
-                            onClick={() => switchLineItemType(li.id, 'ims_part')}
-                            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                              li.type === 'ims_part'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'text-muted-foreground hover:bg-muted'
-                            }`}
-                          >
-                            <Package className="size-3.5" />
-                            Part Number
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => switchLineItemType(li.id, 'description')}
-                            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                              li.type === 'description'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'text-muted-foreground hover:bg-muted'
-                            }`}
-                          >
-                            <FileText className="size-3.5" />
-                            Description
-                          </button>
-                        </div>
-
-                        {/* Item selector / description fields */}
+                        {/* Part Number / Name / Description fields */}
                         <div className="min-w-0 flex-1 space-y-2">
-                          {li.type === 'ims_part' ? (
-                            <div className="space-y-2">
-                              {li.partId ? (
-                                <button
-                                  type="button"
-                                  onClick={() => openPartPicker(li.id, 'main')}
-                                  className="flex w-full items-center gap-2 rounded-lg border bg-background px-3 py-2 text-left transition-colors hover:bg-muted/50"
-                                >
-                                  <Package className="size-4 shrink-0 text-primary" />
-                                  <div className="min-w-0 flex-1">
-                                    <div className="text-sm font-medium">{li.partName}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {li.partSku} &middot; {li.brand}
-                                    </div>
-                                  </div>
-                                  {li.variantType && (
-                                    <Badge
-                                      className={`shrink-0 text-[10px] ${
-                                        li.variantType === 'New'
-                                          ? 'bg-[#e8fff3] text-[#0b5c22] dark:bg-[#0b5c22]/20 dark:text-[#50cd89]'
-                                          : li.variantType === 'Refurbished'
-                                            ? 'bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]'
-                                            : 'bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]'
-                                      }`}
-                                    >
-                                      <Tag className="mr-1 size-3" />
-                                      {li.variantType}
-                                    </Badge>
-                                  )}
-                                  <Search className="size-3.5 shrink-0 text-muted-foreground" />
-                                </button>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  className="w-full justify-start gap-2 font-normal text-muted-foreground"
-                                  onClick={() => openPartPicker(li.id, 'main')}
-                                >
-                                  <Search className="size-4" />
-                                  Search and select part number...
-                                </Button>
-                              )}
+                          <PartLineFields
+                            value={{
+                              partId: li.partId,
+                              partSku: li.partSku,
+                              partName: li.partName,
+                              description: li.itemDescription ?? '',
+                            }}
+                            onChange={(next, picked) =>
+                              applyLineItemPartChange(li.id, next, picked)
+                            }
+                          />
 
-                              {li.partId && (
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <Badge variant="outline">{li.partSku}</Badge>
-                                  <Badge variant="secondary">{li.category}</Badge>
-                                  {li.bomId && (
-                                    <Badge className="bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]">
-                                      <Cpu className="mr-1 size-3" />
-                                      Has BOM
-                                    </Badge>
-                                  )}
-                                  {configSummary.hasChanges && (
-                                    <Badge className="bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]">
-                                      {configSummary.excluded > 0 && `${configSummary.excluded} removed`}
-                                      {configSummary.excluded > 0 && configSummary.swapped > 0 && ', '}
-                                      {configSummary.swapped > 0 && `${configSummary.swapped} swapped`}
-                                      {(configSummary.excluded > 0 || configSummary.swapped > 0) &&
-                                        configSummary.added > 0 &&
-                                        ', '}
-                                      {configSummary.added > 0 && `${configSummary.added} added`}
-                                    </Badge>
-                                  )}
-                                </div>
+                          {li.partId && (
+                            <div className="flex flex-wrap items-center gap-2">
+                              {li.category && <Badge variant="secondary">{li.category}</Badge>}
+                              {li.brand && <Badge variant="outline">{li.brand}</Badge>}
+                              {li.variantType && (
+                                <Badge
+                                  className={`text-[10px] ${
+                                    li.variantType === 'New'
+                                      ? 'bg-[#e8fff3] text-[#0b5c22] dark:bg-[#0b5c22]/20 dark:text-[#50cd89]'
+                                      : li.variantType === 'Refurbished'
+                                        ? 'bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]'
+                                        : 'bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]'
+                                  }`}
+                                >
+                                  <Tag className="mr-1 size-3" />
+                                  {li.variantType}
+                                </Badge>
+                              )}
+                              {li.bomId && (
+                                <Badge className="bg-[#eef5ff] text-[#0d4b94] dark:bg-[#0d4b94]/20 dark:text-[#3e96ff]">
+                                  <Cpu className="mr-1 size-3" />
+                                  Has BOM
+                                </Badge>
+                              )}
+                              {(configSummary.hasChanges || addedCount > 0) && (
+                                <Badge className="bg-[#fff8dd] text-[#b88800] dark:bg-[#b88800]/20 dark:text-[#f6c000]">
+                                  {configSummary.excluded > 0 && `${configSummary.excluded} removed`}
+                                  {configSummary.excluded > 0 && configSummary.swapped > 0 && ', '}
+                                  {configSummary.swapped > 0 && `${configSummary.swapped} swapped`}
+                                  {(configSummary.excluded > 0 || configSummary.swapped > 0) &&
+                                    addedCount > 0 &&
+                                    ', '}
+                                  {addedCount > 0 && `${addedCount} added`}
+                                </Badge>
                               )}
                             </div>
-                          ) : (
-                            <Textarea
-                              placeholder="Describe this line item (e.g. Custom Server Config with specs, Installation Service with details...)"
-                              value={li.itemDescription ?? ''}
-                              onChange={(e) =>
-                                updateLineItem(li.id, { itemDescription: e.target.value })
-                              }
-                              rows={4}
-                              className="resize-y"
-                            />
                           )}
                         </div>
 
@@ -834,49 +808,33 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                         </div>
                       </div>
 
-                      {/* BOM Configuration Toggle */}
-                      {li.type === 'ims_part' && li.bomId && bom && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateLineItem(li.id, { isBomExpanded: !li.isBomExpanded })
-                            }
-                            className="flex w-full items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
-                          >
-                            {li.isBomExpanded ? (
-                              <ChevronDown className="size-4" />
-                            ) : (
-                              <ChevronRight className="size-4" />
-                            )}
-                            <Cpu className="size-4" />
-                            Configure Components
-                            <span className="text-xs font-normal">
-                              ({li.bomComponents.length} components in {bom.bomName})
-                            </span>
-                            {configSummary.hasChanges && (
-                              <Badge
-                                variant="outline"
-                                className="ml-auto border-[#f6c000]/40 text-[#b88800]"
-                              >
-                                Customized
-                              </Badge>
-                            )}
-                          </button>
-
-                          {/* ── Expanded BOM Panel ── */}
-                          {li.isBomExpanded && (
-                            <div className="ml-10 space-y-3 rounded-lg border bg-muted/30 p-4">
-                              <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-semibold">
-                                  BOM Components &mdash; {bom.bomName}
-                                </h4>
-                                <span className="text-xs text-muted-foreground">
-                                  Uncheck to remove, use swap to replace
+                      {/* BOM configure (when part has master BOM) + Additional components + Config notes */}
+                      <div className="ml-10 space-y-3 rounded-lg border bg-muted/30 p-4">
+                        {li.bomId && bom && (
+                          <div className="space-y-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateLineItem(li.id, { isBomExpanded: !li.isBomExpanded })
+                              }
+                              className="inline-flex items-center gap-1 text-[11px] font-medium wms-link-btn"
+                            >
+                              {li.isBomExpanded ? (
+                                <ChevronDown className="size-3" />
+                              ) : (
+                                <ChevronRight className="size-3" />
+                              )}
+                              <Package2 className="size-3" />
+                              {li.isBomExpanded ? 'Hide BOM' : 'View BOM'} · {bom.bomName}
+                              {li.bomComponents.length > 0 && (
+                                <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] tabular-nums text-primary">
+                                  {li.bomComponents.length} component
+                                  {li.bomComponents.length === 1 ? '' : 's'}
                                 </span>
-                              </div>
+                              )}
+                            </button>
 
-                              {/* Standard BOM Components */}
+                            {li.isBomExpanded && (
                               <div className="overflow-x-auto rounded-lg border bg-background">
                                 <table className="w-full text-sm">
                                   <thead>
@@ -886,7 +844,7 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                                         Component
                                       </th>
                                       <th className="w-24 px-3 py-2 text-left font-medium text-muted-foreground">
-                                        SKU
+                                        Part no
                                       </th>
                                       <th className="w-28 px-3 py-2 text-left font-medium text-muted-foreground">
                                         Position
@@ -918,21 +876,14 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                                                 : ''
                                           }`}
                                         >
-                                          {/* Checkbox */}
                                           <td className="px-3 py-2 text-center">
-                                            {comp.isOptional || true ? (
-                                              <Checkbox
-                                                checked={comp.action !== 'EXCLUDE'}
-                                                onCheckedChange={() =>
-                                                  toggleBomComponent(li.id, comp.bomItemId)
-                                                }
-                                              />
-                                            ) : (
-                                              <Check className="mx-auto size-4 text-[#50cd89]" />
-                                            )}
+                                            <Checkbox
+                                              checked={comp.action !== 'EXCLUDE'}
+                                              onCheckedChange={() =>
+                                                toggleBomComponent(li.id, comp.bomItemId)
+                                              }
+                                            />
                                           </td>
-
-                                          {/* Component name */}
                                           <td className="px-3 py-2">
                                             <div className="space-y-0.5">
                                               <div
@@ -961,20 +912,12 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                                               )}
                                             </div>
                                           </td>
-
-                                          {/* SKU */}
                                           <td className="px-3 py-2 text-xs text-muted-foreground">
-                                            {comp.action === 'SWAP'
-                                              ? comp.swapPartSku
-                                              : comp.partSku}
+                                            {comp.action === 'SWAP' ? comp.swapPartSku : comp.partSku}
                                           </td>
-
-                                          {/* Position */}
                                           <td className="px-3 py-2 text-xs text-muted-foreground">
-                                            {comp.position ?? '\u2014'}
+                                            {comp.position ?? '—'}
                                           </td>
-
-                                          {/* Quantity */}
                                           <td className="px-3 py-2">
                                             <Input
                                               type="number"
@@ -991,8 +934,6 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                                               }
                                             />
                                           </td>
-
-                                          {/* Status badge */}
                                           <td className="px-3 py-2 text-center">
                                             {comp.action === 'EXCLUDE' && (
                                               <Badge
@@ -1022,8 +963,6 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                                               </Badge>
                                             )}
                                           </td>
-
-                                          {/* Swap action */}
                                           <td className="px-3 py-2">
                                             {comp.action !== 'EXCLUDE' && (
                                               <>
@@ -1066,171 +1005,134 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
                                   </tbody>
                                 </table>
                               </div>
+                            )}
+                          </div>
+                        )}
 
-                              {/* Additional Components (customer wants to ADD) */}
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Additional Components (Add to BOM)
-                                  </h5>
-                                  <div className="flex gap-1.5">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 text-xs"
-                                      onClick={() => addAdditionalComponent(li.id, 'ims_part')}
-                                    >
-                                      <Package className="mr-1 size-3" />
-                                      Part Number
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 text-xs"
-                                      onClick={() => addAdditionalComponent(li.id, 'description')}
-                                    >
-                                      <FileText className="mr-1 size-3" />
-                                      Description
-                                    </Button>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Additional Components (Add to BOM)
+                            </h5>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => addAdditionalComponent(li.id, 'ims_part')}
+                            >
+                              <Plus className="mr-1 size-3" />
+                              Add Component
+                            </Button>
+                          </div>
+
+                          {li.additionalComponents.length > 0 ? (
+                            <div className="space-y-2">
+                              {li.additionalComponents.map((ac) => (
+                                <div
+                                  key={ac.id}
+                                  className="flex items-start gap-2 rounded-lg border bg-background p-2"
+                                >
+                                  <div className="min-w-0 flex-1 space-y-1.5">
+                                    <div>
+                                      <Label className="text-[10px] text-muted-foreground">
+                                        Part Number
+                                      </Label>
+                                      <PartCombobox
+                                        searchBy="sku"
+                                        size="sm"
+                                        selectedPartId={ac.partId}
+                                        displayValue={
+                                          ac.partSku ?? (ac.partId ? ac.partName : undefined)
+                                        }
+                                        onPick={(part) =>
+                                          updateAdditionalComponent(li.id, ac.id, {
+                                            partId: part.id,
+                                            partName: part.name,
+                                            partSku: part.sku,
+                                            rate: part.sellPrice ?? ac.rate,
+                                            description: ac.description || part.description,
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label className="text-[10px] text-muted-foreground">
+                                        Description
+                                      </Label>
+                                      <Input
+                                        className="h-8 text-xs"
+                                        placeholder="Description"
+                                        value={ac.description}
+                                        onChange={(e) =>
+                                          updateAdditionalComponent(li.id, ac.id, {
+                                            description: e.target.value,
+                                          })
+                                        }
+                                      />
+                                    </div>
                                   </div>
+
+                                  <div className="w-16 shrink-0">
+                                    <Label className="text-[10px] text-muted-foreground">Qty</Label>
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      className="h-8 text-center text-xs"
+                                      value={ac.quantity}
+                                      onChange={(e) =>
+                                        updateAdditionalComponent(li.id, ac.id, {
+                                          quantity: Number(e.target.value) || 1,
+                                        })
+                                      }
+                                    />
+                                  </div>
+
+                                  <div className="w-24 shrink-0">
+                                    <Label className="text-[10px] text-muted-foreground">Rate</Label>
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      className="h-8 text-right text-xs"
+                                      value={ac.rate}
+                                      onChange={(e) =>
+                                        updateAdditionalComponent(li.id, ac.id, {
+                                          rate: Number(e.target.value) || 0,
+                                        })
+                                      }
+                                    />
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    className="mt-5 shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                    onClick={() => removeAdditionalComponent(li.id, ac.id)}
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </button>
                                 </div>
-
-                                {li.additionalComponents.length > 0 && (
-                                  <div className="space-y-2">
-                                    {li.additionalComponents.map((ac) => (
-                                      <div
-                                        key={ac.id}
-                                        className="flex items-start gap-2 rounded-lg border bg-background p-2"
-                                      >
-                                        {/* Type indicator */}
-                                        <div className="mt-1 shrink-0">
-                                          {ac.type === 'ims_part' ? (
-                                            <Package className="size-3.5 text-primary" />
-                                          ) : (
-                                            <FileText className="size-3.5 text-muted-foreground" />
-                                          )}
-                                        </div>
-
-                                        {/* Component details */}
-                                        <div className="min-w-0 flex-1 space-y-1.5">
-                                          {ac.type === 'ims_part' ? (
-                                            ac.partId ? (
-                                              <button
-                                                type="button"
-                                                onClick={() => openPartPicker(li.id, 'additional', ac.id)}
-                                                className="flex h-8 w-full items-center gap-2 rounded-md border bg-background px-2 text-left text-xs transition-colors hover:bg-muted/50"
-                                              >
-                                                <Package className="size-3 shrink-0 text-primary" />
-                                                <span className="flex-1 truncate font-medium">{ac.partName}</span>
-                                                <span className="shrink-0 text-muted-foreground">{ac.partSku}</span>
-                                                <Search className="size-3 shrink-0 text-muted-foreground" />
-                                              </button>
-                                            ) : (
-                                              <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-8 w-full justify-start gap-1.5 text-xs font-normal text-muted-foreground"
-                                                onClick={() => openPartPicker(li.id, 'additional', ac.id)}
-                                              >
-                                                <Search className="size-3" />
-                                                Search component...
-                                              </Button>
-                                            )
-                                          ) : (
-                                            <Input
-                                              className="h-8 text-xs"
-                                              placeholder="Component name (e.g. Extra SSD, GPU Card, Custom Cable)"
-                                              value={ac.partName}
-                                              onChange={(e) =>
-                                                updateAdditionalComponent(li.id, ac.id, {
-                                                  partName: e.target.value,
-                                                })
-                                              }
-                                            />
-                                          )}
-                                          <Input
-                                            className="h-8 text-xs"
-                                            placeholder={ac.type === 'ims_part' ? 'Notes...' : 'Description / specs...'}
-                                            value={ac.description}
-                                            onChange={(e) =>
-                                              updateAdditionalComponent(li.id, ac.id, {
-                                                description: e.target.value,
-                                              })
-                                            }
-                                          />
-                                        </div>
-
-                                        {/* Qty */}
-                                        <div className="w-16 shrink-0">
-                                          <Label className="text-[10px] text-muted-foreground">Qty</Label>
-                                          <Input
-                                            type="number"
-                                            min={1}
-                                            className="h-8 text-center text-xs"
-                                            value={ac.quantity}
-                                            onChange={(e) =>
-                                              updateAdditionalComponent(li.id, ac.id, {
-                                                quantity: Number(e.target.value) || 1,
-                                              })
-                                            }
-                                          />
-                                        </div>
-
-                                        {/* Rate */}
-                                        <div className="w-24 shrink-0">
-                                          <Label className="text-[10px] text-muted-foreground">Rate</Label>
-                                          <Input
-                                            type="number"
-                                            min={0}
-                                            className="h-8 text-right text-xs"
-                                            value={ac.rate}
-                                            onChange={(e) =>
-                                              updateAdditionalComponent(li.id, ac.id, {
-                                                rate: Number(e.target.value) || 0,
-                                              })
-                                            }
-                                          />
-                                        </div>
-
-                                        {/* Remove */}
-                                        <button
-                                          type="button"
-                                          className="mt-5 shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                                          onClick={() => removeAdditionalComponent(li.id, ac.id)}
-                                        >
-                                          <Trash2 className="size-3.5" />
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {li.additionalComponents.length === 0 && (
-                                  <p className="py-2 text-center text-xs text-muted-foreground">
-                                    No additional components. Use &quot;Part Number&quot; to pick from
-                                    inventory, or &quot;Description&quot; for items not in the system.
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* Config notes */}
-                              <div className="space-y-1">
-                                <Label className="text-xs font-medium text-muted-foreground">
-                                  Configuration Notes
-                                </Label>
-                                <Input
-                                  placeholder="e.g., Customer requested 256GB RAM total, add GPU for ML workload"
-                                  value={li.configNotes ?? ''}
-                                  onChange={(e) =>
-                                    updateLineItem(li.id, { configNotes: e.target.value })
-                                  }
-                                  className="text-xs"
-                                />
-                              </div>
+                              ))}
                             </div>
+                          ) : (
+                            <p className="py-2 text-center text-xs text-muted-foreground">
+                              No additional components yet. Click &quot;Add Component&quot; to include one.
+                            </p>
                           )}
-                        </>
-                      )}
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-muted-foreground">
+                            Configuration Notes
+                          </Label>
+                          <Input
+                            placeholder="e.g., Customer requested 256GB RAM total, add GPU for ML workload"
+                            value={li.configNotes ?? ''}
+                            onChange={(e) =>
+                              updateLineItem(li.id, { configNotes: e.target.value })
+                            }
+                            className="text-xs"
+                          />
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </Fragment>
@@ -1247,29 +1149,32 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
         {/* Totals */}
         <TotalsSection subtotal={subtotal} discount={discount} onDiscountChange={setDiscount} />
 
-        {/* Terms & Notes */}
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label className="font-ui">Terms &amp; Conditions</Label>
-            <Textarea
-              placeholder="Enter terms and conditions..."
-              value={terms}
-              onChange={(e) => setTerms(e.target.value)}
-              rows={3}
-            />
+        {/* Terms & Notes — hidden when embedded (SO form has its own Notes) */}
+        {!isEmbedded && (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="font-ui">Terms &amp; Conditions</Label>
+              <Textarea
+                placeholder="Enter terms and conditions..."
+                value={terms}
+                onChange={(e) => setTerms(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="font-ui">Notes</Label>
+              <Textarea
+                placeholder="Add any notes..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="font-ui">Notes</Label>
-            <Textarea
-              placeholder="Add any notes..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-            />
-          </div>
-        </div>
+        )}
 
-        {/* Footer actions */}
+        {/* Footer actions — hidden when embedded (Download/Copy Quote don't apply to SO) */}
+        {!isEmbedded && (
         <div className="flex items-center justify-between border-t pt-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {autoSaveStatus === 'saving' && (
@@ -1296,6 +1201,7 @@ export function QuoteBuilderPanel({ leadId, dealId, accountId: propAccountId, ac
             </Button>
           </div>
         </div>
+        )}
       </div>
 
       {/* ── Dialogs ── */}

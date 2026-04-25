@@ -228,11 +228,7 @@ export default function OutwardDetailPage() {
   const actionButtons = (() => {
     switch (status) {
       case 'Draft':
-        return (
-          <Button onClick={() => handleStatusTransition('Pending Approval', `${record.outwardNumber} submitted for approval.`)}>
-            Submit for Approval
-          </Button>
-        )
+        return null
       case 'Pending Approval':
         return (
           <>
@@ -251,17 +247,9 @@ export default function OutwardDetailPage() {
           </Button>
         )
       case 'Picking':
-        return (
-          <Button onClick={() => handleStatusTransition('Packed', `${record.outwardNumber} marked as packed.`)}>
-            Mark Packed
-          </Button>
-        )
+        return null
       case 'Packed':
-        return (
-          <Button onClick={() => handleStatusTransition('Pending QC', `${record.outwardNumber} sent to QC.`)}>
-            Send to QC
-          </Button>
-        )
+        return null
       case 'Pending QC':
         if (qcPendingCount === 0 && qcFailedCount === 0) {
           return (
@@ -272,35 +260,11 @@ export default function OutwardDetailPage() {
         }
         return null
       case 'QC Passed':
-        return (
-          <Button onClick={() => {
-            if (!logVehicle && !record.logistics.vehicleNumber) {
-              toast.error('Please fill logistics details before dispatching.')
-              return
-            }
-            handleStatusTransition('Dispatched', `${record.outwardNumber} dispatched!`)
-          }}>
-            Dispatch
-          </Button>
-        )
+        return null
       case 'Ready for Dispatch':
-        return (
-          <Button onClick={() => {
-            if (!logVehicle && !record.logistics.vehicleNumber) {
-              toast.error('Please fill logistics details before dispatching.')
-              return
-            }
-            handleStatusTransition('Dispatched', `${record.outwardNumber} dispatched!`)
-          }}>
-            Dispatch
-          </Button>
-        )
+        return null
       case 'Dispatched':
-        return (
-          <Button onClick={() => handleStatusTransition('Delivered', `${record.outwardNumber} marked as delivered.`)}>
-            Mark Delivered
-          </Button>
-        )
+        return null
       default:
         return null
     }
@@ -980,7 +944,7 @@ export default function OutwardDetailPage() {
 
       {qcSummary}
 
-      <DetailTabs tabs={tabsConfig} />
+      <DetailTabs cardContent tabs={tabsConfig} />
     </div>
   )
 }

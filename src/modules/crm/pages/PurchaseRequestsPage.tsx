@@ -8,6 +8,7 @@ import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetri
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow, type StatCardData } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
 
 import { purchaseRequests } from '@/modules/crm/data/purchase-requests'
 
@@ -143,23 +144,34 @@ function PurchaseRequestsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-display font-semibold">Purchase Requests</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Multi-category PRs require approval from each Product Manager before procurement
-          </p>
-        </div>
+    <ListPageShell
+      title="Purchase Requests"
+      subtitle="Multi-category PRs require approval from each Product Manager before procurement."
+      breadcrumbs={[{ label: 'CRM' }, { label: 'Purchase Requests' }]}
+      actions={
         <Button onClick={() => navigate('/crm/purchase-requests/new')}>
           <Plus className="mr-1 size-4" />
           Create PR
         </Button>
-      </div>
-
-      <StatsRow stats={stats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} pageSize={10} persistKey="crm-purchase-requests" onRowClick={(row) => navigate(`/crm/purchase-requests/${row.id}/edit`)} />
-    </div>
+      }
+      stats={<StatsRow stats={stats} />}
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        pageSize={10}
+        persistKey="crm-purchase-requests"
+        onRowClick={(row) => navigate(`/crm/purchase-requests/${row.id}/edit`)}
+        emptyState={{
+          title: 'No purchase requests yet',
+          description: 'Create a PR to kick off the approval flow for a sales order.',
+          action: {
+            label: 'Create PR',
+            onClick: () => navigate('/crm/purchase-requests/new'),
+          },
+        }}
+      />
+    </ListPageShell>
   )
 }
 

@@ -6,6 +6,7 @@ import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 
 import { materialInquiries } from '@/modules/crm/data/material-inquiries'
 
@@ -69,23 +70,33 @@ const cellFormatter: CellFormatter = (value, key, row) => {
 function MaterialInquiriesPage() {
   const navigate = useNavigate()
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Material Inquiries</h2>
+    <ListPageShell
+      title="Material Inquiries"
+      subtitle="Category-level inquiries sent to product managers for availability and pricing."
+      breadcrumbs={[{ label: 'CRM' }, { label: 'Material Inquiries' }]}
+      actions={
         <Button onClick={() => navigate('/crm/material-inquiries/new')}>
           <Plus className="mr-1 size-4" />
           Create Inquiry
         </Button>
-      </div>
-
+      }
+    >
       <BusinessMetricsTable
         tabs={[miTab]}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="crm-material-inquiries"
         onRowClick={(row) => navigate(`/crm/material-inquiries/${row.id}`)}
+        emptyState={{
+          title: 'No material inquiries yet',
+          description: 'Create an inquiry to check product availability and pricing before quoting.',
+          action: {
+            label: 'Create Inquiry',
+            onClick: () => navigate('/crm/material-inquiries/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

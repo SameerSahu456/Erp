@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table'
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import { mockRentalContracts } from '../data/contracts'
 
 function formatCurrency(amount: number): string {
@@ -116,9 +117,11 @@ export default function RentalDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="cpt-page-title">
-        Rental Management
-      </h1>
+      <PageHeader
+        title="Rental Management"
+        subtitle="Active contracts, devices on rent, revenue, and utilization at a glance."
+        breadcrumbs={[{ label: 'Rentals' }, { label: 'Dashboard' }]}
+      />
 
       <StatsRow
         stats={[

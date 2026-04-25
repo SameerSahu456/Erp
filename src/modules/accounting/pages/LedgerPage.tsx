@@ -1,16 +1,11 @@
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 
 import { mockLedgerEntries } from '@/modules/accounting/data/ledger'
 import type { LedgerAccountType } from '@/modules/accounting/types'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINR as formatCurrency } from '@/lib/currency'
 
 const glColumns = [
   { key: 'date', label: 'Date', sortable: true },
@@ -176,16 +171,22 @@ const cellFormatter: CellFormatter = (value, key, _row) => {
 
 function LedgerPage() {
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">Accounting Ledger</h2>
-
+    <ListPageShell
+      title="Accounting Ledger"
+      subtitle="All ledger entries — debits, credits, and account balances."
+      breadcrumbs={[{ label: 'Accounting' }, { label: 'Ledger' }]}
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="accounting-ledger"
+        emptyState={{
+          title: 'No ledger entries yet',
+          description: 'Ledger entries appear here as transactions are recorded.',
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

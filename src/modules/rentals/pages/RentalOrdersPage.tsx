@@ -4,6 +4,9 @@ import { toast } from 'sonner'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
 import { BusinessMetricsTable, type TabConfig, type CellFormatter } from '@/components/common/BusinessMetricsTable'
+import { ListPageShell } from '@/components/page'
+import { Button } from '@/components/ui/button'
+import { Download, Plus } from 'lucide-react'
 import type { DataCardProps } from '@/components/common/DataCard'
 import { mockRentalOrders, type RentalOrder } from '../data/orders'
 
@@ -99,21 +102,34 @@ function RentalOrdersPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="cpt-page-header">
-        <div>
-          <h1 className="cpt-page-title">Rental Orders</h1>
-          <div className="cpt-page-sub">Track orders from request through staging, dispatch, and delivery confirmation</div>
-        </div>
-        <div className="cpt-row">
-          <button className="cpt-btn" onClick={() => toast.success('Export started')}>Export</button>
-          <button className="cpt-btn cpt-btn-primary" onClick={() => toast.success('New order form')}>+ New Order</button>
-        </div>
-      </div>
-
-      <StatsRow stats={kpiStats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-orders" />
-    </div>
+    <ListPageShell
+      title="Rental Orders"
+      subtitle="Track orders from request through staging, dispatch, and delivery confirmation."
+      breadcrumbs={[{ label: 'Rentals' }, { label: 'Orders' }]}
+      actions={
+        <>
+          <Button variant="outline" size="sm" onClick={() => toast.success('Export started')}>
+            <Download className="mr-1.5 size-4" />
+            Export
+          </Button>
+          <Button size="sm" onClick={() => toast.success('New order form')}>
+            <Plus className="mr-1.5 size-4" />
+            New Order
+          </Button>
+        </>
+      }
+      stats={<StatsRow stats={kpiStats} />}
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="rentals-orders"
+        emptyState={{
+          title: 'No rental orders yet',
+          description: 'Rental orders flow from customer requests through staging and dispatch.',
+        }}
+      />
+    </ListPageShell>
   )
 }
 

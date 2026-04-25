@@ -13,13 +13,8 @@ import {
   SelectItem,
 } from '@/components/ui/select'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 2,
-  }).format(value)
+import { PageHeader } from '@/components/page'
+import { formatINR as formatCurrency } from '@/lib/currency'
 
 interface InvoiceLineItem {
   id: string
@@ -89,7 +84,16 @@ function SalesInvoiceFormPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">New Sales Invoice</h2>
+      <PageHeader
+        title="New Sales Invoice"
+        subtitle="Draft an invoice, add line items, and review totals before sending."
+        breadcrumbs={[
+          { label: 'Invoices' },
+          { label: 'Sales', href: '/invoices/sales' },
+          { label: 'New' },
+        ]}
+        backHref="/invoices/sales"
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
@@ -237,7 +241,7 @@ function SalesInvoiceFormPage() {
         </div>
 
         {/* Totals sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-4 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
           <Card size="sm">
             <CardHeader>
               <CardTitle>Totals</CardTitle>

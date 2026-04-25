@@ -449,7 +449,7 @@ function DealDetailPage() {
         <Button
           variant="outline"
           size="sm"
-          render={<Link to={`/crm/quote-builder?dealId=${deal.id}&accountId=${deal.accountId}`} />}
+          render={<Link to={`/crm/quotes/new?dealId=${deal.id}&accountId=${deal.accountId}`} />}
         >
           <Plus className="size-3.5" data-icon="inline-start" />
           Create Quote
@@ -733,7 +733,7 @@ function DealDetailPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left column - 2/3 */}
         <div className="lg:col-span-2">
-          <DetailTabs tabs={tabs} defaultTab="overview" />
+          <DetailTabs cardContent tabs={tabs} defaultTab="overview" />
         </div>
 
         {/* Right column - 1/3 */}

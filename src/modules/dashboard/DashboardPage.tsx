@@ -21,6 +21,7 @@ import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
 import { Timeline } from "@/components/common/Timeline"
 import { AvatarGroup } from "@/components/common/AvatarGroup"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { PageHeader } from "@/components/page"
 import type { DataCardProps } from "@/components/common/DataCard"
 import type { StepConfig } from "@/components/common/WorkflowStepper"
 import type { TabConfig, CellFormatter } from "@/components/common/BusinessMetricsTable"
@@ -193,21 +194,16 @@ const teamMembers = [
 export default function DashboardPage() {
   return (
     <div className="space-y-7">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/6 via-primary/3 to-transparent border border-border p-6 lg:p-8">
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 text-primary/80 mb-1.5">
-            <Activity className="size-3.5" />
-            <span className="text-[11px] font-semibold uppercase tracking-widest">Overview</span>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Real-time insights across CRM, warehouse, inventory, and procurement modules."
+        meta={
+          <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary/80">
+            <Activity className="size-3.5" aria-hidden="true" />
+            Overview
           </div>
-          <h2 className="font-sans text-2xl lg:text-[28px] font-bold tracking-tight text-foreground">Dashboard</h2>
-          <p className="text-muted-foreground mt-1.5 text-[14px] max-w-lg leading-relaxed">
-            Real-time insights across CRM, warehouse, inventory, and procurement modules.
-          </p>
-        </div>
-        <div className="absolute -right-8 -top-8 size-48 rounded-full bg-primary/4 blur-3xl" />
-        <div className="absolute -right-4 -bottom-12 size-32 rounded-full bg-primary/2 blur-2xl" />
-      </div>
+        }
+      />
 
       {/* Section 1: KPI Stats */}
       <section className="space-y-3">

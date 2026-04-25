@@ -2,14 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   Pencil,
-  ImageOff,
   Mail,
   Plus,
   X,
   Search,
   CheckCircle2,
   ChevronDown,
-  Video,
   ShoppingCart,
   ArrowRightLeft,
   Package,
@@ -52,15 +50,14 @@ import { mockStockMovements } from '@/modules/wms/data/stock-movements'
 import { salesOrders } from '@/modules/crm/data/sales-orders'
 import type { SalesOrder } from '@/modules/crm/types'
 import { Input } from '@/components/ui/input'
+import { MediaGallery, type MediaItem } from '@/components/common/MediaGallery'
 import {
-  HARDWARE_TAXONOMY,
   type Part,
   type RelatedPart,
   type BillOfMaterials,
   type BOMItem,
   type BOMType,
   type BOMStatus,
-  type HardwareType,
 } from '@/modules/wms/types'
 
 function formatDate(iso: string): string {
@@ -86,217 +83,39 @@ const currencyFmt = new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0,
 })
 
-function ChecklistAssignmentRow({
-  label,
-  checklistId,
-  templateType,
-  onAssign,
-}: {
-  label: string
-  checklistId?: string
-  templateType: string
-  onAssign: (templateId: string) => void
-}) {
-  const [selecting, setSelecting] = useState(false)
-  const template = checklistId
-    ? mockChecklistTemplates.find((t) => t.id === checklistId)
-    : undefined
-  const availableTemplates = mockChecklistTemplates.filter((t) => t.type === templateType && t.isActive)
-
-  return (
-    <div className="flex items-center justify-between rounded-md border p-3">
-      <div>
-        <p className="text-sm font-medium">{label}</p>
-        {template ? (
-          <p className="text-xs text-muted-foreground">
-            {template.name} ({template.items.length} items)
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">No checklist assigned</p>
-        )}
-      </div>
-      {selecting ? (
-        <Select
-          onValueChange={(v: string | null) => {
-            if (v) onAssign(v)
-            setSelecting(false)
-          }}
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select checklist" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableTemplates.map((t) => (
-              <SelectItem key={t.id} value={t.id}>
-                {t.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : (
-        <Button size="sm" variant="outline" onClick={() => setSelecting(true)}>
-          {template ? 'Change' : 'Assign'}
-        </Button>
-      )}
-    </div>
-  )
-}
-
-/**
- * Inline parts picker — every hardware type listed one after another. Each section shows
- * the already-added parts at the top, plus its own search input to find and add more.
- * No group headers, no global search, no separate list below. Stays open until Cancel/Done.
- */
 interface AddedItem {
   id: string       // entry id (related-part id or BOM item id)
   part: Part
   quantity: number // always 1 for Compatible; editable for BOM
 }
 
-function InlinePartPicker({
+/**
+ * Simple parts picker — single global search bar at the top. Type a part number,
+ * name, brand or alias to find a match and add it directly. Already-added parts
+ * are listed below.
+ */
+function SimplePartPicker({
   availableParts,
   addedItems,
   onAdd,
   onRemove,
   onUpdateQuantity,
-  onClose,
   title,
   description,
   withQuantity = false,
-  embedded = false,
 }: {
   availableParts: Part[]
   addedItems: AddedItem[]
   onAdd: (part: Part, quantity: number) => void
   onRemove: (entryId: string) => void
   onUpdateQuantity?: (entryId: string, quantity: number) => void
-  onClose: () => void
-  title: string
-  description: string
+  title?: string
+  description?: string
   withQuantity?: boolean
-  embedded?: boolean
-}) {
-  // Index available parts by hardware type
-  const availableByType = useMemo(() => {
-    const byType = new Map<HardwareType | 'OTHER', Part[]>()
-    for (const p of availableParts) {
-      const key: HardwareType | 'OTHER' = p.hardwareType ?? 'OTHER'
-      const list = byType.get(key) ?? []
-      list.push(p)
-      byType.set(key, list)
-    }
-    return byType
-  }, [availableParts])
-
-  // Index added items by hardware type
-  const addedByType = useMemo(() => {
-    const byType = new Map<HardwareType | 'OTHER', AddedItem[]>()
-    for (const item of addedItems) {
-      const key: HardwareType | 'OTHER' = item.part.hardwareType ?? 'OTHER'
-      const list = byType.get(key) ?? []
-      list.push(item)
-      byType.set(key, list)
-    }
-    return byType
-  }, [addedItems])
-
-  // Flat taxonomy — each hardware type as its own top-level section.
-  const flatTypes = useMemo(() => {
-    const all: { key: HardwareType | 'OTHER'; label: string }[] = []
-    for (const g of HARDWARE_TAXONOMY) {
-      for (const t of g.types) {
-        all.push({ key: t.key, label: t.label })
-      }
-    }
-    const hasOther =
-      (availableByType.get('OTHER')?.length ?? 0) > 0 ||
-      (addedByType.get('OTHER')?.length ?? 0) > 0
-    if (hasOther) all.push({ key: 'OTHER', label: 'Uncategorised' })
-    return all
-  }, [availableByType, addedByType])
-
-  return (
-    <div className="overflow-hidden rounded-lg border bg-background">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 border-b bg-muted/30 px-4 py-3">
-        <div>
-          <h4 className="text-sm font-semibold">{title}</h4>
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-        </div>
-        {!embedded && (
-          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close">
-            <X className="size-3.5" />
-          </Button>
-        )}
-      </div>
-
-      {/* All hardware types — added items + per-type search inside each */}
-      <div className="max-h-[32rem] overflow-y-auto">
-        {flatTypes.map((t) => (
-          <HardwareTypeSection
-            key={t.key}
-            label={t.label}
-            availableParts={availableByType.get(t.key) ?? []}
-            addedItems={addedByType.get(t.key) ?? []}
-            onAdd={onAdd}
-            onRemove={onRemove}
-            onUpdateQuantity={onUpdateQuantity}
-            withQuantity={withQuantity}
-          />
-        ))}
-      </div>
-
-      {/* Footer (hidden when embedded in a larger form that has its own actions) */}
-      {!embedded && (
-        <div className="flex items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3">
-          <div className="flex items-center gap-2 text-sm">
-            {addedItems.length > 0 ? (
-              <>
-                <CheckCircle2 className="size-4 text-emerald-600" />
-                <span className="font-medium">
-                  {addedItems.length} {addedItems.length === 1 ? 'part' : 'parts'} added
-                </span>
-              </>
-            ) : (
-              <span className="text-muted-foreground">No parts added yet</span>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button onClick={onClose}>Done</Button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/**
- * A single hardware-type section. Shows added parts at top (with remove / edit-qty),
- * then a search input that reveals available parts to add.
- */
-function HardwareTypeSection({
-  label,
-  availableParts,
-  addedItems,
-  onAdd,
-  onRemove,
-  onUpdateQuantity,
-  withQuantity,
-}: {
-  label: string
-  availableParts: Part[]
-  addedItems: AddedItem[]
-  onAdd: (part: Part, quantity: number) => void
-  onRemove: (entryId: string) => void
-  onUpdateQuantity?: (entryId: string, quantity: number) => void
-  withQuantity: boolean
 }) {
   const [search, setSearch] = useState('')
   const [rowQuantities, setRowQuantities] = useState<Record<string, string>>({})
-  const sectionRef = useRef<HTMLElement>(null)
+  const searchRef = useRef<HTMLDivElement>(null)
 
   const getQty = (partId: string): string => rowQuantities[partId] ?? '1'
   const setQty = (partId: string, value: string) => {
@@ -305,47 +124,116 @@ function HardwareTypeSection({
 
   const q = search.trim().toLowerCase()
   const filtered = useMemo(() => {
-    if (!q) return availableParts
+    if (!q) return []
     return availableParts.filter((p) => {
-      const hay = `${p.name} ${p.sku} ${p.brand} ${p.aliases.join(' ')}`.toLowerCase()
+      const hay = `${p.name} ${p.sku} ${p.brand} ${p.model ?? ''} ${p.aliases.join(' ')}`.toLowerCase()
       return hay.includes(q)
     })
   }, [availableParts, q])
 
-  // Clear this section's search when the user clicks outside it.
   useEffect(() => {
     if (!search) return
     const handleClickOutside = (event: MouseEvent) => {
-      const node = sectionRef.current
-      if (node && !node.contains(event.target as Node)) {
-        setSearch('')
-      }
+      const node = searchRef.current
+      if (node && !node.contains(event.target as Node)) setSearch('')
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [search])
 
-  const availableCount = availableParts.length
-  const addedCount = addedItems.length
-
   return (
-    <section ref={sectionRef} className="border-b last:border-0">
-      {/* Section header */}
-      <div className="flex items-center justify-between bg-muted/30 px-4 py-2">
-        <h5 className="text-sm font-semibold">{label}</h5>
-        <span className="text-xs text-muted-foreground">
-          {addedCount > 0 && (
-            <span className="mr-2 font-medium text-emerald-700">
-              {addedCount} added
-            </span>
+    <div className="rounded-lg border bg-background">
+      {(title || description) && (
+        <div className="rounded-t-lg border-b bg-muted/30 px-4 py-3">
+          {title && <h4 className="text-sm font-semibold">{title}</h4>}
+          {description && (
+            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
           )}
-          {availableCount} available
-        </span>
+        </div>
+      )}
+
+      {/* Single global search bar */}
+      <div ref={searchRef} className="relative border-b bg-background px-4 py-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by part number, name, or brand..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-9 pl-8"
+          />
+        </div>
+
+        {q && (
+          filtered.length > 0 ? (
+            <div className="absolute left-4 right-4 top-full z-20 mt-1 max-h-[28rem] overflow-y-auto rounded-md border bg-background shadow-lg">
+              <div className="sticky top-0 z-10 border-b bg-muted/40 px-4 py-1.5 text-[11px] font-medium text-muted-foreground">
+                {filtered.length} {filtered.length === 1 ? 'match' : 'matches'}
+              </div>
+              <table className="w-full text-sm">
+                <tbody>
+                  {filtered.map((p) => {
+                    const qtyStr = getQty(p.id)
+                    const qtyNum = Math.max(1, parseInt(qtyStr) || 1)
+                    return (
+                      <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30">
+                        <td className="px-4 py-2">
+                          <p className="truncate font-medium">
+                            {p.name}
+                            {(p.productType ?? 'parent') === 'variant' && (
+                              <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
+                                Variant
+                              </span>
+                            )}
+                          </p>
+                          {p.model && (
+                            <p className="truncate text-xs text-muted-foreground">{p.model}</p>
+                          )}
+                        </td>
+                        <td className="w-32 px-3 py-2 text-xs text-muted-foreground">{p.brand}</td>
+                        <td className="w-40 px-3 py-2 font-mono text-xs text-muted-foreground">{p.sku}</td>
+                        {withQuantity && (
+                          <td className="w-20 px-3 py-2">
+                            <Input
+                              type="number"
+                              min="1"
+                              value={qtyStr}
+                              onChange={(e) => setQty(p.id, e.target.value)}
+                              className="h-8 w-16 text-center"
+                            />
+                          </td>
+                        )}
+                        <td className="w-24 px-3 py-2 text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              onAdd(p, qtyNum)
+                              if (withQuantity) setQty(p.id, '1')
+                              setSearch('')
+                            }}
+                          >
+                            <Plus className="size-3.5" data-icon="inline-start" />
+                            Add
+                          </Button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="absolute left-4 right-4 top-full z-20 mt-1 rounded-md border bg-background px-4 py-3 text-xs text-muted-foreground shadow-lg">
+              No matches for "{search}".
+            </div>
+          )
+        )}
       </div>
 
-      {/* Added items for this type */}
-      {addedCount > 0 && (
-        <table className="w-full border-t bg-emerald-50/40 text-sm">
+      {/* Added items list */}
+      {addedItems.length > 0 ? (
+        <table className="w-full bg-emerald-50/30 text-sm">
           <tbody>
             {addedItems.map((item) => (
               <tr key={item.id} className="border-b last:border-0">
@@ -355,19 +243,13 @@ function HardwareTypeSection({
                     <div className="min-w-0">
                       <p className="truncate font-medium">{item.part.name}</p>
                       {item.part.model && (
-                        <p className="truncate text-xs text-muted-foreground">
-                          {item.part.model}
-                        </p>
+                        <p className="truncate text-xs text-muted-foreground">{item.part.model}</p>
                       )}
                     </div>
                   </div>
                 </td>
-                <td className="w-32 px-3 py-2 text-xs text-muted-foreground">
-                  {item.part.brand}
-                </td>
-                <td className="w-40 px-3 py-2 font-mono text-xs text-muted-foreground">
-                  {item.part.sku}
-                </td>
+                <td className="w-32 px-3 py-2 text-xs text-muted-foreground">{item.part.brand}</td>
+                <td className="w-40 px-3 py-2 font-mono text-xs text-muted-foreground">{item.part.sku}</td>
                 {withQuantity && (
                   <td className="w-20 px-3 py-2">
                     <Input
@@ -396,93 +278,12 @@ function HardwareTypeSection({
             ))}
           </tbody>
         </table>
-      )}
-
-      {/* Search input — reveals available parts when user types */}
-      {availableCount > 0 ? (
-        <>
-          <div className="bg-background px-4 py-2">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder={`Search ${label}... (type to see parts)`}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-8 pl-8 text-sm"
-              />
-            </div>
-          </div>
-
-          {q ? (
-            filtered.length > 0 ? (
-              <table className="w-full border-t text-sm">
-                <tbody>
-                  {filtered.map((p) => {
-                    const qtyStr = getQty(p.id)
-                    const qtyNum = Math.max(1, parseInt(qtyStr) || 1)
-                    return (
-                      <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <td className="px-4 py-2">
-                          <p className="truncate font-medium">
-                            {p.name}
-                            {(p.productType ?? 'parent') === 'variant' && (
-                              <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
-                                Variant
-                              </span>
-                            )}
-                          </p>
-                          {p.model && (
-                            <p className="truncate text-xs text-muted-foreground">{p.model}</p>
-                          )}
-                        </td>
-                        <td className="w-32 px-3 py-2 text-xs text-muted-foreground">
-                          {p.brand}
-                        </td>
-                        <td className="w-40 px-3 py-2 font-mono text-xs text-muted-foreground">
-                          {p.sku}
-                        </td>
-                        {withQuantity && (
-                          <td className="w-20 px-3 py-2">
-                            <Input
-                              type="number"
-                              min="1"
-                              value={qtyStr}
-                              onChange={(e) => setQty(p.id, e.target.value)}
-                              className="h-8 w-16 text-center"
-                            />
-                          </td>
-                        )}
-                        <td className="w-24 px-3 py-2 text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              onAdd(p, qtyNum)
-                              if (withQuantity) setQty(p.id, '1')
-                            }}
-                          >
-                            <Plus className="size-3.5" data-icon="inline-start" />
-                            Add
-                          </Button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            ) : (
-              <p className="border-t bg-muted/10 px-4 py-3 text-xs text-muted-foreground">
-                No matches for "{search}" in {label}.
-              </p>
-            )
-          ) : null}
-        </>
-      ) : addedCount === 0 ? (
-        <p className="px-4 py-3 text-xs text-muted-foreground">
-          No parts in this category yet.
+      ) : (
+        <p className="px-4 py-6 text-center text-xs text-muted-foreground">
+          No parts added yet. Use the search above to find and add parts.
         </p>
-      ) : null}
-    </section>
+      )}
+    </div>
   )
 }
 
@@ -655,6 +456,20 @@ export default function PartDetailPage() {
     mockParts.find((p) => p.id === id)
   )
   const [transferOpen, setTransferOpen] = useState(false)
+  const [media, setMedia] = useState<MediaItem[]>([])
+
+  useEffect(() => {
+    const next = mockParts.find((p) => p.id === id)
+    setPart(next)
+    const items: MediaItem[] = []
+    next?.images?.forEach((src, i) =>
+      items.push({ id: `existing-img-${i}`, type: 'image', src, name: src }),
+    )
+    next?.videos?.forEach((src, i) =>
+      items.push({ id: `existing-vid-${i}`, type: 'video', src, name: src }),
+    )
+    setMedia(items)
+  }, [id])
 
   // Find matching stock item for inventory data
   const stockItem = useMemo(() => {
@@ -667,18 +482,6 @@ export default function PartDetailPage() {
   if (!part) {
     return <EmptyState title="Part not found" description="The requested part does not exist." />
   }
-
-  const handleChecklistAssign = (type: 'inward' | 'outward' | 'inspection', templateId: string) => {
-    const tmpl = mockChecklistTemplates.find((t) => t.id === templateId)
-    setPart((prev) => {
-      if (!prev) return prev
-      if (type === 'inward') return { ...prev, inwardChecklistId: templateId }
-      if (type === 'outward') return { ...prev, outwardChecklistId: templateId }
-      return { ...prev, inspectionChecklistId: templateId }
-    })
-    toast.success(`${tmpl?.name ?? 'Checklist'} assigned`)
-  }
-
 
   // ── Stock rollup for quick stats (computed from matched stockItem variants) ──
   const stockStats = useMemo(() => {
@@ -707,34 +510,7 @@ export default function PartDetailPage() {
         {/* Media gallery — images & videos combined */}
         <div>
           <h3 className="mb-2 text-sm font-medium">Media</h3>
-          <div className="flex flex-wrap gap-3">
-            {part.images.map((img, i) => (
-              <div
-                key={`img-${i}`}
-                className="flex size-24 items-center justify-center rounded-lg border bg-muted"
-                title={img}
-              >
-                <ImageOff className="size-7 text-muted-foreground" />
-                <span className="sr-only">{img}</span>
-              </div>
-            ))}
-            {part.videos?.map((v, i) => (
-              <div
-                key={`vid-${i}`}
-                className="flex size-24 items-center justify-center rounded-lg border bg-muted"
-                title={v}
-              >
-                <Video className="size-7 text-muted-foreground" />
-                <span className="sr-only">{v}</span>
-              </div>
-            ))}
-            {part.images.length === 0 && (!part.videos || part.videos.length === 0) && (
-              <div className="flex size-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed bg-muted/30 text-muted-foreground">
-                <ImageOff className="size-5" />
-                <span className="text-xs">No media</span>
-              </div>
-            )}
-          </div>
+          <MediaGallery items={media} onChange={setMedia} />
         </div>
 
         {/* Description */}
@@ -814,14 +590,14 @@ export default function PartDetailPage() {
 
   const quickStatsBar = (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-      <div className="rounded-lg border p-3">
+      <div className="rounded-lg border bg-card p-3 shadow-sm">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Package className="size-3.5" />
           Total Units
         </div>
         <p className="mt-1 text-xl font-semibold tabular-nums">{stockStats.total}</p>
       </div>
-      <div className="rounded-lg border p-3">
+      <div className="rounded-lg border bg-card p-3 shadow-sm">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <CheckCircle2 className="size-3.5 text-emerald-600" />
           In Stock
@@ -830,7 +606,7 @@ export default function PartDetailPage() {
           {stockStats.inStock}
         </p>
       </div>
-      <div className="rounded-lg border p-3">
+      <div className="rounded-lg border bg-card p-3 shadow-sm">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <AlertTriangle className="size-3.5 text-amber-600" />
           Reserved
@@ -839,7 +615,7 @@ export default function PartDetailPage() {
           {stockStats.reserved}
         </p>
       </div>
-      <div className="rounded-lg border p-3">
+      <div className="rounded-lg border bg-card p-3 shadow-sm">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Truck className="size-3.5 text-sky-600" />
           Dispatched
@@ -848,7 +624,7 @@ export default function PartDetailPage() {
           {stockStats.dispatched}
         </p>
       </div>
-      <div className="rounded-lg border p-3">
+      <div className="rounded-lg border bg-card p-3 shadow-sm">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Wrench className="size-3.5 text-rose-600" />
           In Repair
@@ -914,7 +690,7 @@ export default function PartDetailPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/50">
-                      <th className="px-3 py-2 text-left font-medium">SKU</th>
+                      <th className="px-3 py-2 text-left font-medium">Part no</th>
                       <th className="px-3 py-2 text-left font-medium">Serial No</th>
                       <th className="px-3 py-2 text-right font-medium">Price</th>
                       <th className="px-3 py-2 text-right font-medium">On Hand</th>
@@ -1047,33 +823,6 @@ export default function PartDetailPage() {
             </p>
           </div>
         )}
-      </div>
-    ),
-  }
-
-  const checklistsTab = {
-    id: 'checklists',
-    label: 'Checklist',
-    content: (
-      <div className="space-y-4">
-        <ChecklistAssignmentRow
-          label="Inward Checklist"
-          checklistId={part.inwardChecklistId}
-          templateType="INWARD"
-          onAssign={(id) => handleChecklistAssign('inward', id)}
-        />
-        <ChecklistAssignmentRow
-          label="Outward Checklist"
-          checklistId={part.outwardChecklistId}
-          templateType="OUTWARD"
-          onAssign={(id) => handleChecklistAssign('outward', id)}
-        />
-        <ChecklistAssignmentRow
-          label="Inspection Checklist"
-          checklistId={part.inspectionChecklistId}
-          templateType="INSPECTION"
-          onAssign={(id) => handleChecklistAssign('inspection', id)}
-        />
       </div>
     ),
   }
@@ -1398,15 +1147,13 @@ export default function PartDetailPage() {
             </h3>
           </div>
 
-          <InlinePartPicker
+          <SimplePartPicker
             availableParts={availableParts}
             addedItems={relatedAddedItems}
             onAdd={handleAddRelatedPart}
             onRemove={handleRemoveRelatedPart}
-            onClose={() => {}}
             title="Compatible parts"
-            description="Each hardware type is listed below. Already-added parts appear at the top of their section. Use the search inside a section to find and add more."
-            embedded
+            description="Search by part number, name or brand and add directly."
           />
         </div>
       </div>
@@ -1563,7 +1310,6 @@ export default function PartDetailPage() {
   }
 
   const hasAssembly = localBOMs.some((b) => b.type === 'ASSEMBLY')
-  const hasDisassembly = localBOMs.some((b) => b.type === 'DISASSEMBLY')
 
   const bomsTab = {
     id: 'boms',
@@ -1572,27 +1318,14 @@ export default function PartDetailPage() {
     content: (
       <div className="space-y-6">
         {/* Header with Create buttons */}
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">
-            Bill of Materials for {part.name}
-          </h3>
-          {!draftType && (
-            <div className="flex gap-2">
-              {!hasAssembly && (
-                <Button size="sm" variant="outline" onClick={() => startBOM('ASSEMBLY')}>
-                  <Plus className="mr-1 size-3.5" />
-                  Assembly BOM
-                </Button>
-              )}
-              {!hasDisassembly && (
-                <Button size="sm" variant="outline" onClick={() => startBOM('DISASSEMBLY')}>
-                  <Plus className="mr-1 size-3.5" />
-                  Disassembly BOM
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+        {!draftType && !hasAssembly && (
+          <div className="flex items-center justify-end">
+            <Button size="sm" variant="outline" onClick={() => startBOM('ASSEMBLY')}>
+              <Plus className="mr-1 size-3.5" />
+              Assembly BOM
+            </Button>
+          </div>
+        )}
 
         {/* ── Draft new BOM ── */}
         {draftType && (
@@ -1614,17 +1347,13 @@ export default function PartDetailPage() {
                 </Button>
               </div>
             </div>
-            <InlinePartPicker
+            <SimplePartPicker
               availableParts={draftAvailableParts}
               addedItems={draftAddedItems}
               onAdd={addDraftItem}
               onRemove={removeDraftItem}
               onUpdateQuantity={updateDraftItemQty}
-              onClose={() => {}}
-              title={`Parts in ${bomLabel(draftType)}`}
-              description="Each hardware type is listed below. Already-added parts appear at the top of their section. Use the search inside a section to find and add more."
               withQuantity
-              embedded
             />
             <div className="flex justify-end gap-2 border-t pt-4">
               <Button variant="outline" onClick={cancelDraftBOM}>
@@ -1694,17 +1423,13 @@ export default function PartDetailPage() {
                   </div>
                   {isExpanded && (
                     <div className="border-t bg-muted/10 p-4">
-                      <InlinePartPicker
+                      <SimplePartPicker
                         availableParts={availableParts}
                         addedItems={addedItems}
                         onAdd={(sp, q) => addItemToBOM(bom.id, sp, q)}
                         onRemove={(itemId) => removeItemFromBOM(bom.id, itemId)}
                         onUpdateQuantity={(itemId, q) => updateItemQtyInBOM(bom.id, itemId, q)}
-                        onClose={() => setExpandedBOMId(null)}
-                        title={`Parts in ${bomLabel(bom.type)}`}
-                        description="Each hardware type is listed below. Already-added parts appear at the top of their section. Use the search inside a section to find and add more."
                         withQuantity
-                        embedded
                       />
                     </div>
                   )}
@@ -1754,7 +1479,7 @@ export default function PartDetailPage() {
           <div className="rounded-lg border border-dashed p-8 text-center">
             <p className="text-sm font-medium">No BOMs linked</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Create an Assembly or Disassembly BOM for this part using the buttons above
+              Create an Assembly BOM for this part using the button above
             </p>
           </div>
         )}
@@ -1812,6 +1537,7 @@ export default function PartDetailPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         {/* Left: Tabs — variants tab only for parent parts, BOMs only for Server category */}
         <DetailTabs
+          cardContent
           tabs={[
             overviewTab,
             inventoryTab,
@@ -1820,13 +1546,12 @@ export default function PartDetailPage() {
             relatedPartsTab,
             movementsTab,
             linkedOrdersTab,
-            checklistsTab,
             activityTab,
           ]}
         />
 
-        {/* Right: Sidebar cards */}
-        <div className="space-y-4">
+        {/* Right: Sidebar cards — top offset aligns with the left content card (below the tabs row) */}
+        <div className="space-y-4 lg:mt-14">
           {/* Product Manager card */}
           {part.productManager && (
             <Card>
@@ -1890,7 +1615,7 @@ export default function PartDetailPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">SKU</span>
+                <span className="text-muted-foreground">Part no</span>
                 <span className="font-mono text-xs font-medium">{part.sku}</span>
               </div>
               <div className="flex justify-between">

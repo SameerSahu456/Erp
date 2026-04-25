@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -104,24 +105,32 @@ function ChecklistTemplatesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">
-          Checklist Templates
-        </h1>
+    <ListPageShell
+      title="Checklist Templates"
+      subtitle="Configurable checklists used by Inspection, Repair, and QC workflows."
+      breadcrumbs={[{ label: 'WMS' }, { label: 'Checklist Templates' }]}
+      actions={
         <Button onClick={() => navigate('/wms/checklists/new')}>
           <Plus className="size-4" data-icon="inline-start" />
           Create Template
         </Button>
-      </div>
-
+      }
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         persistKey="wms-checklists"
         onRowClick={(row) => navigate(`/wms/checklists/${row.id}/edit`)}
+        emptyState={{
+          title: 'No checklist templates yet',
+          description: 'Templates let you customize the fields engineers fill in during inspection or QC.',
+          action: {
+            label: 'Create Template',
+            onClick: () => navigate('/wms/checklists/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

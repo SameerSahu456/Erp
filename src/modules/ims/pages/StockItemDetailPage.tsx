@@ -8,7 +8,7 @@ import { mockParts } from '../data/parts'
 /**
  * Stock Items and Parts share a single detail UI. When the user opens a stock
  * item, redirect to the matching Part's detail page so they see the complete
- * set of tabs (Overview, Variants, Compatible, Inventory, Checklists, …).
+ * set of tabs (Overview, Variants, Compatible, Inventory, …).
  */
 export default function StockItemDetailPage() {
   const { id } = useParams<{ id: string }>()

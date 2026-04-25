@@ -6,16 +6,11 @@ import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 
 import { mockSalesInvoices } from '@/modules/invoices/data/sales-invoices'
 import type { SalesInvoiceStatus } from '@/modules/invoices/types'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINR as formatCurrency } from '@/lib/currency'
 
 function getStatusVariant(status: string): StatusBadgeVariant {
   switch (status) {
@@ -97,23 +92,33 @@ function SalesInvoicesPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Sales Invoices</h2>
+    <ListPageShell
+      title="Sales Invoices"
+      subtitle="Tax invoices issued to customers against sales orders."
+      breadcrumbs={[{ label: 'Invoices' }, { label: 'Sales' }]}
+      actions={
         <Button onClick={() => navigate('/invoices/sales/new')}>
           <Plus className="mr-1 size-4" />
           New Invoice
         </Button>
-      </div>
-
+      }
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="invoices-sales"
         onRowClick={(row) => navigate(`/invoices/sales/${row.id}`)}
+        emptyState={{
+          title: 'No sales invoices yet',
+          description: 'Create your first invoice to bill a customer for goods delivered or services rendered.',
+          action: {
+            label: 'New Invoice',
+            onClick: () => navigate('/invoices/sales/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

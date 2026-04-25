@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Landmark, BookOpen, AlertCircle, CheckCircle } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { Landmark, BookOpen, AlertCircle, CheckCircle, Inbox } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { EmptyState } from '@/components/common/EmptyState'
+import { PageHeader } from '@/components/page'
 import {
   Table,
   TableHeader,
@@ -18,13 +21,7 @@ import {
 
 import { mockBankTransactions } from '@/modules/accounting/data/bank-transactions'
 import { mockLedgerEntries } from '@/modules/accounting/data/ledger'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINR as formatCurrency } from '@/lib/currency'
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -38,34 +35,56 @@ function getMatchStatusVariant(status: string): StatusBadgeVariant {
   }
 }
 
-// Summary calculations
-const bankCredits = mockBankTransactions
-  .filter((t) => t.type === 'Credit')
-  .reduce((sum, t) => sum + t.amount, 0)
-const bankDebits = mockBankTransactions
-  .filter((t) => t.type === 'Debit')
-  .reduce((sum, t) => sum + t.amount, 0)
-const bankBalance = bankCredits - bankDebits
-
 const bankEntries = mockLedgerEntries.filter((e) => e.accountName.includes('Bank'))
-const bookDebits = bankEntries.reduce((sum, e) => sum + e.debit, 0)
-const bookCredits = bankEntries.reduce((sum, e) => sum + e.credit, 0)
-const bookBalance = bookDebits - bookCredits
-
-const difference = bankBalance - bookBalance
-const matchedCount = mockBankTransactions.filter((t) => t.matchStatus === 'Matched').length
-const matchPercent = Math.round((matchedCount / mockBankTransactions.length) * 100)
 
 function BankReconciliationPage() {
+  const [transactions, setTransactions] = useState(mockBankTransactions)
   const [selectedBankTx, setSelectedBankTx] = useState<string | null>(null)
   const [selectedBookEntry, setSelectedBookEntry] = useState<string | null>(null)
 
+  const { bankBalance, bookBalance, difference, matchPercent } = useMemo(() => {
+    const credits = transactions.filter((t) => t.type === 'Credit').reduce((s, t) => s + t.amount, 0)
+    const debits = transactions.filter((t) => t.type === 'Debit').reduce((s, t) => s + t.amount, 0)
+    const bank = credits - debits
+    const bookDebit = bankEntries.reduce((s, e) => s + e.debit, 0)
+    const bookCredit = bankEntries.reduce((s, e) => s + e.credit, 0)
+    const book = bookDebit - bookCredit
+    const matched = transactions.filter((t) => t.matchStatus === 'Matched').length
+    const pct = transactions.length > 0 ? Math.round((matched / transactions.length) * 100) : 0
+    return { bankBalance: bank, bookBalance: book, difference: bank - book, matchPercent: pct }
+  }, [transactions])
+
+  const selectedBankRow = transactions.find((t) => t.id === selectedBankTx)
+  const isSelectedAlreadyMatched = selectedBankRow?.matchStatus === 'Matched'
+
+  const handleMatch = () => {
+    if (!selectedBankTx || !selectedBookEntry) return
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === selectedBankTx ? { ...t, matchStatus: 'Matched' } : t))
+    )
+    toast.success('Transaction matched')
+    setSelectedBankTx(null)
+    setSelectedBookEntry(null)
+  }
+
+  const handleUnmatch = () => {
+    if (!selectedBankTx) return
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === selectedBankTx ? { ...t, matchStatus: 'Unmatched' } : t))
+    )
+    toast.success('Transaction unmatched')
+    setSelectedBankTx(null)
+    setSelectedBookEntry(null)
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Bank Reconciliation</h2>
-        <Button>Reconcile</Button>
-      </div>
+      <PageHeader
+        title="Bank Reconciliation"
+        subtitle="Match bank statements against book entries and resolve differences."
+        breadcrumbs={[{ label: 'Reconciliation' }, { label: 'Bank' }]}
+        actions={<Button>Reconcile</Button>}
+      />
 
       <StatsRow
         stats={[
@@ -101,7 +120,18 @@ function BankReconciliationPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockBankTransactions.map((tx) => (
+                  {transactions.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="p-0">
+                        <EmptyState
+                          icon={Inbox}
+                          title="No bank transactions"
+                          description="Import a bank statement to begin reconciliation."
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {transactions.map((tx) => (
                     <TableRow
                       key={tx.id}
                       className={cn(
@@ -150,6 +180,17 @@ function BankReconciliationPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {bankEntries.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="p-0">
+                        <EmptyState
+                          icon={Inbox}
+                          title="No book entries"
+                          description="Bank ledger has no postings for this period."
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
                   {bankEntries.map((entry) => (
                     <TableRow
                       key={entry.id}
@@ -178,12 +219,19 @@ function BankReconciliationPage() {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button
-          variant="outline"
-          disabled={!selectedBankTx || !selectedBookEntry}
+          disabled={!selectedBankTx || !selectedBookEntry || isSelectedAlreadyMatched}
+          onClick={handleMatch}
         >
           Match Selected
+        </Button>
+        <Button
+          variant="destructive"
+          disabled={!isSelectedAlreadyMatched}
+          onClick={handleUnmatch}
+        >
+          Unmatch
         </Button>
         <Button
           variant="outline"
@@ -192,6 +240,12 @@ function BankReconciliationPage() {
         >
           Clear Selection
         </Button>
+        <p className="text-xs text-muted-foreground">
+          {!selectedBankTx && !selectedBookEntry && 'Select a bank transaction and a book entry to match.'}
+          {selectedBankTx && !selectedBookEntry && !isSelectedAlreadyMatched && 'Now select a book entry to pair with it.'}
+          {selectedBankTx && isSelectedAlreadyMatched && 'This transaction is already matched — use Unmatch to release it.'}
+          {selectedBankTx && selectedBookEntry && !isSelectedAlreadyMatched && 'Ready to match.'}
+        </p>
       </div>
     </div>
   )

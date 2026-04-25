@@ -1,12 +1,15 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ChevronDown, ChevronRight, Check, X, Minus, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Check, X, Minus, Plus, Server } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Wrench, PlayCircle, CheckCircle2, RefreshCw } from 'lucide-react'
+import { StatsRow } from '@/components/common/StatsRow'
+import { PageHeader } from '@/components/page'
 import {
   Select,
   SelectContent,
@@ -37,6 +40,7 @@ import {
 
 import {
   INSPECTION_CHECKLIST_ITEMS,
+  SERVER_INSPECTION_CHECKLIST_ITEMS,
   type Device,
   type InspectionResult,
   type RepairJob,
@@ -64,6 +68,7 @@ const REPAIR_TYPE_VARIANT: Record<RepairType, StatusBadgeVariant> = {
 const STATUS_VARIANT: Record<RepairJob['status'], StatusBadgeVariant> = {
   Assigned: 'info',
   'In Progress': 'warning',
+  'QC Passed': 'success',
   Completed: 'success',
   Failed: 'error',
 }
@@ -105,6 +110,28 @@ const CHECKLIST_GROUPS = INSPECTION_CHECKLIST_ITEMS.reduce<
 
 const GROUP_ORDER = ['Panels', 'Display', 'Input', 'Audio', 'Power', 'Hardware', 'Ports']
 
+type ChecklistItem = { id: string; label: string; group: string }
+
+function groupChecklist(items: readonly ChecklistItem[]) {
+  return items.reduce<Record<string, ChecklistItem[]>>((acc, item) => {
+    if (!acc[item.group]) acc[item.group] = []
+    acc[item.group].push(item)
+    return acc
+  }, {})
+}
+
+const SERVER_CHECKLIST_GROUPS = groupChecklist(SERVER_INSPECTION_CHECKLIST_ITEMS)
+const SERVER_GROUP_ORDER = [
+  'Chassis',
+  'Power',
+  'Compute',
+  'Memory',
+  'Storage',
+  'Cooling',
+  'Networking',
+  'Ports',
+]
+
 type ChecklistState = Record<string, { result: InspectionResult; notes: string }>
 
 function formatDate(dateStr?: string) {
@@ -130,6 +157,18 @@ function RepairPage() {
   const [checklist, setChecklist] = useState<ChecklistState>({})
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [notes, setNotes] = useState('')
+
+  // Repair-stage QC dialog (uses inspection template by category)
+  const [qcOpen, setQcOpen] = useState(false)
+  const [qcJob, setQcJob] = useState<RepairJob | null>(null)
+  const [qcChecklist, setQcChecklist] = useState<ChecklistState>({})
+  const [qcCollapsedGroups, setQcCollapsedGroups] = useState<Record<string, boolean>>({})
+
+  // Assemble notes dialog
+  const [assembleOpen, setAssembleOpen] = useState(false)
+  const [assembleJob, setAssembleJob] = useState<RepairJob | null>(null)
+  const [assembleNotes, setAssembleNotes] = useState('')
+
   // Per-device requires-spares / requires-paint overrides toggled directly from the list
   const [deviceFlags, setDeviceFlags] = useState<Record<string, { spares?: boolean; paint?: boolean }>>({})
 
@@ -157,15 +196,41 @@ function RepairPage() {
     setChecklistOpen(true)
   }
 
-  // Auto-open the repair checklist when arriving with ?open=<jobId>
-  // (used by the "Start Repair" button on the device detail page).
+  const openQc = (job: RepairJob) => {
+    setQcJob(job)
+    setQcChecklist({})
+    setQcCollapsedGroups({})
+    setQcOpen(true)
+  }
+
+  const openAssemble = (job: RepairJob) => {
+    setAssembleJob(job)
+    setAssembleNotes('')
+    setAssembleOpen(true)
+  }
+
+  // Auto-open the repair checklist / QC / assemble dialog when arriving with
+  // ?open=<jobId>, ?qc=<jobId>, or ?assemble=<jobId> (used by the device detail
+  // page action buttons).
   useEffect(() => {
     const openId = searchParams.get('open')
-    if (!openId) return
-    const job = jobs.find((j) => j.id === openId)
-    if (job) openChecklist(job)
+    const qcId = searchParams.get('qc')
+    const assembleId = searchParams.get('assemble')
+    if (!openId && !qcId && !assembleId) return
+    if (openId) {
+      const job = jobs.find((j) => j.id === openId)
+      if (job) openChecklist(job)
+    } else if (qcId) {
+      const job = jobs.find((j) => j.id === qcId)
+      if (job) openQc(job)
+    } else if (assembleId) {
+      const job = jobs.find((j) => j.id === assembleId)
+      if (job) openAssemble(job)
+    }
     const next = new URLSearchParams(searchParams)
     next.delete('open')
+    next.delete('qc')
+    next.delete('assemble')
     setSearchParams(next, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -208,6 +273,91 @@ function RepairPage() {
     setActiveJob(null)
   }
 
+  /* ----------------- Repair-stage QC (category-aware) ----------------- */
+  const qcDevice = useMemo(
+    () => mockDevices.find((d) => d.id === qcJob?.deviceId),
+    [qcJob],
+  )
+  const qcIsAssembly = qcDevice?.deviceKind === 'ASSEMBLY'
+  const qcItems: readonly ChecklistItem[] = qcIsAssembly
+    ? SERVER_INSPECTION_CHECKLIST_ITEMS
+    : INSPECTION_CHECKLIST_ITEMS
+  const qcGroups = qcIsAssembly ? SERVER_CHECKLIST_GROUPS : CHECKLIST_GROUPS
+  const qcGroupOrder = qcIsAssembly ? SERVER_GROUP_ORDER : GROUP_ORDER
+
+  const handleQcChange = (itemId: string, result: InspectionResult) => {
+    setQcChecklist((prev) => ({
+      ...prev,
+      [itemId]: { result, notes: prev[itemId]?.notes ?? '' },
+    }))
+  }
+  const handleQcNotes = (itemId: string, text: string) => {
+    setQcChecklist((prev) => ({
+      ...prev,
+      [itemId]: { ...prev[itemId], result: prev[itemId]?.result ?? 'FAIL', notes: text },
+    }))
+  }
+  const toggleQcGroup = (group: string) => {
+    setQcCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }))
+  }
+
+  const qcCheckedCount = Object.keys(qcChecklist).length
+  const qcPassCount = Object.values(qcChecklist).filter((i) => i.result === 'PASS').length
+  const qcFailCount = Object.values(qcChecklist).filter((i) => i.result === 'FAIL').length
+  const qcNaCount = Object.values(qcChecklist).filter((i) => i.result === 'NOT_APPLICABLE').length
+
+  const handleSubmitQc = () => {
+    if (!qcJob) return
+    if (qcCheckedCount < qcItems.length) {
+      toast.error('Please complete all QC checklist items.')
+      return
+    }
+    if (qcFailCount > 0) {
+      toast.error('Resolve failed items before passing QC.')
+      return
+    }
+    setJobs((prev) =>
+      prev.map((j) => (j.id === qcJob.id ? { ...j, status: 'QC Passed' as const } : j)),
+    )
+    toast.success(`${qcJob.deviceBarcode} passed repair QC. Ready for assembly.`)
+    setQcOpen(false)
+    setQcJob(null)
+  }
+
+  const handleSubmitAssemble = () => {
+    if (!assembleJob) return
+    if (!assembleNotes.trim()) {
+      toast.error('Describe the assembly work performed.')
+      return
+    }
+    const now = new Date().toISOString()
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === assembleJob.id
+          ? {
+              ...job,
+              status: 'Completed' as const,
+              completedAt: now,
+              notes: assembleNotes.trim(),
+            }
+          : job,
+      ),
+    )
+    // Mirror the device record so it lands in Inward QC.
+    const devIdx = mockDevices.findIndex((d) => d.id === assembleJob.deviceId)
+    if (devIdx >= 0) {
+      mockDevices[devIdx] = {
+        ...mockDevices[devIdx],
+        status: 'AWAITING_QC',
+        repairCompleted: true,
+        repairedAt: now,
+      }
+    }
+    toast.success(`${assembleJob.deviceBarcode} assembled and sent to Inward QC.`)
+    setAssembleOpen(false)
+    setAssembleJob(null)
+  }
+
   const summaryStats = useMemo(() => {
     const total = jobs.length
     const inProgress = jobs.filter((j) => j.status === 'In Progress').length
@@ -220,6 +370,18 @@ function RepairPage() {
     return { total, inProgress, completedToday, reworkCount }
   }, [jobs])
 
+  // Float ASSEMBLY (server) jobs to the top of the list on every tab so the
+  // higher-value component-scoped repairs land on page 1.
+  const sortAssemblyFirst = useCallback((arr: RepairJob[]): RepairJob[] => {
+    return [...arr].sort((a, b) => {
+      const da = mockDevices.find((d) => d.id === a.deviceId)
+      const db = mockDevices.find((d) => d.id === b.deviceId)
+      const aAsm = da?.deviceKind === 'ASSEMBLY' ? 0 : 1
+      const bAsm = db?.deviceKind === 'ASSEMBLY' ? 0 : 1
+      return aAsm - bAsm
+    })
+  }, [])
+
   const handleAssignEngineerInline = (jobId: string, engineer: string) => {
     setJobs((prev) =>
       prev.map((job) =>
@@ -230,16 +392,6 @@ function RepairPage() {
     toast.success(`${job?.deviceBarcode ?? 'Device'} assigned to ${engineer}`)
   }
 
-  const handleAssemble = (jobId: string, barcode: string) => {
-    setJobs((prev) =>
-      prev.map((job) =>
-        job.id === jobId
-          ? { ...job, status: 'Completed' as const, completedAt: new Date().toISOString() }
-          : job,
-      ),
-    )
-    toast.success(`${barcode} assembled and sent to Inward QC.`)
-  }
 
   const buildRows = useCallback(
     (filtered: RepairJob[]) =>
@@ -251,6 +403,7 @@ function RepairPage() {
           barcode: job.deviceBarcode,
           partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
           biosNo: device?.biosNo ?? '-',
+          category: device?.category ?? '-',
           type: job.repairType,
           status: job.status,
           assignedTo: job.assignedTo,
@@ -260,6 +413,7 @@ function RepairPage() {
           _readinessList: readiness,
           spares: deviceFlags[job.deviceId]?.spares ?? device?.requiresSpares ?? false,
           paint: deviceFlags[job.deviceId]?.paint ?? device?.requiresPaint ?? false,
+          _category: device?.category ?? '-',
           notes: job.notes ?? '-',
           _status: job.status,
           _deviceId: job.deviceId,
@@ -272,6 +426,7 @@ function RepairPage() {
     { key: 'barcode', label: 'Device Barcode', sortable: true },
     { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
     { key: 'biosNo', label: 'BIOS No', sortable: true },
+    { key: 'category', label: 'Category', sortable: true },
     { key: 'status', label: 'Status' },
     { key: 'readiness', label: 'Readiness' },
     { key: 'spares', label: 'Spares', align: 'center' as const },
@@ -287,28 +442,28 @@ function RepairPage() {
         id: 'all',
         label: 'All Jobs',
         columns,
-        data: buildRows(jobs),
+        data: buildRows(sortAssemblyFirst(jobs)),
       },
       {
         id: 'l2',
         label: 'L2 Repair',
         columns,
-        data: buildRows(jobs.filter((j) => j.repairType === 'L2')),
+        data: buildRows(sortAssemblyFirst(jobs.filter((j) => j.repairType === 'L2'))),
       },
       {
         id: 'l3',
         label: 'L3 Repair',
         columns,
-        data: buildRows(jobs.filter((j) => j.repairType === 'L3')),
+        data: buildRows(sortAssemblyFirst(jobs.filter((j) => j.repairType === 'L3'))),
       },
       {
         id: 'display',
         label: 'Display Repair',
         columns,
-        data: buildRows(jobs.filter((j) => j.repairType === 'DISPLAY')),
+        data: buildRows(sortAssemblyFirst(jobs.filter((j) => j.repairType === 'DISPLAY'))),
       },
     ],
-    [jobs, buildRows],
+    [jobs, buildRows, sortAssemblyFirst],
   )
 
   const cellFormatter: CellFormatter = useCallback(
@@ -320,11 +475,20 @@ function RepairPage() {
       }
       if (key === 'partSerial') {
         const [part, serial] = String(value).split('\n')
+        const device = mockDevices.find((d) => d.id === row._deviceId)
+        const isAssembly = device?.deviceKind === 'ASSEMBLY'
         return {
           display: (
             <div className="flex flex-col leading-tight">
-              <span className="font-medium">{part}</span>
-              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
+              <span className="flex items-center gap-1.5 font-medium">
+                {isAssembly && (
+                  <Server className="size-3.5 text-primary" aria-label="Assembly" />
+                )}
+                {part}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                S/N: {serial}
+              </span>
             </div>
           ),
         }
@@ -400,6 +564,9 @@ function RepairPage() {
         const deviceId = row._deviceId as string
         const enabled = value
         const onLabel = key === 'spares' ? 'Issued' : 'Done'
+        if (key === 'paint' && row._category === 'Server') {
+          return { display: <span className="text-muted-foreground">—</span> }
+        }
         return {
           display: (
             <div onClick={(e) => e.stopPropagation()}>
@@ -429,11 +596,11 @@ function RepairPage() {
       if (key === 'actions') {
         const status = row._status as RepairJob['status']
         const jobId = row.id as string
-        const barcode = row.barcode as string
         const job = jobs.find((j) => j.id === jobId)
-        // Mutually exclusive: Start while not yet in progress, Assemble once repair is underway.
+        // Three-stage flow: Start (repair) → Start QC → Assemble (with notes).
         const showStart = status === 'Assigned'
-        const showAssemble = status === 'In Progress'
+        const showStartQc = status === 'In Progress'
+        const showAssemble = status === 'QC Passed'
         return {
           display: (
             <div
@@ -451,11 +618,24 @@ function RepairPage() {
                   Start
                 </button>
               )}
+              {showStartQc && (
+                <button
+                  type="button"
+                  className="text-sm font-medium text-amber-600 hover:text-amber-700 hover:underline"
+                  onClick={() => {
+                    if (job) openQc(job)
+                  }}
+                >
+                  Start QC
+                </button>
+              )}
               {showAssemble && (
                 <button
                   type="button"
                   className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
-                  onClick={() => handleAssemble(jobId, barcode)}
+                  onClick={() => {
+                    if (job) openAssemble(job)
+                  }}
                 >
                   Assemble
                 </button>
@@ -472,50 +652,20 @@ function RepairPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="cpt-page-title">Repair</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage L2, L3, and Display repair jobs. Repair starts once spares are fulfilled and paint is done.
-        </p>
-      </div>
+      <PageHeader
+        title="Repair"
+        subtitle="Manage L2, L3, and Display repair jobs. Repair starts once spares are fulfilled and paint is done."
+        breadcrumbs={[{ label: 'WMS' }, { label: 'Repair' }]}
+      />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal">Total Jobs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{summaryStats.total}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal">In Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-[#f6c000]">{summaryStats.inProgress}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal">
-              Completed Today
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-emerald-600">{summaryStats.completedToday}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal">Rework Count</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-destructive">{summaryStats.reworkCount}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsRow
+        stats={[
+          { label: 'Total Jobs', value: summaryStats.total, icon: Wrench },
+          { label: 'In Progress', value: summaryStats.inProgress, icon: PlayCircle },
+          { label: 'Completed Today', value: summaryStats.completedToday, icon: CheckCircle2 },
+          { label: 'Rework Count', value: summaryStats.reworkCount, icon: RefreshCw },
+        ]}
+      />
 
       {/* Repair Jobs Table */}
       <BusinessMetricsTable
@@ -523,6 +673,10 @@ function RepairPage() {
         cellFormatter={cellFormatter}
         persistKey="wms-repair"
         onRowClick={(row) => navigate(`/wms/devices/${row._deviceId}?from=repair`)}
+        emptyState={{
+          title: 'No repair jobs',
+          description: 'Repair jobs appear here once devices are inspected and routed for repair.',
+        }}
       />
 
       {/* Repair Checklist Dialog */}
@@ -700,6 +854,215 @@ function RepairPage() {
               Cancel
             </Button>
             <Button onClick={handleSubmitChecklist}>Start Repair</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Repair-stage QC Dialog */}
+      <Dialog open={qcOpen} onOpenChange={setQcOpen}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
+          <div className="shrink-0 border-b px-6 py-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg">
+                Repair QC: {qcJob?.deviceBarcode}
+                {qcIsAssembly && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    <Server className="size-3" />
+                    Server
+                  </span>
+                )}
+              </DialogTitle>
+              {qcJob && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {REPAIR_TYPE_LABELS[qcJob.repairType]} — Inspection template ({qcIsAssembly ? 'Server' : 'Laptop'})
+                </p>
+              )}
+            </DialogHeader>
+            <div className="mt-3 flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <Progress
+                  value={
+                    qcItems.length > 0
+                      ? Math.round((qcCheckedCount / qcItems.length) * 100)
+                      : 0
+                  }
+                >
+                  <ProgressLabel className="sr-only">Progress</ProgressLabel>
+                  <ProgressValue className="sr-only" />
+                </Progress>
+              </div>
+              <div className="flex shrink-0 items-center gap-3 text-xs">
+                <span className="font-medium">{qcCheckedCount}/{qcItems.length}</span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-2 rounded-full bg-emerald-500" />
+                  {qcPassCount}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-2 rounded-full bg-destructive" />
+                  {qcFailCount}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-2 rounded-full bg-muted-foreground" />
+                  {qcNaCount}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            {qcGroupOrder.map((group) => {
+              const items = qcGroups[group]
+              if (!items) return null
+              const isCollapsed = qcCollapsedGroups[group] ?? false
+              const groupChecked = items.filter((i) => qcChecklist[i.id]).length
+              const groupPassed = items.filter((i) => qcChecklist[i.id]?.result === 'PASS').length
+              const groupFailed = items.filter((i) => qcChecklist[i.id]?.result === 'FAIL').length
+              return (
+                <Collapsible key={group} open={!isCollapsed}>
+                  <CollapsibleTrigger
+                    className="flex w-full items-center justify-between rounded-lg border bg-muted/40 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                    onClick={() => toggleQcGroup(group)}
+                  >
+                    <div className="flex items-center gap-2">
+                      {isCollapsed ? (
+                        <ChevronRight className="size-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="size-4 text-muted-foreground" />
+                      )}
+                      <span className="text-sm font-semibold">{group}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {groupPassed > 0 && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                          {groupPassed} pass
+                        </span>
+                      )}
+                      {groupFailed > 0 && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                          {groupFailed} fail
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {groupChecked}/{items.length}
+                      </span>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-1.5 pt-2">
+                      {items.map((item) => {
+                        const state = qcChecklist[item.id]
+                        return (
+                          <div
+                            key={item.id}
+                            className={`rounded-lg border transition-colors ${
+                              state?.result === 'PASS'
+                                ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30'
+                                : state?.result === 'FAIL'
+                                  ? 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/30'
+                                  : 'bg-card'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                              <p className="text-sm font-medium min-w-0 flex-1">{item.label}</p>
+                              <div className="flex shrink-0 gap-1">
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className={
+                                    state?.result === 'PASS'
+                                      ? 'border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700'
+                                      : 'border-muted-foreground/20 text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50 dark:text-emerald-500 dark:hover:bg-emerald-950'
+                                  }
+                                  onClick={() => handleQcChange(item.id, 'PASS')}
+                                >
+                                  <Check className="size-3.5" /> Pass
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className={
+                                    state?.result === 'FAIL'
+                                      ? 'border-destructive bg-destructive text-white hover:bg-destructive/90'
+                                      : 'border-muted-foreground/20 text-[#f1416c] hover:border-[#f1416c]/60 hover:bg-[#fff5f8] dark:text-[#f1416c] dark:hover:bg-red-950'
+                                  }
+                                  onClick={() => handleQcChange(item.id, 'FAIL')}
+                                >
+                                  <X className="size-3.5" /> Fail
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className={
+                                    state?.result === 'NOT_APPLICABLE'
+                                      ? 'border-muted-foreground/50 bg-muted text-muted-foreground'
+                                      : 'border-muted-foreground/20 text-muted-foreground hover:bg-muted'
+                                  }
+                                  onClick={() => handleQcChange(item.id, 'NOT_APPLICABLE')}
+                                >
+                                  <Minus className="size-3.5" /> N/A
+                                </Button>
+                              </div>
+                            </div>
+                            {state?.result === 'FAIL' && (
+                              <div className="border-t px-3 py-2">
+                                <Input
+                                  placeholder="Describe the issue..."
+                                  value={state.notes}
+                                  onChange={(e) => handleQcNotes(item.id, e.target.value)}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )
+            })}
+          </div>
+
+          <DialogFooter className="shrink-0 rounded-b-xl">
+            <Button variant="outline" onClick={() => setQcOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitQc}>Pass QC</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assemble Dialog */}
+      <Dialog open={assembleOpen} onOpenChange={setAssembleOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assemble {assembleJob?.deviceBarcode}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="assemble-notes">
+              Assembly work performed <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="assemble-notes"
+              placeholder="Describe what was assembled (parts re-seated, screws torqued, panels closed, etc.)…"
+              value={assembleNotes}
+              onChange={(e) => setAssembleNotes(e.target.value)}
+              rows={5}
+            />
+            <p className="text-xs text-muted-foreground">
+              On submit, the device moves to Inward QC.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssembleOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitAssemble}
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              Send to Inward QC
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/page'
 import {
   Select,
   SelectTrigger,
@@ -233,15 +234,17 @@ export default function RentalReturnsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">
-          Rental Returns
-        </h1>
-        <Button onClick={() => toast.info('Initiate Return dialog would open')}>
-          <Plus className="mr-2 size-4" />
-          Initiate Return
-        </Button>
-      </div>
+      <PageHeader
+        title="Rental Returns"
+        subtitle="Initiate, inspect, and close returns for rental contracts."
+        breadcrumbs={[{ label: 'Rentals' }, { label: 'Returns' }]}
+        actions={
+          <Button onClick={() => toast.info('Initiate Return dialog would open')}>
+            <Plus className="mr-2 size-4" />
+            Initiate Return
+          </Button>
+        }
+      />
 
       {/* Workflow stepper for selected return */}
       {selectedReturn && (

@@ -4,6 +4,9 @@ import { toast } from 'sonner'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
 import { BusinessMetricsTable, type TabConfig, type CellFormatter } from '@/components/common/BusinessMetricsTable'
+import { ListPageShell } from '@/components/page'
+import { Button } from '@/components/ui/button'
+import { Download, Plus } from 'lucide-react'
 import type { DataCardProps } from '@/components/common/DataCard'
 import { mockRentalAssets } from '../data/assets'
 import { ASSET_CATEGORY_LABELS, type RentalAssetStatus } from '../types'
@@ -95,21 +98,34 @@ function AssetRegistryPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="cpt-page-header">
-        <div>
-          <h1 className="cpt-page-title">Asset Registry</h1>
-          <div className="cpt-page-sub">UID-tracked assets across the Rentr fleet — {stats.total} assets, {fmtINR(stats.totalValue)} book value</div>
-        </div>
-        <div className="cpt-row">
-          <button className="cpt-btn" onClick={() => toast.success('CSV exported')}>Export CSV</button>
-          <button className="cpt-btn cpt-btn-primary" onClick={() => toast.success('New asset form')}>+ Register Asset</button>
-        </div>
-      </div>
-
-      <StatsRow stats={kpiStats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-assets" />
-    </div>
+    <ListPageShell
+      title="Asset Registry"
+      subtitle={`UID-tracked assets across the Rentr fleet — ${stats.total} assets, ${fmtINR(stats.totalValue)} book value.`}
+      breadcrumbs={[{ label: 'Rentals' }, { label: 'Assets' }]}
+      actions={
+        <>
+          <Button variant="outline" size="sm" onClick={() => toast.success('CSV exported')}>
+            <Download className="mr-1.5 size-4" />
+            Export CSV
+          </Button>
+          <Button size="sm" onClick={() => toast.success('New asset form')}>
+            <Plus className="mr-1.5 size-4" />
+            Register Asset
+          </Button>
+        </>
+      }
+      stats={<StatsRow stats={kpiStats} />}
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="rentals-assets"
+        emptyState={{
+          title: 'No assets registered',
+          description: 'Register assets to make them available for rental contracts.',
+        }}
+      />
+    </ListPageShell>
   )
 }
 

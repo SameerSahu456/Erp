@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/common/StatusBadge'
-import { EntityHeader } from '../components/EntityHeader'
+import { FormPageShell } from '@/components/page'
 import { QuoteBuilderPanel } from '../components/QuoteBuilderPanel'
 import { quotes } from '../data/quotes'
 import { leads } from '../data/leads'
@@ -81,40 +81,52 @@ function QuoteFormPage() {
 
 
   return (
-    <div className="space-y-5">
-      <EntityHeader
-        title={isEdit ? existingQuote.quoteNumber : 'Create Quote'}
-        subtitle={
-          isEdit
-            ? `${resolvedAccountName ?? ''} — ${existingQuote?.lineItems?.length ?? 0} items`
-            : 'Build a new quote — select items from inventory or add descriptions manually'
-        }
-        status={isEdit ? { label: status, variant: STATUS_VARIANTS[status] } : undefined}
-        backHref={backHref}
-        actions={
-          <div className="flex items-center gap-2">
-            {isEdit && (
-              <>
-                <Button variant="outline" size="sm" onClick={handleDuplicateQuote}>
-                  <Copy className="size-4 mr-1.5" />
-                  Duplicate
+    <FormPageShell
+      title={isEdit ? existingQuote.quoteNumber : 'Create Quote'}
+      subtitle={
+        isEdit
+          ? `${resolvedAccountName ?? ''} — ${existingQuote?.lineItems?.length ?? 0} items`
+          : 'Build a new quote — select items from inventory or add descriptions manually'
+      }
+      breadcrumbs={
+        isEdit
+          ? [
+              { label: 'CRM' },
+              { label: 'Quotes', href: '/crm/quotes' },
+              { label: existingQuote.quoteNumber },
+            ]
+          : [
+              { label: 'CRM' },
+              { label: 'Quotes', href: '/crm/quotes' },
+              { label: 'New Quote' },
+            ]
+      }
+      status={isEdit ? { label: status, variant: STATUS_VARIANTS[status] } : undefined}
+      backHref={backHref}
+      hideFooter
+      actions={
+        <div className="flex items-center gap-2">
+          {isEdit && (
+            <>
+              <Button variant="outline" size="sm" onClick={handleDuplicateQuote}>
+                <Copy className="size-4 mr-1.5" />
+                Duplicate
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleAmendQuote}>
+                <History className="size-4 mr-1.5" />
+                Amend
+              </Button>
+              {existingQuote?.status === 'Accepted' && (
+                <Button size="sm" onClick={handleConvertToSO}>
+                  <ArrowRight className="size-4 mr-1.5" />
+                  Convert to SO
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleAmendQuote}>
-                  <History className="size-4 mr-1.5" />
-                  Amend
-                </Button>
-                {existingQuote?.status === 'Accepted' && (
-                  <Button size="sm" onClick={handleConvertToSO}>
-                    <ArrowRight className="size-4 mr-1.5" />
-                    Convert to SO
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-        }
-      />
-
+              )}
+            </>
+          )}
+        </div>
+      }
+    >
       {/* Lead/Deal & Version Info */}
       {(prefilledLead || prefilledDeal || version > 1) && (
         <div className="flex flex-wrap items-center gap-3">
@@ -149,7 +161,7 @@ function QuoteFormPage() {
         accountId={paramAccountId}
         accountName={resolvedAccountName}
       />
-    </div>
+    </FormPageShell>
   )
 }
 

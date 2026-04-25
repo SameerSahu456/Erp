@@ -16,10 +16,10 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 68500,
         lastUpdated: '2026-04-10T10:00:00Z',
         skus: [
-          { sku: 'SKU-LAT5540-NEW-001', serialNumber: 'DL5540-SN-10001', barcode: 'L-DEL-5540-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row1-RackA-Bin2', poNumber: 'PO-2026-001', receivedDate: '2026-03-12T10:30:00Z', lastMovement: '2026-03-14T10:00:00Z' },
-          { sku: 'SKU-LAT5540-NEW-002', serialNumber: 'DL5540-SN-10002', barcode: 'L-DEL-5540-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row1-RackA-Bin2', poNumber: 'PO-2026-001', receivedDate: '2026-03-12T10:30:00Z', lastMovement: '2026-03-14T10:00:00Z' },
-          { sku: 'SKU-LAT5540-NEW-003', serialNumber: 'DL5540-SN-10003', barcode: 'L-DEL-5540-003', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row1-RackA-Bin3', poNumber: 'PO-2026-001', receivedDate: '2026-03-12T10:30:00Z', lastMovement: '2026-04-08T09:00:00Z' },
-          { sku: 'SKU-LAT5540-NEW-004', serialNumber: 'DL5540-SN-10004', barcode: 'L-DEL-5540-004', status: 'Dispatched', grade: 'A', location: 'MUM-WH1/Row1-RackA-Bin3', poNumber: 'PO-2026-001', receivedDate: '2026-03-12T10:30:00Z', lastMovement: '2026-04-05T14:00:00Z' },
+          { sku: 'PN-LAT5540-NEW-001', serialNumber: 'DL5540-SN-10001', barcode: 'L-DEL-5540-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row1-RackA-Bin2', poNumber: 'PO-2026-001', receivedDate: '2026-03-12T10:30:00Z', lastMovement: '2026-03-14T10:00:00Z' },
+          { sku: 'PN-LAT5540-NEW-002', serialNumber: 'DL5540-SN-10002', barcode: 'L-DEL-5540-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row1-RackA-Bin2', poNumber: 'PO-2026-001', receivedDate: '2026-03-12T10:30:00Z', lastMovement: '2026-03-14T10:00:00Z' },
+          { sku: 'PN-LAT5540-NEW-003', serialNumber: 'DL5540-SN-10003', barcode: 'L-DEL-5540-003', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row1-RackA-Bin3', poNumber: 'PO-2026-001', receivedDate: '2026-03-12T10:30:00Z', lastMovement: '2026-04-08T09:00:00Z' },
+          { sku: 'PN-LAT5540-NEW-004', serialNumber: 'DL5540-SN-10004', barcode: 'L-DEL-5540-004', status: 'Dispatched', grade: 'A', location: 'MUM-WH1/Row1-RackA-Bin3', poNumber: 'PO-2026-001', receivedDate: '2026-03-12T10:30:00Z', lastMovement: '2026-04-05T14:00:00Z' },
         ],
       },
       {
@@ -28,11 +28,11 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 42000,
         lastUpdated: '2026-04-12T14:00:00Z',
         skus: [
-          { sku: 'SKU-LAT5540-REF-001', serialNumber: 'DL5540-SN-20001', barcode: 'L-DEL-5540-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row2-RackA-Bin1', batchNumber: 'BATCH-2026-0002', receivedDate: '2026-03-15T09:00:00Z', lastMovement: '2026-03-17T10:00:00Z' },
-          { sku: 'SKU-LAT5540-REF-002', serialNumber: 'DL5540-SN-20002', barcode: 'L-DEL-5540-R02', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row2-RackA-Bin2', batchNumber: 'BATCH-2026-0002', receivedDate: '2026-03-15T09:00:00Z', lastMovement: '2026-03-17T10:00:00Z' },
-          { sku: 'SKU-LAT5540-REF-003', serialNumber: 'DL5540-SN-20003', barcode: 'L-DEL-5540-R03', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row2-RackA-Bin4', batchNumber: 'BATCH-2026-0003', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-04-02T14:30:00Z' },
-          { sku: 'SKU-LAT5540-REF-004', serialNumber: 'DL5540-SN-20004', barcode: 'L-DEL-5540-R04', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row2-RackA-Bin1', batchNumber: 'BATCH-2026-0002', receivedDate: '2026-03-15T09:00:00Z', lastMovement: '2026-04-10T11:00:00Z' },
-          { sku: 'SKU-LAT5540-REF-005', serialNumber: 'DL5540-SN-20005', barcode: 'L-DEL-5540-R05', status: 'In Repair', grade: 'B', location: 'MUM-WH1/Row2-RackA-Bin3', batchNumber: 'BATCH-2026-0003', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-04-11T08:00:00Z' },
+          { sku: 'PN-LAT5540-REF-001', serialNumber: 'DL5540-SN-20001', barcode: 'L-DEL-5540-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row2-RackA-Bin1', batchNumber: 'BATCH-2026-0002', receivedDate: '2026-03-15T09:00:00Z', lastMovement: '2026-03-17T10:00:00Z' },
+          { sku: 'PN-LAT5540-REF-002', serialNumber: 'DL5540-SN-20002', barcode: 'L-DEL-5540-R02', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row2-RackA-Bin2', batchNumber: 'BATCH-2026-0002', receivedDate: '2026-03-15T09:00:00Z', lastMovement: '2026-03-17T10:00:00Z' },
+          { sku: 'PN-LAT5540-REF-003', serialNumber: 'DL5540-SN-20003', barcode: 'L-DEL-5540-R03', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row2-RackA-Bin4', batchNumber: 'BATCH-2026-0003', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-04-02T14:30:00Z' },
+          { sku: 'PN-LAT5540-REF-004', serialNumber: 'DL5540-SN-20004', barcode: 'L-DEL-5540-R04', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row2-RackA-Bin1', batchNumber: 'BATCH-2026-0002', receivedDate: '2026-03-15T09:00:00Z', lastMovement: '2026-04-10T11:00:00Z' },
+          { sku: 'PN-LAT5540-REF-005', serialNumber: 'DL5540-SN-20005', barcode: 'L-DEL-5540-R05', status: 'In Repair', grade: 'B', location: 'MUM-WH1/Row2-RackA-Bin3', batchNumber: 'BATCH-2026-0003', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-04-11T08:00:00Z' },
         ],
       },
     ],
@@ -55,9 +55,9 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 72000,
         lastUpdated: '2026-04-08T09:00:00Z',
         skus: [
-          { sku: 'SKU-EB840-NEW-001', serialNumber: 'HP840-SN-10001', barcode: 'L-HP-840G8-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row2-RackB-Bin1', poNumber: 'PO-2026-004', receivedDate: '2026-03-15T10:00:00Z', lastMovement: '2026-03-16T15:00:00Z' },
-          { sku: 'SKU-EB840-NEW-002', serialNumber: 'HP840-SN-10002', barcode: 'L-HP-840G8-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row2-RackB-Bin1', poNumber: 'PO-2026-004', receivedDate: '2026-03-15T10:00:00Z', lastMovement: '2026-03-16T15:00:00Z' },
-          { sku: 'SKU-EB840-NEW-003', serialNumber: 'HP840-SN-10003', barcode: 'L-HP-840G8-003', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row2-RackB-Bin2', poNumber: 'PO-2026-004', receivedDate: '2026-03-15T10:00:00Z', lastMovement: '2026-04-06T09:00:00Z' },
+          { sku: 'PN-EB840-NEW-001', serialNumber: 'HP840-SN-10001', barcode: 'L-HP-840G8-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row2-RackB-Bin1', poNumber: 'PO-2026-004', receivedDate: '2026-03-15T10:00:00Z', lastMovement: '2026-03-16T15:00:00Z' },
+          { sku: 'PN-EB840-NEW-002', serialNumber: 'HP840-SN-10002', barcode: 'L-HP-840G8-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row2-RackB-Bin1', poNumber: 'PO-2026-004', receivedDate: '2026-03-15T10:00:00Z', lastMovement: '2026-03-16T15:00:00Z' },
+          { sku: 'PN-EB840-NEW-003', serialNumber: 'HP840-SN-10003', barcode: 'L-HP-840G8-003', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row2-RackB-Bin2', poNumber: 'PO-2026-004', receivedDate: '2026-03-15T10:00:00Z', lastMovement: '2026-04-06T09:00:00Z' },
         ],
       },
       {
@@ -66,9 +66,9 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 45000,
         lastUpdated: '2026-04-11T16:00:00Z',
         skus: [
-          { sku: 'SKU-EB840-REF-001', serialNumber: 'HP840-SN-20001', barcode: 'L-HP-840G8-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackA-Bin1', batchNumber: 'BATCH-2026-0005', receivedDate: '2026-03-20T09:00:00Z', lastMovement: '2026-03-22T08:00:00Z' },
-          { sku: 'SKU-EB840-REF-002', serialNumber: 'HP840-SN-20002', barcode: 'L-HP-840G8-R02', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackA-Bin1', batchNumber: 'BATCH-2026-0005', receivedDate: '2026-03-20T09:00:00Z', lastMovement: '2026-03-22T08:00:00Z' },
-          { sku: 'SKU-EB840-REF-003', serialNumber: 'HP840-SN-20003', barcode: 'L-HP-840G8-R03', status: 'Dispatched', grade: 'B', location: 'MUM-WH1/Row3-RackA-Bin2', batchNumber: 'BATCH-2026-0005', receivedDate: '2026-03-20T09:00:00Z', lastMovement: '2026-04-09T10:00:00Z' },
+          { sku: 'PN-EB840-REF-001', serialNumber: 'HP840-SN-20001', barcode: 'L-HP-840G8-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackA-Bin1', batchNumber: 'BATCH-2026-0005', receivedDate: '2026-03-20T09:00:00Z', lastMovement: '2026-03-22T08:00:00Z' },
+          { sku: 'PN-EB840-REF-002', serialNumber: 'HP840-SN-20002', barcode: 'L-HP-840G8-R02', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackA-Bin1', batchNumber: 'BATCH-2026-0005', receivedDate: '2026-03-20T09:00:00Z', lastMovement: '2026-03-22T08:00:00Z' },
+          { sku: 'PN-EB840-REF-003', serialNumber: 'HP840-SN-20003', barcode: 'L-HP-840G8-R03', status: 'Dispatched', grade: 'B', location: 'MUM-WH1/Row3-RackA-Bin2', batchNumber: 'BATCH-2026-0005', receivedDate: '2026-03-20T09:00:00Z', lastMovement: '2026-04-09T10:00:00Z' },
         ],
       },
       {
@@ -77,8 +77,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 65000,
         lastUpdated: '2026-04-05T11:00:00Z',
         skus: [
-          { sku: 'SKU-EB840-PULL-001', serialNumber: 'HP840-SN-30001', barcode: 'L-HP-840G8-P01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackB-Bin1', poNumber: 'PO-2026-005', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-03-19T10:00:00Z' },
-          { sku: 'SKU-EB840-PULL-002', serialNumber: 'HP840-SN-30002', barcode: 'L-HP-840G8-P02', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row3-RackB-Bin1', poNumber: 'PO-2026-005', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-04-03T11:00:00Z' },
+          { sku: 'PN-EB840-PULL-001', serialNumber: 'HP840-SN-30001', barcode: 'L-HP-840G8-P01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackB-Bin1', poNumber: 'PO-2026-005', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-03-19T10:00:00Z' },
+          { sku: 'PN-EB840-PULL-002', serialNumber: 'HP840-SN-30002', barcode: 'L-HP-840G8-P02', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row3-RackB-Bin1', poNumber: 'PO-2026-005', receivedDate: '2026-03-18T09:00:00Z', lastMovement: '2026-04-03T11:00:00Z' },
         ],
       },
     ],
@@ -101,8 +101,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 75000,
         lastUpdated: '2026-04-06T10:00:00Z',
         skus: [
-          { sku: 'SKU-T14G4-NEW-001', serialNumber: 'LEN-T14-SN-10001', barcode: 'L-LEN-T14G4-001', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row1-RackA-Bin1', poNumber: 'PO-2026-007', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
-          { sku: 'SKU-T14G4-NEW-002', serialNumber: 'LEN-T14-SN-10002', barcode: 'L-LEN-T14G4-002', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row1-RackA-Bin1', poNumber: 'PO-2026-007', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
+          { sku: 'PN-T14G4-NEW-001', serialNumber: 'LEN-T14-SN-10001', barcode: 'L-LEN-T14G4-001', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row1-RackA-Bin1', poNumber: 'PO-2026-007', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
+          { sku: 'PN-T14G4-NEW-002', serialNumber: 'LEN-T14-SN-10002', barcode: 'L-LEN-T14G4-002', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row1-RackA-Bin1', poNumber: 'PO-2026-007', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
         ],
       },
       {
@@ -111,9 +111,9 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 48000,
         lastUpdated: '2026-04-13T09:00:00Z',
         skus: [
-          { sku: 'SKU-T14G4-REF-001', serialNumber: 'LEN-T14-SN-20001', barcode: 'L-LEN-T14G4-R01', status: 'In Stock', grade: 'B', location: 'BLR-WH2/Row1-RackB-Bin1', batchNumber: 'BATCH-2026-0008', receivedDate: '2026-03-25T09:00:00Z', lastMovement: '2026-03-31T10:00:00Z' },
-          { sku: 'SKU-T14G4-REF-002', serialNumber: 'LEN-T14-SN-20002', barcode: 'L-LEN-T14G4-R02', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row1-RackB-Bin2', batchNumber: 'BATCH-2026-0008', receivedDate: '2026-03-25T09:00:00Z', lastMovement: '2026-03-28T10:00:00Z' },
-          { sku: 'SKU-T14G4-REF-003', serialNumber: 'LEN-T14-SN-20003', barcode: 'L-LEN-T14G4-R03', status: 'Reserved', grade: 'A', location: 'BLR-WH2/Row1-RackB-Bin2', batchNumber: 'BATCH-2026-0008', receivedDate: '2026-03-25T09:00:00Z', lastMovement: '2026-04-12T08:00:00Z' },
+          { sku: 'PN-T14G4-REF-001', serialNumber: 'LEN-T14-SN-20001', barcode: 'L-LEN-T14G4-R01', status: 'In Stock', grade: 'B', location: 'BLR-WH2/Row1-RackB-Bin1', batchNumber: 'BATCH-2026-0008', receivedDate: '2026-03-25T09:00:00Z', lastMovement: '2026-03-31T10:00:00Z' },
+          { sku: 'PN-T14G4-REF-002', serialNumber: 'LEN-T14-SN-20002', barcode: 'L-LEN-T14G4-R02', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row1-RackB-Bin2', batchNumber: 'BATCH-2026-0008', receivedDate: '2026-03-25T09:00:00Z', lastMovement: '2026-03-28T10:00:00Z' },
+          { sku: 'PN-T14G4-REF-003', serialNumber: 'LEN-T14-SN-20003', barcode: 'L-LEN-T14G4-R03', status: 'Reserved', grade: 'A', location: 'BLR-WH2/Row1-RackB-Bin2', batchNumber: 'BATCH-2026-0008', receivedDate: '2026-03-25T09:00:00Z', lastMovement: '2026-04-12T08:00:00Z' },
         ],
       },
     ],
@@ -136,8 +136,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 189900,
         lastUpdated: '2026-04-01T10:00:00Z',
         skus: [
-          { sku: 'SKU-MBP14-NEW-001', serialNumber: 'APP-MBP-SN-10001', barcode: 'L-APP-MBP14-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row1-RackC-Bin1', poNumber: 'PO-2026-010', receivedDate: '2026-03-28T10:00:00Z', lastMovement: '2026-03-29T09:00:00Z' },
-          { sku: 'SKU-MBP14-NEW-002', serialNumber: 'APP-MBP-SN-10002', barcode: 'L-APP-MBP14-002', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row1-RackC-Bin1', poNumber: 'PO-2026-010', receivedDate: '2026-03-28T10:00:00Z', lastMovement: '2026-04-01T10:00:00Z' },
+          { sku: 'PN-MBP14-NEW-001', serialNumber: 'APP-MBP-SN-10001', barcode: 'L-APP-MBP14-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row1-RackC-Bin1', poNumber: 'PO-2026-010', receivedDate: '2026-03-28T10:00:00Z', lastMovement: '2026-03-29T09:00:00Z' },
+          { sku: 'PN-MBP14-NEW-002', serialNumber: 'APP-MBP-SN-10002', barcode: 'L-APP-MBP14-002', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row1-RackC-Bin1', poNumber: 'PO-2026-010', receivedDate: '2026-03-28T10:00:00Z', lastMovement: '2026-04-01T10:00:00Z' },
         ],
       },
       {
@@ -146,8 +146,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 145000,
         lastUpdated: '2026-04-09T14:00:00Z',
         skus: [
-          { sku: 'SKU-MBP14-REF-001', serialNumber: 'APP-MBP-SN-20001', barcode: 'L-APP-MBP14-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row1-RackC-Bin2', batchNumber: 'BATCH-2026-0010', receivedDate: '2026-03-30T09:00:00Z', lastMovement: '2026-04-01T10:00:00Z' },
-          { sku: 'SKU-MBP14-REF-002', serialNumber: 'APP-MBP-SN-20002', barcode: 'L-APP-MBP14-R02', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row1-RackC-Bin2', batchNumber: 'BATCH-2026-0010', receivedDate: '2026-03-30T09:00:00Z', lastMovement: '2026-04-01T10:00:00Z' },
+          { sku: 'PN-MBP14-REF-001', serialNumber: 'APP-MBP-SN-20001', barcode: 'L-APP-MBP14-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row1-RackC-Bin2', batchNumber: 'BATCH-2026-0010', receivedDate: '2026-03-30T09:00:00Z', lastMovement: '2026-04-01T10:00:00Z' },
+          { sku: 'PN-MBP14-REF-002', serialNumber: 'APP-MBP-SN-20002', barcode: 'L-APP-MBP14-R02', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row1-RackC-Bin2', batchNumber: 'BATCH-2026-0010', receivedDate: '2026-03-30T09:00:00Z', lastMovement: '2026-04-01T10:00:00Z' },
         ],
       },
     ],
@@ -170,8 +170,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 82000,
         lastUpdated: '2026-04-07T11:00:00Z',
         skus: [
-          { sku: 'SKU-LAT7440-NEW-001', serialNumber: 'DL7440-SN-10001', barcode: 'L-DEL-7440-001', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row1-RackA-Bin1', poNumber: 'PO-2026-011', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-03-26T10:00:00Z' },
-          { sku: 'SKU-LAT7440-NEW-002', serialNumber: 'DL7440-SN-10002', barcode: 'L-DEL-7440-002', status: 'Reserved', grade: 'A', location: 'DEL-WH3/Row1-RackA-Bin1', poNumber: 'PO-2026-011', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-04-06T09:00:00Z' },
+          { sku: 'PN-LAT7440-NEW-001', serialNumber: 'DL7440-SN-10001', barcode: 'L-DEL-7440-001', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row1-RackA-Bin1', poNumber: 'PO-2026-011', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-03-26T10:00:00Z' },
+          { sku: 'PN-LAT7440-NEW-002', serialNumber: 'DL7440-SN-10002', barcode: 'L-DEL-7440-002', status: 'Reserved', grade: 'A', location: 'DEL-WH3/Row1-RackA-Bin1', poNumber: 'PO-2026-011', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-04-06T09:00:00Z' },
         ],
       },
       {
@@ -180,8 +180,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 55000,
         lastUpdated: '2026-04-10T15:00:00Z',
         skus: [
-          { sku: 'SKU-LAT7440-REF-001', serialNumber: 'DL7440-SN-20001', barcode: 'L-DEL-7440-R01', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row1-RackB-Bin1', batchNumber: 'BATCH-2026-0011', receivedDate: '2026-03-28T09:00:00Z', lastMovement: '2026-03-30T10:00:00Z' },
-          { sku: 'SKU-LAT7440-REF-002', serialNumber: 'DL7440-SN-20002', barcode: 'L-DEL-7440-R02', status: 'In Repair', grade: 'B', location: 'DEL-WH3/Row1-RackB-Bin2', batchNumber: 'BATCH-2026-0011', receivedDate: '2026-03-28T09:00:00Z', lastMovement: '2026-04-09T14:00:00Z' },
+          { sku: 'PN-LAT7440-REF-001', serialNumber: 'DL7440-SN-20001', barcode: 'L-DEL-7440-R01', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row1-RackB-Bin1', batchNumber: 'BATCH-2026-0011', receivedDate: '2026-03-28T09:00:00Z', lastMovement: '2026-03-30T10:00:00Z' },
+          { sku: 'PN-LAT7440-REF-002', serialNumber: 'DL7440-SN-20002', barcode: 'L-DEL-7440-R02', status: 'In Repair', grade: 'B', location: 'DEL-WH3/Row1-RackB-Bin2', batchNumber: 'BATCH-2026-0011', receivedDate: '2026-03-28T09:00:00Z', lastMovement: '2026-04-09T14:00:00Z' },
         ],
       },
     ],
@@ -204,9 +204,9 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 35000,
         lastUpdated: '2026-04-11T10:00:00Z',
         skus: [
-          { sku: 'SKU-PB450-REF-001', serialNumber: 'HP450-SN-20001', barcode: 'L-HP-450G9-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackC-Bin1', batchNumber: 'BATCH-2026-0012', receivedDate: '2026-03-22T09:00:00Z', lastMovement: '2026-03-24T10:00:00Z' },
-          { sku: 'SKU-PB450-REF-002', serialNumber: 'HP450-SN-20002', barcode: 'L-HP-450G9-R02', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row3-RackC-Bin1', batchNumber: 'BATCH-2026-0012', receivedDate: '2026-03-22T09:00:00Z', lastMovement: '2026-03-24T10:00:00Z' },
-          { sku: 'SKU-PB450-REF-003', serialNumber: 'HP450-SN-20003', barcode: 'L-HP-450G9-R03', status: 'Dispatched', grade: 'A', location: 'MUM-WH1/Row3-RackC-Bin2', batchNumber: 'BATCH-2026-0012', receivedDate: '2026-03-22T09:00:00Z', lastMovement: '2026-04-08T15:00:00Z' },
+          { sku: 'PN-PB450-REF-001', serialNumber: 'HP450-SN-20001', barcode: 'L-HP-450G9-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackC-Bin1', batchNumber: 'BATCH-2026-0012', receivedDate: '2026-03-22T09:00:00Z', lastMovement: '2026-03-24T10:00:00Z' },
+          { sku: 'PN-PB450-REF-002', serialNumber: 'HP450-SN-20002', barcode: 'L-HP-450G9-R02', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row3-RackC-Bin1', batchNumber: 'BATCH-2026-0012', receivedDate: '2026-03-22T09:00:00Z', lastMovement: '2026-03-24T10:00:00Z' },
+          { sku: 'PN-PB450-REF-003', serialNumber: 'HP450-SN-20003', barcode: 'L-HP-450G9-R03', status: 'Dispatched', grade: 'A', location: 'MUM-WH1/Row3-RackC-Bin2', batchNumber: 'BATCH-2026-0012', receivedDate: '2026-03-22T09:00:00Z', lastMovement: '2026-04-08T15:00:00Z' },
         ],
       },
     ],
@@ -229,9 +229,9 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 48000,
         lastUpdated: '2026-04-03T09:00:00Z',
         skus: [
-          { sku: 'SKU-OPX7010-NEW-001', serialNumber: 'DL7010-SN-10001', barcode: 'D-DEL-7010-001', status: 'Dispatched', grade: 'A', location: 'MUM-WH1/Row3-RackA-Bin1', poNumber: 'PO-2026-006', receivedDate: '2026-03-10T10:00:00Z', lastMovement: '2026-04-05T09:00:00Z' },
-          { sku: 'SKU-OPX7010-NEW-002', serialNumber: 'DL7010-SN-10002', barcode: 'D-DEL-7010-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackA-Bin1', poNumber: 'PO-2026-006', receivedDate: '2026-03-10T10:00:00Z', lastMovement: '2026-03-11T11:00:00Z' },
-          { sku: 'SKU-OPX7010-NEW-003', serialNumber: 'DL7010-SN-10003', barcode: 'D-DEL-7010-003', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackA-Bin2', poNumber: 'PO-2026-006', receivedDate: '2026-03-10T10:00:00Z', lastMovement: '2026-03-11T11:00:00Z' },
+          { sku: 'PN-OPX7010-NEW-001', serialNumber: 'DL7010-SN-10001', barcode: 'D-DEL-7010-001', status: 'Dispatched', grade: 'A', location: 'MUM-WH1/Row3-RackA-Bin1', poNumber: 'PO-2026-006', receivedDate: '2026-03-10T10:00:00Z', lastMovement: '2026-04-05T09:00:00Z' },
+          { sku: 'PN-OPX7010-NEW-002', serialNumber: 'DL7010-SN-10002', barcode: 'D-DEL-7010-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackA-Bin1', poNumber: 'PO-2026-006', receivedDate: '2026-03-10T10:00:00Z', lastMovement: '2026-03-11T11:00:00Z' },
+          { sku: 'PN-OPX7010-NEW-003', serialNumber: 'DL7010-SN-10003', barcode: 'D-DEL-7010-003', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row3-RackA-Bin2', poNumber: 'PO-2026-006', receivedDate: '2026-03-10T10:00:00Z', lastMovement: '2026-03-11T11:00:00Z' },
         ],
       },
       {
@@ -240,8 +240,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 28000,
         lastUpdated: '2026-04-12T10:00:00Z',
         skus: [
-          { sku: 'SKU-OPX7010-REF-001', serialNumber: 'DL7010-SN-20001', barcode: 'D-DEL-7010-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackA-Bin1', batchNumber: 'BATCH-2026-0013', receivedDate: '2026-03-14T09:00:00Z', lastMovement: '2026-03-16T10:00:00Z' },
-          { sku: 'SKU-OPX7010-REF-002', serialNumber: 'DL7010-SN-20002', barcode: 'D-DEL-7010-R02', status: 'Reserved', grade: 'B', location: 'MUM-WH1/Row4-RackA-Bin2', batchNumber: 'BATCH-2026-0013', receivedDate: '2026-03-14T09:00:00Z', lastMovement: '2026-04-10T09:00:00Z' },
+          { sku: 'PN-OPX7010-REF-001', serialNumber: 'DL7010-SN-20001', barcode: 'D-DEL-7010-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackA-Bin1', batchNumber: 'BATCH-2026-0013', receivedDate: '2026-03-14T09:00:00Z', lastMovement: '2026-03-16T10:00:00Z' },
+          { sku: 'PN-OPX7010-REF-002', serialNumber: 'DL7010-SN-20002', barcode: 'D-DEL-7010-R02', status: 'Reserved', grade: 'B', location: 'MUM-WH1/Row4-RackA-Bin2', batchNumber: 'BATCH-2026-0013', receivedDate: '2026-03-14T09:00:00Z', lastMovement: '2026-04-10T09:00:00Z' },
         ],
       },
       {
@@ -250,8 +250,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 42000,
         lastUpdated: '2026-04-01T14:00:00Z',
         skus: [
-          { sku: 'SKU-OPX7010-PULL-001', serialNumber: 'DL7010-SN-30001', barcode: 'D-DEL-7010-P01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackB-Bin1', poNumber: 'PO-2026-006B', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
-          { sku: 'SKU-OPX7010-PULL-002', serialNumber: 'DL7010-SN-30002', barcode: 'D-DEL-7010-P02', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackB-Bin1', poNumber: 'PO-2026-006B', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
+          { sku: 'PN-OPX7010-PULL-001', serialNumber: 'DL7010-SN-30001', barcode: 'D-DEL-7010-P01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackB-Bin1', poNumber: 'PO-2026-006B', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
+          { sku: 'PN-OPX7010-PULL-002', serialNumber: 'DL7010-SN-30002', barcode: 'D-DEL-7010-P02', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackB-Bin1', poNumber: 'PO-2026-006B', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
         ],
       },
     ],
@@ -274,8 +274,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 62000,
         lastUpdated: '2026-04-05T10:00:00Z',
         skus: [
-          { sku: 'SKU-M90A-NEW-001', serialNumber: 'LEN-M90A-SN-10001', barcode: 'D-LEN-M90A-001', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row2-RackA-Bin1', poNumber: 'PO-2026-013', receivedDate: '2026-03-22T10:00:00Z', lastMovement: '2026-03-23T09:00:00Z' },
-          { sku: 'SKU-M90A-NEW-002', serialNumber: 'LEN-M90A-SN-10002', barcode: 'D-LEN-M90A-002', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row2-RackA-Bin1', poNumber: 'PO-2026-013', receivedDate: '2026-03-22T10:00:00Z', lastMovement: '2026-03-23T09:00:00Z' },
+          { sku: 'PN-M90A-NEW-001', serialNumber: 'LEN-M90A-SN-10001', barcode: 'D-LEN-M90A-001', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row2-RackA-Bin1', poNumber: 'PO-2026-013', receivedDate: '2026-03-22T10:00:00Z', lastMovement: '2026-03-23T09:00:00Z' },
+          { sku: 'PN-M90A-NEW-002', serialNumber: 'LEN-M90A-SN-10002', barcode: 'D-LEN-M90A-002', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row2-RackA-Bin1', poNumber: 'PO-2026-013', receivedDate: '2026-03-22T10:00:00Z', lastMovement: '2026-03-23T09:00:00Z' },
         ],
       },
       {
@@ -284,8 +284,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 38000,
         lastUpdated: '2026-04-08T16:00:00Z',
         skus: [
-          { sku: 'SKU-M90A-REF-001', serialNumber: 'LEN-M90A-SN-20001', barcode: 'D-LEN-M90A-R01', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row2-RackB-Bin1', batchNumber: 'BATCH-2026-0014', receivedDate: '2026-03-28T09:00:00Z', lastMovement: '2026-03-30T10:00:00Z' },
-          { sku: 'SKU-M90A-REF-002', serialNumber: 'LEN-M90A-SN-20002', barcode: 'D-LEN-M90A-R02', status: 'In Repair', grade: 'B', location: 'BLR-WH2/Row2-RackB-Bin1', batchNumber: 'BATCH-2026-0014', receivedDate: '2026-03-28T09:00:00Z', lastMovement: '2026-04-07T14:00:00Z' },
+          { sku: 'PN-M90A-REF-001', serialNumber: 'LEN-M90A-SN-20001', barcode: 'D-LEN-M90A-R01', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row2-RackB-Bin1', batchNumber: 'BATCH-2026-0014', receivedDate: '2026-03-28T09:00:00Z', lastMovement: '2026-03-30T10:00:00Z' },
+          { sku: 'PN-M90A-REF-002', serialNumber: 'LEN-M90A-SN-20002', barcode: 'D-LEN-M90A-R02', status: 'In Repair', grade: 'B', location: 'BLR-WH2/Row2-RackB-Bin1', batchNumber: 'BATCH-2026-0014', receivedDate: '2026-03-28T09:00:00Z', lastMovement: '2026-04-07T14:00:00Z' },
         ],
       },
     ],
@@ -307,7 +307,7 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 425000,
         lastUpdated: '2026-03-28T10:00:00Z',
         skus: [
-          { sku: 'SKU-R750-NEW-001', serialNumber: 'DL-R750-SN-10001', barcode: 'S-DEL-R750-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin1', poNumber: 'PO-2026-015', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-03-26T09:00:00Z' },
+          { sku: 'PN-R750-NEW-001', serialNumber: 'DL-R750-SN-10001', barcode: 'S-DEL-R750-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin1', poNumber: 'PO-2026-015', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-03-26T09:00:00Z' },
         ],
       },
       {
@@ -316,8 +316,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 285000,
         lastUpdated: '2026-04-02T11:00:00Z',
         skus: [
-          { sku: 'SKU-R750-REF-001', serialNumber: 'DL-R750-SN-20001', barcode: 'S-DEL-R750-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin2', batchNumber: 'BATCH-2026-0015', receivedDate: '2026-03-20T09:00:00Z', lastMovement: '2026-03-22T10:00:00Z' },
-          { sku: 'SKU-R750-REF-002', serialNumber: 'DL-R750-SN-20002', barcode: 'S-DEL-R750-R02', status: 'Reserved', grade: 'B', location: 'MUM-WH1/Row5-RackA-Bin2', batchNumber: 'BATCH-2026-0015', receivedDate: '2026-03-20T09:00:00Z', lastMovement: '2026-04-01T08:00:00Z' },
+          { sku: 'PN-R750-REF-001', serialNumber: 'DL-R750-SN-20001', barcode: 'S-DEL-R750-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin2', batchNumber: 'BATCH-2026-0015', receivedDate: '2026-03-20T09:00:00Z', lastMovement: '2026-03-22T10:00:00Z' },
+          { sku: 'PN-R750-REF-002', serialNumber: 'DL-R750-SN-20002', barcode: 'S-DEL-R750-R02', status: 'Reserved', grade: 'B', location: 'MUM-WH1/Row5-RackA-Bin2', batchNumber: 'BATCH-2026-0015', receivedDate: '2026-03-20T09:00:00Z', lastMovement: '2026-04-01T08:00:00Z' },
         ],
       },
     ],
@@ -339,8 +339,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 78000,
         lastUpdated: '2026-04-04T09:00:00Z',
         skus: [
-          { sku: 'SKU-DS1621-NEW-001', serialNumber: 'SYN-DS1621-SN-001', barcode: 'N-SYN-DS1621-001', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row2-RackA-Bin1', poNumber: 'PO-2026-016', receivedDate: '2026-03-28T10:00:00Z', lastMovement: '2026-03-29T09:00:00Z' },
-          { sku: 'SKU-DS1621-NEW-002', serialNumber: 'SYN-DS1621-SN-002', barcode: 'N-SYN-DS1621-002', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row2-RackA-Bin1', poNumber: 'PO-2026-016', receivedDate: '2026-03-28T10:00:00Z', lastMovement: '2026-03-29T09:00:00Z' },
+          { sku: 'PN-DS1621-NEW-001', serialNumber: 'SYN-DS1621-SN-001', barcode: 'N-SYN-DS1621-001', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row2-RackA-Bin1', poNumber: 'PO-2026-016', receivedDate: '2026-03-28T10:00:00Z', lastMovement: '2026-03-29T09:00:00Z' },
+          { sku: 'PN-DS1621-NEW-002', serialNumber: 'SYN-DS1621-SN-002', barcode: 'N-SYN-DS1621-002', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row2-RackA-Bin1', poNumber: 'PO-2026-016', receivedDate: '2026-03-28T10:00:00Z', lastMovement: '2026-03-29T09:00:00Z' },
         ],
       },
     ],
@@ -362,8 +362,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 125000,
         lastUpdated: '2026-04-06T14:00:00Z',
         skus: [
-          { sku: 'SKU-9200L-NEW-001', serialNumber: 'CSC-9200L-SN-001', barcode: 'N-CSC-9200L-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackC-Bin1', poNumber: 'PO-2026-017', receivedDate: '2026-03-22T10:00:00Z', lastMovement: '2026-03-23T09:00:00Z' },
-          { sku: 'SKU-9200L-NEW-002', serialNumber: 'CSC-9200L-SN-002', barcode: 'N-CSC-9200L-002', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row4-RackC-Bin1', poNumber: 'PO-2026-017', receivedDate: '2026-03-22T10:00:00Z', lastMovement: '2026-04-04T11:00:00Z' },
+          { sku: 'PN-9200L-NEW-001', serialNumber: 'CSC-9200L-SN-001', barcode: 'N-CSC-9200L-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackC-Bin1', poNumber: 'PO-2026-017', receivedDate: '2026-03-22T10:00:00Z', lastMovement: '2026-03-23T09:00:00Z' },
+          { sku: 'PN-9200L-NEW-002', serialNumber: 'CSC-9200L-SN-002', barcode: 'N-CSC-9200L-002', status: 'Reserved', grade: 'A', location: 'MUM-WH1/Row4-RackC-Bin1', poNumber: 'PO-2026-017', receivedDate: '2026-03-22T10:00:00Z', lastMovement: '2026-04-04T11:00:00Z' },
         ],
       },
       {
@@ -372,8 +372,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 85000,
         lastUpdated: '2026-04-09T10:00:00Z',
         skus: [
-          { sku: 'SKU-9200L-REF-001', serialNumber: 'CSC-9200L-SN-R01', barcode: 'N-CSC-9200L-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackC-Bin2', batchNumber: 'BATCH-2026-0017', receivedDate: '2026-03-25T09:00:00Z', lastMovement: '2026-03-27T10:00:00Z' },
-          { sku: 'SKU-9200L-REF-002', serialNumber: 'CSC-9200L-SN-R02', barcode: 'N-CSC-9200L-R02', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row4-RackC-Bin2', batchNumber: 'BATCH-2026-0017', receivedDate: '2026-03-25T09:00:00Z', lastMovement: '2026-03-27T10:00:00Z' },
+          { sku: 'PN-9200L-REF-001', serialNumber: 'CSC-9200L-SN-R01', barcode: 'N-CSC-9200L-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackC-Bin2', batchNumber: 'BATCH-2026-0017', receivedDate: '2026-03-25T09:00:00Z', lastMovement: '2026-03-27T10:00:00Z' },
+          { sku: 'PN-9200L-REF-002', serialNumber: 'CSC-9200L-SN-R02', barcode: 'N-CSC-9200L-R02', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row4-RackC-Bin2', batchNumber: 'BATCH-2026-0017', receivedDate: '2026-03-25T09:00:00Z', lastMovement: '2026-03-27T10:00:00Z' },
         ],
       },
     ],
@@ -394,9 +394,9 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 42000,
         lastUpdated: '2026-04-10T09:00:00Z',
         skus: [
-          { sku: 'SKU-U2723-NEW-001', serialNumber: 'DL-U2723-SN-001', barcode: 'M-DEL-U2723-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackB-Bin1', poNumber: 'PO-2026-018', receivedDate: '2026-03-30T10:00:00Z', lastMovement: '2026-03-31T09:00:00Z' },
-          { sku: 'SKU-U2723-NEW-002', serialNumber: 'DL-U2723-SN-002', barcode: 'M-DEL-U2723-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackB-Bin1', poNumber: 'PO-2026-018', receivedDate: '2026-03-30T10:00:00Z', lastMovement: '2026-03-31T09:00:00Z' },
-          { sku: 'SKU-U2723-NEW-003', serialNumber: 'DL-U2723-SN-003', barcode: 'M-DEL-U2723-003', status: 'Dispatched', grade: 'A', location: 'MUM-WH1/Row5-RackB-Bin2', poNumber: 'PO-2026-018', receivedDate: '2026-03-30T10:00:00Z', lastMovement: '2026-04-08T14:00:00Z' },
+          { sku: 'PN-U2723-NEW-001', serialNumber: 'DL-U2723-SN-001', barcode: 'M-DEL-U2723-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackB-Bin1', poNumber: 'PO-2026-018', receivedDate: '2026-03-30T10:00:00Z', lastMovement: '2026-03-31T09:00:00Z' },
+          { sku: 'PN-U2723-NEW-002', serialNumber: 'DL-U2723-SN-002', barcode: 'M-DEL-U2723-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackB-Bin1', poNumber: 'PO-2026-018', receivedDate: '2026-03-30T10:00:00Z', lastMovement: '2026-03-31T09:00:00Z' },
+          { sku: 'PN-U2723-NEW-003', serialNumber: 'DL-U2723-SN-003', barcode: 'M-DEL-U2723-003', status: 'Dispatched', grade: 'A', location: 'MUM-WH1/Row5-RackB-Bin2', poNumber: 'PO-2026-018', receivedDate: '2026-03-30T10:00:00Z', lastMovement: '2026-04-08T14:00:00Z' },
         ],
       },
       {
@@ -405,8 +405,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 28000,
         lastUpdated: '2026-04-12T11:00:00Z',
         skus: [
-          { sku: 'SKU-U2723-REF-001', serialNumber: 'DL-U2723-SN-R01', barcode: 'M-DEL-U2723-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackB-Bin3', batchNumber: 'BATCH-2026-0018', receivedDate: '2026-04-01T09:00:00Z', lastMovement: '2026-04-02T10:00:00Z' },
-          { sku: 'SKU-U2723-REF-002', serialNumber: 'DL-U2723-SN-R02', barcode: 'M-DEL-U2723-R02', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row5-RackB-Bin3', batchNumber: 'BATCH-2026-0018', receivedDate: '2026-04-01T09:00:00Z', lastMovement: '2026-04-02T10:00:00Z' },
+          { sku: 'PN-U2723-REF-001', serialNumber: 'DL-U2723-SN-R01', barcode: 'M-DEL-U2723-R01', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackB-Bin3', batchNumber: 'BATCH-2026-0018', receivedDate: '2026-04-01T09:00:00Z', lastMovement: '2026-04-02T10:00:00Z' },
+          { sku: 'PN-U2723-REF-002', serialNumber: 'DL-U2723-SN-R02', barcode: 'M-DEL-U2723-R02', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row5-RackB-Bin3', batchNumber: 'BATCH-2026-0018', receivedDate: '2026-04-01T09:00:00Z', lastMovement: '2026-04-02T10:00:00Z' },
         ],
       },
     ],
@@ -427,8 +427,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 32000,
         lastUpdated: '2026-04-03T10:00:00Z',
         skus: [
-          { sku: 'SKU-M404-NEW-001', serialNumber: 'HP-M404-SN-001', barcode: 'P-HP-M404-001', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row3-RackA-Bin1', poNumber: 'PO-2026-019', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
-          { sku: 'SKU-M404-NEW-002', serialNumber: 'HP-M404-SN-002', barcode: 'P-HP-M404-002', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row3-RackA-Bin1', poNumber: 'PO-2026-019', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
+          { sku: 'PN-M404-NEW-001', serialNumber: 'HP-M404-SN-001', barcode: 'P-HP-M404-001', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row3-RackA-Bin1', poNumber: 'PO-2026-019', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
+          { sku: 'PN-M404-NEW-002', serialNumber: 'HP-M404-SN-002', barcode: 'P-HP-M404-002', status: 'In Stock', grade: 'A', location: 'BLR-WH2/Row3-RackA-Bin1', poNumber: 'PO-2026-019', receivedDate: '2026-03-20T10:00:00Z', lastMovement: '2026-03-21T09:00:00Z' },
         ],
       },
       {
@@ -437,7 +437,7 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 18000,
         lastUpdated: '2026-04-07T15:00:00Z',
         skus: [
-          { sku: 'SKU-M404-REF-001', serialNumber: 'HP-M404-SN-R01', barcode: 'P-HP-M404-R01', status: 'In Stock', grade: 'B', location: 'BLR-WH2/Row3-RackA-Bin2', batchNumber: 'BATCH-2026-0019', receivedDate: '2026-03-28T09:00:00Z', lastMovement: '2026-03-30T10:00:00Z' },
+          { sku: 'PN-M404-REF-001', serialNumber: 'HP-M404-SN-R01', barcode: 'P-HP-M404-R01', status: 'In Stock', grade: 'B', location: 'BLR-WH2/Row3-RackA-Bin2', batchNumber: 'BATCH-2026-0019', receivedDate: '2026-03-28T09:00:00Z', lastMovement: '2026-03-30T10:00:00Z' },
         ],
       },
     ],
@@ -458,9 +458,9 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 18500,
         lastUpdated: '2026-04-05T10:00:00Z',
         skus: [
-          { sku: 'SKU-APC1500-NEW-001', serialNumber: 'APC-1500-SN-001', barcode: 'U-APC-1500-001', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row3-RackA-Bin1', poNumber: 'PO-2026-020', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-03-26T09:00:00Z' },
-          { sku: 'SKU-APC1500-NEW-002', serialNumber: 'APC-1500-SN-002', barcode: 'U-APC-1500-002', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row3-RackA-Bin1', poNumber: 'PO-2026-020', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-03-26T09:00:00Z' },
-          { sku: 'SKU-APC1500-NEW-003', serialNumber: 'APC-1500-SN-003', barcode: 'U-APC-1500-003', status: 'Reserved', grade: 'A', location: 'DEL-WH3/Row3-RackA-Bin2', poNumber: 'PO-2026-020', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-04-04T11:00:00Z' },
+          { sku: 'PN-APC1500-NEW-001', serialNumber: 'APC-1500-SN-001', barcode: 'U-APC-1500-001', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row3-RackA-Bin1', poNumber: 'PO-2026-020', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-03-26T09:00:00Z' },
+          { sku: 'PN-APC1500-NEW-002', serialNumber: 'APC-1500-SN-002', barcode: 'U-APC-1500-002', status: 'In Stock', grade: 'A', location: 'DEL-WH3/Row3-RackA-Bin1', poNumber: 'PO-2026-020', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-03-26T09:00:00Z' },
+          { sku: 'PN-APC1500-NEW-003', serialNumber: 'APC-1500-SN-003', barcode: 'U-APC-1500-003', status: 'Reserved', grade: 'A', location: 'DEL-WH3/Row3-RackA-Bin2', poNumber: 'PO-2026-020', receivedDate: '2026-03-25T10:00:00Z', lastMovement: '2026-04-04T11:00:00Z' },
         ],
       },
     ],
@@ -482,8 +482,8 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 95000,
         lastUpdated: '2026-04-02T09:00:00Z',
         skus: [
-          { sku: 'SKU-FG60F-NEW-001', serialNumber: 'FTN-FG60F-SN-001', barcode: 'N-FTN-FG60F-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackD-Bin1', poNumber: 'PO-2026-021', receivedDate: '2026-03-18T10:00:00Z', lastMovement: '2026-03-19T09:00:00Z' },
-          { sku: 'SKU-FG60F-NEW-002', serialNumber: 'FTN-FG60F-SN-002', barcode: 'N-FTN-FG60F-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackD-Bin1', poNumber: 'PO-2026-021', receivedDate: '2026-03-18T10:00:00Z', lastMovement: '2026-03-19T09:00:00Z' },
+          { sku: 'PN-FG60F-NEW-001', serialNumber: 'FTN-FG60F-SN-001', barcode: 'N-FTN-FG60F-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackD-Bin1', poNumber: 'PO-2026-021', receivedDate: '2026-03-18T10:00:00Z', lastMovement: '2026-03-19T09:00:00Z' },
+          { sku: 'PN-FG60F-NEW-002', serialNumber: 'FTN-FG60F-SN-002', barcode: 'N-FTN-FG60F-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row4-RackD-Bin1', poNumber: 'PO-2026-021', receivedDate: '2026-03-18T10:00:00Z', lastMovement: '2026-03-19T09:00:00Z' },
         ],
       },
       {
@@ -492,7 +492,7 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 62000,
         lastUpdated: '2026-03-30T14:00:00Z',
         skus: [
-          { sku: 'SKU-FG60F-REF-001', serialNumber: 'FTN-FG60F-SN-R01', barcode: 'N-FTN-FG60F-R01', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row4-RackD-Bin2', batchNumber: 'BATCH-2026-0021', receivedDate: '2026-03-22T09:00:00Z', lastMovement: '2026-03-24T10:00:00Z' },
+          { sku: 'PN-FG60F-REF-001', serialNumber: 'FTN-FG60F-SN-R01', barcode: 'N-FTN-FG60F-R01', status: 'In Stock', grade: 'B', location: 'MUM-WH1/Row4-RackD-Bin2', batchNumber: 'BATCH-2026-0021', receivedDate: '2026-03-22T09:00:00Z', lastMovement: '2026-03-24T10:00:00Z' },
         ],
       },
     ],
@@ -514,9 +514,9 @@ export const mockStockItems: StockItem[] = [
         unitPrice: 435000,
         lastUpdated: '2026-04-20T10:00:00Z',
         skus: [
-          { sku: 'SKU-DL360G11-NEW-001', serialNumber: 'HPE-DL360G11-SN-0001', barcode: 'S-HPE-DL360G11-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin1', poNumber: 'PO-2026-025', receivedDate: '2026-04-12T10:00:00Z', lastMovement: '2026-04-12T10:00:00Z' },
-          { sku: 'SKU-DL360G11-NEW-002', serialNumber: 'HPE-DL360G11-SN-0002', barcode: 'S-HPE-DL360G11-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin1', poNumber: 'PO-2026-025', receivedDate: '2026-04-12T10:00:00Z', lastMovement: '2026-04-12T10:00:00Z' },
-          { sku: 'SKU-DL360G11-NEW-003', serialNumber: 'HPE-DL360G11-SN-0003', barcode: 'S-HPE-DL360G11-003', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin2', poNumber: 'PO-2026-025', receivedDate: '2026-04-12T10:00:00Z', lastMovement: '2026-04-12T10:00:00Z' },
+          { sku: 'PN-DL360G11-NEW-001', serialNumber: 'HPE-DL360G11-SN-0001', barcode: 'S-HPE-DL360G11-001', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin1', poNumber: 'PO-2026-025', receivedDate: '2026-04-12T10:00:00Z', lastMovement: '2026-04-12T10:00:00Z' },
+          { sku: 'PN-DL360G11-NEW-002', serialNumber: 'HPE-DL360G11-SN-0002', barcode: 'S-HPE-DL360G11-002', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin1', poNumber: 'PO-2026-025', receivedDate: '2026-04-12T10:00:00Z', lastMovement: '2026-04-12T10:00:00Z' },
+          { sku: 'PN-DL360G11-NEW-003', serialNumber: 'HPE-DL360G11-SN-0003', barcode: 'S-HPE-DL360G11-003', status: 'In Stock', grade: 'A', location: 'MUM-WH1/Row5-RackA-Bin2', poNumber: 'PO-2026-025', receivedDate: '2026-04-12T10:00:00Z', lastMovement: '2026-04-12T10:00:00Z' },
         ],
       },
     ],

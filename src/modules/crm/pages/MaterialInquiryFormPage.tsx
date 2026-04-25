@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -15,10 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
-import { EntityHeader } from '../components/EntityHeader'
+import { FormPageShell } from '@/components/page'
 import { materialInquiries } from '../data/material-inquiries'
 import { leads } from '../data/leads'
 import { deals } from '../data/deals'
@@ -117,24 +116,45 @@ function MaterialInquiryFormPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <EntityHeader
-        title={isEdit ? `Edit: ${existingMI.inquiryNumber}` : 'Create Material Inquiry'}
-        backHref={backHref}
-      />
-
-      {/* Header Info */}
-      <div className="flex flex-wrap items-center gap-4">
+    <FormPageShell
+      title={isEdit ? `Edit: ${existingMI.inquiryNumber}` : 'Create Material Inquiry'}
+      subtitle={isEdit ? 'Update items, budget, and assignments.' : 'Send a list of items to procurement for sourcing.'}
+      breadcrumbs={
+        isEdit
+          ? [
+              { label: 'CRM' },
+              { label: 'Material Inquiries', href: '/crm/material-inquiries' },
+              { label: existingMI.inquiryNumber },
+              { label: 'Edit' },
+            ]
+          : [
+              { label: 'CRM' },
+              { label: 'Material Inquiries', href: '/crm/material-inquiries' },
+              { label: 'New Inquiry' },
+            ]
+      }
+      status={{ label: status, variant: getStatusVariant(status) }}
+      meta={
         <div className="flex items-center gap-2">
           <span className="text-xs font-ui text-muted-foreground">MI #:</span>
           <span className="text-sm font-medium">{inquiryNumber}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-ui text-muted-foreground">Status:</span>
-          <StatusBadge variant={getStatusVariant(status)}>{status}</StatusBadge>
-        </div>
-      </div>
-
+      }
+      backHref={backHref}
+      footerActions={
+        <>
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button variant="outline" onClick={handleSaveDraft}>
+            Save Draft
+          </Button>
+          <Button onClick={handleSubmit}>
+            Submit to Procurement
+          </Button>
+        </>
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit Material Inquiry' : 'New Material Inquiry'}</CardTitle>
@@ -342,19 +362,8 @@ function MaterialInquiryFormPage() {
             />
           </div>
         </CardContent>
-        <CardFooter className="justify-end gap-2">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button variant="outline" onClick={handleSaveDraft}>
-            Save Draft
-          </Button>
-          <Button onClick={handleSubmit}>
-            Submit to Procurement
-          </Button>
-        </CardFooter>
       </Card>
-    </div>
+    </FormPageShell>
   )
 }
 

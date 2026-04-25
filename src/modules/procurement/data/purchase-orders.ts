@@ -2,7 +2,12 @@ import type { PurchaseOrder, PurchaseOrderItem } from '../types'
 import { getDefaultVariantForPart } from '@/modules/ims/data/variants'
 
 type RawPOLine = Omit<PurchaseOrderItem, 'variantId' | 'condition' | 'variantSku'>
-type RawPurchaseOrder = Omit<PurchaseOrder, 'items'> & { items: RawPOLine[] }
+// `version` is optional on raw records — defaults to 1 during enrichment so existing
+// mock rows don't need to set it. Amended records set an explicit version + versionHistory.
+type RawPurchaseOrder = Omit<PurchaseOrder, 'items' | 'version'> & {
+  items: RawPOLine[]
+  version?: number
+}
 
 function enrichPOLine(line: RawPOLine): PurchaseOrderItem {
   const variant = getDefaultVariantForPart(line.partId)
@@ -125,6 +130,57 @@ const rawPurchaseOrders: RawPurchaseOrder[] = [
     sentDate: '2026-03-25',
     createdBy: 'Neha Gupta',
     createdAt: '2026-03-24',
+    version: 2,
+    versionHistory: [
+      {
+        version: 1,
+        amendedAt: '2026-03-26',
+        amendedBy: 'Neha Gupta',
+        reason: 'Vendor extended volume discount from ₹5L to ₹7.5L after confirming full payment upfront',
+        items: [
+          {
+            id: 'POI-003',
+            variantId: 'VAR-UNKNOWN',
+            condition: 'New',
+            variantSku: 'HP-EB-860G10',
+            partId: 'PART-003',
+            partName: 'HP EliteBook 860 G10',
+            partSku: 'HP-EB-860G10',
+            category: 'Laptops',
+            description: 'Intel Core i7-1365U, 16GB RAM, 512GB SSD, 16" FHD',
+            qtyOrdered: 200,
+            qtyReceived: 0,
+            unitPrice: 89000,
+            taxRate: 18,
+            amount: 17800000,
+            deliveryDate: '2026-04-20',
+          },
+          {
+            id: 'POI-004',
+            variantId: 'VAR-UNKNOWN',
+            condition: 'New',
+            variantSku: 'HP-DOCK-G5',
+            partId: 'PART-015',
+            partName: 'HP USB-C Dock G5',
+            partSku: 'HP-DOCK-G5',
+            category: 'Accessories',
+            description: 'Universal USB-C docking station with dual display',
+            qtyOrdered: 200,
+            qtyReceived: 0,
+            unitPrice: 11500,
+            taxRate: 18,
+            amount: 2300000,
+            deliveryDate: '2026-04-20',
+          },
+        ],
+        subtotal: 20100000,
+        taxAmount: 3618000,
+        discount: 500000,
+        grandTotal: 23218000,
+        status: 'Sent to Vendor',
+        expectedDelivery: '2026-04-20',
+      },
+    ],
   },
   {
     id: 'PO-003',
@@ -373,5 +429,6 @@ const rawPurchaseOrders: RawPurchaseOrder[] = [
 
 export const mockPurchaseOrders: PurchaseOrder[] = rawPurchaseOrders.map((po) => ({
   ...po,
+  version: po.version ?? 1,
   items: po.items.map(enrichPOLine),
 }))

@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/page'
 import {
   Select,
   SelectTrigger,
@@ -20,13 +21,7 @@ import {
 } from '@/components/ui/table'
 
 import { mockPurchaseInvoices } from '@/modules/invoices/data/purchase-invoices'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINR as formatCurrency } from '@/lib/currency'
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -62,7 +57,11 @@ function VendorReconciliationPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">Vendor Reconciliation</h2>
+      <PageHeader
+        title="Vendor Reconciliation"
+        subtitle="Compare your records against vendor statements and resolve discrepancies."
+        breadcrumbs={[{ label: 'Reconciliation' }, { label: 'Vendor' }]}
+      />
 
       <div className="max-w-sm">
         <Select value={selectedVendor} onValueChange={(v) => setSelectedVendor(v ?? '')}>

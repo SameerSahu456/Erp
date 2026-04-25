@@ -3,15 +3,10 @@ import { IndianRupee, TrendingUp, TrendingDown, Percent } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatsRow } from '@/components/common/StatsRow'
 import { DataCard } from '@/components/common/DataCard'
+import { PageHeader } from '@/components/page'
 
 import { mockLedgerEntries } from '@/modules/accounting/data/ledger'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINRCompact as formatCurrency } from '@/lib/currency'
 
 // Compute financials from ledger
 const revenueEntries = mockLedgerEntries.filter((e) => e.accountType === 'Revenue')
@@ -46,7 +41,11 @@ const netCashFlow = cashInflows - cashOutflows
 function AccountingDashboard() {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">Accounting Dashboard</h2>
+      <PageHeader
+        title="Accounting Dashboard"
+        subtitle="Revenue, expenses, margins, and trend at a glance."
+        breadcrumbs={[{ label: 'Accounting' }, { label: 'Dashboard' }]}
+      />
 
       <StatsRow
         stats={[

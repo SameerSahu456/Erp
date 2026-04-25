@@ -18,6 +18,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow, type StatCardData } from '@/components/common/StatsRow'
+import { EmptyState } from '@/components/common/EmptyState'
+import { ListPageShell } from '@/components/page'
+import { CalendarDays } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -125,62 +128,74 @@ function MeetingsPage() {
     toast.success('Meeting created successfully')
   }
 
+  const hasFilters = search !== '' || statusFilter !== 'all' || typeFilter !== 'all'
+  const toolbar = (
+    <div className="flex flex-wrap items-center gap-3">
+      <Input
+        placeholder="Search meetings..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-64"
+      />
+      <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Status</SelectItem>
+          <SelectItem value="Scheduled">Scheduled</SelectItem>
+          <SelectItem value="Completed">Completed</SelectItem>
+          <SelectItem value="Cancelled">Cancelled</SelectItem>
+          <SelectItem value="Rescheduled">Rescheduled</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={typeFilter} onValueChange={setTypeFilter}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="Type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Types</SelectItem>
+          <SelectItem value="Video Call">Video Call</SelectItem>
+          <SelectItem value="Phone Call">Phone Call</SelectItem>
+          <SelectItem value="In Person">In Person</SelectItem>
+          <SelectItem value="Site Visit">Site Visit</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  )
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="cpt-page-title">Meetings</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Schedule and track meetings with leads and deals
-          </p>
-        </div>
+    <>
+    <ListPageShell
+      title="Meetings"
+      subtitle="Schedule and track meetings with leads and deals."
+      breadcrumbs={[{ label: 'CRM' }, { label: 'Meetings' }]}
+      actions={
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="size-3.5" data-icon="inline-start" />
           New Meeting
         </Button>
-      </div>
-
-      <StatsRow stats={stats} />
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Input
-          placeholder="Search meetings..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-64"
-        />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Scheduled">Scheduled</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
-            <SelectItem value="Cancelled">Cancelled</SelectItem>
-            <SelectItem value="Rescheduled">Rescheduled</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="Video Call">Video Call</SelectItem>
-            <SelectItem value="Phone Call">Phone Call</SelectItem>
-            <SelectItem value="In Person">In Person</SelectItem>
-            <SelectItem value="Site Visit">Site Visit</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Meeting List */}
+      }
+      stats={<StatsRow stats={stats} />}
+      toolbar={toolbar}
+    >
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-            No meetings found matching your filters
+          <div className="rounded-lg border border-border bg-card">
+            <EmptyState
+              icon={CalendarDays}
+              title={hasFilters ? 'No meetings match your filters' : 'No meetings yet'}
+              description={
+                hasFilters
+                  ? 'Try clearing the search or filters to see more meetings.'
+                  : 'Schedule a meeting with a lead or deal to track conversations.'
+              }
+              action={
+                hasFilters
+                  ? { label: 'Clear filters', onClick: () => { setSearch(''); setStatusFilter('all'); setTypeFilter('all') } }
+                  : { label: 'New Meeting', onClick: () => setCreateOpen(true) }
+              }
+            />
           </div>
         ) : (
           filtered.map((meeting) => (
@@ -234,6 +249,7 @@ function MeetingsPage() {
           ))
         )}
       </div>
+    </ListPageShell>
 
       {/* Create Meeting Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -322,7 +338,7 @@ function MeetingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
 

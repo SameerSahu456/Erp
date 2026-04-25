@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Pencil, GitBranch, Plus } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -97,9 +98,11 @@ export default function StockItemsPage() {
       id: 'items',
       label: `Stock Items (${items.length})`,
       columns: [
-        { key: 'name', label: 'Part', sortable: true },
+        { key: 'sku', label: 'Part no', sortable: true },
+        { key: 'name', label: 'Part Name', sortable: true },
+        { key: 'type', label: 'Type', sortable: true, filterable: true },
+        { key: 'category', label: 'Category', sortable: true, filterable: true },
         { key: 'condition', label: 'Condition', sortable: true, filterable: true },
-        { key: 'sku', label: 'SKU', sortable: true },
         { key: 'serial', label: 'Serial No' },
         { key: 'price', label: 'Price', sortable: true, align: 'right' },
         { key: 'onHand', label: 'On Hand', sortable: true, align: 'right' },
@@ -118,6 +121,8 @@ export default function StockItemsPage() {
           return {
             id: `${item.id}__${v.type}`,
             name: item.name,
+            type: 'Variant',
+            category: item.categoryName,
             condition: v.type,
             sku: item.sku,
             serial: v.skus.length > 0 ? `${v.skus.length} units` : '—',
@@ -142,22 +147,28 @@ export default function StockItemsPage() {
     if (key === 'name' && typeof value === 'string') {
       return {
         display: (
-          <div className="flex items-center gap-2">
-            <span
-              title="Variant"
-              className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-            >
-              <GitBranch className="size-3" />
-            </span>
-            <Link
-              to={`/ims/stock-items/${itemId}`}
-              className="font-medium text-primary hover:underline"
-            >
-              {value}
-            </Link>
-          </div>
+          <Link
+            to={`/ims/stock-items/${itemId}`}
+            className="font-medium text-primary hover:underline"
+          >
+            {value}
+          </Link>
         ),
       }
+    }
+
+    if (key === 'type' && typeof value === 'string') {
+      return {
+        display: (
+          <StatusBadge variant={value === 'Parent' ? 'info' : 'neutral'}>
+            {value}
+          </StatusBadge>
+        ),
+      }
+    }
+
+    if (key === 'category') {
+      return { display: <span className="text-sm">{String(value)}</span> }
     }
 
     if (key === 'condition') {
@@ -241,24 +252,36 @@ export default function StockItemsPage() {
   }
 
   return (
-    <div className="space-y-3 bmt-search-lg">
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">Stock Items</h1>
+    <ListPageShell
+      title="Stock Items"
+      subtitle="Stock-keeping items with Part nos, variants, and live inventory levels."
+      breadcrumbs={[{ label: 'IMS' }, { label: 'Stock Items' }]}
+      actions={
         <Button nativeButton={false} render={<Link to="/ims/stock-items/new" />}>
           <Plus className="mr-1.5 size-4" />
           Add Stock Item
         </Button>
+      }
+    >
+      <div className="bmt-search-lg">
+        <BusinessMetricsTable
+          tabs={[tab]}
+          cellFormatter={cellFormatter}
+          persistKey="ims-stock-items"
+          onRowClick={(row) => {
+            const itemId = (row as Record<string, unknown>)._id as string
+            navigate(`/ims/stock-items/${itemId}`)
+          }}
+          emptyState={{
+            title: 'No stock items yet',
+            description: 'Add a stock item to start tracking Part no-level inventory.',
+            action: {
+              label: 'Add Stock Item',
+              onClick: () => navigate('/ims/stock-items/new'),
+            },
+          }}
+        />
       </div>
-
-      <BusinessMetricsTable
-        tabs={[tab]}
-        cellFormatter={cellFormatter}
-        persistKey="ims-stock-items"
-        onRowClick={(row) => {
-          const itemId = (row as Record<string, unknown>)._id as string
-          navigate(`/ims/stock-items/${itemId}`)
-        }}
-      />
-    </div>
+    </ListPageShell>
   )
 }

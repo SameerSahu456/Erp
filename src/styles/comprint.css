@@ -210,6 +210,13 @@
 .cpt-badge.err { background: #FEF3F2; color: #B42318; }
 .cpt-badge.info { background: #EFF4FF; color: #175CD3; }
 
+/* Dark mode — softer, deep-tinted backgrounds with light text for readability */
+.dark .cpt-badge { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.9); }
+.dark .cpt-badge.ok { background: rgba(34,197,94,0.15); color: #6EE7A6; }
+.dark .cpt-badge.warn { background: rgba(245,158,11,0.18); color: #FBC56C; }
+.dark .cpt-badge.err { background: rgba(239,68,68,0.18); color: #FCA5A5; }
+.dark .cpt-badge.info { background: rgba(59,130,246,0.18); color: #93C5FD; }
+
 /* ── Kanban ── */
 .cpt-kanban {
   display: grid;
@@ -549,6 +556,10 @@
 .cpt-alert-ico.err { background: #FEF3F2; color: #B42318; }
 .cpt-alert-ico.warn { background: #FFFAEB; color: #B54708; }
 .cpt-alert-ico.info { background: #EFF4FF; color: #175CD3; }
+
+.dark .cpt-alert-ico.err { background: rgba(239,68,68,0.18); color: #FCA5A5; }
+.dark .cpt-alert-ico.warn { background: rgba(245,158,11,0.18); color: #FBC56C; }
+.dark .cpt-alert-ico.info { background: rgba(59,130,246,0.18); color: #93C5FD; }
 
 /* ── Detail header ── */
 .cpt-detail-head {

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Inbox, Search, SearchX, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { usePersistedState } from "@/hooks/use-persisted-state"
@@ -30,6 +30,12 @@ type CellFormatter = (
   display?: React.ReactNode
 } | null
 
+interface EmptyStateConfig {
+  title?: string
+  description?: string
+  action?: { label: string; onClick: () => void }
+}
+
 interface BusinessMetricsTableProps {
   tabs: TabConfig[]
   cellFormatter?: CellFormatter
@@ -40,6 +46,10 @@ interface BusinessMetricsTableProps {
   onRowClick?: (row: Record<string, unknown>) => void
   /** When provided, tab/search/filter/sort/page state persists to sessionStorage under this key. */
   persistKey?: string
+  /** Customize the empty state shown when the active tab has no rows (pre-filter). */
+  emptyState?: EmptyStateConfig
+  /** Fully custom empty node — takes precedence over emptyState. */
+  emptyNode?: React.ReactNode
 }
 
 type SortDirection = "asc" | "desc" | null
@@ -53,6 +63,8 @@ function BusinessMetricsTable({
   className,
   onRowClick,
   persistKey,
+  emptyState,
+  emptyNode,
 }: BusinessMetricsTableProps) {
   const pk = persistKey ? `bmt:${persistKey}` : ""
   const [activeTab, setActiveTab] = usePersistedState<string>(pk ? `${pk}:tab` : "", tabs[0]?.id ?? "")
@@ -282,12 +294,19 @@ function BusinessMetricsTable({
                 <tr>
                   <td
                     colSpan={activeTabConfig?.columns.length ?? 1}
-                    className="text-center text-muted-foreground"
-                    style={{ padding: '56px 24px' }}
+                    style={{ padding: 0 }}
                   >
-                    {searchQuery.trim() || Object.keys(columnFilters).length > 0
-                      ? 'No results match your search'
-                      : 'No data available'}
+                    {emptyNode ?? (
+                      <BmtEmptyState
+                        filtered={searchQuery.trim() !== '' || Object.keys(columnFilters).length > 0}
+                        onClearFilters={() => {
+                          setSearchQuery('')
+                          setColumnFilters({})
+                          setCurrentPage(0)
+                        }}
+                        config={emptyState}
+                      />
+                    )}
                   </td>
                 </tr>
               )}
@@ -337,10 +356,60 @@ function BusinessMetricsTable({
   )
 }
 
+function BmtEmptyState({
+  filtered,
+  onClearFilters,
+  config,
+}: {
+  filtered: boolean
+  onClearFilters: () => void
+  config?: EmptyStateConfig
+}) {
+  const Icon = filtered ? SearchX : Inbox
+  const title = filtered
+    ? 'No results match your filters'
+    : config?.title ?? 'No data to show yet'
+  const description = filtered
+    ? 'Try clearing the search or adjusting the filters to see more rows.'
+    : config?.description
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
+      <div className="flex size-11 items-center justify-center rounded-full bg-muted">
+        <Icon className="size-5 text-muted-foreground" aria-hidden="true" />
+      </div>
+      <div className="mt-1 text-[14px] font-semibold text-foreground">{title}</div>
+      {description && (
+        <p className="max-w-sm text-[12.5px] text-muted-foreground">{description}</p>
+      )}
+      {filtered ? (
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="mt-2 inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent"
+        >
+          Clear filters
+        </button>
+      ) : (
+        config?.action && (
+          <button
+            type="button"
+            onClick={config.action.onClick}
+            className="mt-2 inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-colors hover:opacity-90"
+          >
+            {config.action.label}
+          </button>
+        )
+      )}
+    </div>
+  )
+}
+
 export { BusinessMetricsTable }
 export type {
   BusinessMetricsTableProps,
   TabConfig,
   ColumnDef,
   CellFormatter,
+  EmptyStateConfig,
 }

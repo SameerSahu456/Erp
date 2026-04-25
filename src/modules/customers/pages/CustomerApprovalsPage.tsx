@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { PageHeader } from '@/components/page'
 import {
   Select,
   SelectTrigger,
@@ -65,9 +66,14 @@ function CustomerApprovalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Customer Approvals</h2>
-        <div className="flex items-center gap-3">
+      <PageHeader
+        title="Customer Approvals"
+        subtitle="Review KYC, risk, and onboarding checklists before activation."
+        breadcrumbs={[
+          { label: 'Customers', href: '/customers' },
+          { label: 'Approvals' },
+        ]}
+        actions={
           <Select value={statusFilter} onValueChange={(v) => { if (v !== null) setStatusFilter(v) }}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
@@ -78,8 +84,8 @@ function CustomerApprovalsPage() {
               <SelectItem value="Onboarding">Onboarding</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        }
+      />
 
       {pendingCustomers.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed py-20">

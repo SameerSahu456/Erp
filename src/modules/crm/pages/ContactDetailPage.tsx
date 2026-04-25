@@ -239,7 +239,7 @@ function ContactDetailPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left column - 2/3 */}
         <div className="lg:col-span-2">
-          <DetailTabs tabs={tabs} defaultTab="overview" />
+          <DetailTabs cardContent tabs={tabs} defaultTab="overview" />
         </div>
 
         {/* Right column - 1/3 */}

@@ -10,6 +10,7 @@ import {
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
 import { StatsRow, type StatCardData } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
 import { mockWorkOrders } from '../data/work-orders'
 import type { WorkOrderStatus, WorkOrderType } from '../types'
 
@@ -181,30 +182,33 @@ function WorkOrderListPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="cpt-page-title">
-            Work Orders
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            SO / Rental &rarr; Engineering &rarr; Assembly &rarr; QC &rarr; Dispatch / Rental Warehouse
-          </p>
-        </div>
+    <ListPageShell
+      title="Work Orders"
+      subtitle="SO / Rental → Engineering → Assembly → QC → Dispatch."
+      breadcrumbs={[{ label: 'WMS' }, { label: 'Work Orders' }]}
+      actions={
         <Button onClick={() => navigate('/wms/work-orders/new')}>
           <Plus className="size-4" data-icon="inline-start" />
           Create Work Order
         </Button>
-      </div>
-
-      <StatsRow stats={stats} />
+      }
+      stats={<StatsRow stats={stats} />}
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         persistKey="wms-work-orders"
         onRowClick={(row) => navigate(`/wms/work-orders/${row.id}`)}
+        emptyState={{
+          title: 'No work orders yet',
+          description: 'Work orders track engineering and assembly progress for sales and rental orders.',
+          action: {
+            label: 'Create Work Order',
+            onClick: () => navigate('/wms/work-orders/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

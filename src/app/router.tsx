@@ -32,6 +32,7 @@ const MaterialInquiryFormPage = lazy(() => import('@/modules/crm/pages/MaterialI
 const MaterialInquiryResponseDetailPage = lazy(() => import('@/modules/crm/pages/MaterialInquiryResponseDetailPage'))
 const DemoRequestsPage = lazy(() => import('@/modules/crm/pages/DemoRequestsPage'))
 const DemoRequestDetailPage = lazy(() => import('@/modules/crm/pages/DemoRequestDetailPage'))
+const DemoRequestFormPage = lazy(() => import('@/modules/crm/pages/DemoRequestFormPage'))
 const SalesOrderDetailPage = lazy(() => import('@/modules/crm/pages/SalesOrderDetailPage'))
 const PMApprovalsPage = lazy(() => import('@/modules/procurement/pages/PMApprovalsPage'))
 const PMApprovalDetailPage = lazy(() => import('@/modules/procurement/pages/PMApprovalDetailPage'))
@@ -81,6 +82,7 @@ const PODetailPage = lazy(() => import('@/modules/procurement/pages/PODetailPage
 const VendorsPage = lazy(() => import('@/modules/procurement/pages/VendorsPage'))
 const VendorDetailPage = lazy(() => import('@/modules/procurement/pages/VendorDetailPage'))
 const GRNMatchingPage = lazy(() => import('@/modules/procurement/pages/GRNMatchingPage'))
+const GRNDetailPage = lazy(() => import('@/modules/procurement/pages/GRNDetailPage'))
 
 // Invoice pages
 const InvoiceDashboard = lazy(() => import('@/modules/invoices/pages/InvoiceDashboard'))
@@ -165,6 +167,8 @@ const SparesPage = lazy(() => import('@/modules/wms/pages/SparesPage'))
 const AssignToRackPage = lazy(() => import('@/modules/wms/pages/AssignToRackPage'))
 const DeviceDetailPage = lazy(() => import('@/modules/wms/pages/DeviceDetailPage'))
 const DevicesAssignmentPage = lazy(() => import('@/modules/wms/pages/DevicesAssignmentPage'))
+const ReplacementRequestsPage = lazy(() => import('@/modules/wms/pages/ReplacementRequestsPage'))
+const ReplacementRequestFormPage = lazy(() => import('@/modules/wms/pages/ReplacementRequestFormPage'))
 
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
@@ -226,7 +230,9 @@ export const router = createBrowserRouter([
       { path: '/crm/material-inquiries/:id/edit', element: <LazyRoute><MaterialInquiryFormPage /></LazyRoute> },
       { path: '/crm/material-inquiries/:id/responses/:responseId', element: <LazyRoute><MaterialInquiryResponseDetailPage /></LazyRoute> },
       { path: '/crm/demo-requests', element: <LazyRoute><DemoRequestsPage /></LazyRoute> },
+      { path: '/crm/demo-requests/new', element: <LazyRoute><DemoRequestFormPage /></LazyRoute> },
       { path: '/crm/demo-requests/:id', element: <LazyRoute><DemoRequestDetailPage /></LazyRoute> },
+      { path: '/crm/demo-requests/:id/close-won', element: <LazyRoute><ClosedWonPage /></LazyRoute> },
       { path: '/crm/sales-orders/:id', element: <LazyRoute><SalesOrderDetailPage /></LazyRoute> },
       { path: '/crm/tasks', element: <LazyRoute><TasksPage /></LazyRoute> },
       { path: '/crm/meetings', element: <LazyRoute><MeetingsPage /></LazyRoute> },
@@ -238,6 +244,8 @@ export const router = createBrowserRouter([
 
       // WMS routes
       { path: '/wms', element: <LazyRoute><WmsDashboard /></LazyRoute> },
+      { path: '/wms/replacements', element: <LazyRoute><ReplacementRequestsPage /></LazyRoute> },
+      { path: '/wms/replacements/new', element: <LazyRoute><ReplacementRequestFormPage /></LazyRoute> },
       { path: '/wms/inward', element: <LazyRoute><InwardPage /></LazyRoute> },
       { path: '/wms/inward/new', element: <LazyRoute><InwardFormPage /></LazyRoute> },
       { path: '/wms/inward/:id/devices', element: <LazyRoute><BatchDevicesPage /></LazyRoute> },
@@ -304,6 +312,7 @@ export const router = createBrowserRouter([
       { path: '/procurement/vendors', element: <LazyRoute><VendorsPage /></LazyRoute> },
       { path: '/procurement/vendors/:id', element: <LazyRoute><VendorDetailPage /></LazyRoute> },
       { path: '/procurement/grn-matching', element: <LazyRoute><GRNMatchingPage /></LazyRoute> },
+      { path: '/procurement/grn-matching/:id', element: <LazyRoute><GRNDetailPage /></LazyRoute> },
 
       // Invoice routes
       { path: '/invoices', element: <LazyRoute><InvoiceDashboard /></LazyRoute> },

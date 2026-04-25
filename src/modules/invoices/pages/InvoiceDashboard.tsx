@@ -5,16 +5,11 @@ import { StatsRow } from '@/components/common/StatsRow'
 import { DataCard } from '@/components/common/DataCard'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 
 import { mockSalesInvoices } from '@/modules/invoices/data/sales-invoices'
 import { mockPurchaseInvoices } from '@/modules/invoices/data/purchase-invoices'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINRCompact as formatCurrency } from '@/lib/currency'
 
 // Stats
 const outstandingReceivables = mockSalesInvoices
@@ -79,7 +74,11 @@ const recentInvoices = [...mockSalesInvoices]
 function InvoiceDashboard() {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">Invoice Dashboard</h2>
+      <PageHeader
+        title="Invoice Dashboard"
+        subtitle="Receivables, payables, aging, and collection activity at a glance."
+        breadcrumbs={[{ label: 'Invoices' }, { label: 'Dashboard' }]}
+      />
 
       <StatsRow
         stats={[

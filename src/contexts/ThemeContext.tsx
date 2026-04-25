@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 
 export const THEMES = [
   { id: 'itasm', label: 'ITASM' },
+  { id: 'sameer', label: 'Sameer' },
   { id: 'shadcn-default', label: 'Shadcn Default' },
   { id: 'comprint-crm', label: 'Comprint CRM' },
   { id: 'corporate-slate', label: 'Corporate Slate' },

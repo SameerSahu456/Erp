@@ -115,4 +115,29 @@ export const mockQCRecords: QCRecord[] = [
     inspectedAt: '2026-04-10T09:30:00Z',
     notes: 'MacBook verified — charger, box, and documentation included.',
   },
+  // ── Server (ASSEMBLY) inward QC ──
+  // dev-srv-005: passed QC, awaiting rack assignment (READY_FOR_STOCK).
+  {
+    id: 'qc-011',
+    deviceId: 'dev-srv-005',
+    deviceBarcode: 'S-DEL-7005',
+    qcType: 'INWARD',
+    result: 'PASSED',
+    grade: 'A',
+    inspectedBy: 'Deepak Verma',
+    inspectedAt: '2026-04-12T15:00:00Z',
+    notes: 'All 12 component slots pass — CPU, RAM, SSD, PSU, NIC, RAID verified under load. Chassis cosmetics A-grade.',
+  },
+  // dev-srv-006: passed QC earlier, already racked (IN_STOCK).
+  {
+    id: 'qc-012',
+    deviceId: 'dev-srv-006',
+    deviceBarcode: 'S-DEL-7006',
+    qcType: 'INWARD',
+    result: 'PASSED',
+    grade: 'A',
+    inspectedBy: 'Deepak Verma',
+    inspectedAt: '2026-03-28T14:00:00Z',
+    notes: 'Full BOM verified and burn-in test passed. Stock-ready.',
+  },
 ]

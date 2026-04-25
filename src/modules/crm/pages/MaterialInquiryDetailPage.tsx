@@ -613,7 +613,7 @@ function MaterialInquiryDetailPage() {
         }
       />
 
-      <DetailTabs tabs={tabs} defaultTab="request" />
+      <DetailTabs cardContent tabs={tabs} defaultTab="request" />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
-import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { Plus, X } from 'lucide-react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { MediaGallery, type MediaItem } from '@/components/common/MediaGallery'
 import {
   Select,
   SelectContent,
@@ -23,17 +24,8 @@ import { mockCategories } from '../data/categories'
 import { mockChecklistTemplates } from '@/modules/wms/data/checklist-templates'
 import type {
   IMSCategory,
-  PartProductType,
   PartAssemblyType,
-  VariantCondition,
 } from '@/modules/wms/types'
-
-const MOCK_PRODUCT_MANAGERS = [
-  { name: 'Rahul Mehta', email: 'rahul@comprinttech.com' },
-  { name: 'Vikram Singh', email: 'vikram@comprinttech.com' },
-  { name: 'Priya Sharma', email: 'priya@comprinttech.com' },
-  { name: 'Amit Patel', email: 'amit@comprinttech.com' },
-]
 
 const UNITS_OF_MEASURE = ['Units', 'Pieces', 'Sets']
 
@@ -56,60 +48,41 @@ export default function PartFormPage() {
   const existing = id ? mockParts.find((p) => p.id === id) : undefined
   const isEdit = !!existing
 
-  // Read type & parent hints from the query string when creating a new part.
-  const queryType = searchParams.get('type') === 'variant' ? 'variant' : null
-  const queryParentId = searchParams.get('parentId') ?? null
-  const queryParent = queryParentId
-    ? mockParts.find((p) => p.id === queryParentId && (p.productType ?? 'parent') === 'parent')
-    : undefined
+  const isVariantMode =
+    !isEdit && searchParams.get('type') === 'variant' && !!searchParams.get('parentId')
+  const parentPart = useMemo(() => {
+    const parentId = searchParams.get('parentId')
+    if (!parentId) return undefined
+    return mockParts.find((p) => p.id === parentId)
+  }, [searchParams])
 
-  const initialProductType: PartProductType =
-    existing?.productType ?? (queryType === 'variant' ? 'variant' : 'parent')
-  const initialParentPartId =
-    existing?.parentPartId ?? queryParent?.id ?? 'none'
-
-  const [productType, setProductType] = useState<PartProductType>(initialProductType)
-  const [parentPartId, setParentPartId] = useState<string>(initialParentPartId)
-  const [condition, setCondition] = useState<VariantCondition | ''>(
-    existing?.condition ?? (initialProductType === 'variant' ? 'New' : '')
-  )
-  const [sellPrice, setSellPrice] = useState(existing?.sellPrice?.toString() ?? '')
   const [assemblyType, setAssemblyType] = useState<PartAssemblyType | ''>(existing?.assemblyType ?? '')
 
-  const [name, setName] = useState(
-    existing?.name ?? (queryParent ? `${queryParent.name} · New` : '')
-  )
-  const [sku, setSku] = useState(
-    existing?.sku ?? (queryParent ? `${queryParent.sku}-NEW` : '')
-  )
-  const [categoryId, setCategoryId] = useState(existing?.categoryId ?? queryParent?.categoryId ?? 'none')
-  const [subcategoryId, setSubcategoryId] = useState(existing?.subcategoryId ?? queryParent?.subcategoryId ?? 'none')
-  const [brand, setBrand] = useState(existing?.brand ?? queryParent?.brand ?? '')
-  const [model, setModel] = useState(existing?.model ?? queryParent?.model ?? '')
-  const [productManager, setProductManager] = useState(existing?.productManager ?? queryParent?.productManager ?? 'none')
-  const [unitOfMeasure, setUnitOfMeasure] = useState(existing?.unitOfMeasure ?? queryParent?.unitOfMeasure ?? 'Units')
-  const [hsnCode, setHsnCode] = useState(existing?.hsnCode ?? queryParent?.hsnCode ?? '')
+  const [name, setName] = useState(existing?.name ?? '')
+  const [sku, setSku] = useState(existing?.sku ?? '')
+  const [categoryId, setCategoryId] = useState(existing?.categoryId ?? 'none')
+  const [subcategoryId, setSubcategoryId] = useState(existing?.subcategoryId ?? 'none')
+  const [brand, setBrand] = useState(existing?.brand ?? '')
+  const [model, setModel] = useState(existing?.model ?? '')
+  const [unitOfMeasure, setUnitOfMeasure] = useState(existing?.unitOfMeasure ?? 'Units')
+  const [hsnCode, setHsnCode] = useState(existing?.hsnCode ?? '')
   const [isActive, setIsActive] = useState(existing?.isActive ?? true)
   const [description, setDescription] = useState(existing?.description ?? '')
   const [aliases, setAliases] = useState<string[]>(existing?.aliases ?? [])
   const [aliasInput, setAliasInput] = useState('')
-  const [specifications, setSpecifications] = useState<{ key: string; value: string }[]>(
-    existing?.specifications
-      ? Object.entries(existing.specifications).map(([key, value]) => ({ key, value }))
-      : [{ key: '', value: '' }]
-  )
+  const [media, setMedia] = useState<MediaItem[]>(() => {
+    const items: MediaItem[] = []
+    existing?.images?.forEach((src, i) =>
+      items.push({ id: `existing-img-${i}`, type: 'image', src, name: src }),
+    )
+    existing?.videos?.forEach((src, i) =>
+      items.push({ id: `existing-vid-${i}`, type: 'video', src, name: src }),
+    )
+    return items
+  })
   const [inwardChecklistId, setInwardChecklistId] = useState(existing?.inwardChecklistId ?? 'none')
   const [outwardChecklistId, setOutwardChecklistId] = useState(existing?.outwardChecklistId ?? 'none')
   const [inspectionChecklistId, setInspectionChecklistId] = useState(existing?.inspectionChecklistId ?? 'none')
-
-  // Parents available for variant selection: any parent-type part.
-  const availableParents = useMemo(
-    () =>
-      mockParts.filter(
-        (p) => (p.productType ?? 'parent') === 'parent' && p.isActive && p.id !== existing?.id
-      ),
-    [existing?.id]
-  )
 
   const allCategories = useMemo(() => flattenCategories(mockCategories), [])
 
@@ -160,36 +133,14 @@ export default function PartFormPage() {
     setAliases(aliases.filter((a) => a !== alias))
   }
 
-  function addSpecRow() {
-    setSpecifications([...specifications, { key: '', value: '' }])
-  }
-
-  function removeSpecRow(index: number) {
-    setSpecifications(specifications.filter((_, i) => i !== index))
-  }
-
-  function updateSpec(index: number, field: 'key' | 'value', val: string) {
-    setSpecifications(specifications.map((s, i) => (i === index ? { ...s, [field]: val } : s)))
-  }
-
   function handleSave() {
     if (!name.trim()) {
       toast.error('Part name is required')
       return
     }
     if (!sku.trim()) {
-      toast.error('SKU is required')
+      toast.error('Part No is required')
       return
-    }
-    if (productType === 'variant') {
-      if (!parentPartId || parentPartId === 'none') {
-        toast.error('A variant must have a parent product')
-        return
-      }
-      if (!condition) {
-        toast.error('Select a condition for the variant')
-        return
-      }
     }
     toast.success(isEdit ? 'Part updated successfully' : 'Part created successfully')
     navigate(backHref)
@@ -200,9 +151,9 @@ export default function PartFormPage() {
   }
 
   const headerTitle = isEdit
-    ? `Edit ${productType === 'variant' ? 'Variant' : 'Part'}: ${existing!.name}`
-    : productType === 'variant'
-      ? 'Add Variant'
+    ? `Edit Part: ${existing!.name}`
+    : isVariantMode && parentPart
+      ? `Add Variant of ${parentPart.name}`
       : 'Add Part'
 
   return (
@@ -215,95 +166,39 @@ export default function PartFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {isEdit
-              ? productType === 'variant'
-                ? 'Edit Variant Details'
-                : 'Edit Part Details'
-              : productType === 'variant'
-                ? 'New Variant'
-                : 'New Part'}
+            {isEdit ? 'Edit Part Details' : isVariantMode ? 'New Variant' : 'New Part'}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-8">
-          {/* Product type + parent link (top of form) */}
-          <div className="grid grid-cols-1 gap-4 rounded-md border bg-muted/30 p-4 md:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="part-type">Product Type</Label>
-              <Select
-                value={productType}
-                onValueChange={(v) => {
-                  const next = (v ?? 'parent') as PartProductType
-                  setProductType(next)
-                  if (next === 'parent') {
-                    setParentPartId('none')
-                    setCondition('')
-                  } else if (!condition) {
-                    setCondition('New')
-                  }
-                }}
-              >
-                <SelectTrigger id="part-type" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="parent">Parent Product</SelectItem>
-                  <SelectItem value="variant">Variant</SelectItem>
-                </SelectContent>
-              </Select>
+          {isVariantMode && parentPart && (
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Parent Part
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="parent-name">Parent Product Name</Label>
+                  <Input
+                    id="parent-name"
+                    value={parentPart.name}
+                    readOnly
+                    disabled
+                    className="bg-muted/50"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="parent-sku">Parent Part No</Label>
+                  <Input
+                    id="parent-sku"
+                    value={parentPart.sku}
+                    readOnly
+                    disabled
+                    className="bg-muted/50 font-mono"
+                  />
+                </div>
+              </div>
             </div>
-
-            {productType === 'variant' && (
-              <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="part-parent">
-                    Parent Product <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={parentPartId}
-                    onValueChange={(v) => setParentPartId(v ?? 'none')}
-                  >
-                    <SelectTrigger id="part-parent" className="w-full">
-                      <SelectValue placeholder="Select parent product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {availableParents.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} ({p.sku})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {parentPartId !== 'none' && (
-                    <Link
-                      to={`/ims/parts/${parentPartId}`}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      View parent →
-                    </Link>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="part-condition">
-                    Condition <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={condition || 'New'}
-                    onValueChange={(v) => setCondition((v ?? 'New') as VariantCondition)}
-                  >
-                    <SelectTrigger id="part-condition" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="New">New</SelectItem>
-                      <SelectItem value="Refurbished">Refurbished</SelectItem>
-                      <SelectItem value="New Pull">New Pull</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-          </div>
+          )}
 
           {/* Two-column grid */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -320,7 +215,17 @@ export default function PartFormPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="part-sku">SKU *</Label>
+                <Label htmlFor="part-model">Model</Label>
+                <Input
+                  id="part-model"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder="e.g., Latitude 5540"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="part-sku">Part No *</Label>
                 <div className="flex gap-2">
                   <Input
                     id="part-sku"
@@ -372,7 +277,7 @@ export default function PartFormPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="part-brand">Brand</Label>
+                <Label htmlFor="part-brand">Brand/OEM</Label>
                 <Input
                   id="part-brand"
                   value={brand}
@@ -380,49 +285,10 @@ export default function PartFormPage() {
                   placeholder="e.g., Dell"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="part-model">Model</Label>
-                <Input
-                  id="part-model"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  placeholder="e.g., Latitude 5540"
-                />
-              </div>
             </div>
 
             {/* Right column */}
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="part-pm">Product Manager</Label>
-                <Select value={productManager} onValueChange={(v) => setProductManager(v ?? 'none')}>
-                  <SelectTrigger id="part-pm" className="w-full">
-                    <SelectValue placeholder="Select PM" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Not assigned</SelectItem>
-                    {MOCK_PRODUCT_MANAGERS.map((pm) => (
-                      <SelectItem key={pm.name} value={pm.name}>
-                        {pm.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="part-price">Price (INR)</Label>
-                <Input
-                  id="part-price"
-                  type="number"
-                  value={sellPrice}
-                  onChange={(e) => setSellPrice(e.target.value)}
-                  min={0}
-                  placeholder="e.g., 89000"
-                />
-              </div>
-
               <div className="space-y-1.5">
                 <Label htmlFor="part-assembly">Assembly</Label>
                 <Select
@@ -516,69 +382,9 @@ export default function PartFormPage() {
               </div>
             </div>
 
-            {/* Specifications (key-value editor) */}
-            <div className="space-y-1.5">
-              <Label>Specifications</Label>
-              <div className="rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="px-3 py-2 text-left font-medium">Key</th>
-                      <th className="px-3 py-2 text-left font-medium">Value</th>
-                      <th className="w-10 px-3 py-2" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {specifications.map((spec, index) => (
-                      <tr key={index} className="border-b last:border-0">
-                        <td className="px-2 py-1.5">
-                          <Input
-                            value={spec.key}
-                            onChange={(e) => updateSpec(index, 'key', e.target.value)}
-                            placeholder="e.g., RAM"
-                            className="h-8 text-sm"
-                          />
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <Input
-                            value={spec.value}
-                            onChange={(e) => updateSpec(index, 'value', e.target.value)}
-                            placeholder="e.g., 16GB DDR5"
-                            className="h-8 text-sm"
-                          />
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <button
-                            onClick={() => removeSpecRow(index)}
-                            className="rounded p-1 hover:bg-destructive/10"
-                          >
-                            <X className="size-3.5 text-destructive" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="border-t p-2">
-                  <Button type="button" variant="ghost" size="sm" onClick={addSpecRow}>
-                    <Plus className="mr-1.5 size-3.5" />
-                    Add Row
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Media Upload placeholder — images & videos */}
             <div className="space-y-1.5">
               <Label>Media</Label>
-              <div className="flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-8 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Drag and drop images or videos here, or click to upload
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Supports JPG, PNG, MP4, WebM (placeholder)
-                </p>
-              </div>
+              <MediaGallery items={media} onChange={setMedia} />
             </div>
           </div>
 

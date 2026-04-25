@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
-import { ArrowLeft, User } from 'lucide-react'
+import { User } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { PageHeader } from '@/components/page'
 import {
   ALL_PMS,
   PM_CATEGORIES,
@@ -18,23 +19,27 @@ import {
   SOApprovalCard,
   PRApprovalCard,
   POApprovalCard,
+  DemoApprovalCard,
   actOnMIResponse,
   actOnSO,
   actOnPRCategory,
   actOnPO,
+  actOnDemo,
   useMIs,
   useSOs,
   usePRs,
   usePOs,
+  useDemos,
 } from '../pm-approvals-shared'
 
-type EntityType = 'mi' | 'so' | 'pr' | 'po'
+type EntityType = 'mi' | 'so' | 'pr' | 'po' | 'demo'
 
 const TYPE_LABEL: Record<EntityType, string> = {
   mi: 'Material Inquiry',
   so: 'Sales Order',
   pr: 'Purchase Request',
   po: 'Purchase Order',
+  demo: 'Demo Request',
 }
 
 function PMApprovalDetailPage() {
@@ -47,6 +52,7 @@ function PMApprovalDetailPage() {
   const sos = useSOs()
   const prs = usePRs()
   const pos = usePOs()
+  const demos = useDemos()
 
   const type = rawType as EntityType | undefined
   if (!type || !id || !TYPE_LABEL[type]) return <NotFound />
@@ -59,24 +65,17 @@ function PMApprovalDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={goBack}
-          >
-            <ArrowLeft className="mr-1.5 size-3.5" /> Back to list
-          </Button>
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              {TYPE_LABEL[type]} · Approval
-            </p>
-            <h1 className="cpt-page-title">{id}</h1>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl border bg-card/80 p-2 pr-3 shadow-sm">
+      <PageHeader
+        title={id}
+        subtitle={`${TYPE_LABEL[type]} · Approval`}
+        breadcrumbs={[
+          { label: 'Procurement' },
+          { label: 'PM Approvals', href: '/procurement/pm-approvals' },
+          { label: id },
+        ]}
+        backHref="/procurement/pm-approvals"
+        actions={
+          <div className="flex items-center gap-3 rounded-xl border bg-card/80 p-2 pr-3 shadow-sm">
           <div className="flex size-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-xs font-semibold text-primary-foreground">
             {pmInitials}
           </div>
@@ -103,8 +102,9 @@ function PMApprovalDetailPage() {
               </SelectContent>
             </Select>
           </div>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Entity-specific card */}
       {type === 'mi' &&
@@ -175,6 +175,20 @@ function PMApprovalDetailPage() {
               myCategories={myCategories}
               onApprove={(poId, action, notes) =>
                 actOnPO(poId, action, currentPM, notes)
+              }
+            />
+          )
+        })()}
+
+      {type === 'demo' &&
+        (() => {
+          const demo = demos.find((d) => d.id === id)
+          if (!demo) return <NotFound />
+          return (
+            <DemoApprovalCard
+              demo={demo}
+              onApprove={(demoId, action, remarks, pricedItems) =>
+                actOnDemo(demoId, action, currentPM, remarks, pricedItems)
               }
             />
           )

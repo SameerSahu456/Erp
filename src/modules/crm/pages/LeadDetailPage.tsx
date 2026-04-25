@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { EntityHeader } from '../components/EntityHeader'
 import { DetailTabs } from '../components/DetailTabs'
 import { NotesSection } from '../components/NotesSection'
@@ -440,49 +441,58 @@ function LeadDetailPage() {
 
   const quotesContent = (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {relatedQuotes.length} quote{relatedQuotes.length !== 1 ? 's' : ''} linked to this lead
+        </p>
         <Button
           variant="outline"
           size="sm"
-          render={<Link to={`/crm/quote-builder?leadId=${lead.id}`} />}
+          render={<Link to={`/crm/quotes/new?leadId=${lead.id}`} />}
         >
           <Plus className="size-3.5" data-icon="inline-start" />
           Create Quote
         </Button>
       </div>
       {relatedQuotes.length > 0 ? (
-        <div className="space-y-3">
-          {relatedQuotes.map((quote) => (
-            <div
-              key={quote.id}
-              className="flex items-center justify-between rounded-lg border bg-card p-4"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Link to={`/crm/quotes/${quote.id}/edit`} className="text-sm font-medium text-primary hover:underline">
-                    {quote.quoteNumber}
-                  </Link>
-                  <StatusBadge variant={getQuoteStatusVariant(quote.status)}>{quote.status}</StatusBadge>
-                  <Badge variant="outline">v{quote.version}</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">{quote.accountName}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-sm font-medium">{formatCurrency(quote.total)}</p>
-                  <p className="text-xs text-muted-foreground">Valid until {formatDate(quote.validUntil)}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={(e) => { e.stopPropagation(); downloadQuotePdf(quote) }}
-                  title="Download Quote PDF"
-                >
-                  <Download className="size-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Quote #</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Valid Until</TableHead>
+                <TableHead className="w-12" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {relatedQuotes.map((quote) => (
+                <TableRow key={quote.id}>
+                  <TableCell>
+                    <Link to={`/crm/quotes/${quote.id}/edit`} className="text-sm font-medium text-primary hover:underline">
+                      {quote.quoteNumber}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-right">{formatCurrency(quote.total)}</TableCell>
+                  <TableCell>
+                    <StatusBadge variant={getQuoteStatusVariant(quote.status)}>{quote.status}</StatusBadge>
+                  </TableCell>
+                  <TableCell>{formatDate(quote.validUntil)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => downloadQuotePdf(quote)}
+                      title="Download Quote PDF"
+                    >
+                      <Download className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       ) : (
         <div className="rounded-lg border border-dashed p-8 text-center">
@@ -777,7 +787,7 @@ function LeadDetailPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left column - 2/3 */}
         <div className="lg:col-span-2">
-          <DetailTabs tabs={tabs} defaultTab="overview" />
+          <DetailTabs cardContent tabs={tabs} defaultTab="overview" />
         </div>
 
         {/* Right column - 1/3 */}

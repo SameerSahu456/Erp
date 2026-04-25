@@ -6,10 +6,14 @@ export interface PMAssignment {
   subcategoryName: string | null
   oemId: string | null
   oemName: string | null
-  variant: 'new' | 'refurbished' | null
+  variant: 'new' | 'refurbished' | 'new-pull' | null
   pmId: string
   pmName: string
   pmEmail: string
+  canView: boolean
+  canEdit: boolean
+  startDate: string | null
+  endDate: string | null
   createdAt: string
   updatedAt: string
 }
@@ -28,6 +32,10 @@ export const mockPMAssignments: PMAssignment[] = [
     pmName: 'Rahul Mehta',
     pmEmail: 'rahul@comprinttech.com',
     createdAt: '2025-06-01T00:00:00Z',
+    canView: true,
+    canEdit: true,
+    startDate: '2025-06-01',
+    endDate: '2026-12-31',
     updatedAt: '2026-01-15T00:00:00Z',
   },
   {
@@ -43,6 +51,10 @@ export const mockPMAssignments: PMAssignment[] = [
     pmName: 'Sarah Khan',
     pmEmail: 'sarah@comprinttech.com',
     createdAt: '2025-07-01T00:00:00Z',
+    canView: true,
+    canEdit: true,
+    startDate: '2025-07-01',
+    endDate: null,
     updatedAt: '2026-02-10T00:00:00Z',
   },
   {
@@ -58,6 +70,10 @@ export const mockPMAssignments: PMAssignment[] = [
     pmName: 'Mike Patel',
     pmEmail: 'mike@comprinttech.com',
     createdAt: '2025-08-01T00:00:00Z',
+    canView: true,
+    canEdit: true,
+    startDate: null,
+    endDate: null,
     updatedAt: '2026-03-05T00:00:00Z',
   },
   {
@@ -73,6 +89,10 @@ export const mockPMAssignments: PMAssignment[] = [
     pmName: 'Vikram Singh',
     pmEmail: 'vikram@comprinttech.com',
     createdAt: '2025-06-01T00:00:00Z',
+    canView: true,
+    canEdit: true,
+    startDate: null,
+    endDate: null,
     updatedAt: '2025-12-20T00:00:00Z',
   },
   {
@@ -88,6 +108,10 @@ export const mockPMAssignments: PMAssignment[] = [
     pmName: 'Priya Deshmukh',
     pmEmail: 'priya@comprinttech.com',
     createdAt: '2025-09-01T00:00:00Z',
+    canView: true,
+    canEdit: true,
+    startDate: null,
+    endDate: null,
     updatedAt: '2026-01-30T00:00:00Z',
   },
   {
@@ -103,6 +127,10 @@ export const mockPMAssignments: PMAssignment[] = [
     pmName: 'Priya Sharma',
     pmEmail: 'priyasharma@comprinttech.com',
     createdAt: '2025-06-15T00:00:00Z',
+    canView: true,
+    canEdit: true,
+    startDate: null,
+    endDate: null,
     updatedAt: '2026-02-01T00:00:00Z',
   },
   {
@@ -118,6 +146,10 @@ export const mockPMAssignments: PMAssignment[] = [
     pmName: 'Vikram Singh',
     pmEmail: 'vikram@comprinttech.com',
     createdAt: '2025-07-01T00:00:00Z',
+    canView: true,
+    canEdit: true,
+    startDate: null,
+    endDate: null,
     updatedAt: '2026-01-10T00:00:00Z',
   },
   {
@@ -133,6 +165,10 @@ export const mockPMAssignments: PMAssignment[] = [
     pmName: 'Vikram Singh',
     pmEmail: 'vikram@comprinttech.com',
     createdAt: '2025-06-01T00:00:00Z',
+    canView: true,
+    canEdit: true,
+    startDate: null,
+    endDate: null,
     updatedAt: '2025-11-15T00:00:00Z',
   },
   {
@@ -148,6 +184,10 @@ export const mockPMAssignments: PMAssignment[] = [
     pmName: 'Priya Sharma',
     pmEmail: 'priyasharma@comprinttech.com',
     createdAt: '2025-08-01T00:00:00Z',
+    canView: true,
+    canEdit: true,
+    startDate: null,
+    endDate: null,
     updatedAt: '2026-01-05T00:00:00Z',
   },
   {
@@ -163,6 +203,10 @@ export const mockPMAssignments: PMAssignment[] = [
     pmName: 'Rahul Mehta',
     pmEmail: 'rahul@comprinttech.com',
     createdAt: '2025-06-01T00:00:00Z',
+    canView: true,
+    canEdit: true,
+    startDate: null,
+    endDate: null,
     updatedAt: '2025-10-20T00:00:00Z',
   },
 ]

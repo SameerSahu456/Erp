@@ -380,7 +380,7 @@ export default function RentalContractDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         {/* Main content */}
-        <DetailTabs tabs={tabs} />
+        <DetailTabs cardContent tabs={tabs} />
 
         {/* Right sidebar */}
         <div className="space-y-4">

@@ -1,13 +1,16 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { toast } from 'sonner'
 import {
   ArrowLeft,
   Package,
+  Package2,
   Plus,
   Minus,
   ArrowLeftRight,
+  ChevronDown,
+  ChevronRight,
   Layers,
   Truck,
   AlertCircle,
@@ -18,6 +21,8 @@ import {
   Download,
   Building2,
   CalendarDays,
+  GitBranch,
+  History as HistoryIcon,
   IndianRupee,
   Mail,
   Phone,
@@ -31,10 +36,23 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { salesOrders } from '../data/sales-orders'
+import type { SalesOrder } from '../types'
 import { contacts } from '../data/contacts'
 import { accounts } from '../data/accounts'
 import { getDispatchesForSalesOrder } from '@/modules/wms/data/dispatches'
+import { mockBOMs } from '@/modules/wms/data/boms'
 import { FileCheck } from 'lucide-react'
 
 function formatDate(dateStr: string) {
@@ -86,12 +104,27 @@ const CONFIG_ACTION_VARIANT: Record<string, 'success' | 'warning' | 'info' | 'ne
   SWAP: 'warning',
 }
 
+const AMENDABLE_SO_STATUSES: SalesOrder['status'][] = [
+  'Confirmed',
+  'Engineering',
+  'In Assembly',
+  'QC',
+  'Ready for Dispatch',
+]
+
 function SalesOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const goBack = useNavigateBack('/crm/sales-orders')
 
   const so = useMemo(() => salesOrders.find((s) => s.id === id), [id])
+  const [amendOpen, setAmendOpen] = useState(false)
+  const [amendReason, setAmendReason] = useState('')
+  const [bomExpanded, setBomExpanded] = useState<Record<string, boolean>>({})
+
+  function toggleBom(lineId: string) {
+    setBomExpanded((prev) => ({ ...prev, [lineId]: !prev[lineId] }))
+  }
 
   if (!so) {
     return (
@@ -109,9 +142,32 @@ function SalesOrderDetailPage() {
   const configItems = so.lineItems.filter((li) => li.configAction !== 'STANDARD')
   const subtotal = so.lineItems.reduce((s, li) => s + li.amount, 0)
   const categories = [...new Set(so.lineItems.map((li) => li.category))]
+  const canAmend = AMENDABLE_SO_STATUSES.includes(so.status)
+  const versionHistory = so.versionHistory ?? []
 
   function handleDownload() {
     toast.success('Sales Order PDF downloaded')
+  }
+
+  function handleConfirmAmend() {
+    // Snapshot current state into history and bump version. id + orderNumber stay stable.
+    const snapshot = {
+      version: so!.version,
+      amendedAt: new Date().toISOString().slice(0, 10),
+      amendedBy: 'Current User',
+      reason: amendReason.trim() || undefined,
+      total: so!.total,
+      status: so!.status,
+      approvalStatus: so!.approvalStatus,
+      lineItems: so!.lineItems,
+      dispatchNotes: so!.dispatchNotes,
+    }
+    so!.versionHistory = [...(so!.versionHistory ?? []), snapshot]
+    so!.version = so!.version + 1
+    setAmendOpen(false)
+    setAmendReason('')
+    toast.success(`${so!.orderNumber} — Rev ${so!.version} created`)
+    navigate(`/crm/sales-orders/${so!.id}/edit`)
   }
 
   return (
@@ -126,6 +182,12 @@ function SalesOrderDetailPage() {
             <h1 className="cpt-page-title">
               {so.orderNumber}
             </h1>
+            {so.version > 1 && (
+              <Badge variant="outline" className="gap-1 font-mono">
+                <GitBranch className="size-3" />
+                Rev {so.version}
+              </Badge>
+            )}
             <StatusBadge variant={STATUS_VARIANT[so.status] ?? 'neutral'}>{so.status}</StatusBadge>
             <StatusBadge variant={
               so.approvalStatus === 'Approved' ? 'success' :
@@ -161,6 +223,16 @@ function SalesOrderDetailPage() {
             <Pencil className="size-3.5 mr-1" />
             Edit
           </Button>
+          {canAmend && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAmendOpen(true)}
+            >
+              <GitBranch className="size-3.5 mr-1" />
+              Amend
+            </Button>
+          )}
           {so.approvalStatus === 'Approved' && !so.purchaseRequestId && (
             <Button
               size="sm"
@@ -352,6 +424,30 @@ function SalesOrderDetailPage() {
             </div>
           </Link>
         )}
+        {so.demoRequestId && (
+          <Link
+            to={`/crm/demo-requests/${so.demoRequestId}`}
+            className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 hover:bg-muted/50 transition-colors"
+          >
+            <Package className="size-4 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Originating Demo</p>
+              <p className="text-sm font-medium text-primary">{so.demoRequestNumber}</p>
+            </div>
+          </Link>
+        )}
+        {so.purchaseOrderId && (
+          <Link
+            to={`/procurement/po/${so.purchaseOrderId}`}
+            className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 hover:bg-muted/50 transition-colors"
+          >
+            <FileText className="size-4 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Linked Purchase Order</p>
+              <p className="text-sm font-medium text-primary">{so.purchaseOrderNumber}</p>
+            </div>
+          </Link>
+        )}
         <DispatchesCard salesOrderId={so.id} />
         {so.approvedBy && (
           <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
@@ -403,6 +499,50 @@ function SalesOrderDetailPage() {
         </div>
       )}
 
+      {/* Amendment History */}
+      {versionHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HistoryIcon className="size-4" />
+              Amendment History
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+              <Badge variant="outline" className="gap-1 font-mono">
+                <GitBranch className="size-3" />
+                Rev {so.version}
+              </Badge>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Current revision</p>
+                <p className="text-xs text-muted-foreground">
+                  {so.lineItems.length} lines &middot; {formatCurrency(so.total)}
+                </p>
+              </div>
+              <StatusBadge variant={STATUS_VARIANT[so.status] ?? 'neutral'}>{so.status}</StatusBadge>
+            </div>
+            {[...versionHistory].reverse().map((snap) => (
+              <div key={snap.version} className="flex items-center gap-3 rounded-lg border px-4 py-3">
+                <Badge variant="secondary" className="gap-1 font-mono">
+                  <GitBranch className="size-3" />
+                  Rev {snap.version}
+                </Badge>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm">
+                    {snap.reason ?? <span className="text-muted-foreground italic">No reason recorded</span>}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {snap.lineItems.length} lines &middot; {formatCurrency(snap.total)} &middot; {snap.amendedBy} on {formatDate(snap.amendedAt)}
+                  </p>
+                </div>
+                <StatusBadge variant={STATUS_VARIANT[snap.status] ?? 'neutral'}>{snap.status}</StatusBadge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Line Item Details */}
       <Card>
         <CardHeader>
@@ -427,39 +567,126 @@ function SalesOrderDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {so.lineItems.map((item, idx) => (
-                  <tr key={item.id} className={`border-b last:border-0 ${
+                {so.lineItems.map((item, idx) => {
+                  const expanded = !!bomExpanded[item.id]
+                  const bom = item.bomId ? mockBOMs.find((b) => b.id === item.bomId) : undefined
+                  const components = bom?.items ?? []
+                  const rowTint =
                     item.configAction === 'ADD' ? 'bg-[#e8fff3]/60' :
                     item.configAction === 'REMOVE' ? 'bg-[#fff5f8]/60' :
                     item.configAction === 'SWAP' ? 'bg-[#fff8dd]/60' : ''
-                  }`}>
-                    <td className="px-4 py-3 text-muted-foreground">{idx + 1}</td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium">{item.partName}</p>
-                      <p className="text-xs text-muted-foreground">{item.brand} · {item.partSku}</p>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{item.category}</td>
-                    <td className="px-4 py-3">
-                      {item.bomId ? (
-                        <Link to={`/wms/bom/${item.bomId}`} className="text-xs text-primary hover:underline flex items-center gap-1">
-                          <Layers className="size-3" />
-                          {item.bomName}
-                        </Link>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
+                  return (
+                    <Fragment key={item.id}>
+                      <tr className={`border-b last:border-0 ${rowTint}`}>
+                        <td className="px-4 py-3 text-muted-foreground align-top">{idx + 1}</td>
+                        <td className="px-4 py-3 align-top">
+                          <p className="font-medium">{item.partName}</p>
+                          <p className="text-xs text-muted-foreground">{item.brand} · {item.partSku}</p>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground align-top">{item.category}</td>
+                        <td className="px-4 py-3 align-top">
+                          {item.bomId ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleBom(item.id)}
+                              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                            >
+                              {expanded ? (
+                                <ChevronDown className="size-3" />
+                              ) : (
+                                <ChevronRight className="size-3" />
+                              )}
+                              <Package2 className="size-3" />
+                              {expanded ? 'Hide BOM' : 'View BOM'} · {item.bomName}
+                              {components.length > 0 && (
+                                <Badge variant="outline" className="ml-1 text-[10px]">
+                                  {components.length} component{components.length === 1 ? '' : 's'}
+                                </Badge>
+                              )}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <StatusBadge variant={CONFIG_ACTION_VARIANT[item.configAction]}>
+                            {CONFIG_ACTION_ICON[item.configAction]}
+                            <span className="ml-1">{CONFIG_ACTION_LABEL[item.configAction]}</span>
+                          </StatusBadge>
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium align-top">{item.qty}</td>
+                        <td className="px-4 py-3 text-right align-top">{formatCurrency(item.rate)}</td>
+                        <td className="px-4 py-3 text-right font-medium align-top">{formatCurrency(item.amount)}</td>
+                      </tr>
+                      {expanded && bom && (
+                        <tr className="border-b last:border-0">
+                          <td />
+                          <td colSpan={7} className="bg-muted/20 px-4 py-3">
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="inline-flex size-6 items-center justify-center rounded bg-primary/10 text-primary">
+                                <Layers className="size-3.5" />
+                              </span>
+                              <div>
+                                <Link
+                                  to={`/wms/bom/${bom.id}`}
+                                  className="text-sm font-semibold text-foreground hover:underline"
+                                >
+                                  {bom.name}
+                                </Link>
+                                <div className="text-[11px] text-muted-foreground">
+                                  <span className="font-mono">{bom.bomNumber}</span> · {components.length} component{components.length === 1 ? '' : 's'}
+                                </div>
+                              </div>
+                            </div>
+                            {components.length > 0 ? (
+                              <div className="overflow-hidden rounded-md border bg-background">
+                                <table className="w-full text-xs">
+                                  <thead className="bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                    <tr>
+                                      <th className="px-3 py-1.5 text-left font-medium">Component</th>
+                                      <th className="px-3 py-1.5 text-left font-medium">Variant</th>
+                                      <th className="w-20 px-3 py-1.5 text-right font-medium">Qty</th>
+                                      <th className="px-3 py-1.5 text-left font-medium">Position</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y">
+                                    {components.map((c) => (
+                                      <tr key={c.id}>
+                                        <td className="px-3 py-1.5">
+                                          <div className="font-medium">{c.partName}</div>
+                                          <div className="text-[10px] text-muted-foreground font-mono">
+                                            {c.partSku}
+                                          </div>
+                                        </td>
+                                        <td className="px-3 py-1.5">
+                                          <span className="font-mono text-[11px]">{c.variantSku}</span>
+                                          <Badge variant="outline" className="ml-1 text-[10px]">{c.condition}</Badge>
+                                          {c.isOptional && (
+                                            <Badge variant="secondary" className="ml-1 text-[10px]">Optional</Badge>
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-1.5 text-right tabular-nums">
+                                          {c.quantity} {c.unitOfMeasure}
+                                        </td>
+                                        <td className="px-3 py-1.5 text-muted-foreground">
+                                          {c.position ?? '—'}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <p className="text-xs italic text-muted-foreground">
+                                This BOM has no components configured.
+                              </p>
+                            )}
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge variant={CONFIG_ACTION_VARIANT[item.configAction]}>
-                        {CONFIG_ACTION_ICON[item.configAction]}
-                        <span className="ml-1">{CONFIG_ACTION_LABEL[item.configAction]}</span>
-                      </StatusBadge>
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium">{item.qty}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(item.rate)}</td>
-                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(item.amount)}</td>
-                  </tr>
-                ))}
+                    </Fragment>
+                  )
+                })}
               </tbody>
               <tfoot>
                 <tr className="border-t bg-muted/30">
@@ -483,6 +710,36 @@ function SalesOrderDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={amendOpen} onOpenChange={setAmendOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Amend {so.orderNumber}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The current state will be snapshotted as Rev {so.version}, and you will edit a new Rev {so.version + 1}.
+              The order number stays the same.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="so-amend-reason">
+              Reason <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <Textarea
+              id="so-amend-reason"
+              placeholder="e.g., Customer requested higher memory config"
+              value={amendReason}
+              onChange={(e) => setAmendReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAmend}>
+              Create Rev {so.version + 1}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

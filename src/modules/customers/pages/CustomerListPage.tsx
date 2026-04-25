@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
 import { Badge } from '@/components/ui/badge'
+import { ListPageShell } from '@/components/page'
 
 import { mockCustomerRegistrations } from '@/modules/customers/data/customers'
 import type { CustomerOnboardingStatus } from '@/modules/customers/types'
@@ -132,37 +133,48 @@ function CustomerListPage() {
     .reduce((sum, c) => sum + c.overdueAmount, 0)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Customer Management</h2>
+    <ListPageShell
+      title="Customer Management"
+      subtitle="Registered customers, onboarding status, and outstanding balances."
+      breadcrumbs={[{ label: 'Customers' }]}
+      actions={
         <Button onClick={() => navigate('/customers/new')}>
           <Plus className="mr-1 size-4" />
           Register Customer
         </Button>
-      </div>
-
-      <StatsRow
-        stats={[
-          { label: 'Total Customers', value: totalCustomers, icon: Building2 },
-          { label: 'Active', value: activeCount, icon: CheckCircle },
-          { label: 'Onboarding', value: onboardingCount, icon: Clock },
-          {
-            label: 'Overdue Balance',
-            value: formatCurrency(overdueBalance),
-            icon: AlertTriangle,
-            className: 'text-destructive',
-          },
-        ]}
-      />
-
+      }
+      stats={
+        <StatsRow
+          stats={[
+            { label: 'Total Customers', value: totalCustomers, icon: Building2 },
+            { label: 'Active', value: activeCount, icon: CheckCircle },
+            { label: 'Onboarding', value: onboardingCount, icon: Clock },
+            {
+              label: 'Overdue Balance',
+              value: formatCurrency(overdueBalance),
+              icon: AlertTriangle,
+              className: 'text-destructive',
+            },
+          ]}
+        />
+      }
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="customers"
         onRowClick={(row) => navigate(`/customers/${row.id}`)}
+        emptyState={{
+          title: 'No customers yet',
+          description: 'Register a customer to start onboarding and tracking billing.',
+          action: {
+            label: 'Register Customer',
+            onClick: () => navigate('/customers/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

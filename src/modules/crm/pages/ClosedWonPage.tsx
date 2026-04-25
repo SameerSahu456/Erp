@@ -28,6 +28,8 @@ import { AddAddressDialog } from '../components/AddAddressDialog'
 import { deals } from '../data/deals'
 import { leads } from '../data/leads'
 import { accounts } from '../data/accounts'
+import { demoRequests } from '../data/demo-requests'
+import { persistSOAndPOFromDemo, type ConvertedLine } from '../lib/demo-conversion'
 
 // ── Constants ──
 
@@ -122,20 +124,27 @@ function ClosedWonPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
-  const entityType = searchParams.get('type') as 'lead' | 'deal' ?? 'deal'
+  const entityType = (searchParams.get('type') as 'lead' | 'deal' | 'demo' | null) ?? 'deal'
   const isLead = entityType === 'lead'
+  const isDemo = entityType === 'demo'
 
   // Resolve entity
-  const deal = !isLead ? deals.find((d) => d.id === id) : undefined
+  const deal = entityType === 'deal' ? deals.find((d) => d.id === id) : undefined
   const lead = isLead ? leads.find((l) => l.id === id) : undefined
-  const entity = deal ?? lead
+  const demo = isDemo ? demoRequests.find((d) => d.id === id) : undefined
+  const entity = deal ?? lead ?? demo
 
-  const entityName = deal?.name ?? lead?.name ?? ''
+  const entityName = deal?.name ?? lead?.name ?? demo?.demoNumber ?? ''
   const entityValue = deal?.value ?? lead?.value ?? 0
-  const entityCompany = lead?.company ?? ''
-  const existingAccountName = deal?.accountName ?? ''
+  const entityCompany = lead?.company ?? demo?.accountName ?? ''
+  const existingAccountName = deal?.accountName ?? demo?.accountName ?? ''
+  const existingAccountId = deal?.accountId ?? demo?.accountId
 
-  const backPath = isLead ? `/crm/leads/${id}` : `/crm/deals/${id}`
+  const backPath = isLead
+    ? `/crm/leads/${id}`
+    : isDemo
+      ? `/crm/demo-requests/${id}`
+      : `/crm/deals/${id}`
   const goBack = useNavigateBack(backPath)
 
   const [currentStep, setCurrentStep] = useState(1)
@@ -149,11 +158,13 @@ function ClosedWonPage() {
   const [city, setCity] = useState('')
   const [accountOwner, setAccountOwner] = useState('Amit Patel')
 
-  // Contact details
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [contactEmail, setContactEmail] = useState('')
-  const [contactPhone, setContactPhone] = useState('')
+  // Contact details — pre-filled from the demo when source is a demo request.
+  const initialContactFirst = demo?.contactName?.split(/\s+/)[0] ?? ''
+  const initialContactLast = demo ? demo.contactName.split(/\s+/).slice(1).join(' ') : ''
+  const [firstName, setFirstName] = useState(initialContactFirst)
+  const [lastName, setLastName] = useState(initialContactLast)
+  const [contactEmail, setContactEmail] = useState(demo?.contactEmail ?? '')
+  const [contactPhone, setContactPhone] = useState(demo?.contactPhone ?? '')
   const [designation, setDesignation] = useState('')
   const [department, setDepartment] = useState('')
 
@@ -162,11 +173,28 @@ function ClosedWonPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadingDocType, setUploadingDocType] = useState('')
 
-  // Sales Order form state
+  // Sales Order form state — pre-fill from demo line items if applicable.
   const [orderDate, setOrderDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [lineItems, setLineItems] = useState<SOLineItem[]>([createEmptySOItem()])
-  const [notes, setNotes] = useState('')
-  const [categoriesInterested, setCategoriesInterested] = useState<string[]>([])
+  const [lineItems, setLineItems] = useState<SOLineItem[]>(() => {
+    if (!demo) return [createEmptySOItem()]
+    return demo.items.map((item) => ({
+      id: genId(),
+      type: 'ims_part' as const,
+      partId: item.partId,
+      partName: item.partName,
+      partSku: item.partSku,
+      brand: item.brand,
+      variantType: item.condition,
+      item: item.partName,
+      description: `${item.partSku} · ${item.brand} · ${item.condition}`,
+      qty: item.qty,
+      rate: item.unitPrice ?? 0,
+    }))
+  })
+  const [notes, setNotes] = useState(demo?.notes ?? '')
+  const [categoriesInterested, setCategoriesInterested] = useState<string[]>(
+    demo ? Array.from(new Set(demo.items.map((i) => i.category))).filter(Boolean) : [],
+  )
   const [dispatchMethod, setDispatchMethod] = useState('')
   const [paymentTerms, setPaymentTerms] = useState('')
   const [orderType, setOrderType] = useState('')
@@ -177,7 +205,7 @@ function ClosedWonPage() {
   const [addAddressOpen, setAddAddressOpen] = useState(false)
   const [addAddressType, setAddAddressType] = useState<'Billing' | 'Shipping'>('Billing')
 
-  const accountObj = deal ? accounts.find((a) => a.id === deal.accountId) : undefined
+  const accountObj = existingAccountId ? accounts.find((a) => a.id === existingAccountId) : undefined
   type TaggedAddress = AccountAddress & { source: string }
   const allAddresses: TaggedAddress[] = (() => {
     const result: TaggedAddress[] = []
@@ -198,7 +226,8 @@ function ClosedWonPage() {
     () => shippingAddressPool.filter((a) => a.isDefault).map((a) => a.id)
   )
   const [manualBillingAddress, setManualBillingAddress] = useState('')
-  const [manualShippingAddress, setManualShippingAddress] = useState('')
+  // For demo source, the demo already records a shipping address — use it as the default.
+  const [manualShippingAddress, setManualShippingAddress] = useState(demo?.shippingAddress ?? '')
 
   function toggleAddress(id: string, type: 'billing' | 'shipping') {
     const setter = type === 'billing' ? setSelectedBillingIds : setSelectedShippingIds
@@ -219,9 +248,10 @@ function ClosedWonPage() {
   const isOnSOStep = isLead ? currentStep === 2 : currentStep === 1
 
   if (!entity) {
+    const label = isLead ? 'Lead' : isDemo ? 'Demo request' : 'Deal'
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
-        <h2 className="font-display text-xl font-semibold">{isLead ? 'Lead' : 'Deal'} not found</h2>
+        <h2 className="font-display text-xl font-semibold">{label} not found</h2>
         <Button variant="outline" onClick={goBack}>Go Back</Button>
       </div>
     )
@@ -308,13 +338,46 @@ function ClosedWonPage() {
       return
     }
 
-    const soTotal = lineItems
-      .filter((li) => (li.item.trim() !== '' || li.partName) && li.qty > 0)
-      .reduce((sum, li) => sum + li.qty * li.rate, 0)
+    const validLines = lineItems.filter(
+      (li) => (li.item.trim() !== '' || li.partName) && li.qty > 0,
+    )
+    const soTotal = validLines.reduce((sum, li) => sum + li.qty * li.rate, 0)
 
     const fmtTotal = new Intl.NumberFormat('en-IN', {
       style: 'currency', currency: 'INR', maximumFractionDigits: 0,
     }).format(soTotal)
+
+    if (isDemo && demo) {
+      if (demo.salesOrderId) {
+        toast.info('A sales order has already been created for this demo')
+        navigate(`/crm/sales-orders/${demo.salesOrderId}`)
+        return
+      }
+      const converted: ConvertedLine[] = validLines.map((li) => ({
+        partId: li.partId,
+        partName: li.partName ?? li.item,
+        partSku: li.partSku,
+        brand: li.brand,
+        variantSku: li.partSku,
+        condition: (li.variantType as ConvertedLine['condition']) ?? 'New',
+        qty: li.qty,
+        rate: li.rate,
+        description: li.description,
+      }))
+      const dispatchNotes = notes
+        ? `${notes}\n— Generated from demo ${demo.demoNumber}`
+        : `Generated from demo ${demo.demoNumber}.`
+      const { so, po } = persistSOAndPOFromDemo(demo, converted, { dispatchNotes })
+      toast.success(`${so.orderNumber} created from ${demo.demoNumber} — ${fmtTotal}`, {
+        description: `Back-to-back ${po.poNumber} raised on ${po.vendorName}.`,
+        action: {
+          label: 'View SO',
+          onClick: () => navigate(`/crm/sales-orders/${so.id}`),
+        },
+      })
+      navigate(`/crm/demo-requests/${demo.id}`)
+      return
+    }
 
     if (isLead) {
       toast.success(`Lead "${entityName}" closed won — Account & Sales Order created`)
@@ -335,11 +398,15 @@ function ClosedWonPage() {
               <ArrowLeft className="size-4" />
             </Button>
             <div>
-              <h1 className="text-lg font-semibold">Close Won &mdash; {entityName}</h1>
+              <h1 className="text-lg font-semibold">
+                {isDemo ? 'Convert demo to Sales Order' : 'Close Won'} &mdash; {entityName}
+              </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {isLead
                   ? 'Create an account and sales order to close this lead.'
-                  : `Create a sales order for ${existingAccountName || 'this deal'}.`}
+                  : isDemo
+                    ? `Customer is keeping the demo. Pricing and line items are pre-filled from ${entityName} — confirm and a back-to-back PO will be raised on the vendor.`
+                    : `Create a sales order for ${existingAccountName || 'this deal'}.`}
               </p>
             </div>
           </div>

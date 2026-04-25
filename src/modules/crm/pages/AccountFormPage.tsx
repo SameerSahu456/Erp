@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -18,7 +18,7 @@ import {
 import { MultiSelect } from '@/components/ui/multi-select'
 import { Separator } from '@/components/ui/separator'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
-import { EntityHeader } from '../components/EntityHeader'
+import { FormPageShell } from '@/components/page'
 import { accounts } from '../data/accounts'
 import { IMS_CATEGORIES } from '../types'
 import type { Account, AccountAddress } from '../types'
@@ -107,14 +107,33 @@ function AccountFormPage() {
   }
 
   const otherAccounts = accounts.filter((a) => a.id !== accountId)
+  const canSave = Boolean(name.trim())
 
   return (
-    <div className="space-y-6">
-      <EntityHeader
-        title={isEdit ? `Edit Account: ${existingAccount.name}` : 'Create Account'}
-        backHref={backHref}
-      />
-
+    <FormPageShell
+      title={isEdit ? `Edit Account: ${existingAccount.name}` : 'Create Account'}
+      subtitle={isEdit ? 'Update account profile, addresses, and categories.' : 'Add a new customer or partner account.'}
+      breadcrumbs={
+        isEdit
+          ? [
+              { label: 'CRM' },
+              { label: 'Accounts', href: '/crm/accounts' },
+              { label: existingAccount.name, href: `/crm/accounts/${accountId}` },
+              { label: 'Edit' },
+            ]
+          : [
+              { label: 'CRM' },
+              { label: 'Accounts', href: '/crm/accounts' },
+              { label: 'New Account' },
+            ]
+      }
+      backHref={backHref}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      canSave={canSave}
+      saveLabel={isEdit ? 'Save Changes' : 'Create Account'}
+      footerLeft={!canSave ? <span className="text-destructive/80">Account name is required.</span> : undefined}
+    >
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit Account Details' : 'New Account Details'}</CardTitle>
@@ -500,16 +519,8 @@ function AccountFormPage() {
               ))}
           </div>
         </CardContent>
-        <CardFooter className="justify-end gap-2">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={!name.trim()}>
-            {isEdit ? 'Save Changes' : 'Create Account'}
-          </Button>
-        </CardFooter>
       </Card>
-    </div>
+    </FormPageShell>
   )
 }
 

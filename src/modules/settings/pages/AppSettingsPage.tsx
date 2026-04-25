@@ -5,6 +5,7 @@ import { Check, Sun, Moon, Monitor } from 'lucide-react'
 import { useTheme, THEMES } from '@/contexts/ThemeContext'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { PageHeader } from '@/components/page'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -59,7 +60,11 @@ export default function AppSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold">App Settings</h1>
+      <PageHeader
+        title="App Settings"
+        subtitle="Theme, color mode, notifications, and account preferences."
+        breadcrumbs={[{ label: 'Settings' }, { label: 'App' }]}
+      />
 
       {/* Section 1: Theme */}
       <Card>

@@ -14,6 +14,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow, type StatCardData } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
+import { EmptyState } from '@/components/common/EmptyState'
+import { ListChecks } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -121,62 +124,74 @@ function TasksPage() {
     toast.success('Task created successfully')
   }
 
+  const hasFilters = search !== '' || statusFilter !== 'all' || priorityFilter !== 'all'
+  const toolbar = (
+    <div className="flex flex-wrap items-center gap-3">
+      <Input
+        placeholder="Search tasks..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-64"
+      />
+      <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Status</SelectItem>
+          <SelectItem value="To Do">To Do</SelectItem>
+          <SelectItem value="In Progress">In Progress</SelectItem>
+          <SelectItem value="Completed">Completed</SelectItem>
+          <SelectItem value="Cancelled">Cancelled</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="Priority" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Priority</SelectItem>
+          <SelectItem value="Urgent">Urgent</SelectItem>
+          <SelectItem value="High">High</SelectItem>
+          <SelectItem value="Medium">Medium</SelectItem>
+          <SelectItem value="Low">Low</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  )
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="cpt-page-title">Tasks</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage tasks linked to leads and deals
-          </p>
-        </div>
+    <>
+    <ListPageShell
+      title="Tasks"
+      subtitle="Things to do — linked to leads, deals, or standalone."
+      breadcrumbs={[{ label: 'CRM' }, { label: 'Tasks' }]}
+      actions={
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="size-3.5" data-icon="inline-start" />
           New Task
         </Button>
-      </div>
-
-      <StatsRow stats={stats} />
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Input
-          placeholder="Search tasks..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-64"
-        />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="To Do">To Do</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
-            <SelectItem value="Cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priority</SelectItem>
-            <SelectItem value="Urgent">Urgent</SelectItem>
-            <SelectItem value="High">High</SelectItem>
-            <SelectItem value="Medium">Medium</SelectItem>
-            <SelectItem value="Low">Low</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Task List */}
+      }
+      stats={<StatsRow stats={stats} />}
+      toolbar={toolbar}
+    >
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-            No tasks found matching your filters
+          <div className="rounded-lg border border-border bg-card">
+            <EmptyState
+              icon={ListChecks}
+              title={hasFilters ? 'No tasks match your filters' : 'No tasks yet'}
+              description={
+                hasFilters
+                  ? 'Try clearing the search or filters to see more tasks.'
+                  : 'Create your first task to keep work moving.'
+              }
+              action={
+                hasFilters
+                  ? { label: 'Clear filters', onClick: () => { setSearch(''); setStatusFilter('all'); setPriorityFilter('all') } }
+                  : { label: 'New Task', onClick: () => setCreateOpen(true) }
+              }
+            />
           </div>
         ) : (
           filtered.map((task) => (
@@ -222,6 +237,7 @@ function TasksPage() {
           ))
         )}
       </div>
+    </ListPageShell>
 
       {/* Create Task Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -298,7 +314,7 @@ function TasksPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
 

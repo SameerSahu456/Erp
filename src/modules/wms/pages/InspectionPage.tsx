@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ChevronDown, ChevronRight, Check, X, Minus, Camera, Upload, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Check, X, Camera, Upload, Plus, Trash2, Server, Trash, Warehouse as WarehouseIcon, Search } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,6 +22,7 @@ import {
   type TabConfig,
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
+import { PageHeader } from '@/components/page'
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -37,12 +38,17 @@ import {
 
 import { mockDevices } from '../data/devices'
 import { mockInspections } from '../data/inspections'
+import { mockWarehouses } from '../data/warehouses'
+import { mockParts } from '../../ims/data/parts'
 import {
   INSPECTION_CHECKLIST_ITEMS,
+  SERVER_INSPECTION_CHECKLIST_ITEMS,
   type Device,
   type InspectionResult,
   type PaintPanelType,
 } from '../types'
+
+type ChecklistItem = { readonly id: string; readonly label: string; readonly group: string }
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-IN', {
@@ -52,21 +58,20 @@ function formatDate(dateStr: string) {
   })
 }
 
-// Group checklist items by their group field
-const CHECKLIST_GROUPS = INSPECTION_CHECKLIST_ITEMS.reduce<
-  Record<string, typeof INSPECTION_CHECKLIST_ITEMS[number][]>
->((acc, item) => {
-  const group = item.group
-  if (!acc[group]) acc[group] = []
-  acc[group].push(item)
-  return acc
-}, {})
+const LAPTOP_GROUP_ORDER = ['Panels', 'Display', 'Input', 'Audio', 'Power', 'Hardware', 'Ports']
+const SERVER_GROUP_ORDER = ['Chassis', 'Power', 'Compute', 'Memory', 'Storage', 'Cooling', 'Networking', 'Ports']
 
-const GROUP_ORDER = ['Panels', 'Display', 'Input', 'Audio', 'Power', 'Hardware', 'Ports']
+function groupChecklistItems(items: readonly ChecklistItem[]): Record<string, ChecklistItem[]> {
+  const acc: Record<string, ChecklistItem[]> = {}
+  for (const item of items) {
+    if (!acc[item.group]) acc[item.group] = []
+    acc[item.group].push(item)
+  }
+  return acc
+}
 
 const INSPECTION_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta']
 const DISPLAY_ENGINEERS = ['Karthik Rao', 'Neha Bansal']
-const QC_ENGINEERS = ['Deepak Verma', 'Anita Sharma']
 
 const AVAILABLE_SPARES = [
   'Keyboard', 'Touchpad', 'Screen Panel', 'Battery', 'SSD 256GB', 'SSD 512GB',
@@ -75,10 +80,29 @@ const AVAILABLE_SPARES = [
   'LCD Cable', 'Motherboard', 'Charger', 'Palm Rest',
 ]
 
-type ChecklistState = Record<string, { result: InspectionResult; notes: string }>
+type ChecklistState = Record<
+  string,
+  {
+    result: InspectionResult
+    notes: string
+    scrapWarehouseId?: string
+    scrapRackId?: string
+  }
+>
 
-interface SpareRequest {
+interface LaptopSpareRequestDraft {
   spareName: string
+  qty: number
+}
+
+// Server build-sheet entry — captured from the inline component search below
+// the device images. Identifies the part and how many of it are installed in
+// this specific server. We don't pre-load these from a BOM because every
+// server in the demo has a different physical configuration.
+interface ServerComponentDraft {
+  partId: string
+  name: string
+  sku: string
   qty: number
 }
 
@@ -89,7 +113,7 @@ function InspectionPage() {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
   const [checklist, setChecklist] = useState<ChecklistState>({})
   const [requiresSpares, setRequiresSpares] = useState(false)
-  const [spareRequests, setSpareRequests] = useState<SpareRequest[]>([])
+  const [spareRequests, setSpareRequests] = useState<LaptopSpareRequestDraft[]>([])
   const [requiresPaint, setRequiresPaint] = useState(false)
   const [paintPanels, setPaintPanels] = useState<PaintPanelType[]>([])
   const [overallNotes, setOverallNotes] = useState('')
@@ -97,9 +121,11 @@ function InspectionPage() {
   // Per-device engineer assignments captured inside the inspection dialog
   const [l1l2Engineer, setL1L2Engineer] = useState<string>('')
   const [displayEngineer, setDisplayEngineer] = useState<string>('')
-  const [qcEngineer, setQcEngineer] = useState<string>('')
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [deviceImages, setDeviceImages] = useState<File[]>([])
+  // Server-only: free-form component search → add → set qty.
+  const [componentSearch, setComponentSearch] = useState('')
+  const [serverComponents, setServerComponents] = useState<ServerComponentDraft[]>([])
 
   const handleAssignEngineer = (deviceId: string, engineer: string) => {
     setAssignments((prev) => ({ ...prev, [deviceId]: engineer }))
@@ -107,10 +133,61 @@ function InspectionPage() {
     toast.success(`${device?.barcode ?? deviceId} assigned to ${engineer}`)
   }
 
-  const hasFailures = useMemo(
-    () => Object.values(checklist).some((item) => item.result === 'FAIL'),
-    [checklist],
+  /* ------------- Checklist template selection (server vs. laptop) ------------- */
+  const isAssembly = selectedDevice?.deviceKind === 'ASSEMBLY'
+  const checklistItems: readonly ChecklistItem[] = isAssembly
+    ? SERVER_INSPECTION_CHECKLIST_ITEMS
+    : INSPECTION_CHECKLIST_ITEMS
+  const checklistGroups = useMemo(
+    () => groupChecklistItems(checklistItems),
+    [checklistItems],
   )
+  const groupOrder = isAssembly ? SERVER_GROUP_ORDER : LAPTOP_GROUP_ORDER
+
+  /* ------------- Server component search (assembly devices only) ------------- */
+  // Restrict suggestions to active server-hardware parts and skip variants so
+  // the dropdown lists each part once.
+  const componentCandidates = useMemo(
+    () =>
+      mockParts.filter(
+        (p) => p.isActive && p.hardwareType && p.productType !== 'variant',
+      ),
+    [],
+  )
+  const filteredComponents = useMemo(() => {
+    const q = componentSearch.trim().toLowerCase()
+    if (!q) return []
+    const addedIds = new Set(serverComponents.map((c) => c.partId))
+    return componentCandidates
+      .filter((p) => !addedIds.has(p.id))
+      .filter((p) => {
+        const haystack = [p.name, p.sku, ...(p.aliases ?? [])]
+          .join(' ')
+          .toLowerCase()
+        return haystack.includes(q)
+      })
+      .slice(0, 8)
+  }, [componentSearch, componentCandidates, serverComponents])
+
+  const addServerComponent = useCallback(
+    (part: { id: string; name: string; sku: string }) => {
+      setServerComponents((prev) =>
+        prev.some((c) => c.partId === part.id)
+          ? prev
+          : [...prev, { partId: part.id, name: part.name, sku: part.sku, qty: 1 }],
+      )
+      setComponentSearch('')
+    },
+    [],
+  )
+  const updateServerComponentQty = useCallback((index: number, qty: number) => {
+    setServerComponents((prev) =>
+      prev.map((c, i) => (i === index ? { ...c, qty: Math.max(1, qty) } : c)),
+    )
+  }, [])
+  const removeServerComponent = useCallback((index: number) => {
+    setServerComponents((prev) => prev.filter((_, i) => i !== index))
+  }, [])
 
   const checkedCount = useMemo(
     () => Object.keys(checklist).length,
@@ -127,8 +204,8 @@ function InspectionPage() {
     [checklist],
   )
 
-  const naCount = useMemo(
-    () => Object.values(checklist).filter((i) => i.result === 'NOT_APPLICABLE').length,
+  const scrapCount = useMemo(
+    () => Object.values(checklist).filter((i) => i.result === 'SCRAP').length,
     [checklist],
   )
 
@@ -167,6 +244,7 @@ function InspectionPage() {
         barcode: d.barcode,
         partSerial: `${d.model}\n${d.serialNumber}`,
         biosNo: d.biosNo ?? '-',
+        category: d.category,
         brand: d.brand,
         batch: d.batchNumber,
         receivedDate: formatDate(d.receivedAt),
@@ -185,6 +263,7 @@ function InspectionPage() {
           barcode: d.barcode,
           partSerial: `${d.model}\n${d.serialNumber}`,
           biosNo: d.biosNo ?? '-',
+          category: d.category,
           result: insp
             ? insp.checklist.every((c) => c.result !== 'FAIL')
               ? 'All Pass'
@@ -208,6 +287,7 @@ function InspectionPage() {
           { key: 'barcode', label: 'Barcode', sortable: true },
           { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
+          { key: 'category', label: 'Category', sortable: true },
           { key: 'brand', label: 'Brand', sortable: true },
           { key: 'batch', label: 'Batch' },
           { key: 'receivedDate', label: 'Received Date', sortable: true },
@@ -223,6 +303,7 @@ function InspectionPage() {
           { key: 'barcode', label: 'Barcode', sortable: true },
           { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
+          { key: 'category', label: 'Category', sortable: true },
           { key: 'result', label: 'Result' },
           { key: 'repair', label: 'Repair' },
           { key: 'paint', label: 'Paint' },
@@ -246,9 +327,10 @@ function InspectionPage() {
     setOverallNotes('')
     setCollapsedGroups({})
     setDeviceImages([])
+    setComponentSearch('')
+    setServerComponents([])
     setL1L2Engineer(assignments[device.id] ?? '')
     setDisplayEngineer('')
-    setQcEngineer('')
     setInspectionDialogOpen(true)
   }
 
@@ -274,11 +356,20 @@ function InspectionPage() {
       }
       if (key === 'partSerial') {
         const [part, serial] = String(value).split('\n')
+        const device = mockDevices.find((d) => d.id === row.id)
+        const isAssemblyRow = device?.deviceKind === 'ASSEMBLY'
         return {
           display: (
             <div className="flex flex-col leading-tight">
-              <span className="font-medium">{part}</span>
-              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
+              <span className="flex items-center gap-1.5 font-medium">
+                {isAssemblyRow && (
+                  <Server className="size-3.5 text-primary" aria-label="Assembly" />
+                )}
+                {part}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                S/N: {serial}
+              </span>
             </div>
           ),
         }
@@ -393,21 +484,24 @@ function InspectionPage() {
   }
 
   const handleSubmit = () => {
-    if (!l1l2Engineer) {
-      toast.error('Please assign an L1 / L2 engineer before submitting.')
-      return
-    }
-    if (!qcEngineer) {
-      toast.error('Please assign a QC engineer before submitting.')
-      return
-    }
+    if (!selectedDevice) return
     if (deviceImages.length === 0) {
       toast.error('Please upload at least one device image before submitting.')
       return
     }
+
     const filledCount = Object.keys(checklist).length
-    if (filledCount < INSPECTION_CHECKLIST_ITEMS.length) {
+    if (filledCount < checklistItems.length) {
       toast.error('Please complete all checklist items before submitting.')
+      return
+    }
+    // Scrapped items must have a destination warehouse + rack.
+    const missingScrapLocation = checklistItems.find((item) => {
+      const s = checklist[item.id]
+      return s?.result === 'SCRAP' && (!s.scrapWarehouseId || !s.scrapRackId)
+    })
+    if (missingScrapLocation) {
+      toast.error(`Pick warehouse and rack for scrapped "${missingScrapLocation.label}".`)
       return
     }
     if (requiresSpares && spareRequests.length === 0) {
@@ -425,12 +519,11 @@ function InspectionPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="cpt-page-title">Inspection</h1>
-        <p className="text-sm text-muted-foreground">
-          Process device inspections and flag issues for repair, paint, or spares.
-        </p>
-      </div>
+      <PageHeader
+        title="Inspection"
+        subtitle="Process device inspections and flag issues for repair, paint, or spares."
+        breadcrumbs={[{ label: 'WMS' }, { label: 'Inspection' }]}
+      />
 
       {/* Device Queue */}
       <div className="bmt-search-lg">
@@ -439,6 +532,10 @@ function InspectionPage() {
           cellFormatter={cellFormatter}
           persistKey="wms-inspection"
           onRowClick={(row) => navigate(`/wms/devices/${row.id}?from=inspection`)}
+          emptyState={{
+            title: 'No devices pending inspection',
+            description: 'All inward devices are either already inspected or queued elsewhere in the pipeline.',
+          }}
         />
       </div>
 
@@ -448,8 +545,14 @@ function InspectionPage() {
           {/* Sticky Header */}
           <div className="shrink-0 border-b px-6 py-4">
             <DialogHeader>
-              <DialogTitle className="text-lg">
+              <DialogTitle className="flex items-center gap-2 text-lg">
                 Inspecting: {selectedDevice?.barcode}
+                {isAssembly && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    <Server className="size-3" />
+                    Server
+                  </span>
+                )}
               </DialogTitle>
               {selectedDevice && (
                 <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground mt-1">
@@ -462,7 +565,9 @@ function InspectionPage() {
                     {selectedDevice.brand}
                   </span>
                   <span>
-                    <span className="font-medium text-foreground">Serial:</span>{' '}
+                    <span className="font-medium text-foreground">
+                      {isAssembly ? 'Chassis S/N' : 'Serial'}:
+                    </span>{' '}
                     {selectedDevice.serialNumber}
                   </span>
                 </div>
@@ -474,10 +579,8 @@ function InspectionPage() {
               <div className="flex-1">
                 <Progress
                   value={
-                    INSPECTION_CHECKLIST_ITEMS.length > 0
-                      ? Math.round(
-                          (checkedCount / INSPECTION_CHECKLIST_ITEMS.length) * 100,
-                        )
+                    checklistItems.length > 0
+                      ? Math.round((checkedCount / checklistItems.length) * 100)
                       : 0
                   }
                 >
@@ -486,7 +589,9 @@ function InspectionPage() {
                 </Progress>
               </div>
               <div className="flex shrink-0 items-center gap-3 text-xs">
-                <span className="font-medium">{checkedCount}/{INSPECTION_CHECKLIST_ITEMS.length}</span>
+                <span className="font-medium">
+                  {checkedCount}/{checklistItems.length}
+                </span>
                 <span className="flex items-center gap-1">
                   <span className="inline-block size-2 rounded-full bg-emerald-500" />
                   {passCount}
@@ -495,9 +600,9 @@ function InspectionPage() {
                   <span className="inline-block size-2 rounded-full bg-destructive" />
                   {failCount}
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="inline-block size-2 rounded-full bg-muted-foreground" />
-                  {naCount}
+                <span className="flex items-center gap-1" title="Scrap">
+                  <span className="inline-block size-2 rounded-full bg-amber-500" />
+                  {scrapCount}
                 </span>
               </div>
             </div>
@@ -510,13 +615,13 @@ function InspectionPage() {
               <div>
                 <Label className="text-sm font-semibold">Engineer Assignments</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Assign the repair engineers and QC engineer for this device. Display engineer is optional and only needed when a display panel is involved.
+                  Assign the repair engineers for this device. Display engineer is optional and only needed when a display panel is involved.
                 </p>
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">
-                    L1 / L2 Engineer <span className="text-destructive">*</span>
+                    L3 Engineer
                   </Label>
                   <Select
                     value={l1l2Engineer}
@@ -547,26 +652,6 @@ function InspectionPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {DISPLAY_ENGINEERS.map((eng) => (
-                        <SelectItem key={eng} value={eng}>
-                          {eng}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">
-                    QC Engineer <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={qcEngineer}
-                    onValueChange={(val) => { if (val) setQcEngineer(val) }}
-                  >
-                    <SelectTrigger className="h-9 w-full text-sm">
-                      <SelectValue placeholder="Select QC engineer…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {QC_ENGINEERS.map((eng) => (
                         <SelectItem key={eng} value={eng}>
                           {eng}
                         </SelectItem>
@@ -659,9 +744,98 @@ function InspectionPage() {
               )}
             </div>
 
-            {/* Checklist grouped by category */}
-            {GROUP_ORDER.map((group) => {
-              const items = CHECKLIST_GROUPS[group]
+            {/* Server line items — search → add → set qty (servers only) */}
+            {isAssembly && (
+              <div className="space-y-3 rounded-lg border p-4">
+                <div>
+                  <Label className="text-sm font-semibold">Line items</Label>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Search and add the parts installed in this server. Set the
+                    quantity for each.
+                  </p>
+                </div>
+
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search line items by name or SKU…"
+                    value={componentSearch}
+                    onChange={(e) => setComponentSearch(e.target.value)}
+                    className="pl-8"
+                  />
+                  {componentSearch.trim() && (
+                    <div className="absolute z-10 mt-1 max-h-72 w-full overflow-y-auto rounded-md border bg-popover shadow-md">
+                      {filteredComponents.length === 0 ? (
+                        <p className="px-3 py-2 text-xs text-muted-foreground">
+                          No matching line items.
+                        </p>
+                      ) : (
+                        filteredComponents.map((part) => (
+                          <button
+                            key={part.id}
+                            type="button"
+                            onClick={() => addServerComponent(part)}
+                            className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-muted"
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate font-medium">{part.name}</span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {part.sku}
+                                {part.hardwareType ? ` · ${part.hardwareType}` : ''}
+                              </span>
+                            </span>
+                            <Plus className="size-4 shrink-0 text-muted-foreground" />
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {serverComponents.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No line items added yet.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {serverComponents.map((c, idx) => (
+                      <div
+                        key={c.partId}
+                        className="flex items-center gap-2 rounded-md border bg-card px-3 py-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{c.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">{c.sku}</p>
+                        </div>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={c.qty}
+                          onChange={(e) =>
+                            updateServerComponentQty(idx, parseInt(e.target.value) || 1)
+                          }
+                          className="h-8 w-20 text-sm"
+                          placeholder="Qty"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 shrink-0 text-destructive hover:text-destructive"
+                          onClick={() => removeServerComponent(idx)}
+                          aria-label={`Remove ${c.name}`}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Inspection template — checklist grouped by category */}
+            {groupOrder.map((group) => {
+              const items = checklistGroups[group]
               if (!items) return null
               const isCollapsed = collapsedGroups[group] ?? false
               const groupChecked = items.filter((i) => checklist[i.id]).length
@@ -701,6 +875,12 @@ function InspectionPage() {
                     <div className="space-y-1.5 pt-2">
                       {items.map((item) => {
                         const state = checklist[item.id]
+                        const itemWarehouse = state?.scrapWarehouseId
+                          ? mockWarehouses.find((w) => w.id === state.scrapWarehouseId)
+                          : undefined
+                        const itemRacks = itemWarehouse
+                          ? itemWarehouse.rows.flatMap((r) => r.racks)
+                          : []
                         return (
                           <div
                             key={item.id}
@@ -709,7 +889,9 @@ function InspectionPage() {
                                 ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30'
                                 : state?.result === 'FAIL'
                                   ? 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/30'
-                                  : 'bg-card'
+                                  : state?.result === 'SCRAP'
+                                    ? 'border-amber-300 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-950/30'
+                                    : 'bg-card'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-3 px-3 py-2.5">
@@ -749,16 +931,16 @@ function InspectionPage() {
                                   size="xs"
                                   variant="outline"
                                   className={
-                                    state?.result === 'NOT_APPLICABLE'
-                                      ? 'border-muted-foreground/50 bg-muted text-muted-foreground'
-                                      : 'border-muted-foreground/20 text-muted-foreground hover:bg-muted'
+                                    state?.result === 'SCRAP'
+                                      ? 'border-amber-500 bg-amber-500 text-white hover:bg-amber-600'
+                                      : 'border-muted-foreground/20 text-amber-700 hover:border-amber-400 hover:bg-amber-50 dark:text-amber-500 dark:hover:bg-amber-950'
                                   }
                                   onClick={() =>
-                                    handleChecklistChange(item.id, 'NOT_APPLICABLE')
+                                    handleChecklistChange(item.id, 'SCRAP')
                                   }
                                 >
-                                  <Minus className="size-3.5" />
-                                  N/A
+                                  <Trash className="size-3.5" />
+                                  Scrap
                                 </Button>
                               </div>
                             </div>
@@ -772,6 +954,74 @@ function InspectionPage() {
                                   }
                                   className="h-8 text-sm"
                                 />
+                              </div>
+                            )}
+                            {state?.result === 'SCRAP' && (
+                              <div className="space-y-2 border-t bg-amber-50/40 px-3 py-2 dark:bg-amber-950/20">
+                                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
+                                  <WarehouseIcon className="size-3.5" />
+                                  Scrap Destination
+                                  <span className="text-destructive">*</span>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                  <Select
+                                    value={state.scrapWarehouseId ?? ''}
+                                    onValueChange={(val) => {
+                                      if (!val) return
+                                      setChecklist((prev) => {
+                                        const existing = prev[item.id] ?? { result: 'SCRAP' as InspectionResult, notes: '' }
+                                        return {
+                                          ...prev,
+                                          [item.id]: {
+                                            ...existing,
+                                            scrapWarehouseId: val,
+                                            scrapRackId: undefined,
+                                          },
+                                        }
+                                      })
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-8 bg-background text-sm">
+                                      <SelectValue placeholder="Warehouse location…" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {mockWarehouses.map((wh) => (
+                                        <SelectItem key={wh.id} value={wh.id}>
+                                          {wh.name} ({wh.code})
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Select
+                                    value={state.scrapRackId ?? ''}
+                                    onValueChange={(val) => {
+                                      if (!val) return
+                                      setChecklist((prev) => {
+                                        const existing = prev[item.id] ?? { result: 'SCRAP' as InspectionResult, notes: '' }
+                                        return {
+                                          ...prev,
+                                          [item.id]: { ...existing, scrapRackId: val },
+                                        }
+                                      })
+                                    }}
+                                    disabled={!itemWarehouse}
+                                  >
+                                    <SelectTrigger className="h-8 bg-background text-sm">
+                                      <SelectValue
+                                        placeholder={
+                                          itemWarehouse ? 'Rack location…' : 'Select warehouse first'
+                                        }
+                                      />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {itemRacks.map((r) => (
+                                        <SelectItem key={r.id} value={r.id}>
+                                          {r.name} ({r.capacityUsed}% used)
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -840,7 +1090,8 @@ function InspectionPage() {
               )}
             </div>
 
-            {/* Paint Option */}
+            {/* Paint Option (laptop only — keep paint flow gated by device kind) */}
+            {!isAssembly && (
             <div className="space-y-3 rounded-lg border p-4">
               <Label className="cursor-pointer">
                 <Checkbox
@@ -893,6 +1144,7 @@ function InspectionPage() {
                 </div>
               )}
             </div>
+            )}
 
             {/* Summary */}
             {checkedCount > 0 && (
@@ -907,9 +1159,9 @@ function InspectionPage() {
                     <p className="text-xl font-bold text-destructive">{failCount}</p>
                     <p className="text-xs text-muted-foreground">Failed</p>
                   </div>
-                  <div className="rounded-md bg-muted p-2.5">
-                    <p className="text-xl font-bold text-muted-foreground">{naCount}</p>
-                    <p className="text-xs text-muted-foreground">N/A</p>
+                  <div className="rounded-md bg-amber-50 p-2.5 dark:bg-amber-950/40">
+                    <p className="text-xl font-bold text-amber-700">{scrapCount}</p>
+                    <p className="text-xs text-muted-foreground">Scrap</p>
                   </div>
                 </div>
               </div>

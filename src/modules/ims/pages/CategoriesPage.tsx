@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import { cn } from '@/lib/utils'
 import type { IMSCategory } from '../types'
 import { mockCategories } from '../data/categories'
@@ -184,9 +185,7 @@ function CategoryNode({ category, depth, expanded, onToggle }: CategoryNodeProps
 
 export default function CategoriesPage() {
   const [search, setSearch] = usePersistedState('ims-categories:search', '')
-  const [expanded, setExpanded] = useState<Set<string>>(
-    () => new Set(mockCategories.map((c) => c.id)),
-  )
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
 
   const allIds = useMemo(() => collectAllIds(mockCategories), [])
   const filtered = useMemo(() => filterTree(mockCategories, search), [search])
@@ -221,20 +220,17 @@ export default function CategoriesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      {/* Header */}
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="cpt-page-title">Categories</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {summary.rootCount} categories · {summary.subCount} subcategories ·{' '}
-            {summary.partCount.toLocaleString('en-IN')} parts
-          </p>
-        </div>
-        <Button render={<Link to="/ims/categories/new" />}>
-          <Plus className="mr-1.5 size-4" />
-          New Category
-        </Button>
-      </div>
+      <PageHeader
+        title="Categories"
+        subtitle={`${summary.rootCount} categories · ${summary.subCount} subcategories · ${summary.partCount.toLocaleString('en-IN')} parts`}
+        breadcrumbs={[{ label: 'IMS' }, { label: 'Categories' }]}
+        actions={
+          <Button render={<Link to="/ims/categories/new" />}>
+            <Plus className="mr-1.5 size-4" />
+            New Category
+          </Button>
+        }
+      />
 
       {/* Search + simple toggle */}
       <div className="flex items-center gap-3">

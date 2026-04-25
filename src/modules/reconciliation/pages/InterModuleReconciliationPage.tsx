@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import { CheckCircle, AlertTriangle, FileText } from 'lucide-react'
 import {
   Table,
@@ -12,13 +13,7 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINR as formatCurrency } from '@/lib/currency'
 
 type MatchStatus = 'Full Match' | 'Partial Match' | 'Mismatch' | 'Pending GRN' | 'Pending Invoice'
 
@@ -118,7 +113,11 @@ const pending = threeWayMatches.filter(
 function InterModuleReconciliationPage() {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">PO / GRN / Invoice Matching</h2>
+      <PageHeader
+        title="PO / GRN / Invoice Matching"
+        subtitle="Three-way matching across purchase orders, goods receipts, and invoices."
+        breadcrumbs={[{ label: 'Reconciliation' }, { label: 'Three-Way Match' }]}
+      />
 
       <StatsRow
         stats={[

@@ -8,6 +8,7 @@ import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetri
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
 
 import { mockPurchaseRequests } from '@/modules/procurement/data/purchase-requests'
 import type { PRStatus } from '@/modules/procurement/types'
@@ -137,41 +138,36 @@ function PurchaseRequestsPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="cpt-page-title">
-            Purchase Requests
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Manage and track purchase requisitions
-          </p>
-        </div>
+    <ListPageShell
+      title="Purchase Requests"
+      subtitle="Manage and track purchase requisitions from teams and approvers."
+      breadcrumbs={[{ label: 'Procurement' }, { label: 'Purchase Requests' }]}
+      actions={
         <Button onClick={() => navigate('/procurement/pr/new')}>
           <Plus className="mr-1 size-4" />
           Create PR
         </Button>
+      }
+      stats={<StatsRow stats={stats} />}
+    >
+      <div className="bmt-search-lg">
+        <BusinessMetricsTable
+          tabs={tabs}
+          cellFormatter={cellFormatter}
+          pageSize={10}
+          persistKey="procurement-pr"
+          onRowClick={(row) => navigate(`/procurement/pr/${row['id']}`)}
+          emptyState={{
+            title: 'No purchase requests yet',
+            description: 'Create a PR to start the procurement flow for parts, equipment, or services.',
+            action: {
+              label: 'Create PR',
+              onClick: () => navigate('/procurement/pr/new'),
+            },
+          }}
+        />
       </div>
-
-      {/* Summary Stats */}
-      <StatsRow stats={stats} />
-
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="bmt-search-lg">
-            <BusinessMetricsTable
-              tabs={tabs}
-              cellFormatter={cellFormatter}
-              pageSize={10}
-              persistKey="procurement-pr"
-              onRowClick={(row) => navigate(`/procurement/pr/${row['id']}`)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    </ListPageShell>
   )
 }
 

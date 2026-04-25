@@ -4,6 +4,8 @@ import { toast } from 'sonner'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
 import { BusinessMetricsTable, type TabConfig, type CellFormatter } from '@/components/common/BusinessMetricsTable'
+import { ListPageShell } from '@/components/page'
+import { Button } from '@/components/ui/button'
 import type { DataCardProps } from '@/components/common/DataCard'
 import { mockRentalContracts } from '../data/contracts'
 
@@ -73,22 +75,35 @@ function RentalBillingPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="cpt-page-header">
-        <div>
-          <h1 className="cpt-page-title">Billing & Receivables</h1>
-          <div className="cpt-page-sub">Billing data generation, Tally integration, payment tracking, and aging analysis</div>
-        </div>
-        <div className="cpt-row">
-          <button className="cpt-btn" onClick={() => toast.success('Billing run started')}>Run Billing</button>
-          <button className="cpt-btn" onClick={() => toast.success('Pushed to Tally')}>Push to Tally</button>
-          <button className="cpt-btn cpt-btn-primary" onClick={() => toast.success('Invoice generated')}>Generate Invoice</button>
-        </div>
-      </div>
-
-      <StatsRow stats={kpiStats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-billing" />
-    </div>
+    <ListPageShell
+      title="Billing & Receivables"
+      subtitle="Billing runs, Tally integration, payment tracking, and aging analysis."
+      breadcrumbs={[{ label: 'Rentals' }, { label: 'Billing' }]}
+      actions={
+        <>
+          <Button variant="outline" size="sm" onClick={() => toast.success('Billing run started')}>
+            Run Billing
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => toast.success('Pushed to Tally')}>
+            Push to Tally
+          </Button>
+          <Button size="sm" onClick={() => toast.success('Invoice generated')}>
+            Generate Invoice
+          </Button>
+        </>
+      }
+      stats={<StatsRow stats={kpiStats} />}
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="rentals-billing"
+        emptyState={{
+          title: 'No billing entries yet',
+          description: 'Run billing on active contracts to generate invoices and track receivables.',
+        }}
+      />
+    </ListPageShell>
   )
 }
 

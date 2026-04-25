@@ -2,15 +2,10 @@ import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 
 import { mockCreditNotes } from '@/modules/invoices/data/credit-notes'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINR as formatCurrency } from '@/lib/currency'
 
 function getCNStatusVariant(status: string): StatusBadgeVariant {
   switch (status) {
@@ -65,16 +60,22 @@ const cellFormatter: CellFormatter = (value, key, _row) => {
 
 function CreditNotesPage() {
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">Credit Notes</h2>
-
+    <ListPageShell
+      title="Credit Notes"
+      subtitle="Credits issued to customers or received from vendors."
+      breadcrumbs={[{ label: 'Invoices' }, { label: 'Credit Notes' }]}
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="invoices-credit-notes"
+        emptyState={{
+          title: 'No credit notes yet',
+          description: 'Credit notes appear here when customer invoices are adjusted or cancelled.',
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

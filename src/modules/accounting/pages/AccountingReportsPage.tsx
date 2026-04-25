@@ -1,16 +1,11 @@
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 
 import { mockLedgerEntries } from '@/modules/accounting/data/ledger'
 import type { LedgerAccountType } from '@/modules/accounting/types'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINR as formatCurrency } from '@/lib/currency'
 
 const accountTypeVariant: Record<string, 'success' | 'warning' | 'error' | 'info' | 'neutral'> = {
   Asset: 'info',
@@ -174,16 +169,22 @@ const cellFormatter: CellFormatter = (value, key, row) => {
 
 function AccountingReportsPage() {
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">Financial Reports</h2>
-
+    <ListPageShell
+      title="Financial Reports"
+      subtitle="P&L, balance sheet, cash flow, and other financial statements."
+      breadcrumbs={[{ label: 'Accounting' }, { label: 'Reports' }]}
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={25}
         persistKey="accounting-reports"
+        emptyState={{
+          title: 'No report data yet',
+          description: 'Financial reports populate as ledger entries accumulate.',
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

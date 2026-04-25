@@ -2,11 +2,10 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -16,8 +15,7 @@ import {
 } from '@/components/ui/select'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
-import { EntityHeader } from '../components/EntityHeader'
-import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
+import { FormPageShell } from '@/components/page'
 import { leads } from '../data/leads'
 import { LEAD_STAGES, IMS_CATEGORIES, ORDER_TYPES, MOCK_USERS } from '../types'
 import type { Lead, OrderType, CustomerType } from '../types'
@@ -54,7 +52,6 @@ function LeadFormPage() {
   const [customerType, setCustomerType] = useState<CustomerType>(existingLead?.customerType ?? 'End Customer')
   const [orderType, setOrderType] = useState<OrderType | ''>(existingLead?.orderType ?? '')
   const [bde, setBde] = useState(existingLead?.bde ?? '')
-  const [showQuoteBuilder, setShowQuoteBuilder] = useState(true)
 
   const backHref = isEdit ? `/crm/leads/${leadId}` : '/crm/leads'
   const goBack = useNavigateBack(backHref)
@@ -70,13 +67,37 @@ function LeadFormPage() {
     goBack()
   }
 
-  return (
-    <div className="space-y-6">
-      <EntityHeader
-        title={isEdit ? `Edit Lead: ${existingLead.name}` : 'Create Lead'}
-        backHref={backHref}
-      />
+  const canSave = Boolean(name.trim() && company.trim() && description.trim())
 
+  return (
+    <FormPageShell
+      title={isEdit ? `Edit Lead: ${existingLead.name}` : 'Create Lead'}
+      subtitle={isEdit ? 'Update lead details and assignments.' : 'Capture a new opportunity in the pipeline.'}
+      breadcrumbs={
+        isEdit
+          ? [
+              { label: 'CRM' },
+              { label: 'Leads', href: '/crm/leads' },
+              { label: existingLead.name, href: `/crm/leads/${leadId}` },
+              { label: 'Edit' },
+            ]
+          : [
+              { label: 'CRM' },
+              { label: 'Leads', href: '/crm/leads' },
+              { label: 'New Lead' },
+            ]
+      }
+      backHref={backHref}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      canSave={canSave}
+      saveLabel={isEdit ? 'Save Changes' : 'Create Lead'}
+      footerLeft={
+        !canSave ? (
+          <span className="text-destructive/80">Name, company, and description are required.</span>
+        ) : undefined
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit Lead Details' : 'New Lead Details'}</CardTitle>
@@ -351,31 +372,9 @@ function LeadFormPage() {
             />
           </div>
         </CardContent>
-        <CardFooter className="justify-between">
-          <Button variant="outline" onClick={() => setShowQuoteBuilder(!showQuoteBuilder)}>
-            {showQuoteBuilder ? 'Hide Quote Builder' : 'Open Quote Builder'}
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={!name.trim() || !company.trim() || !description.trim()}>
-              {isEdit ? 'Save Changes' : 'Create Lead'}
-            </Button>
-          </div>
-        </CardFooter>
       </Card>
 
-      {/* Quote Builder */}
-      {showQuoteBuilder && (
-        <BOMQuoteBuilder
-          leadId={leadId}
-          leadName={name || undefined}
-          accountName={company || undefined}
-          initialEmpty={!isEdit}
-        />
-      )}
-    </div>
+    </FormPageShell>
   )
 }
 

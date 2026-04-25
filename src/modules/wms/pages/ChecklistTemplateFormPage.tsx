@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
+import { PageHeader } from '@/components/page'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import {
   Select,
@@ -133,20 +134,16 @@ function ChecklistTemplateFormPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={goBack}>
-          <ArrowLeft />
-        </Button>
-        <div className="min-w-0">
-          <h1 className="cpt-page-title">
-            {isEdit ? `Edit: ${existing?.name}` : 'Create Checklist Template'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {isEdit ? 'Update template details and items' : 'Define a new checklist template'}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={isEdit ? `Edit: ${existing?.name}` : 'Create Checklist Template'}
+        subtitle={isEdit ? 'Update template details and items.' : 'Define a new checklist template.'}
+        breadcrumbs={[
+          { label: 'WMS' },
+          { label: 'Checklist Templates', href: '/wms/checklists' },
+          { label: isEdit ? existing?.name ?? 'Edit' : 'New' },
+        ]}
+        backHref="/wms/checklists"
+      />
 
       {/* Template Details */}
       <Card>

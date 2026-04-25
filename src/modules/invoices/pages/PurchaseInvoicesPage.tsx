@@ -2,16 +2,11 @@ import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 
 import { mockPurchaseInvoices } from '@/modules/invoices/data/purchase-invoices'
 import type { PurchaseInvoiceStatus } from '@/modules/invoices/types'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINR as formatCurrency } from '@/lib/currency'
 
 function getStatusVariant(status: string): StatusBadgeVariant {
   switch (status) {
@@ -83,16 +78,22 @@ const cellFormatter: CellFormatter = (value, key, _row) => {
 
 function PurchaseInvoicesPage() {
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">Purchase Invoices</h2>
-
+    <ListPageShell
+      title="Purchase Invoices"
+      subtitle="Vendor bills received against purchase orders."
+      breadcrumbs={[{ label: 'Invoices' }, { label: 'Purchase' }]}
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="invoices-purchase"
+        emptyState={{
+          title: 'No purchase invoices yet',
+          description: 'Vendor bills appear here once goods receipts are matched to POs.',
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

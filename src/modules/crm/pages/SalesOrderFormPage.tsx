@@ -4,7 +4,6 @@ import { toast } from 'sonner'
 import {
   CheckCircle,
   Loader2,
-  Save,
   ShoppingCart,
   ClipboardList,
   History,
@@ -17,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -29,7 +28,7 @@ import { MultiSelect } from '@/components/ui/multi-select'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { Badge } from '@/components/ui/badge'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
-import { EntityHeader } from '../components/EntityHeader'
+import { FormPageShell } from '@/components/page'
 import { AddAddressDialog } from '../components/AddAddressDialog'
 import { QuoteBuilderPanel } from '../components/QuoteBuilderPanel'
 import { salesOrders } from '../data/sales-orders'
@@ -205,31 +204,48 @@ function SalesOrderFormPage() {
 
   const version = 1
 
-  return (
-    <div className="space-y-5">
-      <EntityHeader
-        title={isEdit ? orderNumber : 'Create Sales Order'}
-        subtitle={
-          isEdit
-            ? `${selectedAccount?.name ?? ''} — Sales Order`
-            : linkedQuote
-              ? `From Quote ${linkedQuote.quoteNumber}`
-              : 'Build a new sales order with BOM configuration'
-        }
-        status={isEdit ? { label: status, variant: STATUS_VARIANTS[status] } : undefined}
-        backHref={backHref}
-        actions={
-          <div className="flex items-center gap-2">
-            {isEdit && approvalStatus === 'Approved' && (
-              <Button size="sm" onClick={handleGeneratePR}>
-                <ClipboardList className="size-4 mr-1.5" />
-                Generate Purchase Request
-              </Button>
-            )}
-          </div>
-        }
-      />
+  const canSave = Boolean(accountId)
 
+  return (
+    <FormPageShell
+      title={isEdit ? orderNumber : 'Create Sales Order'}
+      subtitle={
+        isEdit
+          ? `${selectedAccount?.name ?? ''} — Sales Order`
+          : linkedQuote
+            ? `From Quote ${linkedQuote.quoteNumber}`
+            : 'Build a new sales order with BOM configuration'
+      }
+      breadcrumbs={
+        isEdit
+          ? [
+              { label: 'CRM' },
+              { label: 'Sales Orders', href: '/crm/sales-orders' },
+              { label: orderNumber },
+              { label: 'Edit' },
+            ]
+          : [
+              { label: 'CRM' },
+              { label: 'Sales Orders', href: '/crm/sales-orders' },
+              { label: 'New Sales Order' },
+            ]
+      }
+      status={isEdit ? { label: status, variant: STATUS_VARIANTS[status] } : undefined}
+      backHref={backHref}
+      actions={
+        isEdit && approvalStatus === 'Approved' ? (
+          <Button size="sm" onClick={handleGeneratePR}>
+            <ClipboardList className="size-4 mr-1.5" />
+            Generate Purchase Request
+          </Button>
+        ) : undefined
+      }
+      onSave={handleSave}
+      onCancel={handleCancel}
+      canSave={canSave}
+      saveLabel="Save Sales Order"
+      footerLeft={!canSave ? <span className="text-destructive/80">Select an account to enable saving.</span> : undefined}
+    >
       {/* Context badges — matching Quote style */}
       <div className="flex flex-wrap items-center gap-3">
         {linkedQuote && (
@@ -411,6 +427,15 @@ function SalesOrderFormPage() {
                 </Select>
               </div>
 
+              <div className="space-y-1.5">
+                <Label className="font-ui">Categories Interested</Label>
+                <MultiSelect
+                  options={IMS_CATEGORIES}
+                  value={categories}
+                  onValueChange={setCategories}
+                  placeholder="Select categories..."
+                />
+              </div>
             </div>
           </div>
 
@@ -500,17 +525,6 @@ function SalesOrderFormPage() {
             </div>
           </div>
 
-          {/* Categories Interested */}
-          <div className="mt-5 space-y-1.5">
-            <Label className="font-ui">Categories Interested</Label>
-            <MultiSelect
-              options={IMS_CATEGORIES}
-              value={categories}
-              onValueChange={setCategories}
-              placeholder="Select categories..."
-            />
-          </div>
-
           {/* Notes */}
           <div className="mt-5 space-y-1.5">
             <Label htmlFor="so-notes" className="font-ui">Notes</Label>
@@ -525,22 +539,22 @@ function SalesOrderFormPage() {
         </CardContent>
       </Card>
 
-      {/* Quote Builder — per-line Part Number / Description */}
-      <QuoteBuilderPanel
-        accountId={accountId || undefined}
-        accountName={selectedAccount?.name}
-      />
-
-      {/* Save/Cancel footer */}
-      <div className="flex items-center justify-between rounded-lg border bg-card p-4">
-        <Button variant="outline" onClick={handleCancel}>
-          Cancel
-        </Button>
-        <Button onClick={handleSave} disabled={!accountId}>
-          <Save className="size-4 mr-1.5" />
-          Save Sales Order
-        </Button>
-      </div>
+      {/* Line Items — per-line Part Number / Description (embedded: header & footer hidden to avoid duplicates) */}
+      <Card size="sm">
+        <CardHeader className="border-b bg-muted/30">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ClipboardList className="size-4 text-primary" />
+            Line Items
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-5">
+          <QuoteBuilderPanel
+            accountId={accountId || undefined}
+            accountName={selectedAccount?.name}
+            mode="embedded"
+          />
+        </CardContent>
+      </Card>
 
       {/* Add Address Dialog — pick from account or enter manually */}
       <AddAddressDialog
@@ -554,7 +568,7 @@ function SalesOrderFormPage() {
           toast.success(`Address "${addr.label}" added`)
         }}
       />
-    </div>
+    </FormPageShell>
   )
 }
 

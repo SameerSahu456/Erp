@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { FormPageShell } from '@/components/page'
 import {
   Select,
   SelectTrigger,
@@ -775,23 +776,35 @@ function CustomerFormPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-display font-semibold">
-            {isEdit ? 'Edit Customer' : 'Register Customer'}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isEdit
-              ? `Editing ${existingCustomer?.companyName}`
-              : 'Complete all steps to register a new customer'}
-          </p>
-        </div>
-        <Button variant="outline" onClick={goBack}>
-          Cancel
-        </Button>
-      </div>
-
+    <FormPageShell
+      title={isEdit ? 'Edit Customer' : 'Register Customer'}
+      subtitle={
+        isEdit
+          ? `Editing ${existingCustomer?.companyName}`
+          : 'Complete all steps to register a new customer.'
+      }
+      breadcrumbs={[
+        { label: 'Customers', href: '/customers' },
+        { label: isEdit ? existingCustomer?.companyName ?? 'Edit' : 'New' },
+      ]}
+      backHref="/customers"
+      footerLeft={
+        <span>
+          Step {currentStep + 1} of {STEPS.length} — {STEPS[currentStep]?.label}
+        </span>
+      }
+      footerActions={
+        <>
+          <Button variant="outline" onClick={goBack}>
+            Cancel
+          </Button>
+          <Button variant="outline" onClick={handlePrev} disabled={isFirst}>
+            Previous
+          </Button>
+          <Button onClick={handleNext}>{isLast ? 'Submit' : 'Next'}</Button>
+        </>
+      }
+    >
       {/* Step progress */}
       <div className="flex items-center overflow-x-auto pb-2">
         {STEPS.map((step, index) => {
@@ -848,15 +861,7 @@ function CustomerFormPage() {
 
       {/* Step content */}
       <div className="min-h-[200px]">{renderStepContent()}</div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={handlePrev} disabled={isFirst}>
-          Previous
-        </Button>
-        <Button onClick={handleNext}>{isLast ? 'Submit' : 'Next'}</Button>
-      </div>
-    </div>
+    </FormPageShell>
   )
 }
 

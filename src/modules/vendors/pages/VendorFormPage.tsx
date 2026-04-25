@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { FormPageShell } from '@/components/page'
 import {
   Select,
   SelectTrigger,
@@ -689,23 +690,35 @@ function VendorFormPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-display font-semibold">
-            {isEdit ? 'Edit Vendor' : 'Register Vendor'}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isEdit
-              ? `Editing ${existingVendor?.companyName}`
-              : 'Complete all steps to register a new vendor'}
-          </p>
-        </div>
-        <Button variant="outline" onClick={goBack}>
-          Cancel
-        </Button>
-      </div>
-
+    <FormPageShell
+      title={isEdit ? 'Edit Vendor' : 'Register Vendor'}
+      subtitle={
+        isEdit
+          ? `Editing ${existingVendor?.companyName}`
+          : 'Complete all steps to register a new vendor.'
+      }
+      breadcrumbs={[
+        { label: 'Vendors', href: '/vendors' },
+        { label: isEdit ? existingVendor?.companyName ?? 'Edit' : 'New' },
+      ]}
+      backHref="/vendors"
+      footerLeft={
+        <span>
+          Step {currentStep + 1} of {STEPS.length} — {STEPS[currentStep]?.label}
+        </span>
+      }
+      footerActions={
+        <>
+          <Button variant="outline" onClick={goBack}>
+            Cancel
+          </Button>
+          <Button variant="outline" onClick={handlePrev} disabled={isFirst}>
+            Previous
+          </Button>
+          <Button onClick={handleNext}>{isLast ? 'Submit' : 'Next'}</Button>
+        </>
+      }
+    >
       {/* Step progress */}
       <div className="flex items-center overflow-x-auto pb-2">
         {STEPS.map((step, index) => {
@@ -762,15 +775,7 @@ function VendorFormPage() {
 
       {/* Step content */}
       <div className="min-h-[200px]">{renderStepContent()}</div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={handlePrev} disabled={isFirst}>
-          Previous
-        </Button>
-        <Button onClick={handleNext}>{isLast ? 'Submit' : 'Next'}</Button>
-      </div>
-    </div>
+    </FormPageShell>
   )
 }
 

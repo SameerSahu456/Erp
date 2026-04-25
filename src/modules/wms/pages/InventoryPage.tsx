@@ -16,6 +16,7 @@ import {
   type TabConfig,
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
+import { ListPageShell } from '@/components/page'
 import {
   DEVICE_STATUS_LABELS,
   DEVICE_STATUS_VARIANT,
@@ -170,85 +171,90 @@ export default function InventoryPage() {
     return null
   }
 
+  const filterBar = (
+    <div className="flex flex-wrap items-center gap-3">
+      <Select value={warehouseFilter} onValueChange={(v) => setWarehouseFilter(v ?? 'all')}>
+        <SelectTrigger className="w-44">
+          <SelectValue placeholder="Warehouse" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Warehouses</SelectItem>
+          {mockWarehouses.map((wh) => (
+            <SelectItem key={wh.id} value={wh.id}>
+              {wh.city}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? 'all')}>
+        <SelectTrigger className="w-44">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Statuses</SelectItem>
+          {STATUS_FILTER_OPTIONS.map((s) => (
+            <SelectItem key={s} value={s}>
+              {DEVICE_STATUS_LABELS[s]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={brandFilter} onValueChange={(v) => setBrandFilter(v ?? 'all')}>
+        <SelectTrigger className="w-36">
+          <SelectValue placeholder="Brand" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Brands</SelectItem>
+          {brands.map((b) => (
+            <SelectItem key={b} value={b}>
+              {b}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v ?? 'all')}>
+        <SelectTrigger className="w-36">
+          <SelectValue placeholder="Category" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Categories</SelectItem>
+          {categories.map((c) => (
+            <SelectItem key={c} value={c}>
+              {c}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Input
+        placeholder="Search barcode / model..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-56"
+      />
+    </div>
+  )
+
   return (
-    <div className="space-y-6">
-      <h1 className="cpt-page-title">
-        Inventory
-      </h1>
-
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={warehouseFilter} onValueChange={(v) => setWarehouseFilter(v ?? 'all')}>
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="Warehouse" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Warehouses</SelectItem>
-            {mockWarehouses.map((wh) => (
-              <SelectItem key={wh.id} value={wh.id}>
-                {wh.city}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? 'all')}>
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {STATUS_FILTER_OPTIONS.map((s) => (
-              <SelectItem key={s} value={s}>
-                {DEVICE_STATUS_LABELS[s]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={brandFilter} onValueChange={(v) => setBrandFilter(v ?? 'all')}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Brand" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Brands</SelectItem>
-            {brands.map((b) => (
-              <SelectItem key={b} value={b}>
-                {b}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v ?? 'all')}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Input
-          placeholder="Search barcode / model..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-56"
-        />
-      </div>
-
-      <StatsRow stats={stats} />
-
+    <ListPageShell
+      title="Inventory"
+      subtitle="All devices in stock across warehouses, with filters by status, brand, and category."
+      breadcrumbs={[{ label: 'WMS' }, { label: 'Inventory' }]}
+      stats={<StatsRow stats={stats} />}
+      toolbar={filterBar}
+    >
       <BusinessMetricsTable
         tabs={[inStockTab, allTab]}
         cellFormatter={cellFormatter}
         persistKey="wms-inventory"
+        emptyState={{
+          title: 'No devices match your filters',
+          description: 'Try clearing a filter or widening your search to see more devices.',
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }

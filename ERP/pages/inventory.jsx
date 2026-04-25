@@ -16,10 +16,10 @@ function InventoryView({ tab, setTab }){
       <div className="page-header">
         <div>
           <h1 className="page-title">Inventory & Supply Chain</h1>
-          <div className="page-sub">{tab==="stock"? "Real-time stock across 6 warehouses · 2,148 active SKUs" : tab==="po"?"Manage purchase orders and vendor approvals":"Bosch Rexroth India Pvt Ltd · Supplier profile"}</div>
+          <div className="page-sub">{tab==="stock"? "Real-time stock across 6 warehouses · 2,148 active Part nos" : tab==="po"?"Manage purchase orders and vendor approvals":"Bosch Rexroth India Pvt Ltd · Supplier profile"}</div>
         </div>
         <div className="row">
-          {tab==="stock" && <><button className="btn"><Icon name="upload" size={13}/> Import CSV</button><button className="btn btn-primary"><Icon name="plus" size={13}/> New SKU</button></>}
+          {tab==="stock" && <><button className="btn"><Icon name="upload" size={13}/> Import CSV</button><button className="btn btn-primary"><Icon name="plus" size={13}/> New Part no</button></>}
           {tab==="po" && <><button className="btn"><Icon name="download" size={13}/> Export</button><button className="btn btn-primary"><Icon name="plus" size={13}/> New PO</button></>}
           {tab==="supplier" && <><button className="btn"><Icon name="mail" size={13}/> Email</button><button className="btn btn-primary"><Icon name="plus" size={13}/> New PO</button></>}
         </div>
@@ -87,7 +87,7 @@ function StockTable(){
           <div className="row between">
             <div>
               <div className="muted tiny" style={{fontWeight:550,textTransform:"uppercase",letterSpacing:".06em"}}>Low / Out of Stock</div>
-              <div style={{fontSize:18,fontWeight:650,marginTop:4}} className="num">{lowCount} SKUs</div>
+              <div style={{fontSize:18,fontWeight:650,marginTop:4}} className="num">{lowCount} Part nos</div>
             </div>
             <div className="alert-ico warn"><Icon name="warn" size={16}/></div>
           </div>
@@ -125,7 +125,7 @@ function StockTable(){
         <div className="table-toolbar">
           <div className="search-field">
             <Icon name="search" size={14}/>
-            <input placeholder="Search SKU or product name…" value={query} onChange={e=>setQuery(e.target.value)}/>
+            <input placeholder="Search Part no or product name…" value={query} onChange={e=>setQuery(e.target.value)}/>
           </div>
           <select className="select" style={{width:"auto"}} value={wh} onChange={e=>setWh(e.target.value)}>
             {window.MOCK.WAREHOUSES.map(w=>(<option key={w}>{w}</option>))}
@@ -151,8 +151,8 @@ function StockTable(){
         {filtered.length === 0 ? (
           <div className="state">
             <div className="state-ico"><Icon name="inbox" size={20}/></div>
-            <h3>No SKUs match these filters</h3>
-            <p>Try clearing filters or search for a different SKU / product name.</p>
+            <h3>No Part nos match these filters</h3>
+            <p>Try clearing filters or search for a different Part no / product name.</p>
             <button className="btn" onClick={()=>{setWh("All warehouses");setStatusFilter("all");setQuery("")}}>Clear all filters</button>
           </div>
         ) : (
@@ -160,7 +160,7 @@ function StockTable(){
             <thead>
               <tr>
                 <th className="chk"><span className={"cb "+(selected.size===filtered.length?"on":"")} onClick={toggleAll}/></th>
-                <th onClick={()=>setSort("sku")}>SKU <span className="srt">↕</span></th>
+                <th onClick={()=>setSort("sku")}>Part no <span className="srt">↕</span></th>
                 <th onClick={()=>setSort("name")}>Product <span className="srt">↕</span></th>
                 <th onClick={()=>setSort("wh")}>Warehouse <span className="srt">↕</span></th>
                 <th className="right" onClick={()=>setSort("qty")}>On hand <span className="srt">↕</span></th>
@@ -202,7 +202,7 @@ function StockTable(){
         )}
 
         <div className="row between" style={{padding:"10px 14px",borderTop:"1px solid var(--border)",fontSize:12.5,color:"var(--text-3)"}}>
-          <div>Showing {filtered.length} of {window.MOCK.STOCK.length} SKUs</div>
+          <div>Showing {filtered.length} of {window.MOCK.STOCK.length} Part nos</div>
           <div className="row" style={{gap:4}}>
             <button className="btn btn-sm" disabled><Icon name="chev-l" size={12}/></button>
             <button className="btn btn-sm">1</button>

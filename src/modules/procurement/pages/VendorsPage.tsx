@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
 import { Badge } from '@/components/ui/badge'
+import { ListPageShell } from '@/components/page'
 import { mockVendors } from '@/modules/procurement/data/vendors'
 
 const formatCurrency = (value: number) =>
@@ -141,32 +142,34 @@ function VendorsPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="cpt-page-title">Vendors</h2>
-          <p className="text-sm text-muted-foreground">Manage vendor relationships and performance</p>
-        </div>
+    <ListPageShell
+      title="Vendors"
+      subtitle="Vendor relationships, performance ratings, and active spend."
+      breadcrumbs={[{ label: 'Procurement' }, { label: 'Vendors' }]}
+      actions={
         <Button onClick={() => navigate('/procurement/vendors/new')}>
           <Plus className="mr-1 size-4" />
           Add Vendor
         </Button>
-      </div>
-
-      <StatsRow stats={stats} />
-
-      <Card>
-        <CardContent className="p-0">
-          <BusinessMetricsTable
-            tabs={tabs}
-            cellFormatter={cellFormatter}
-            pageSize={10}
-            persistKey="procurement-vendors"
-            onRowClick={(row) => navigate(`/procurement/vendors/${row.id}`)}
-          />
-        </CardContent>
-      </Card>
-    </div>
+      }
+      stats={<StatsRow stats={stats} />}
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        pageSize={10}
+        persistKey="procurement-vendors"
+        onRowClick={(row) => navigate(`/procurement/vendors/${row.id}`)}
+        emptyState={{
+          title: 'No vendors yet',
+          description: 'Add vendors to issue purchase orders and track performance.',
+          action: {
+            label: 'Add Vendor',
+            onClick: () => navigate('/procurement/vendors/new'),
+          },
+        }}
+      />
+    </ListPageShell>
   )
 }
 

@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { StatsRow } from '@/components/common/StatsRow'
+import { PageHeader } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -143,6 +145,7 @@ function SparesPage() {
           barcode: r.deviceBarcode,
           partSerial: `${r.model}\n${device?.serialNumber ?? '-'}`,
           biosNo: device?.biosNo ?? '-',
+          category: device?.category ?? '-',
           spare: r.spareName,
           qty: r.qty,
           status: r.status,
@@ -163,6 +166,7 @@ function SparesPage() {
           { key: 'barcode', label: 'Device', sortable: true },
           { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
+          { key: 'category', label: 'Category', sortable: true },
           { key: 'spare', label: 'Spare Part', sortable: true },
           { key: 'qty', label: 'Qty', align: 'center' as const },
           { key: 'status', label: 'Status' },
@@ -179,6 +183,7 @@ function SparesPage() {
           { key: 'barcode', label: 'Device', sortable: true },
           { key: 'partSerial', label: 'Part No / Serial No' },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
+          { key: 'category', label: 'Category', sortable: true },
           { key: 'spare', label: 'Spare Part' },
           { key: 'qty', label: 'Qty', align: 'center' as const },
           { key: 'status', label: 'Status' },
@@ -263,7 +268,7 @@ function SparesPage() {
         columns: [
           { key: 'name', label: 'Spare Part', sortable: true },
           { key: 'category', label: 'Category', sortable: true },
-          { key: 'sku', label: 'SKU' },
+          { key: 'sku', label: 'Part no' },
           { key: 'inStock', label: 'In Stock', sortable: true, align: 'center' as const },
           { key: 'reorderLevel', label: 'Reorder Level', align: 'center' as const },
           { key: 'unitPrice', label: 'Unit Price', sortable: true },
@@ -307,78 +312,55 @@ function SparesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="cpt-page-title">Spares</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage spare part requests from inspections and spare inventory.
-        </p>
-      </div>
+      <PageHeader
+        title="Spares"
+        subtitle="Spare part requests from inspections and spare-shop inventory."
+        breadcrumbs={[{ label: 'WMS' }, { label: 'Spares' }]}
+      />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <Clock className="size-3.5" /> Requested
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-[#f6c000]">{summaryStats.totalRequested}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <Package className="size-3.5" /> In Stock
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-blue-600">{summaryStats.inStock}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <ShoppingCart className="size-3.5" /> Ordered
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{summaryStats.ordered}</p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <CheckCircle2 className="size-3.5" /> Fulfilled
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-emerald-600">{summaryStats.fulfilled}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsRow
+        stats={[
+          { label: 'Requested', value: summaryStats.totalRequested, icon: Clock },
+          { label: 'In Stock', value: summaryStats.inStock, icon: Package },
+          { label: 'Ordered', value: summaryStats.ordered, icon: ShoppingCart },
+          { label: 'Fulfilled', value: summaryStats.fulfilled, icon: CheckCircle2 },
+        ]}
+      />
 
       {/* Spare Requests */}
-      <div className="space-y-3">
+      <section className="space-y-3">
         <h2 className="text-lg font-semibold">Spare Requests</h2>
         <BusinessMetricsTable
           tabs={requestTabs}
           cellFormatter={requestCellFormatter}
           persistKey="wms-spares-req"
           onRowClick={(row) => navigate(`/wms/devices/${row._deviceId}?from=spares`)}
+          emptyState={{
+            title: 'No open spare requests',
+            description: 'Spare requests raised during inspection or repair will appear here.',
+          }}
         />
-      </div>
+      </section>
 
       {/* Spare Shop / Inventory */}
-      <div className="space-y-3">
+      <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Spare Shop (Inventory)</h2>
           <Button variant="outline" onClick={() => setAddStockDialog(true)}>
             Add Stock
           </Button>
         </div>
-        <BusinessMetricsTable tabs={inventoryTabs} cellFormatter={inventoryCellFormatter} persistKey="wms-spares-inv" />
-      </div>
+        <BusinessMetricsTable
+          tabs={inventoryTabs}
+          cellFormatter={inventoryCellFormatter}
+          persistKey="wms-spares-inv"
+          emptyState={{
+            title: 'No spares in stock',
+            description: 'Add stock to populate the spare-shop inventory.',
+            action: { label: 'Add Stock', onClick: () => setAddStockDialog(true) },
+          }}
+        />
+      </section>
 
       {/* Fulfill Dialog */}
       <Dialog open={fulfillRequestId !== null} onOpenChange={(open) => { if (!open) closeFulfillDialog() }}>

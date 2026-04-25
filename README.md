@@ -12,7 +12,7 @@ One platform to replace the current **Tally + Excel + WhatsApp** operating model
 
 - **Sales & CRM** — pre‑sales pipeline, quoting, sales orders, post‑sales fulfilment, customer support.
 - **Warehouse (WMS)** — receiving, inspection, repair, paint, QC, rack assignment, outward & dispatch.
-- **Inventory (IMS)** — master data: parts, SKUs/stock items, categories, OEMs, product-manager assignments.
+- **Inventory (IMS)** — master data: parts, Part nos/stock items, categories, OEMs, product-manager assignments.
 - **Procurement** — purchase requests, purchase orders, vendors, GRN matching, PM approvals.
 - **Invoices & Accounting** — sales/purchase invoices, credit notes, ledger, payments, reports.
 - **Rentr (Rental Management)** — UID-tracked asset lifecycle, contracts, rental billing, returns, support.
@@ -135,7 +135,7 @@ Master-data backbone for the whole ERP.
 - **Parts** (generic item masters) with detail + variant rollout.
 - **Categories** (hierarchical) with per-category detail and PM ownership.
 - **OEMs** master.
-- **Stock Items** (SKU-level) with SKU history and variant/pull model.
+- **Stock Items** (Part no-level) with Part no history and variant/pull model.
 - **PM Assignments** — which Product Manager owns which category/OEM.
 - **IMS Reports**.
 

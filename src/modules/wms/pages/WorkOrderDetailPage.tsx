@@ -19,6 +19,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import { mockWorkOrders } from '../data/work-orders'
 import type { WorkOrderStatus, WorkOrderType } from '../types'
 import { WORK_ORDER_WORKFLOW_STAGES } from '../types'
@@ -114,34 +115,33 @@ function WorkOrderDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={goBack}>
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="cpt-page-title">
-              {wo.workOrderNumber}
-            </h1>
-            <StatusBadge variant={STATUS_VARIANT[wo.status]}>{wo.status}</StatusBadge>
+      <PageHeader
+        title={wo.workOrderNumber}
+        subtitle={`${wo.outputPartName} × ${wo.outputQty}${wo.customerName ? ` · ${wo.customerName}` : ''}`}
+        status={{ label: wo.status, variant: STATUS_VARIANT[wo.status] }}
+        badges={
+          <>
             <StatusBadge variant={wo.type === 'RENTAL' ? 'warning' : 'info'}>
               {TYPE_LABELS[wo.type]}
             </StatusBadge>
-            <StatusBadge variant={
-              wo.priority === 'Urgent' ? 'error' :
-              wo.priority === 'High' ? 'warning' :
-              wo.priority === 'Medium' ? 'info' : 'neutral'
-            }>
+            <StatusBadge
+              variant={
+                wo.priority === 'Urgent' ? 'error' :
+                wo.priority === 'High' ? 'warning' :
+                wo.priority === 'Medium' ? 'info' : 'neutral'
+              }
+            >
               {wo.priority}
             </StatusBadge>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {wo.outputPartName} &times; {wo.outputQty}
-            {wo.customerName && ` · ${wo.customerName}`}
-          </p>
-        </div>
-      </div>
+          </>
+        }
+        breadcrumbs={[
+          { label: 'WMS' },
+          { label: 'Work Orders', href: '/wms/work-orders' },
+          { label: wo.workOrderNumber },
+        ]}
+        backHref="/wms/work-orders"
+      />
 
       {/* Workflow Stepper */}
       <div className="rounded-lg border bg-card p-6">
@@ -335,7 +335,7 @@ function WorkOrderDetailPage() {
                       </StatusBadge>
                     </div>
                     <p className="mt-0.5 text-sm text-muted-foreground">
-                      SKU: {comp.partSku}
+                      Part no: {comp.partSku}
                       {comp.isSubstitute && comp.originalPartId && (
                         <span className="ml-2 italic">
                           (original: {comp.originalPartId})

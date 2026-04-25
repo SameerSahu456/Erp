@@ -101,6 +101,35 @@ export interface InwardBatch {
 }
 
 // ── Device ──
+// `UNIT` covers laptops / single-serial stock. `ASSEMBLY` covers servers and
+// similar multi-component builds where the chassis carries a BOM of serialized parts.
+export type DeviceKind = 'UNIT' | 'ASSEMBLY'
+
+// A single slot inside an ASSEMBLY device, one row per unit of quantity
+// (e.g. a BOM line with quantity 4 produces 4 ComponentSlots).
+export type ComponentInspectionResult = 'PENDING' | 'PASS' | 'FAIL' | 'NOT_APPLICABLE'
+export type ComponentFailAction = 'REPAIR' | 'REPLACE'
+
+export interface DeviceComponent {
+  slotId: string                 // unique per device, e.g. 'dev-srv-001:CPU:1'
+  bomItemId: string              // references BillOfMaterials.items[].id
+  slotIndex: number              // 1-based position within the BOM line (CPU 1 of 2 → 1)
+  partId: string
+  partName: string
+  partSku: string
+  position?: string              // copied from BOMItem.position, e.g. 'CPU Socket 1 & 2'
+  serialNumber: string
+  barcode?: string
+  // Inspection outcome (populated during assembly inspection)
+  inspectionResult?: ComponentInspectionResult
+  inspectionNotes?: string
+  // Fail handling — exactly one set when inspectionResult === 'FAIL'
+  failAction?: ComponentFailAction
+  spareRequestId?: string        // set when failAction === 'REPLACE'
+  repairJobId?: string           // set when failAction === 'REPAIR'
+  resolved?: boolean             // true once spare fulfilled or repair completed
+}
+
 export interface Device {
   id: string
   barcode: string // L-DEL-4521 format
@@ -114,6 +143,12 @@ export interface Device {
   status: DeviceStatus
   grade?: 'A' | 'B'
   assignedTo?: string
+  // Unit vs assembly
+  deviceKind?: DeviceKind        // omitted = 'UNIT' (backwards compatible)
+  parentPartId?: string          // PART id of the chassis (for assemblies)
+  bomId?: string                 // BillOfMaterials.id used at inward time
+  bomNumber?: string             // denormalized for display
+  components?: DeviceComponent[] // only populated on ASSEMBLY devices
   // Workflow flags
   requiresRepair: boolean
   requiresPaint: boolean
@@ -164,7 +199,35 @@ export const INSPECTION_CHECKLIST_ITEMS = [
   { id: 'headphone', label: 'Headphone Jack', group: 'Ports' },
 ] as const
 
-export type InspectionResult = 'PASS' | 'FAIL' | 'NOT_APPLICABLE'
+// Server inspection checklist — generic line items so the same template covers
+// every server config (we don't enumerate per-component part numbers because
+// each chassis ships with a different BOM).
+export const SERVER_INSPECTION_CHECKLIST_ITEMS = [
+  { id: 'chassis_top', label: 'Chassis Top Cover', group: 'Chassis' },
+  { id: 'chassis_front', label: 'Front Bezel', group: 'Chassis' },
+  { id: 'chassis_rails', label: 'Rack Rails / Mounts', group: 'Chassis' },
+  { id: 'psu_primary', label: 'Power Supply 1', group: 'Power' },
+  { id: 'psu_redundant', label: 'Power Supply 2 (Redundant)', group: 'Power' },
+  { id: 'power_leds', label: 'Power / Status LEDs', group: 'Power' },
+  { id: 'cpu_primary', label: 'CPU 1', group: 'Compute' },
+  { id: 'cpu_secondary', label: 'CPU 2', group: 'Compute' },
+  { id: 'memory_modules', label: 'Memory Modules (DIMMs)', group: 'Memory' },
+  { id: 'memory_ecc', label: 'ECC Errors', group: 'Memory' },
+  { id: 'storage_drives', label: 'Drive Bays / Drives Detected', group: 'Storage' },
+  { id: 'storage_raid', label: 'RAID Controller', group: 'Storage' },
+  { id: 'storage_backplane', label: 'Backplane', group: 'Storage' },
+  { id: 'fans_front', label: 'Front Fans', group: 'Cooling' },
+  { id: 'fans_rear', label: 'Rear Fans', group: 'Cooling' },
+  { id: 'heatsinks', label: 'Heatsinks Seated', group: 'Cooling' },
+  { id: 'nic_onboard', label: 'Onboard NIC', group: 'Networking' },
+  { id: 'nic_addon', label: 'Add-on NIC', group: 'Networking' },
+  { id: 'mgmt_iface', label: 'Management Port (iDRAC / iLO / IPMI)', group: 'Networking' },
+  { id: 'usb_ports', label: 'USB Ports', group: 'Ports' },
+  { id: 'vga_port', label: 'VGA / Display Port', group: 'Ports' },
+  { id: 'serial_port', label: 'Serial Port', group: 'Ports' },
+] as const
+
+export type InspectionResult = 'PASS' | 'FAIL' | 'NOT_APPLICABLE' | 'SCRAP'
 
 export interface InspectionCheckItem {
   itemId: string
@@ -197,18 +260,30 @@ export interface RepairJob {
   deviceBarcode: string
   repairType: RepairType
   assignedTo: string
-  status: 'Assigned' | 'In Progress' | 'Completed' | 'Failed'
+  status: 'Assigned' | 'In Progress' | 'QC Passed' | 'Completed' | 'Failed'
   isRework: boolean
   reworkCount: number
   startedAt?: string
   completedAt?: string
   notes?: string
   issues?: string[]
+  // Component-scoped repair (set when the job targets one slot of an ASSEMBLY device)
+  componentSlotId?: string
+  componentPartName?: string
 }
 
 // ── Paint ──
 export type PaintPanelType = 'TOP_COVER' | 'BOTTOM_COVER'
 export type PaintStatus = 'AWAITING_PAINT' | 'IN_PAINT' | 'READY_FOR_COLLECTION' | 'COLLECTED'
+
+export type PaintHistoryEvent = 'SENT' | 'REPAINT_SENT' | 'COMPLETED'
+
+export interface PaintJobHistoryEntry {
+  event: PaintHistoryEvent
+  vendor?: string
+  notes?: string
+  at: string
+}
 
 export interface PaintJob {
   id: string
@@ -219,6 +294,7 @@ export interface PaintJob {
   assignedTo?: string
   startedAt?: string
   completedAt?: string
+  history?: PaintJobHistoryEntry[]
 }
 
 // ── QC ──
@@ -763,7 +839,7 @@ export interface WarehouseBin {
 // ── Enhanced Inward ──
 // ADVANCE_RETURN is now labelled "Return" in the UI; originType captures whether
 // the return originated from a Sale or a prior Return-for-replacement flow.
-export type InwardType = 'PURCHASE_ORDER' | 'RENTAL_RETURN' | 'DEMO_RETURN' | 'INTERNAL_TRANSFER' | 'ADVANCE_RETURN' | 'REFURB_PURCHASE'
+export type InwardType = 'PURCHASE_ORDER' | 'RENTAL_RETURN' | 'DEMO_RETURN' | 'INTERNAL_TRANSFER' | 'ADVANCE_RETURN' | 'REFURB_PURCHASE' | 'REPLACEMENT'
 export type ReturnOriginType = 'Sale' | 'Return'
 
 export interface InwardBatchEnhanced {

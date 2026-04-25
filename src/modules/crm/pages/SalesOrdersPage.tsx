@@ -6,6 +6,7 @@ import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
 import type { TabConfig, CellFormatter } from "@/components/common/BusinessMetricsTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import type { StatusBadgeVariant } from "@/components/common/StatusBadge"
+import { ListPageShell } from "@/components/page"
 
 import { salesOrders } from "@/modules/crm/data/sales-orders"
 
@@ -78,23 +79,33 @@ const cellFormatter: CellFormatter = (value, key, row) => {
 function SalesOrdersPage() {
   const navigate = useNavigate()
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Sales Orders</h2>
+    <ListPageShell
+      title="Sales Orders"
+      subtitle="Orders progressing from confirmation through dispatch and delivery."
+      breadcrumbs={[{ label: 'CRM' }, { label: 'Sales Orders' }]}
+      actions={
         <Button onClick={() => navigate("/crm/sales-orders/new")}>
           <Plus className="mr-1 size-4" />
           Create Order
         </Button>
-      </div>
-
+      }
+    >
       <BusinessMetricsTable
         tabs={[ordersTab]}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="crm-sales-orders"
         onRowClick={(row) => navigate(`/crm/sales-orders/${row.id}`)}
+        emptyState={{
+          title: 'No sales orders yet',
+          description: 'Create your first sales order from a confirmed quote or lead.',
+          action: {
+            label: 'Create Order',
+            onClick: () => navigate('/crm/sales-orders/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

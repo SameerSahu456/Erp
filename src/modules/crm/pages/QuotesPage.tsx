@@ -3,12 +3,13 @@ import { Plus, FileText, Send, CheckCircle2, XCircle, Clock, AlertTriangle, Spar
 import { useNavigate, Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { StatsRow } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -261,17 +262,46 @@ function QuotesPage() {
     return null
   }
 
+  const kpiStats = [
+    {
+      label: 'Total Quotes',
+      value: stats.total,
+      icon: FileText,
+      sub: `${formatFullCurrency(stats.totalValue)} value`,
+    },
+    {
+      label: 'Draft',
+      value: stats.draft,
+      icon: Clock,
+      sub: 'pending review',
+    },
+    {
+      label: 'Sent',
+      value: stats.sent,
+      icon: Send,
+      sub: 'awaiting response',
+    },
+    {
+      label: 'Accepted',
+      value: stats.accepted,
+      icon: CheckCircle2,
+      sub: formatCurrency(stats.acceptedValue),
+    },
+    {
+      label: 'Win Rate',
+      value: `${stats.conversionRate}%`,
+      icon: Sparkles,
+      sub: 'conversion',
+    },
+  ]
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="cpt-page-title">Quotes</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Manage quotations, track versions, and convert to sales orders
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+    <ListPageShell
+      title="Quotes"
+      subtitle="Manage quotations, track versions, and convert accepted quotes into sales orders."
+      breadcrumbs={[{ label: 'CRM' }, { label: 'Quotes' }]}
+      actions={
+        <>
           <Button variant="outline" onClick={() => navigate('/crm/quote-builder')}>
             <Sparkles className="size-4 mr-1.5" />
             Quote Builder
@@ -280,90 +310,26 @@ function QuotesPage() {
             <Plus className="size-4 mr-1.5" />
             Create Quote
           </Button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <Card size="sm">
-          <CardHeader className="pb-1">
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <FileText className="size-3.5" />
-              Total Quotes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{stats.total}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {formatFullCurrency(stats.totalValue)} value
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card size="sm">
-          <CardHeader className="pb-1">
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <Clock className="size-3.5" />
-              Draft
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{stats.draft}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">pending review</p>
-          </CardContent>
-        </Card>
-
-        <Card size="sm">
-          <CardHeader className="pb-1">
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <Send className="size-3.5" />
-              Sent
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-blue-600">{stats.sent}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">awaiting response</p>
-          </CardContent>
-        </Card>
-
-        <Card size="sm">
-          <CardHeader className="pb-1">
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <CheckCircle2 className="size-3.5" />
-              Accepted
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-emerald-600">{stats.accepted}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {formatCurrency(stats.acceptedValue)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card size="sm">
-          <CardHeader className="pb-1">
-            <CardTitle className="text-muted-foreground text-xs font-normal flex items-center gap-1.5">
-              <Sparkles className="size-3.5" />
-              Win Rate
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-primary">{stats.conversionRate}%</p>
-            <p className="text-xs text-muted-foreground mt-0.5">conversion</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quotes Table */}
+        </>
+      }
+      stats={<StatsRow stats={kpiStats} />}
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="crm-quotes"
         onRowClick={(row) => navigate(`/crm/quotes/${row.id}/edit`)}
+        emptyState={{
+          title: 'No quotes yet',
+          description: 'Draft a quote directly or use the Quote Builder for guided creation.',
+          action: {
+            label: 'Create Quote',
+            onClick: () => navigate('/crm/quotes/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

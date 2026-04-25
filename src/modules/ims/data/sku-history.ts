@@ -1,10 +1,10 @@
 import type { SkuHistoryEntry } from '@/modules/wms/types'
 
 export const mockSkuHistory: SkuHistoryEntry[] = [
-  // ── SKU-LAT5540-NEW-001 (full lifecycle) ──
+  // ── PN-LAT5540-NEW-001 (full lifecycle) ──
   {
     id: 'sh-001',
-    sku: 'SKU-LAT5540-NEW-001',
+    sku: 'PN-LAT5540-NEW-001',
     event: 'PO_CREATED',
     description: 'Purchase Order PO-2026-001 created for Dell Latitude 5540',
     user: 'Rajesh Mehta',
@@ -13,7 +13,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-002',
-    sku: 'SKU-LAT5540-NEW-001',
+    sku: 'PN-LAT5540-NEW-001',
     event: 'PO_RECEIVED',
     description: 'PO received at Mumbai Warehouse',
     user: 'Amit Sharma',
@@ -22,7 +22,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-003',
-    sku: 'SKU-LAT5540-NEW-001',
+    sku: 'PN-LAT5540-NEW-001',
     event: 'GRN_INWARD',
     description: 'Inward batch BATCH-2026-0001, assigned to Row1-RackA-Bin2',
     user: 'Amit Sharma',
@@ -31,7 +31,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-004',
-    sku: 'SKU-LAT5540-NEW-001',
+    sku: 'PN-LAT5540-NEW-001',
     event: 'INSPECTION',
     description: 'Passed inspection — all 20 items OK',
     user: 'Priya Nair',
@@ -39,7 +39,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-005',
-    sku: 'SKU-LAT5540-NEW-001',
+    sku: 'PN-LAT5540-NEW-001',
     event: 'QC_PASSED',
     description: 'QC passed with Grade A',
     user: 'Priya Nair',
@@ -47,7 +47,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-006',
-    sku: 'SKU-LAT5540-NEW-001',
+    sku: 'PN-LAT5540-NEW-001',
     event: 'STOCKED',
     description: 'Added to inventory — New variant',
     user: 'Amit Sharma',
@@ -55,7 +55,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-007',
-    sku: 'SKU-LAT5540-NEW-001',
+    sku: 'PN-LAT5540-NEW-001',
     event: 'PRICE_CHANGED',
     description: 'Price updated from \u20b972,000 to \u20b968,500',
     fromValue: '72000',
@@ -64,10 +64,10 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
     timestamp: '2026-04-10T10:00:00Z',
   },
 
-  // ── SKU-LAT5540-REF-003 (refurbished lifecycle) ──
+  // ── PN-LAT5540-REF-003 (refurbished lifecycle) ──
   {
     id: 'sh-008',
-    sku: 'SKU-LAT5540-REF-003',
+    sku: 'PN-LAT5540-REF-003',
     event: 'GRN_INWARD',
     description: 'Rental return from Wipro Technologies',
     user: 'Amit Sharma',
@@ -76,7 +76,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-009',
-    sku: 'SKU-LAT5540-REF-003',
+    sku: 'PN-LAT5540-REF-003',
     event: 'INSPECTION',
     description: 'Failed inspection — display scratches, battery below 70%',
     user: 'Priya Nair',
@@ -84,7 +84,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-010',
-    sku: 'SKU-LAT5540-REF-003',
+    sku: 'PN-LAT5540-REF-003',
     event: 'REPAIR',
     description: 'Display repair completed, battery boosted to 85%',
     user: 'Vikram Patel',
@@ -92,7 +92,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-011',
-    sku: 'SKU-LAT5540-REF-003',
+    sku: 'PN-LAT5540-REF-003',
     event: 'QC_PASSED',
     description: 'QC passed with Grade B',
     user: 'Priya Nair',
@@ -100,7 +100,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-012',
-    sku: 'SKU-LAT5540-REF-003',
+    sku: 'PN-LAT5540-REF-003',
     event: 'STOCKED',
     description: 'Added to inventory — Refurbished variant',
     user: 'Amit Sharma',
@@ -108,7 +108,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-013',
-    sku: 'SKU-LAT5540-REF-003',
+    sku: 'PN-LAT5540-REF-003',
     event: 'LOCATION_CHANGED',
     description: 'Moved from Row1-RackB-Bin1 to Row2-RackA-Bin4',
     fromValue: 'MUM-WH1/Row1-RackB-Bin1',
@@ -117,10 +117,10 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
     timestamp: '2026-04-02T14:30:00Z',
   },
 
-  // ── SKU-EB840-NEW-001 ──
+  // ── PN-EB840-NEW-001 ──
   {
     id: 'sh-014',
-    sku: 'SKU-EB840-NEW-001',
+    sku: 'PN-EB840-NEW-001',
     event: 'PO_CREATED',
     description: 'Purchase Order PO-2026-004 created for HP EliteBook 840 G8',
     user: 'Rajesh Mehta',
@@ -129,7 +129,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-015',
-    sku: 'SKU-EB840-NEW-001',
+    sku: 'PN-EB840-NEW-001',
     event: 'PO_RECEIVED',
     description: 'PO received at Mumbai Warehouse',
     user: 'Amit Sharma',
@@ -138,7 +138,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-016',
-    sku: 'SKU-EB840-NEW-001',
+    sku: 'PN-EB840-NEW-001',
     event: 'GRN_INWARD',
     description: 'Inward batch BATCH-2026-0004, assigned to Row2-RackB-Bin1',
     user: 'Amit Sharma',
@@ -147,7 +147,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-017',
-    sku: 'SKU-EB840-NEW-001',
+    sku: 'PN-EB840-NEW-001',
     event: 'QC_PASSED',
     description: 'QC passed with Grade A',
     user: 'Priya Nair',
@@ -155,17 +155,17 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-018',
-    sku: 'SKU-EB840-NEW-001',
+    sku: 'PN-EB840-NEW-001',
     event: 'STOCKED',
     description: 'Added to inventory — New variant',
     user: 'Amit Sharma',
     timestamp: '2026-03-16T15:00:00Z',
   },
 
-  // ── SKU-EB840-REF-002 ──
+  // ── PN-EB840-REF-002 ──
   {
     id: 'sh-019',
-    sku: 'SKU-EB840-REF-002',
+    sku: 'PN-EB840-REF-002',
     event: 'GRN_INWARD',
     description: 'Rental return from Infosys Limited',
     user: 'Amit Sharma',
@@ -174,7 +174,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-020',
-    sku: 'SKU-EB840-REF-002',
+    sku: 'PN-EB840-REF-002',
     event: 'INSPECTION',
     description: 'Passed inspection — minor cosmetic wear',
     user: 'Priya Nair',
@@ -182,7 +182,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-021',
-    sku: 'SKU-EB840-REF-002',
+    sku: 'PN-EB840-REF-002',
     event: 'QC_PASSED',
     description: 'QC passed with Grade A',
     user: 'Priya Nair',
@@ -190,17 +190,17 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-022',
-    sku: 'SKU-EB840-REF-002',
+    sku: 'PN-EB840-REF-002',
     event: 'STOCKED',
     description: 'Added to inventory — Refurbished variant',
     user: 'Amit Sharma',
     timestamp: '2026-03-22T08:00:00Z',
   },
 
-  // ── SKU-OPX7010-NEW-001 ──
+  // ── PN-OPX7010-NEW-001 ──
   {
     id: 'sh-023',
-    sku: 'SKU-OPX7010-NEW-001',
+    sku: 'PN-OPX7010-NEW-001',
     event: 'PO_CREATED',
     description: 'Purchase Order PO-2026-006 created for Dell OptiPlex 7010',
     user: 'Rajesh Mehta',
@@ -209,7 +209,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-024',
-    sku: 'SKU-OPX7010-NEW-001',
+    sku: 'PN-OPX7010-NEW-001',
     event: 'PO_RECEIVED',
     description: 'PO received at Mumbai Warehouse',
     user: 'Amit Sharma',
@@ -218,7 +218,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-025',
-    sku: 'SKU-OPX7010-NEW-001',
+    sku: 'PN-OPX7010-NEW-001',
     event: 'GRN_INWARD',
     description: 'Inward batch BATCH-2026-0006, assigned to Row3-RackA-Bin1',
     user: 'Amit Sharma',
@@ -227,7 +227,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-026',
-    sku: 'SKU-OPX7010-NEW-001',
+    sku: 'PN-OPX7010-NEW-001',
     event: 'QC_PASSED',
     description: 'QC passed with Grade A',
     user: 'Priya Nair',
@@ -235,7 +235,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-027',
-    sku: 'SKU-OPX7010-NEW-001',
+    sku: 'PN-OPX7010-NEW-001',
     event: 'STOCKED',
     description: 'Added to inventory — New variant',
     user: 'Amit Sharma',
@@ -243,7 +243,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-028',
-    sku: 'SKU-OPX7010-NEW-001',
+    sku: 'PN-OPX7010-NEW-001',
     event: 'DISPATCHED',
     description: 'Dispatched to TCS Pune office — Sales Order SO-2026-012',
     user: 'Sunil Kumar',
@@ -251,10 +251,10 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
     reference: 'SO-2026-012',
   },
 
-  // ── SKU-T14G4-REF-001 (QC failed then passed) ──
+  // ── PN-T14G4-REF-001 (QC failed then passed) ──
   {
     id: 'sh-029',
-    sku: 'SKU-T14G4-REF-001',
+    sku: 'PN-T14G4-REF-001',
     event: 'GRN_INWARD',
     description: 'Demo return from HCL Technologies',
     user: 'Deepak Verma',
@@ -263,7 +263,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-030',
-    sku: 'SKU-T14G4-REF-001',
+    sku: 'PN-T14G4-REF-001',
     event: 'INSPECTION',
     description: 'Failed inspection — keyboard malfunction, panel scratches',
     user: 'Priya Nair',
@@ -271,7 +271,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-031',
-    sku: 'SKU-T14G4-REF-001',
+    sku: 'PN-T14G4-REF-001',
     event: 'REPAIR',
     description: 'Keyboard replaced, panel C repainted',
     user: 'Vikram Patel',
@@ -279,7 +279,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-032',
-    sku: 'SKU-T14G4-REF-001',
+    sku: 'PN-T14G4-REF-001',
     event: 'QC_FAILED',
     description: 'QC failed — touchpad intermittent issue detected',
     user: 'Priya Nair',
@@ -287,7 +287,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-033',
-    sku: 'SKU-T14G4-REF-001',
+    sku: 'PN-T14G4-REF-001',
     event: 'REPAIR',
     description: 'Touchpad cable reseated and tested',
     user: 'Vikram Patel',
@@ -295,7 +295,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-034',
-    sku: 'SKU-T14G4-REF-001',
+    sku: 'PN-T14G4-REF-001',
     event: 'QC_PASSED',
     description: 'QC passed with Grade B after rework',
     user: 'Priya Nair',
@@ -303,7 +303,7 @@ export const mockSkuHistory: SkuHistoryEntry[] = [
   },
   {
     id: 'sh-035',
-    sku: 'SKU-T14G4-REF-001',
+    sku: 'PN-T14G4-REF-001',
     event: 'STOCKED',
     description: 'Added to inventory — Refurbished variant',
     user: 'Deepak Verma',

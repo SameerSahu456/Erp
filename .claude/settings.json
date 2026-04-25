@@ -49,7 +49,18 @@
       "Bash(/bin/rm -rf /Users/macbookpro/Documents/erp-demo/src/modules/new-ui-ux)",
       "Bash(/bin/ls -la /Users/macbookpro/Documents/erp-demo/src/styles /Users/macbookpro/Documents/erp-demo/src/components/layout)",
       "Bash(/usr/bin/grep -iE \"new-ux|new-ui-kit|NewUxAppShell\")",
-      "Bash(/bin/ls /Users/macbookpro/Documents/erp-demo/src/modules/new-ui-ux)"
+      "Bash(/bin/ls /Users/macbookpro/Documents/erp-demo/src/modules/new-ui-ux)",
+      "Bash(awk -F'\\(' '{print $1}')",
+      "Bash(awk -F'\\(' '{print $1}' /tmp/errors_before.txt)",
+      "Read(//Users/macbookpro/Documents/erp-demo/**)",
+      "Bash(grep -n \"components$\\\\|components\\\\.length\\\\|· \\\\${\\\\|components\\\\b\" /Users/macbookpro/Documents/erp-demo/src/modules/wms/pages/InspectionPage.tsx)",
+      "Bash(npx eslint *)",
+      "Bash(git -C /Users/macbookpro/Documents/erp-demo log --oneline -1 src/modules/crm/pages/DemoRequestDetailPage.tsx)",
+      "Bash(git -C /Users/macbookpro/Documents/erp-demo diff HEAD -- src/modules/crm/pages/DemoRequestDetailPage.tsx)",
+      "Bash(git -C /Users/macbookpro/Documents/erp-demo diff src/modules/wms/pages/InwardFormPage.tsx)",
+      "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
+      "Bash(lsof -i :5173 -sTCP:LISTEN)",
+      "Bash(grep -v \":0$\")"
     ]
   }
 }

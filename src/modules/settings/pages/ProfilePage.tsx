@@ -5,6 +5,7 @@ import { Camera } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { ROLE_HIERARCHY } from '@/constants/roles'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/page'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -44,7 +45,11 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold">Profile</h1>
+      <PageHeader
+        title="Profile"
+        subtitle="Update your personal information and preferences."
+        breadcrumbs={[{ label: 'Settings' }, { label: 'Profile' }]}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left column - Personal Information */}

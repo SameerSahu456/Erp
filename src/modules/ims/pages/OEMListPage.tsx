@@ -1,17 +1,32 @@
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Pencil } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
 import { mockOEMs } from '../data/oems'
+import { mockParts } from '../data/parts'
+
+const MAX_CATEGORY_CHIPS = 2
 
 export default function OEMListPage() {
   const navigate = useNavigate()
+
+  // Real model count per OEM, computed from parts so the list and detail page agree.
+  const modelsByOemName = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const p of mockParts) {
+      if (!p.brand) continue
+      counts.set(p.brand, (counts.get(p.brand) ?? 0) + 1)
+    }
+    return counts
+  }, [])
 
   const tab: TabConfig = {
     id: 'oems',
@@ -22,15 +37,13 @@ export default function OEMListPage() {
       { key: 'categories', label: 'Categories' },
       { key: 'models', label: 'Models', sortable: true, align: 'right' },
       { key: 'status', label: 'Status', sortable: true, filterable: true },
-      { key: 'actions', label: '' },
     ],
     data: mockOEMs.map((oem) => ({
       name: oem.name,
       code: oem.code,
       categories: oem.categoryNames,
-      models: oem.modelsCount,
+      models: modelsByOemName.get(oem.name) ?? 0,
       status: oem.status === 'active' ? 'Active' : 'Inactive',
-      actions: oem.id,
       _id: oem.id,
     })),
   }
@@ -47,9 +60,29 @@ export default function OEMListPage() {
       }
     }
     if (key === 'categories' && Array.isArray(value)) {
+      const cats = value as string[]
+      const visible = cats.slice(0, MAX_CATEGORY_CHIPS)
+      const overflow = cats.length - visible.length
       return {
         display: (
-          <span className="text-sm">{(value as string[]).join(', ')}</span>
+          <div className="flex flex-wrap gap-1">
+            {visible.map((cat) => (
+              <span
+                key={cat}
+                className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+              >
+                {cat}
+              </span>
+            ))}
+            {overflow > 0 && (
+              <span
+                className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                title={cats.slice(MAX_CATEGORY_CHIPS).join(', ')}
+              >
+                +{overflow}
+              </span>
+            )}
+          </div>
         ),
       }
     }
@@ -62,39 +95,35 @@ export default function OEMListPage() {
         ),
       }
     }
-    if (key === 'actions' && typeof value === 'string') {
-      return {
-        display: (
-          <span onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="sm" render={<Link to={`/ims/oems/${value}/edit`} />}>
-              <Pencil className="mr-1.5 size-3.5" />
-              Edit
-            </Button>
-          </span>
-        ),
-      }
-    }
     return null
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">
-          OEMs
-        </h1>
+    <ListPageShell
+      title="OEMs"
+      subtitle="Original Equipment Manufacturers — brands and their contact details."
+      breadcrumbs={[{ label: 'IMS' }, { label: 'OEMs' }]}
+      actions={
         <Button render={<Link to="/ims/oems/new" />}>
           <Plus className="mr-1.5 size-4" />
           Add OEM
         </Button>
-      </div>
-
+      }
+    >
       <BusinessMetricsTable
         tabs={[tab]}
         cellFormatter={cellFormatter}
         persistKey="ims-oems"
         onRowClick={(row) => navigate(`/ims/oems/${row._id}`)}
+        emptyState={{
+          title: 'No OEMs yet',
+          description: 'Add OEMs to associate them with parts and track warranty details.',
+          action: {
+            label: 'Add OEM',
+            onClick: () => navigate('/ims/oems/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }

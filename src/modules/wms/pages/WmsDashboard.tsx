@@ -29,6 +29,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -259,9 +260,11 @@ function WmsDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="cpt-page-title">
-        Warehouse Dashboard
-      </h1>
+      <PageHeader
+        title="Warehouse Dashboard"
+        subtitle={`${totalDevices} devices across the pipeline — track repair, QC, and dispatch throughput.`}
+        breadcrumbs={[{ label: 'WMS' }, { label: 'Dashboard' }]}
+      />
 
       {/* Workflow Stepper */}
       <Card>

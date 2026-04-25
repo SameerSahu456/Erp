@@ -42,6 +42,7 @@ import { Badge } from "@/components/ui/badge"
 import { StatsRow } from "@/components/common/StatsRow"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import type { StatusBadgeVariant } from "@/components/common/StatusBadge"
+import { PageHeader } from "@/components/page"
 
 import { leads } from "@/modules/crm/data/leads"
 import { deals } from "@/modules/crm/data/deals"
@@ -332,66 +333,68 @@ function CrmDashboard() {
   })
 
   // ── Render ─────────────────────────────────────────────────────────
+  const dashboardActions = (
+    <>
+      <Select
+        value={preset}
+        onValueChange={(v) => setPreset(v as DateFilterPreset)}
+      >
+        <SelectTrigger className="w-[140px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="today">Today</SelectItem>
+          <SelectItem value="monthly">This Month</SelectItem>
+          <SelectItem value="quarterly">This Quarter</SelectItem>
+          <SelectItem value="yearly">This Year</SelectItem>
+          <SelectItem value="custom">Custom</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {preset === "custom" && (
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            value={customFrom}
+            onChange={(e) => setCustomFrom(e.target.value)}
+            className="w-[150px]"
+          />
+          <span className="text-muted-foreground text-sm">to</span>
+          <Input
+            type="date"
+            value={customTo}
+            onChange={(e) => setCustomTo(e.target.value)}
+            className="w-[150px]"
+          />
+        </div>
+      )}
+
+      {IS_SUPERADMIN && (
+        <Select value={selectedUser} onValueChange={setSelectedUser}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Users</SelectItem>
+            {MOCK_USERS.map((u) => (
+              <SelectItem key={u} value={u}>
+                {u}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+    </>
+  )
+
   return (
     <div className="space-y-6">
-      {/* Header + Filters */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-display font-semibold">CRM Dashboard</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Date preset */}
-          <Select
-            value={preset}
-            onValueChange={(v) => setPreset(v as DateFilterPreset)}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="monthly">This Month</SelectItem>
-              <SelectItem value="quarterly">This Quarter</SelectItem>
-              <SelectItem value="yearly">This Year</SelectItem>
-              <SelectItem value="custom">Custom</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Custom date pickers */}
-          {preset === "custom" && (
-            <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
-                className="w-[150px]"
-              />
-              <span className="text-muted-foreground text-sm">to</span>
-              <Input
-                type="date"
-                value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
-                className="w-[150px]"
-              />
-            </div>
-          )}
-
-          {/* User filter — only visible to superadmin */}
-          {IS_SUPERADMIN && (
-            <Select value={selectedUser} onValueChange={setSelectedUser}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All Users</SelectItem>
-                {MOCK_USERS.map((u) => (
-                  <SelectItem key={u} value={u}>
-                    {u}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="CRM Dashboard"
+        subtitle="Pipeline, leads, tasks, and revenue for the selected period."
+        breadcrumbs={[{ label: 'CRM' }, { label: 'Dashboard' }]}
+        actions={dashboardActions}
+      />
 
       {/* ── Row 1: Primary KPIs ─────────────────────────────────── */}
       <StatsRow

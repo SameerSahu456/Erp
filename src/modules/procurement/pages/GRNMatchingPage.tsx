@@ -1,7 +1,7 @@
 import { Package, CheckCircle, Clock, AlertTriangle } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { Card, CardContent } from '@/components/ui/card'
+import { Link, useNavigate } from 'react-router-dom'
 import { StatsRow } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -74,7 +74,11 @@ const cellFormatter: CellFormatter = (value, key, row) => {
   if (key === 'poNumber' && typeof value === 'string') {
     return {
       display: (
-        <Link to={`/procurement/po/${row['poId']}`} className="text-primary hover:underline font-medium">
+        <Link
+          to={`/procurement/po/${row['poId']}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-primary hover:underline font-medium"
+        >
           {value}
         </Link>
       ),
@@ -99,55 +103,42 @@ const cellFormatter: CellFormatter = (value, key, row) => {
 /* ── page component ── */
 
 function GRNMatchingPage() {
+  const navigate = useNavigate()
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="cpt-page-title">GRN Matching</h2>
-        <p className="text-sm text-muted-foreground">Match goods received against purchase orders</p>
+    <ListPageShell
+      title="GRN Matching"
+      subtitle="Match goods received against purchase orders and flag discrepancies."
+      breadcrumbs={[{ label: 'Procurement' }, { label: 'GRN Matching' }]}
+      stats={
+        <StatsRow
+          stats={[
+            { label: 'Total Entries', value: mockGRNMatches.length, icon: Package },
+            { label: 'Matched', value: totalMatched, icon: CheckCircle },
+            { label: 'Pending', value: totalPending, icon: Clock },
+            {
+              label: 'Discrepancies',
+              value: totalDiscrepancies,
+              icon: AlertTriangle,
+              ...(totalDiscrepancies > 0 ? { className: 'border-destructive/40 bg-destructive/5' } : {}),
+            },
+          ]}
+        />
+      }
+    >
+      <div className="bmt-search-lg">
+        <BusinessMetricsTable
+          tabs={tabs}
+          cellFormatter={cellFormatter}
+          pageSize={10}
+          persistKey="procurement-grn"
+          onRowClick={(row) => navigate(`/procurement/grn-matching/${row.id}`)}
+          emptyState={{
+            title: 'No GRN entries to match',
+            description: 'Goods receipts from vendors will appear here for matching against POs.',
+          }}
+        />
       </div>
-
-      {/* Stats Row */}
-      <StatsRow
-        stats={[
-          {
-            label: 'Total Entries',
-            value: mockGRNMatches.length,
-            icon: Package,
-          },
-          {
-            label: 'Matched',
-            value: totalMatched,
-            icon: CheckCircle,
-          },
-          {
-            label: 'Pending',
-            value: totalPending,
-            icon: Clock,
-          },
-          {
-            label: 'Discrepancies',
-            value: totalDiscrepancies,
-            icon: AlertTriangle,
-            ...(totalDiscrepancies > 0 ? { className: 'border-amber-500/40 bg-amber-50 dark:bg-amber-950/20' } : {}),
-          },
-        ]}
-      />
-
-      {/* Full-width list */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="bmt-search-lg">
-            <BusinessMetricsTable
-              tabs={tabs}
-              cellFormatter={cellFormatter}
-              pageSize={10}
-              persistKey="procurement-grn"
-            />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    </ListPageShell>
   )
 }
 

@@ -9,7 +9,12 @@ type RawSalesLine = Omit<
   SalesOrderLineItem,
   'variantId' | 'condition' | 'variantSku' | 'swapVariantId'
 >
-type RawSalesOrder = Omit<SalesOrder, 'lineItems'> & { lineItems: RawSalesLine[] }
+// `version` is optional on raw records — defaults to 1 during enrichment so existing
+// mock rows don't need to set it. Amended records set an explicit version + versionHistory.
+type RawSalesOrder = Omit<SalesOrder, 'lineItems' | 'version'> & {
+  lineItems: RawSalesLine[]
+  version?: number
+}
 
 function enrichSalesLine(line: RawSalesLine): SalesOrderLineItem {
   const variant = getDefaultVariantForPart(line.partId)
@@ -123,6 +128,65 @@ const rawSalesOrders: RawSalesOrder[] = [
     approvalStatus: 'Approved',
     approvedBy: 'Rahul Verma',
     hasPartConfig: false,
+    version: 2,
+    versionHistory: [
+      {
+        version: 1,
+        amendedAt: '2026-03-19',
+        amendedBy: 'Rahul Verma',
+        reason: 'Customer increased laptop quantity from 10 to 20 — same pricing',
+        total: 600000,
+        status: 'Confirmed',
+        approvalStatus: 'Approved',
+        lineItems: [
+          {
+            id: 'SOL-002-01',
+            variantId: 'VAR-UNKNOWN',
+            condition: 'New',
+            variantSku: 'DL-LAT-5540',
+            partId: 'PART-001',
+            partName: 'Dell Latitude 5540',
+            partSku: 'DL-LAT-5540',
+            category: 'Laptops',
+            brand: 'Dell',
+            qty: 10,
+            rate: 45000,
+            amount: 450000,
+            configAction: 'STANDARD',
+          },
+          {
+            id: 'SOL-002-02',
+            variantId: 'VAR-UNKNOWN',
+            condition: 'New',
+            variantSku: 'DL-MON-P2422H',
+            partId: 'PART-014',
+            partName: 'Dell P2422H 24" Monitor',
+            partSku: 'DL-MON-P2422H',
+            category: 'Monitors',
+            brand: 'Dell',
+            qty: 10,
+            rate: 12000,
+            amount: 120000,
+            configAction: 'STANDARD',
+          },
+          {
+            id: 'SOL-002-03',
+            variantId: 'VAR-UNKNOWN',
+            condition: 'New',
+            variantSku: 'LOG-MK270',
+            partId: 'COMP-023',
+            partName: 'Logitech MK270 Wireless Combo',
+            partSku: 'LOG-MK270',
+            category: 'Cables & Accessories',
+            brand: 'Logitech',
+            qty: 10,
+            rate: 3000,
+            amount: 30000,
+            configAction: 'STANDARD',
+          },
+        ],
+      },
+    ],
     lineItems: [
       {
         id: 'SOL-002-01',
@@ -471,5 +535,6 @@ const rawSalesOrders: RawSalesOrder[] = [
 
 export const salesOrders: SalesOrder[] = rawSalesOrders.map((order) => ({
   ...order,
+  version: order.version ?? 1,
   lineItems: order.lineItems.map(enrichSalesLine),
 }))

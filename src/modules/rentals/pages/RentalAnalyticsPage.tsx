@@ -2,6 +2,9 @@ import { useMemo } from 'react'
 
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
+import { Button } from '@/components/ui/button'
+import { Download } from 'lucide-react'
 import type { DataCardProps } from '@/components/common/DataCard'
 import { mockRentalAssets } from '../data/assets'
 import { mockRentalContracts } from '../data/contracts'
@@ -54,20 +57,24 @@ function RentalAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="cpt-page-header">
-        <div>
-          <h1 className="cpt-page-title">Rental Analytics</h1>
-          <div className="cpt-page-sub">Executive dashboard — fleet performance, margin analysis, and partner insights</div>
-        </div>
-        <div className="cpt-row">
-          <div className="cpt-seg">
-            <button className="on">MTD</button>
-            <button>QTD</button>
-            <button>YTD</button>
-          </div>
-          <button className="cpt-btn">Export</button>
-        </div>
-      </div>
+      <PageHeader
+        title="Rental Analytics"
+        subtitle="Executive dashboard — fleet performance, margin analysis, and partner insights."
+        breadcrumbs={[{ label: 'Rentals' }, { label: 'Analytics' }]}
+        actions={
+          <>
+            <div className="cpt-seg">
+              <button className="on">MTD</button>
+              <button>QTD</button>
+              <button>YTD</button>
+            </div>
+            <Button variant="outline" size="sm">
+              <Download className="mr-1.5 size-4" />
+              Export
+            </Button>
+          </>
+        }
+      />
 
       {/* Executive KPIs */}
       <StatsRow stats={execKPIs} />

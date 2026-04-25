@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
 import type { TabConfig, CellFormatter } from "@/components/common/BusinessMetricsTable"
+import { ListPageShell } from "@/components/page"
 
 import { contacts } from "@/modules/crm/data/contacts"
 
@@ -66,23 +67,33 @@ const contactCellFormatter: CellFormatter = (value, key, row) => {
 function ContactsPage() {
   const navigate = useNavigate()
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Contacts</h2>
+    <ListPageShell
+      title="Contacts"
+      subtitle="People you correspond with, grouped by account and department."
+      breadcrumbs={[{ label: 'CRM' }, { label: 'Contacts' }]}
+      actions={
         <Button onClick={() => navigate("/crm/contacts/new")}>
           <Plus className="mr-1 size-4" />
           Add Contact
         </Button>
-      </div>
-
+      }
+    >
       <BusinessMetricsTable
         tabs={[contactsTab]}
         cellFormatter={contactCellFormatter}
         pageSize={10}
         persistKey="crm-contacts"
         onRowClick={(row) => navigate(`/crm/contacts/${row.id}`)}
+        emptyState={{
+          title: 'No contacts yet',
+          description: 'Add people you correspond with to keep account relationships organized.',
+          action: {
+            label: 'Add Contact',
+            onClick: () => navigate('/crm/contacts/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

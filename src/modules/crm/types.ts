@@ -140,6 +140,18 @@ export interface SalesOrderLineItem {
   swapPartName?: string
 }
 
+export interface SalesOrderVersionSnapshot {
+  version: number
+  amendedAt: string
+  amendedBy: string
+  reason?: string
+  total: number
+  status: SalesOrder['status']
+  approvalStatus: SalesOrder['approvalStatus']
+  lineItems: SalesOrderLineItem[]
+  dispatchNotes?: string
+}
+
 export interface SalesOrder {
   id: string
   orderNumber: string
@@ -165,9 +177,18 @@ export interface SalesOrder {
   // Work order linkage
   workOrderId?: string
   workOrderNumber?: string
+  // Linked PO (e.g. when SO is generated from a Demo and a back-to-back PO is created)
+  purchaseOrderId?: string
+  purchaseOrderNumber?: string
+  // Originating Demo Request, when SO was created from a "With Customer" demo
+  demoRequestId?: string
+  demoRequestNumber?: string
   // Dispatch visibility
   dispatchNotes?: string
   hasPartConfig: boolean  // true if any line has ADD/REMOVE/SWAP
+  // Amendment tracking — id/orderNumber stay stable across amendments; version bumps on each amend.
+  version: number
+  versionHistory?: SalesOrderVersionSnapshot[]
 }
 
 export interface QuoteLineItem {
@@ -324,6 +345,10 @@ export interface DemoRequestItem {
   category: string
   brand: string
   qty: number
+  // PM-approved pricing — sell rate per unit if the demo converts to an SO.
+  // Auto-seeded from mockPricing; PM can override during approval.
+  unitPrice: number
+  amount: number  // qty * unitPrice
   serialNumbers?: string[]  // assigned after dispatch
 }
 
@@ -366,6 +391,9 @@ export interface DemoRequest {
   createdAt: string
   updatedAt?: string
   notes?: string
+  // Conversion: SO created from this demo (when customer decides to keep)
+  salesOrderId?: string
+  salesOrderNumber?: string
 }
 
 export const IMS_CATEGORIES = [

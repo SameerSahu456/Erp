@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, GitBranch } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -76,27 +77,15 @@ export default function PartsPage() {
 
   const parentPriceLookup = useMemo(() => buildParentPriceLookup(), [])
 
-  // Demo scope: only Servers + a curated set of laptops (the ones with variants so
-  // the variant icon is visible). Interleaves variants directly under their parent
-  // so they show on the first page instead of clustering at the end.
+  // Demo scope: featured parents + their variants so the Type column is meaningful.
   const filtered = useMemo(() => {
     const FEATURED_LAPTOP_IDS = new Set(['PART-001', 'PART-002', 'PART-004'])
-    const active = mockParts.filter((p) => p.isActive)
-    const variantsByParent = new Map<string, Part[]>()
-    for (const p of active) {
-      if ((p.productType ?? 'parent') === 'variant' && p.parentPartId) {
-        const bucket = variantsByParent.get(p.parentPartId) ?? []
-        bucket.push(p)
-        variantsByParent.set(p.parentPartId, bucket)
-      }
-    }
-    const parents = active.filter(
+    const parents = mockParts.filter(
       (p) =>
+        p.isActive &&
         (p.productType ?? 'parent') === 'parent' &&
         (p.categoryName === 'Servers' || FEATURED_LAPTOP_IDS.has(p.id)),
     )
-    // HPE DL360 Gen11 first (it + its 3 variants lead page 1), then other Servers,
-    // then the featured laptops.
     parents.sort((a, b) => {
       const aFeatured = a.id === 'PART-022' ? 0 : 1
       const bFeatured = b.id === 'PART-022' ? 0 : 1
@@ -105,73 +94,90 @@ export default function PartsPage() {
       const bServer = b.categoryName === 'Servers' ? 0 : 1
       return aServer - bServer
     })
-    const result: Part[] = []
-    for (const parent of parents) {
-      result.push(parent)
-      const kids = variantsByParent.get(parent.id)
-      if (kids) result.push(...kids)
+    const featuredIds = new Set(parents.map((p) => p.id))
+    const variants = mockParts.filter(
+      (p) =>
+        p.isActive &&
+        p.productType === 'variant' &&
+        p.parentPartId != null &&
+        featuredIds.has(p.parentPartId),
+    )
+    // Group variants under their parent by interleaving in parent order.
+    const byParent = new Map<string, Part[]>()
+    for (const v of variants) {
+      if (!v.parentPartId) continue
+      const arr = byParent.get(v.parentPartId) ?? []
+      arr.push(v)
+      byParent.set(v.parentPartId, arr)
     }
-    return result
+    const ordered: Part[] = []
+    for (const parent of parents) {
+      ordered.push(parent)
+      const kids = byParent.get(parent.id)
+      if (kids) ordered.push(...kids)
+    }
+    return ordered
   }, [])
 
   const tab: TabConfig = {
     id: 'parts',
     label: `Parts (${filtered.length})`,
     columns: [
-      { key: 'name', label: 'Part No', sortable: true },
+      { key: 'sku', label: 'Part No', sortable: true },
+      { key: 'name', label: 'Part Name', sortable: true },
+      { key: 'type', label: 'Type', sortable: true, filterable: true },
       { key: 'condition', label: 'Condition', sortable: true, filterable: true },
-      { key: 'model', label: 'Model', sortable: true },
       { key: 'aliases', label: 'Alias' },
       { key: 'category', label: 'Category', sortable: true, filterable: true },
       { key: 'brand', label: 'Brand', sortable: true, filterable: true },
-      { key: 'type', label: 'Type', sortable: true, filterable: true },
       { key: 'qty', label: 'Qty', sortable: true, align: 'right' },
       { key: 'price', label: 'Price', sortable: true, align: 'right' },
       { key: 'assembly', label: 'Assembly', sortable: true, filterable: true },
       { key: 'status', label: 'Status', sortable: true, filterable: true },
     ],
     data: filtered.map((p) => {
-      const type = p.productType ?? 'parent'
       const price = priceForPart(p, parentPriceLookup)
       const qty = qtyForPart(p)
+      const isVariant = p.productType === 'variant'
       return {
+        sku: p.sku,
         name: p.name,
-        model: p.model ?? '-',
+        type: isVariant ? 'Variant' : 'Parent',
         aliases: p.aliases,
         category: p.categoryName,
         brand: p.brand,
-        type: type === 'variant' ? 'Variant' : 'Parent',
         condition: p.condition ?? '-',
         qty: qty ?? null,
         price: price ?? null,
         assembly: p.assemblyType ?? '-',
         status: p.isActive ? 'Active' : 'Inactive',
         _id: p.id,
-        _parentPartId: p.parentPartId,
-        _productType: type,
       }
     }),
   }
 
   const cellFormatter: CellFormatter = (value, key, row) => {
-    if (key === 'name' && typeof value === 'string') {
+    if (key === 'sku' && typeof value === 'string') {
       const id = (row as Record<string, unknown>)._id as string
-      const productType = (row as Record<string, unknown>)._productType as string
       return {
         display: (
-          <div className="flex items-center gap-2">
-            {productType === 'variant' && (
-              <span
-                title="Variant"
-                className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-              >
-                <GitBranch className="size-3" />
-              </span>
-            )}
-            <Link to={`/ims/parts/${id}`} className="font-medium text-primary hover:underline">
-              {value}
-            </Link>
-          </div>
+          <Link to={`/ims/parts/${id}`} className="font-mono text-xs text-primary hover:underline">
+            {value}
+          </Link>
+        ),
+      }
+    }
+    if (key === 'name' && typeof value === 'string') {
+      return {
+        display: <span className="font-medium">{value}</span>,
+      }
+    }
+    if (key === 'type' && typeof value === 'string') {
+      return {
+        display: (
+          <StatusBadge variant={value === 'Parent' ? 'info' : 'neutral'}>
+            {value}
+          </StatusBadge>
         ),
       }
     }
@@ -193,14 +199,6 @@ export default function PartsPage() {
             )}
           </div>
         ),
-      }
-    }
-    if (key === 'model') {
-      if (value === '-' || value == null) {
-        return { display: <span className="text-muted-foreground">-</span> }
-      }
-      return {
-        display: <span className="text-sm">{String(value)}</span>,
       }
     }
     if (key === 'condition') {
@@ -233,14 +231,6 @@ export default function PartsPage() {
         ),
       }
     }
-    if (key === 'type' && typeof value === 'string') {
-      const isVariant = value === 'Variant'
-      return {
-        display: (
-          <StatusBadge variant={isVariant ? 'info' : 'neutral'}>{value}</StatusBadge>
-        ),
-      }
-    }
     if (key === 'assembly') {
       if (value === '-' || value == null) {
         return { display: <span className="text-muted-foreground">-</span> }
@@ -266,29 +256,33 @@ export default function PartsPage() {
   }
 
   return (
-    <div className="space-y-3 bmt-search-lg">
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">
-          Parts
-        </h1>
-        <div className="flex gap-2">
-          <Button variant="outline" nativeButton={false} render={<Link to="/ims/parts/new?type=variant" />}>
-            <GitBranch className="mr-1.5 size-4" />
-            Add Variant
-          </Button>
-          <Button nativeButton={false} render={<Link to="/ims/parts/new" />}>
-            <Plus className="mr-1.5 size-4" />
-            Add Part
-          </Button>
-        </div>
+    <ListPageShell
+      title="Parts"
+      subtitle="Master catalog of parts, their variants, and pricing."
+      breadcrumbs={[{ label: 'IMS' }, { label: 'Parts' }]}
+      actions={
+        <Button nativeButton={false} render={<Link to="/ims/parts/new" />}>
+          <Plus className="mr-1.5 size-4" />
+          Add Part
+        </Button>
+      }
+    >
+      <div className="bmt-search-lg">
+        <BusinessMetricsTable
+          tabs={[tab]}
+          cellFormatter={cellFormatter}
+          persistKey="ims-parts"
+          onRowClick={(row) => navigate(`/ims/parts/${row._id}`)}
+          emptyState={{
+            title: 'No parts yet',
+            description: 'Add a part to start building your catalog and pricing.',
+            action: {
+              label: 'Add Part',
+              onClick: () => navigate('/ims/parts/new'),
+            },
+          }}
+        />
       </div>
-
-      <BusinessMetricsTable
-        tabs={[tab]}
-        cellFormatter={cellFormatter}
-        persistKey="ims-parts"
-        onRowClick={(row) => navigate(`/ims/parts/${row._id}`)}
-      />
-    </div>
+    </ListPageShell>
   )
 }

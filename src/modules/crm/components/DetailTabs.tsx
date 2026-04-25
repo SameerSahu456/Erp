@@ -12,9 +12,19 @@ interface DetailTabsProps {
   tabs: DetailTab[]
   defaultTab?: string
   className?: string
+  /** When true, renders the active tab content inside a white card. */
+  cardContent?: boolean
+  /** Override classes on the content wrapper. */
+  contentClassName?: string
 }
 
-function DetailTabs({ tabs, defaultTab, className }: DetailTabsProps) {
+function DetailTabs({
+  tabs,
+  defaultTab,
+  className,
+  cardContent = false,
+  contentClassName,
+}: DetailTabsProps) {
   const defaultIndex = defaultTab
     ? Math.max(0, tabs.findIndex((t) => t.id === defaultTab))
     : 0
@@ -47,7 +57,16 @@ function DetailTabs({ tabs, defaultTab, className }: DetailTabsProps) {
         ))}
       </div>
       {tabs[activeIndex] && (
-        <div className="pt-6">{tabs[activeIndex].content}</div>
+        <div
+          className={cn(
+            cardContent
+              ? 'mt-4 rounded-xl border bg-card p-5 shadow-sm'
+              : 'pt-6',
+            contentClassName,
+          )}
+        >
+          {tabs[activeIndex].content}
+        </div>
       )}
     </div>
   )

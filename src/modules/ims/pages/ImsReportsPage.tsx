@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -195,16 +196,20 @@ export default function ImsReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="cpt-page-title">
-        Inventory Reports
-      </h1>
-
+    <ListPageShell
+      title="Inventory Reports"
+      subtitle="Stock summary, low-stock alerts, valuation, and movement history."
+      breadcrumbs={[{ label: 'IMS' }, { label: 'Reports' }]}
+    >
       <BusinessMetricsTable
         tabs={[stockSummaryTab, lowStockTab, valuationTab, movementTab]}
         cellFormatter={cellFormatter}
         persistKey="ims-reports"
+        emptyState={{
+          title: 'No data to report',
+          description: 'Stock items and movements appear here once inventory activity begins.',
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }

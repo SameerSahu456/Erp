@@ -2,11 +2,10 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -16,8 +15,7 @@ import {
 } from '@/components/ui/select'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
-import { EntityHeader } from '../components/EntityHeader'
-import { BOMQuoteBuilder } from '../components/BOMQuoteBuilder'
+import { FormPageShell } from '@/components/page'
 import { deals } from '../data/deals'
 import { accounts } from '../data/accounts'
 import { DEAL_STAGES, IMS_CATEGORIES, ORDER_TYPES, MOCK_USERS } from '../types'
@@ -51,9 +49,6 @@ function DealFormPage() {
   const [priority, setPriority] = useState(existingDeal?.priority ?? 'Medium')
   const [customerType, setCustomerType] = useState<CustomerType>(existingDeal?.customerType ?? 'End Customer')
   const [orderType, setOrderType] = useState<OrderType | ''>(existingDeal?.orderType ?? '')
-  const [showQuoteBuilder, setShowQuoteBuilder] = useState(true)
-
-  const selectedAccount = accounts.find((a) => a.id === accountId)
 
   const backHref = isEdit ? `/crm/deals/${dealId}` : '/crm/deals'
   const goBack = useNavigateBack(backHref)
@@ -69,13 +64,33 @@ function DealFormPage() {
     goBack()
   }
 
-  return (
-    <div className="space-y-6">
-      <EntityHeader
-        title={isEdit ? `Edit Deal: ${existingDeal.name}` : 'Create Deal'}
-        backHref={backHref}
-      />
+  const canSave = Boolean(name.trim())
 
+  return (
+    <FormPageShell
+      title={isEdit ? `Edit Deal: ${existingDeal.name}` : 'Create Deal'}
+      subtitle={isEdit ? 'Update deal details and assignments.' : 'Open a new deal in the pipeline.'}
+      breadcrumbs={
+        isEdit
+          ? [
+              { label: 'CRM' },
+              { label: 'Deals', href: '/crm/deals' },
+              { label: existingDeal.name, href: `/crm/deals/${dealId}` },
+              { label: 'Edit' },
+            ]
+          : [
+              { label: 'CRM' },
+              { label: 'Deals', href: '/crm/deals' },
+              { label: 'New Deal' },
+            ]
+      }
+      backHref={backHref}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      canSave={canSave}
+      saveLabel={isEdit ? 'Save Changes' : 'Create Deal'}
+      footerLeft={!canSave ? <span className="text-destructive/80">Deal name is required.</span> : undefined}
+    >
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit Deal Details' : 'New Deal Details'}</CardTitle>
@@ -301,32 +316,8 @@ function DealFormPage() {
             />
           </div>
         </CardContent>
-        <CardFooter className="justify-between">
-          <Button variant="outline" onClick={() => setShowQuoteBuilder(!showQuoteBuilder)}>
-            {showQuoteBuilder ? 'Hide Quote Builder' : 'Open Quote Builder'}
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={!name.trim()}>
-              {isEdit ? 'Save Changes' : 'Create Deal'}
-            </Button>
-          </div>
-        </CardFooter>
       </Card>
-
-      {/* Quote Builder */}
-      {showQuoteBuilder && (
-        <BOMQuoteBuilder
-          dealId={dealId}
-          dealName={name || undefined}
-          accountId={accountId || undefined}
-          accountName={selectedAccount?.name}
-          initialEmpty={!isEdit}
-        />
-      )}
-    </div>
+    </FormPageShell>
   )
 }
 

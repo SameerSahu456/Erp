@@ -10,6 +10,7 @@ import {
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
 import { StatsRow, type StatCardData } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
 import { demoRequests } from '../data/demo-requests'
 import type { DemoRequestStatus } from '../types'
 
@@ -150,40 +151,51 @@ function DemoRequestsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="cpt-page-title">
-            Demo Requests
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Request product demos for prospects &mdash; PM approval, dispatch, return tracking
-          </p>
-        </div>
+    <ListPageShell
+      title="Demo Requests"
+      subtitle="Product demos for prospects — PM approval, dispatch, and return tracking."
+      breadcrumbs={[{ label: 'CRM' }, { label: 'Demo Requests' }]}
+      actions={
         <Button onClick={() => navigate('/crm/demo-requests/new')}>
           <Plus className="size-4" data-icon="inline-start" />
           New Demo Request
         </Button>
-      </div>
-
-      {/* Overdue alert banner */}
-      {overdue.length > 0 && (
-        <div className="flex items-center gap-3 rounded-lg border border-[#f1416c]/30 bg-[#fff5f8] px-4 py-3">
-          <AlertTriangle className="size-5 text-[#f1416c] shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-[#991930]">
-              {overdue.length} demo return{overdue.length > 1 ? 's' : ''} overdue
-            </p>
-            <p className="text-xs text-[#f1416c]">
-              {overdue.map((r) => `${r.demoNumber} (${r.account})`).join(', ')}
-            </p>
+      }
+      stats={<StatsRow stats={stats} />}
+      toolbar={
+        overdue.length > 0 ? (
+          <div
+            role="alert"
+            className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3"
+          >
+            <AlertTriangle className="size-5 shrink-0 text-destructive" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-destructive">
+                {overdue.length} demo return{overdue.length > 1 ? 's' : ''} overdue
+              </p>
+              <p className="truncate text-xs text-destructive/80">
+                {overdue.map((r) => `${r.demoNumber} (${r.account})`).join(', ')}
+              </p>
+            </div>
           </div>
-        </div>
-      )}
-
-      <StatsRow stats={stats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="crm-demo-requests" onRowClick={(row) => navigate(`/crm/demo-requests/${row.id}`)} />
-    </div>
+        ) : undefined
+      }
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="crm-demo-requests"
+        onRowClick={(row) => navigate(`/crm/demo-requests/${row.id}`)}
+        emptyState={{
+          title: 'No demo requests yet',
+          description: 'Create a demo request to ship eval units to a prospect.',
+          action: {
+            label: 'New Demo Request',
+            onClick: () => navigate('/crm/demo-requests/new'),
+          },
+        }}
+      />
+    </ListPageShell>
   )
 }
 

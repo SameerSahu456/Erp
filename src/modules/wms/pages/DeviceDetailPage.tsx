@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  ArrowLeft,
   Package,
   Cpu,
   Tag,
@@ -21,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { Timeline, type TimelineEntry } from '@/components/common/Timeline'
 import { EmptyState } from '@/components/common/EmptyState'
+import { PageHeader } from '@/components/page'
 import {
   Select,
   SelectContent,
@@ -33,11 +33,21 @@ import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { mockDevices } from '../data/devices'
 import { mockInspections } from '../data/inspections'
 import { mockRepairJobs } from '../data/repairs'
-import { mockPaintJobs } from '../data/paint-jobs'
+import { mockPaintJobs, PAINT_VENDORS } from '../data/paint-jobs'
 import { mockQCRecords } from '../data/qc-records'
 import { mockSpareRequests } from '../data/spare-requests'
 import { mockOutwardRecords } from '../data/outward'
 import { QCDialog } from '../components/QCDialog'
+import { AssignRackDialog } from '../components/AssignRackDialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   DEVICE_STATUS_LABELS,
   DEVICE_STATUS_VARIANT,
@@ -86,7 +96,6 @@ function synthesizeDeviceFromOutward(id: string): Device | undefined {
 
 const L1_L2_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta']
 const DISPLAY_ENGINEERS = ['Karthik Rao', 'Neha Bansal']
-const QC_ENGINEERS = ['Deepak Verma', 'Anita Sharma']
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return '-'
@@ -168,13 +177,9 @@ function DeviceDetailPage() {
     l2Job?.assignedTo ?? l3Job?.assignedTo ?? '',
   )
   const [displayEngineer, setDisplayEngineer] = useState<string>(displayJob?.assignedTo ?? '')
-  const [qcEngineer, setQcEngineer] = useState<string>(
-    device?.status === 'AWAITING_QC' || device?.status === 'UNDER_QC'
-      ? device?.assignedTo ?? ''
-      : '',
-  )
 
   const [qcDialogOpen, setQcDialogOpen] = useState(false)
+  const [assignRackOpen, setAssignRackOpen] = useState(false)
   const qcOutwardCtx = useMemo(() => {
     if (!id) return null
     for (const outward of mockOutwardRecords) {
@@ -236,14 +241,39 @@ function DeviceDetailPage() {
   })
 
   paintJobs.forEach((job) => {
-    timelineEntries.push({
-      id: `paint-${job.id}`,
-      icon: Paintbrush,
-      title: `Paint (${job.panelType === 'TOP_COVER' ? 'Top Cover' : 'Bottom Cover'}) — ${job.status.replace(/_/g, ' ').toLowerCase()}`,
-      user: job.assignedTo,
-      timestamp: formatDate(job.completedAt ?? job.startedAt),
-      variant: job.status === 'COLLECTED' || job.status === 'READY_FOR_COLLECTION' ? 'success' : 'default',
-    })
+    const panelLabel = job.panelType === 'TOP_COVER' ? 'Top Cover' : 'Bottom Cover'
+    if (job.history && job.history.length > 0) {
+      job.history.forEach((entry, idx) => {
+        const titleByEvent: Record<typeof entry.event, string> = {
+          SENT: `Paint (${panelLabel}) — sent to vendor`,
+          REPAINT_SENT: `Paint (${panelLabel}) — sent for repaint`,
+          COMPLETED: `Paint (${panelLabel}) — completed`,
+        }
+        timelineEntries.push({
+          id: `paint-${job.id}-${idx}`,
+          icon: Paintbrush,
+          title: titleByEvent[entry.event],
+          description: entry.notes,
+          user: entry.vendor,
+          timestamp: formatDate(entry.at),
+          variant:
+            entry.event === 'COMPLETED'
+              ? 'success'
+              : entry.event === 'REPAINT_SENT'
+                ? 'warning'
+                : 'default',
+        })
+      })
+    } else {
+      timelineEntries.push({
+        id: `paint-${job.id}`,
+        icon: Paintbrush,
+        title: `Paint (${panelLabel}) — ${job.status.replace(/_/g, ' ').toLowerCase()}`,
+        user: job.assignedTo,
+        timestamp: formatDate(job.completedAt ?? job.startedAt),
+        variant: job.status === 'COLLECTED' || job.status === 'READY_FOR_COLLECTION' ? 'success' : 'default',
+      })
+    }
   })
 
   qcRecords.forEach((rec) => {
@@ -289,12 +319,27 @@ function DeviceDetailPage() {
     from === 'repair'
       ? repairJobs.find((j) => j.status === 'Assigned')
       : undefined
+  // Three-stage repair flow: Start → Start QC → Assemble.
+  const qcableRepair =
+    from === 'repair'
+      ? repairJobs.find((j) => j.status === 'In Progress')
+      : undefined
+  const assemblableRepair =
+    from === 'repair'
+      ? repairJobs.find((j) => j.status === 'QC Passed')
+      : undefined
   const canStartQC =
     from === 'qc' &&
     (device.status === 'AWAITING_QC' ||
       device.status === 'UNDER_QC' ||
       device.status === 'AWAITING_OUTWARD_QC' ||
       device.status === 'UNDER_OUTWARD_QC')
+  const canAssignRack =
+    from === 'rack' &&
+    (device.status === 'READY_FOR_STOCK' ||
+      (device.status === 'IN_STOCK' && !device.rackLocation))
+  const canReassignRack =
+    from === 'rack' && device.status === 'IN_STOCK' && !!device.rackLocation
 
   const paintPanelJobs = paintJobs
 
@@ -309,6 +354,98 @@ function DeviceDetailPage() {
     navigate(`/wms/repair?open=${startableRepair.id}`)
   }
 
+  const handleStartRepairQc = () => {
+    if (!qcableRepair) return
+    setQcDialogOpen(true)
+  }
+
+  const handleAssembleRepair = () => {
+    if (!assemblableRepair) return
+    toast.success(`Opening assembly for ${device.barcode}…`)
+    navigate(`/wms/repair?assemble=${assemblableRepair.id}`)
+  }
+
+  const paintGroupStatus: 'PENDING' | 'SENT' | 'DONE' | null = useMemo(() => {
+    if (from !== 'paint' || paintJobs.length === 0) return null
+    if (paintJobs.every((j) => j.status === 'COLLECTED')) return 'DONE'
+    if (paintJobs.every((j) => j.status === 'AWAITING_PAINT')) return 'PENDING'
+    return 'SENT'
+  }, [from, paintJobs])
+
+  const [sendVendorOpen, setSendVendorOpen] = useState(false)
+  const [isRepaintFlow, setIsRepaintFlow] = useState(false)
+  const [paintVendorId, setPaintVendorId] = useState('')
+  const [paintNotes, setPaintNotes] = useState('')
+
+  const mutatePaintJobsForDevice = (
+    update: (j: (typeof mockPaintJobs)[number]) => (typeof mockPaintJobs)[number],
+  ) => {
+    paintJobs.forEach((pj) => {
+      const idx = mockPaintJobs.findIndex((j) => j.id === pj.id)
+      const current = idx >= 0 ? mockPaintJobs[idx] : undefined
+      if (current) mockPaintJobs[idx] = update(current)
+    })
+  }
+
+  const handleConfirmSendVendor = () => {
+    if (!paintVendorId) {
+      toast.error('Please select a vendor.')
+      return
+    }
+    const vendor = PAINT_VENDORS.find((v) => v.id === paintVendorId)
+    if (!vendor) return
+    const now = new Date().toISOString()
+    const repaint = isRepaintFlow
+    mutatePaintJobsForDevice((j) => ({
+      ...j,
+      status: 'IN_PAINT',
+      assignedTo: vendor.name,
+      startedAt: repaint ? now : j.startedAt ?? now,
+      completedAt: repaint ? undefined : j.completedAt,
+      history: [
+        ...(j.history ?? []),
+        {
+          event: repaint ? 'REPAINT_SENT' : 'SENT',
+          vendor: vendor.name,
+          notes: paintNotes || undefined,
+          at: now,
+        },
+      ],
+    }))
+    toast.success(
+      repaint
+        ? `${device.barcode} sent for repaint to ${vendor.name}`
+        : `${device.barcode} sent to ${vendor.name} (${paintJobs.length} panel${paintJobs.length > 1 ? 's' : ''})`,
+    )
+    setSendVendorOpen(false)
+    setIsRepaintFlow(false)
+    setPaintVendorId('')
+    setPaintNotes('')
+    navigate('/wms/paint')
+  }
+
+  const handleCompletePaint = () => {
+    const now = new Date().toISOString()
+    mutatePaintJobsForDevice((j) => ({
+      ...j,
+      status: 'COLLECTED',
+      completedAt: j.completedAt ?? now,
+      history: [...(j.history ?? []), { event: 'COMPLETED', at: now }],
+    }))
+    const devIdx = mockDevices.findIndex((d) => d.id === device.id)
+    const dev = devIdx >= 0 ? mockDevices[devIdx] : undefined
+    if (dev) mockDevices[devIdx] = { ...dev, paintCompleted: true }
+    toast.success(`Paint complete for ${device.barcode}`)
+    navigate('/wms/paint')
+  }
+
+  const handleRepaint = () => {
+    setIsRepaintFlow(true)
+    setPaintVendorId('')
+    setPaintNotes('')
+    setSendVendorOpen(true)
+  }
+
   const qcDialogType: 'INWARD' | 'OUTWARD' =
     device.status === 'AWAITING_OUTWARD_QC' ||
     device.status === 'UNDER_OUTWARD_QC' ||
@@ -317,77 +454,123 @@ function DeviceDetailPage() {
       : 'INWARD'
 
   const handleStartQC = () => {
-    if (!qcEngineer) {
-      toast.error('Assign a QC engineer before starting QC.')
-      return
-    }
-    // Open the same QC popup used on the list page — but keep the user on
-    // the detail page instead of navigating away.
     setQcDialogOpen(true)
   }
 
   const handleEngineerChange = (
-    role: 'l1l2' | 'display' | 'qc',
+    role: 'l1l2' | 'display',
     value: string,
   ) => {
     if (role === 'l1l2') setL1L2Engineer(value)
-    else if (role === 'display') setDisplayEngineer(value)
-    else setQcEngineer(value)
+    else setDisplayEngineer(value)
     toast.success(
-      `${device.barcode}: ${role === 'l1l2' ? 'L1 / L2' : role === 'display' ? 'Display' : 'QC'} engineer set to ${value}`,
+      `${device.barcode}: ${role === 'l1l2' ? 'L3' : 'Display'} engineer set to ${value}`,
     )
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-3">
-          <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={goBack}>
-            <ArrowLeft />
-          </Button>
-          <div className="min-w-0 space-y-1">
-            <div className="flex items-center gap-3">
-              <h1 className="cpt-page-title">{device.barcode}</h1>
-              <StatusBadge variant={DEVICE_STATUS_VARIANT[status]}>
-                {DEVICE_STATUS_LABELS[status]}
-              </StatusBadge>
-              {device.grade && (
-                <StatusBadge variant={device.grade === 'A' ? 'success' : 'info'}>
-                  Grade {device.grade}
-                </StatusBadge>
+      <PageHeader
+        title={device.barcode}
+        subtitle={`${device.brand} ${device.model} · S/N ${device.serialNumber}`}
+        status={{
+          label: DEVICE_STATUS_LABELS[status],
+          variant: DEVICE_STATUS_VARIANT[status],
+        }}
+        badges={
+          device.grade ? (
+            <StatusBadge variant={device.grade === 'A' ? 'success' : 'info'}>
+              Grade {device.grade}
+            </StatusBadge>
+          ) : undefined
+        }
+        breadcrumbs={[
+          { label: 'WMS' },
+          { label: 'Devices', href: '/wms/devices' },
+          { label: device.barcode },
+        ]}
+        backHref="/wms/devices"
+        actions={
+          canStartInspection ||
+          startableRepair ||
+          qcableRepair ||
+          assemblableRepair ||
+          canStartQC ||
+          paintGroupStatus === 'PENDING' ||
+          paintGroupStatus === 'SENT' ||
+          canAssignRack ||
+          canReassignRack ? (
+            <>
+              {canStartInspection && (
+                <Button onClick={handleStartInspection}>
+                  <Play className="size-4" />
+                  Start Inspection
+                </Button>
               )}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {device.brand} {device.model} · S/N {device.serialNumber}
-            </p>
-          </div>
-        </div>
+              {startableRepair && (
+                <Button onClick={handleStartRepair}>
+                  <Play className="size-4" />
+                  Start Repair
+                </Button>
+              )}
+              {qcableRepair && (
+                <Button
+                  onClick={handleStartRepairQc}
+                  className="bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
+                >
+                  <Play className="size-4" />
+                  Start QC
+                </Button>
+              )}
+              {assemblableRepair && (
+                <Button
+                  onClick={handleAssembleRepair}
+                  className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                >
+                  <CheckCircle2 className="size-4" />
+                  Assemble
+                </Button>
+              )}
+              {canStartQC && (
+                <Button onClick={handleStartQC}>
+                  <Play className="size-4" />
+                  Start QC
+                </Button>
+              )}
+              {paintGroupStatus === 'PENDING' && (
+                <Button onClick={() => setSendVendorOpen(true)}>
+                  <Paintbrush className="size-4" />
+                  Send to vendor
+                </Button>
+              )}
+              {paintGroupStatus === 'SENT' && (
+                <>
+                  <Button
+                    onClick={handleCompletePaint}
+                    className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                  >
+                    <CheckCircle2 className="size-4" />
+                    Complete
+                  </Button>
+                  <Button variant="outline" onClick={handleRepaint}>
+                    <Paintbrush className="size-4" />
+                    Repaint
+                  </Button>
+                </>
+              )}
+              {(canAssignRack || canReassignRack) && (
+                <Button onClick={() => setAssignRackOpen(true)}>
+                  <MapPin className="size-4" />
+                  {canReassignRack ? 'Reassign Rack' : 'Assign Rack'}
+                </Button>
+              )}
+            </>
+          ) : null
+        }
+      />
 
-        {(canStartInspection || startableRepair || canStartQC) && (
-          <div className="flex shrink-0 items-center gap-2">
-            {canStartInspection && (
-              <Button onClick={handleStartInspection}>
-                <Play className="size-4" />
-                Start Inspection
-              </Button>
-            )}
-            {startableRepair && (
-              <Button onClick={handleStartRepair}>
-                <Play className="size-4" />
-                Start Repair
-              </Button>
-            )}
-            {canStartQC && (
-              <Button onClick={handleStartQC}>
-                <Play className="size-4" />
-                Start QC
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
+      <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
+        <div className="space-y-6 lg:col-span-2">
       {/* Device Info */}
       <Card>
         <CardHeader>
@@ -405,67 +588,83 @@ function DeviceDetailPage() {
               </div>
             ))}
           </div>
-          <div className="mt-4 border-t pt-4">
-            <p className="text-xs text-muted-foreground mb-3">Engineer Assignments</p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-foreground">L1 / L2 Engineer</p>
-                <Select
-                  value={l1l2Engineer}
-                  onValueChange={(val) => { if (val) handleEngineerChange('l1l2', val) }}
-                >
-                  <SelectTrigger className="h-9 w-full text-sm">
-                    <SelectValue placeholder="Assign L1 / L2 engineer…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {L1_L2_ENGINEERS.map((eng) => (
-                      <SelectItem key={eng} value={eng}>
-                        {eng}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-foreground">Display Engineer</p>
-                <Select
-                  value={displayEngineer}
-                  onValueChange={(val) => { if (val) handleEngineerChange('display', val) }}
-                >
-                  <SelectTrigger className="h-9 w-full text-sm">
-                    <SelectValue placeholder="Assign Display engineer…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DISPLAY_ENGINEERS.map((eng) => (
-                      <SelectItem key={eng} value={eng}>
-                        {eng}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-foreground">QC Engineer</p>
-                <Select
-                  value={qcEngineer}
-                  onValueChange={(val) => { if (val) handleEngineerChange('qc', val) }}
-                >
-                  <SelectTrigger className="h-9 w-full text-sm">
-                    <SelectValue placeholder="Assign QC engineer…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {QC_ENGINEERS.map((eng) => (
-                      <SelectItem key={eng} value={eng}>
-                        {eng}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          {(from === 'inspection' || from === 'repair') && (
+            <div className="mt-4 border-t pt-4">
+              <p className="text-xs text-muted-foreground mb-3">Engineer Assignments</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-foreground">L3 Engineer</p>
+                  <Select
+                    value={l1l2Engineer}
+                    onValueChange={(val) => { if (val) handleEngineerChange('l1l2', val) }}
+                  >
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue placeholder="Assign L3 engineer…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {L1_L2_ENGINEERS.map((eng) => (
+                        <SelectItem key={eng} value={eng}>
+                          {eng}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-foreground">Display Engineer</p>
+                  <Select
+                    value={displayEngineer}
+                    onValueChange={(val) => { if (val) handleEngineerChange('display', val) }}
+                  >
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue placeholder="Assign Display engineer…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DISPLAY_ENGINEERS.map((eng) => (
+                        <SelectItem key={eng} value={eng}>
+                          {eng}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Line items — server assemblies only, in repair / QC / rack contexts */}
+      {device.deviceKind === 'ASSEMBLY' &&
+        device.components &&
+        device.components.length > 0 &&
+        (from === 'repair' || from === 'qc' || from === 'rack') && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Line items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs uppercase text-muted-foreground">
+                      <th className="py-2 pr-3 font-medium">Part</th>
+                      <th className="py-2 pr-3 font-medium">Part No</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {device.components.map((c) => (
+                      <tr key={c.slotId} className="border-b last:border-b-0">
+                        <td className="py-2 pr-3 font-medium">{c.partName}</td>
+                        <td className="py-2 pr-3 font-mono text-xs">{c.serialNumber}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Spares Requested — shown only from the spares context */}
       {from === 'spares' && (
@@ -538,45 +737,55 @@ function DeviceDetailPage() {
         </Card>
       )}
 
-      {/* Workflow Flags */}
-      {flags.some((f) => f.required) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Workflow Requirements</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {flags
-                .filter((f) => f.required)
-                .map((flag) => {
-                  const completedLabel = flag.label === 'Spares' ? 'Issued' : 'Done'
-                  return (
-                    <div key={flag.label} className="flex items-center gap-2">
-                      <StatusBadge variant={flag.completed ? 'success' : 'warning'}>
-                        {flag.completed ? completedLabel : 'Pending'}
-                      </StatusBadge>
-                      <span className="text-sm font-medium">{flag.label}</span>
-                    </div>
-                  )
-                })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Workflow Flags — hidden when arriving from a workflow stage page */}
+      {from !== 'inspection' &&
+        from !== 'repair' &&
+        from !== 'spares' &&
+        from !== 'paint' &&
+        from !== 'qc' &&
+        flags.some((f) => f.required) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Workflow Requirements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {flags
+                  .filter((f) => f.required)
+                  .map((flag) => {
+                    const completedLabel = flag.label === 'Spares' ? 'Issued' : 'Done'
+                    return (
+                      <div key={flag.label} className="flex items-center gap-2">
+                        <StatusBadge variant={flag.completed ? 'success' : 'warning'}>
+                          {flag.completed ? completedLabel : 'Pending'}
+                        </StatusBadge>
+                        <span className="text-sm font-medium">{flag.label}</span>
+                      </div>
+                    )
+                  })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Workflow History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {timelineEntries.length > 0 ? (
-            <Timeline entries={timelineEntries} />
-          ) : (
-            <p className="text-sm text-muted-foreground">No activity yet.</p>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Right column: Workflow History pinned top-right */}
+        <div className="space-y-6 lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Workflow History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {timelineEntries.length > 0 ? (
+                <Timeline entries={timelineEntries} />
+              ) : (
+                <p className="text-sm text-muted-foreground">No activity yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Shared QC popup — opened by Start QC, stays on this detail page. */}
       <QCDialog
@@ -586,6 +795,89 @@ function DeviceDetailPage() {
         device={device}
         outwardCtx={qcDialogType === 'OUTWARD' ? qcOutwardCtx : null}
       />
+
+      <AssignRackDialog
+        open={assignRackOpen}
+        onOpenChange={setAssignRackOpen}
+        device={device}
+        onAssigned={(assignment) => {
+          const devIdx = mockDevices.findIndex((d) => d.id === device.id)
+          const dev = devIdx >= 0 ? mockDevices[devIdx] : undefined
+          if (dev) {
+            mockDevices[devIdx] = {
+              ...dev,
+              status: 'IN_STOCK',
+              rackLocation: `${assignment.row}-${assignment.rack}-${assignment.bin}`,
+            }
+          }
+        }}
+      />
+
+      <Dialog
+        open={sendVendorOpen}
+        onOpenChange={(open) => {
+          setSendVendorOpen(open)
+          if (!open) {
+            setIsRepaintFlow(false)
+            setPaintVendorId('')
+            setPaintNotes('')
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isRepaintFlow ? 'Send for Repaint' : 'Send to Vendor'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2 rounded-md border bg-muted/30 p-3 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Device</p>
+                  <p className="font-medium">{device.barcode}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Panels</p>
+                  <p className="font-medium">{paintJobs.length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="paint-vendor">Vendor</Label>
+              <Select
+                value={paintVendorId}
+                onValueChange={(val) => { if (val) setPaintVendorId(val) }}
+              >
+                <SelectTrigger id="paint-vendor" className="w-full">
+                  <SelectValue placeholder="Select a paint vendor…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAINT_VENDORS.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="paint-notes">Notes (optional)</Label>
+              <Textarea
+                id="paint-notes"
+                value={paintNotes}
+                onChange={(e) => setPaintNotes(e.target.value)}
+                placeholder="Special instructions for the vendor…"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendVendorOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmSendVendor}>Send</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

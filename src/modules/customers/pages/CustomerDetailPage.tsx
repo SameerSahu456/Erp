@@ -667,7 +667,7 @@ function CustomerDetailPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Main content - 2/3 */}
         <div className="lg:col-span-2">
-          <DetailTabs tabs={tabs} defaultTab="overview" />
+          <DetailTabs cardContent tabs={tabs} defaultTab="overview" />
         </div>
 
         {/* Right sidebar - 1/3 */}

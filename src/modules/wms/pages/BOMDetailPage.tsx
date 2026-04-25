@@ -15,6 +15,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import { mockBOMs } from '../data/boms'
 import { mockParts } from '@/modules/ims/data/parts'
 import type { BOMStatus } from '../types'
@@ -68,24 +69,22 @@ function BOMDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={goBack}>
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="cpt-page-title">{bom.name}</h1>
-            <StatusBadge variant={STATUS_VARIANT[bom.status]}>{bom.status}</StatusBadge>
-            <StatusBadge variant={bom.type === 'ASSEMBLY' ? 'info' : 'warning'}>
-              {bom.type === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'}
-            </StatusBadge>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {bom.bomNumber} &middot; Version {bom.version}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={bom.name}
+        subtitle={`${bom.bomNumber} · Version ${bom.version}`}
+        status={{ label: bom.status, variant: STATUS_VARIANT[bom.status] }}
+        badges={
+          <StatusBadge variant={bom.type === 'ASSEMBLY' ? 'info' : 'warning'}>
+            {bom.type === 'ASSEMBLY' ? 'Assembly' : 'Disassembly'}
+          </StatusBadge>
+        }
+        breadcrumbs={[
+          { label: 'WMS' },
+          { label: 'BOM', href: '/wms/bom' },
+          { label: bom.name },
+        ]}
+        backHref="/wms/bom"
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -136,7 +135,7 @@ function BOMDetailPage() {
             <div>
               <p className="font-medium">{bom.parentPartName}</p>
               <p className="text-sm text-muted-foreground">
-                SKU: {bom.parentPartSku}
+                Part no: {bom.parentPartSku}
                 {parentPart && ` · ${parentPart.brand} · ${parentPart.categoryName}`}
               </p>
             </div>
@@ -174,7 +173,7 @@ function BOMDetailPage() {
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  SKU: {item.partSku}
+                  Part no: {item.partSku}
                   {item.position && ` · Position: ${item.position}`}
                 </p>
                 {item.notes && (

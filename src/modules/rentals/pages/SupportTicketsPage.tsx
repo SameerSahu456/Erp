@@ -4,6 +4,9 @@ import { toast } from 'sonner'
 import { StatusBadge, type StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
 import { BusinessMetricsTable, type TabConfig, type CellFormatter } from '@/components/common/BusinessMetricsTable'
+import { ListPageShell } from '@/components/page'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
 import type { DataCardProps } from '@/components/common/DataCard'
 import { mockSupportTickets, mockAdvanceReplacements } from '../data/tickets'
 import type { TicketStatus, TicketPriority } from '../types'
@@ -83,18 +86,28 @@ function SupportTicketsPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="cpt-page-header">
-        <div>
-          <h1 className="cpt-page-title">Support Tickets</h1>
-          <div className="cpt-page-sub">Track hardware/software issues, SLA compliance, and advance replacements</div>
-        </div>
-        <button className="cpt-btn cpt-btn-primary" onClick={() => toast.success('New ticket form')}>+ New Ticket</button>
-      </div>
-
-      <StatsRow stats={kpiStats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="rentals-support" />
-    </div>
+    <ListPageShell
+      title="Support Tickets"
+      subtitle="Track hardware/software issues, SLA compliance, and advance replacements."
+      breadcrumbs={[{ label: 'Rentals' }, { label: 'Support' }]}
+      actions={
+        <Button size="sm" onClick={() => toast.success('New ticket form')}>
+          <Plus className="mr-1.5 size-4" />
+          New Ticket
+        </Button>
+      }
+      stats={<StatsRow stats={kpiStats} />}
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="rentals-support"
+        emptyState={{
+          title: 'No support tickets',
+          description: 'Tickets raised by customers or field engineers will appear here.',
+        }}
+      />
+    </ListPageShell>
   )
 }
 

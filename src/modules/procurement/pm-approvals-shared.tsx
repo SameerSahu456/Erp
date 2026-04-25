@@ -249,18 +249,49 @@ export function actOnDemo(
   action: 'PM Approved' | 'PM Rejected',
   pm: string,
   remarks: string,
+  pricedItems?: Array<{ id: string; unitPrice: number }>,
 ) {
-  _demos = _demos.map((d) =>
-    d.id !== demoId
-      ? d
-      : {
-          ...d,
-          status: action,
-          pmApprovalDate: new Date().toISOString(),
-          pmRemarks: remarks || undefined,
-          approvedBy: action === 'PM Approved' ? pm : undefined,
-        },
-  )
+  _demos = _demos.map((d) => {
+    if (d.id !== demoId) return d
+    const items = pricedItems
+      ? d.items.map((it) => {
+          const override = pricedItems.find((p) => p.id === it.id)
+          if (!override) return it
+          const unitPrice = Math.max(0, override.unitPrice)
+          return { ...it, unitPrice, amount: unitPrice * it.qty }
+        })
+      : d.items
+    return {
+      ...d,
+      items,
+      status: action,
+      pmApprovalDate: new Date().toISOString(),
+      pmRemarks: remarks || undefined,
+      approvedBy: action === 'PM Approved' ? pm : undefined,
+    }
+  })
+  // Mirror the price overrides into the source array so callers reading `demoRequests`
+  // directly (e.g. the Demo detail page → SO conversion) see the approved pricing.
+  if (pricedItems) {
+    const target = demoRequests.find((d) => d.id === demoId)
+    if (target) {
+      target.items = target.items.map((it) => {
+        const override = pricedItems.find((p) => p.id === it.id)
+        if (!override) return it
+        const unitPrice = Math.max(0, override.unitPrice)
+        return { ...it, unitPrice, amount: unitPrice * it.qty }
+      })
+    }
+  }
+  // Likewise, persist the status / remarks / pmApprovalDate on the source array.
+  const target = demoRequests.find((d) => d.id === demoId)
+  if (target) {
+    target.status = action
+    target.pmApprovalDate = new Date().toISOString()
+    target.pmRemarks = remarks || undefined
+    target.approvedBy = action === 'PM Approved' ? pm : undefined
+    target.updatedAt = new Date().toISOString()
+  }
   notify()
   toast.success(`Demo ${demoId} ${action === 'PM Approved' ? 'approved' : 'rejected'}`)
 }
@@ -1076,10 +1107,38 @@ export function DemoApprovalCard({
   onApprove,
 }: {
   demo: DemoRequest
-  onApprove: (demoId: string, action: 'PM Approved' | 'PM Rejected', remarks: string) => void
+  onApprove: (
+    demoId: string,
+    action: 'PM Approved' | 'PM Rejected',
+    remarks: string,
+    pricedItems?: Array<{ id: string; unitPrice: number }>,
+  ) => void
 }) {
   const [remarks, setRemarks] = useState('')
   const pending = demo.status === 'Pending PM Approval'
+  // Editable per-line unit prices — initialised from current item.unitPrice.
+  const [unitPrices, setUnitPrices] = useState<Record<string, string>>(() =>
+    Object.fromEntries(demo.items.map((i) => [i.id, String(i.unitPrice ?? 0)])),
+  )
+
+  function getNumericPrice(id: string, fallback: number): number {
+    const raw = unitPrices[id]
+    const n = Number(raw)
+    return Number.isFinite(n) && n >= 0 ? n : fallback
+  }
+
+  const total = demo.items.reduce(
+    (sum, item) => sum + getNumericPrice(item.id, item.unitPrice ?? 0) * item.qty,
+    0,
+  )
+
+  function handleAction(action: 'PM Approved' | 'PM Rejected') {
+    const priced = demo.items.map((i) => ({
+      id: i.id,
+      unitPrice: getNumericPrice(i.id, i.unitPrice ?? 0),
+    }))
+    onApprove(demo.id, action, remarks, action === 'PM Approved' ? priced : undefined)
+  }
 
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
@@ -1116,22 +1175,51 @@ export function DemoApprovalCard({
 
       <div className="px-5 py-4">
         <div className="divide-y divide-border/50">
-          {demo.items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
-            >
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium">{item.partName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {item.brand} · {item.partSku} · {item.category}
-                </p>
+          {demo.items.map((item) => {
+            const lineAmount = getNumericPrice(item.id, item.unitPrice ?? 0) * item.qty
+            return (
+              <div
+                key={item.id}
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+              >
+                <div className="space-y-0.5 min-w-0">
+                  <p className="text-sm font-medium truncate">{item.partName}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {item.brand} · {item.partSku} · {item.category}
+                  </p>
+                </div>
+                <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-semibold tabular-nums">
+                  ×{item.qty}
+                </span>
+                {pending ? (
+                  <Input
+                    type="number"
+                    min={0}
+                    value={unitPrices[item.id] ?? ''}
+                    onChange={(e) =>
+                      setUnitPrices((prev) => ({ ...prev, [item.id]: e.target.value }))
+                    }
+                    className="h-8 w-28 text-right text-sm tabular-nums"
+                    aria-label={`Unit price for ${item.partName}`}
+                  />
+                ) : (
+                  <span className="w-28 text-right text-sm tabular-nums text-muted-foreground">
+                    {formatCurrency(item.unitPrice ?? 0)}
+                  </span>
+                )}
+                <span className="w-28 text-right text-sm font-semibold tabular-nums">
+                  {formatCurrency(lineAmount)}
+                </span>
               </div>
-              <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-semibold tabular-nums">
-                ×{item.qty}
-              </span>
-            </div>
-          ))}
+            )
+          })}
+        </div>
+
+        <div className="mt-3 flex items-center justify-between rounded-md border border-dashed bg-muted/30 px-3 py-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            {pending ? 'Approved value (editable)' : 'Approved value'}
+          </span>
+          <span className="text-sm font-semibold tabular-nums">{formatCurrency(total)}</span>
         </div>
 
         <div className="mt-3 flex items-start gap-2 rounded-md bg-muted/50 px-3 py-2.5">
@@ -1145,8 +1233,8 @@ export function DemoApprovalCard({
           <ApprovalActionRow
             notes={remarks}
             onNotesChange={setRemarks}
-            onApprove={() => onApprove(demo.id, 'PM Approved', remarks)}
-            onReject={() => onApprove(demo.id, 'PM Rejected', remarks)}
+            onApprove={() => handleAction('PM Approved')}
+            onReject={() => handleAction('PM Rejected')}
             placeholder="e.g., Approved for 2-week demo. Track closely."
           />
         ) : (

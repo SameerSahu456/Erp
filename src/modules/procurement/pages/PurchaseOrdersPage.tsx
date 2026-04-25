@@ -8,6 +8,7 @@ import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetri
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
 
 import { mockPurchaseOrders } from '@/modules/procurement/data/purchase-orders'
 import type { POStatus } from '@/modules/procurement/types'
@@ -120,42 +121,43 @@ function PurchaseOrdersPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="cpt-page-title">Purchase Orders</h2>
-          <p className="text-sm text-muted-foreground">Track and manage vendor purchase orders</p>
-        </div>
+    <ListPageShell
+      title="Purchase Orders"
+      subtitle="Track and manage vendor purchase orders through delivery."
+      breadcrumbs={[{ label: 'Procurement' }, { label: 'Purchase Orders' }]}
+      actions={
         <Button onClick={() => navigate('/procurement/po/new')}>
           <Plus className="mr-1 size-4" />
           Create PO
         </Button>
-      </div>
-
-      {/* Summary Stats */}
-      <StatsRow
-        stats={[
-          { label: 'Total POs', value: totalPOs, icon: ShoppingCart },
-          { label: 'In Transit', value: inTransitCount, icon: Truck },
-          { label: 'Fully Received', value: fullyReceivedCount, icon: PackageCheck },
-          { label: 'Total Order Value', value: formatShort(totalOrderValue), icon: IndianRupee },
-        ]}
+      }
+      stats={
+        <StatsRow
+          stats={[
+            { label: 'Total POs', value: totalPOs, icon: ShoppingCart },
+            { label: 'In Transit', value: inTransitCount, icon: Truck },
+            { label: 'Fully Received', value: fullyReceivedCount, icon: PackageCheck },
+            { label: 'Total Order Value', value: formatShort(totalOrderValue), icon: IndianRupee },
+          ]}
+        />
+      }
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        pageSize={10}
+        persistKey="procurement-po"
+        onRowClick={(row) => navigate(`/procurement/po/${row.id}`)}
+        emptyState={{
+          title: 'No purchase orders yet',
+          description: 'Create a PO from an approved purchase request or directly to a vendor.',
+          action: {
+            label: 'Create PO',
+            onClick: () => navigate('/procurement/po/new'),
+          },
+        }}
       />
-
-      {/* Table */}
-      <Card>
-        <CardContent>
-          <BusinessMetricsTable
-            tabs={tabs}
-            cellFormatter={cellFormatter}
-            pageSize={10}
-            persistKey="procurement-po"
-            onRowClick={(row) => navigate(`/procurement/po/${row.id}`)}
-          />
-        </CardContent>
-      </Card>
-    </div>
+    </ListPageShell>
   )
 }
 

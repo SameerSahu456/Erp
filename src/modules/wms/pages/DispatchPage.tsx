@@ -24,6 +24,7 @@ import {
   SelectItem,
 } from '@/components/ui/select'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 import type { OutwardRecord, OutwardType } from '../types'
 import { mockOutwardRecords } from '../data/outward'
 import { mockWarehouses } from '../data/warehouses'
@@ -532,13 +533,11 @@ export default function DispatchPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="cpt-page-title">Dispatch Board</h1>
-        <p className="text-sm text-muted-foreground">
-          Track and manage all outward shipments &mdash; {totalActive} active dispatch{totalActive !== 1 ? 'es' : ''}
-        </p>
-      </div>
+      <PageHeader
+        title="Dispatch Board"
+        subtitle={`Track and manage all outward shipments — ${totalActive} active dispatch${totalActive !== 1 ? 'es' : ''}.`}
+        breadcrumbs={[{ label: 'WMS' }, { label: 'Dispatch Board' }]}
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">

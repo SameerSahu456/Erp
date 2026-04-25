@@ -111,8 +111,8 @@ export default function SkuHistoryPage() {
   if (!item || !skuDetail) {
     return (
       <EmptyState
-        title="SKU not found"
-        description="The SKU you are looking for does not exist or is not associated with this item."
+        title="Part no not found"
+        description="The Part no you are looking for does not exist or is not associated with this item."
       />
     )
   }
@@ -128,7 +128,7 @@ export default function SkuHistoryPage() {
       {/* SKU Info Card */}
       <Card>
         <CardHeader>
-          <CardTitle>SKU Details</CardTitle>
+          <CardTitle>Part no Details</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -188,7 +188,7 @@ export default function SkuHistoryPage() {
             <Timeline entries={historyEntries} />
           ) : (
             <p className="text-sm text-muted-foreground">
-              No history records found for this SKU.
+              No history records found for this Part no.
             </p>
           )}
         </CardContent>

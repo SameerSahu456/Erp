@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
-import { EntityHeader } from '../components/EntityHeader'
+import { FormPageShell } from '@/components/page'
 import { LineItemsEditor, createEmptyItem } from '../components/LineItemsEditor'
 import { TotalsSection } from '../components/TotalsSection'
 import { invoices } from '../data/invoices'
@@ -93,13 +93,42 @@ function InvoiceFormPage() {
     goBack()
   }
 
-  return (
-    <div className="space-y-6">
-      <EntityHeader
-        title={isEdit ? `Edit Invoice: ${existingInvoice.invoiceNumber}` : 'Create Invoice'}
-        backHref={backHref}
-      />
+  const canSave = Boolean(accountId)
 
+  return (
+    <FormPageShell
+      title={isEdit ? `Edit Invoice: ${existingInvoice.invoiceNumber}` : 'Create Invoice'}
+      subtitle={isEdit ? 'Update line items, totals, and terms.' : 'Draft a new invoice for an account.'}
+      breadcrumbs={
+        isEdit
+          ? [
+              { label: 'CRM' },
+              { label: 'Invoices', href: '/crm/invoices' },
+              { label: existingInvoice.invoiceNumber },
+              { label: 'Edit' },
+            ]
+          : [
+              { label: 'CRM' },
+              { label: 'Invoices', href: '/crm/invoices' },
+              { label: 'New Invoice' },
+            ]
+      }
+      backHref={backHref}
+      footerLeft={!canSave ? <span className="text-destructive/80">Select an account to enable saving.</span> : undefined}
+      footerActions={
+        <>
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button variant="outline" onClick={handleSaveDraft} disabled={!canSave}>
+            Save Draft
+          </Button>
+          <Button onClick={handleSendInvoice} disabled={!canSave}>
+            Send Invoice
+          </Button>
+        </>
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit Invoice' : 'New Invoice'}</CardTitle>
@@ -218,19 +247,8 @@ function InvoiceFormPage() {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="justify-end gap-2">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button variant="outline" onClick={handleSaveDraft} disabled={!accountId}>
-            Save Draft
-          </Button>
-          <Button onClick={handleSendInvoice} disabled={!accountId}>
-            Send Invoice
-          </Button>
-        </CardFooter>
       </Card>
-    </div>
+    </FormPageShell>
   )
 }
 

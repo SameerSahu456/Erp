@@ -7,6 +7,7 @@ import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
 import type { TabConfig, CellFormatter } from "@/components/common/BusinessMetricsTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import type { StatusBadgeVariant } from "@/components/common/StatusBadge"
+import { ListPageShell } from "@/components/page"
 import {
   Dialog,
   DialogContent,
@@ -261,29 +262,41 @@ function InvoicesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Invoices</h2>
-        <Button onClick={() => navigate("/crm/invoices/new")}>
-          <Plus className="mr-1 size-4" />
-          Create Invoice
-        </Button>
-      </div>
-
-      <BusinessMetricsTable
-        tabs={[invoicesTab]}
-        cellFormatter={invoiceCellFormatter}
-        pageSize={10}
-        persistKey="crm-invoices"
-        onRowClick={(row) => navigate(`/crm/invoices/${row.id}/edit`)}
-      />
+    <>
+      <ListPageShell
+        title="Invoices"
+        subtitle="Tax invoices raised against customer sales orders."
+        breadcrumbs={[{ label: 'CRM' }, { label: 'Invoices' }]}
+        actions={
+          <Button onClick={() => navigate("/crm/invoices/new")}>
+            <Plus className="mr-1 size-4" />
+            Create Invoice
+          </Button>
+        }
+      >
+        <BusinessMetricsTable
+          tabs={[invoicesTab]}
+          cellFormatter={invoiceCellFormatter}
+          pageSize={10}
+          persistKey="crm-invoices"
+          onRowClick={(row) => navigate(`/crm/invoices/${row.id}/edit`)}
+          emptyState={{
+            title: 'No invoices yet',
+            description: 'Create an invoice to bill a customer for a confirmed order.',
+            action: {
+              label: 'Create Invoice',
+              onClick: () => navigate('/crm/invoices/new'),
+            },
+          }}
+        />
+      </ListPageShell>
 
       <InvoiceDetailDialog
         invoice={selectedInvoice}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />
-    </div>
+    </>
   )
 }
 

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePersistedState } from '@/hooks/use-persisted-state'
 import {
@@ -10,10 +10,20 @@ import {
   ClipboardList,
   ShoppingCart,
   Search,
-  Clock,
+  Monitor,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { StatsRow, type StatCardData } from '@/components/common/StatsRow'
 import {
@@ -44,10 +54,12 @@ import {
   useSOs,
   usePRs,
   usePOs,
+  useDemos,
   actOnMIItem,
   actOnSO,
   actOnPRCategory,
   actOnPO,
+  actOnDemo,
 } from '../pm-approvals-shared'
 import type {
   PurchaseRequest,
@@ -56,6 +68,7 @@ import type {
   MaterialInquiry,
   MaterialInquiryItem,
   SalesOrder,
+  DemoRequest,
 } from '@/modules/crm/types'
 import type { PurchaseOrder } from '@/modules/procurement/types'
 
@@ -68,6 +81,7 @@ function PMApprovalsPage() {
   const localSOs = useSOs()
   const localPRs = usePRs()
   const localPOs = usePOs()
+  const localDemos = useDemos()
 
   // ── MI groups — one row per MI, with each line item actionable inside ──
   type MIItemLine = {
@@ -169,11 +183,19 @@ function PMApprovalsPage() {
   )
   const pendingPOs = myPOs.filter((po) => isPending(po.pmApprovalStatus))
 
+  // ── Demo Request rows ──
+  const myDemos = useMemo(
+    () => localDemos.filter((d) => d.productManager === currentPM),
+    [localDemos, currentPM],
+  )
+  const pendingDemos = myDemos.filter((d) => d.status === 'Pending PM Approval')
+
   const stats: StatCardData[] = [
     { label: 'MI Line Items', value: pendingMIItemsCount, icon: Search },
     { label: 'Sales Orders', value: pendingSOs.length, icon: ShoppingCart },
     { label: 'PR Items', value: pendingPRItemsCount, icon: FileText },
     { label: 'Purchase Orders', value: pendingPOs.length, icon: ClipboardList },
+    { label: 'Demo Requests', value: pendingDemos.length, icon: Monitor },
   ]
 
   const pmInitials = currentPM
@@ -279,6 +301,12 @@ function PMApprovalsPage() {
             label="Purchase Order"
             count={pendingPOs.length}
           />
+          <PremiumTabTrigger
+            value="demo"
+            icon={<Monitor className="size-4" />}
+            label="Demo Request"
+            count={pendingDemos.length}
+          />
         </TabsList>
 
         <TabsContent value="mi" className="pt-4">
@@ -330,6 +358,18 @@ function PMApprovalsPage() {
             />
           )}
         </TabsContent>
+
+        <TabsContent value="demo" className="pt-4">
+          {myDemos.length === 0 ? (
+            <EmptyState message="No Demo Requests assigned to you" />
+          ) : (
+            <DemoListView
+              demos={myDemos}
+              currentPM={currentPM}
+              onOpen={(id) => navigate(`/procurement/pm-approvals/demo/${id}`)}
+            />
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   )
@@ -345,6 +385,8 @@ function InlineActions({
   onApprove: (e: React.MouseEvent) => void
   onReject: (e: React.MouseEvent) => void
 }) {
+  const [pending, setPending] = useState<null | 'approve' | 'reject'>(null)
+
   if (!isPending(status)) {
     return (
       <StatusBadge variant={status === 'Approved' ? 'success' : 'error'}>
@@ -360,26 +402,56 @@ function InlineActions({
       </StatusBadge>
     )
   }
+
   return (
-    <div className="flex justify-end gap-1.5">
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-7 px-2 text-[11px] border-destructive/30 text-destructive hover:border-destructive hover:bg-destructive/5"
-        onClick={onReject}
-      >
-        <XCircle className="mr-1 size-3" />
-        Reject
-      </Button>
-      <Button
-        size="sm"
-        className="h-7 px-2 text-[11px] shadow-sm transition-shadow hover:shadow-md"
-        onClick={onApprove}
-      >
-        <CheckCircle2 className="mr-1 size-3" />
-        Approve
-      </Button>
-    </div>
+    <>
+      <div className="flex justify-end gap-1.5">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 px-2 text-[11px] border-destructive/30 text-destructive hover:border-destructive hover:bg-destructive/5"
+          onClick={(e) => { e.stopPropagation(); setPending('reject') }}
+        >
+          <XCircle className="mr-1 size-3" />
+          Reject
+        </Button>
+        <Button
+          size="sm"
+          className="h-7 px-2 text-[11px] shadow-sm transition-shadow hover:shadow-md"
+          onClick={(e) => { e.stopPropagation(); setPending('approve') }}
+        >
+          <CheckCircle2 className="mr-1 size-3" />
+          Approve
+        </Button>
+      </div>
+      <AlertDialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pending === 'approve' ? 'Approve this request?' : 'Reject this request?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pending === 'approve'
+                ? 'This will mark the item as approved and notify downstream stakeholders.'
+                : 'This will mark the item as rejected. The requester will be notified.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant={pending === 'reject' ? 'destructive' : 'default'}
+              onClick={(e) => {
+                if (pending === 'approve') onApprove(e as unknown as React.MouseEvent)
+                else if (pending === 'reject') onReject(e as unknown as React.MouseEvent)
+                setPending(null)
+              }}
+            >
+              {pending === 'approve' ? 'Approve' : 'Reject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
@@ -401,7 +473,7 @@ function RowAccent({ status }: { status: 'Pending' | 'Approved' | 'Rejected' | u
   )
 }
 
-// ── Material Inquiry list (grouped by MI; line-item approvals inside) ──
+// ── Material Inquiry list — flat table; line-item level approvals ──
 function MIListView({
   groups,
   currentPM,
@@ -421,174 +493,108 @@ function MIListView({
   currentPM: string
   onOpen: (miId: string) => void
 }) {
+  const stopRowClick = (e: React.MouseEvent) => e.stopPropagation()
   return (
-    <div className="space-y-3">
-      {groups.map((group, idx) => (
-        <MIGroupCard
-          key={group.mi.id}
-          index={idx + 1}
-          mi={group.mi}
-          lines={group.lines}
-          currentPM={currentPM}
-          onOpen={() => onOpen(group.mi.id)}
-        />
-      ))}
-    </div>
-  )
-}
+    <ListShell>
+      <Table>
+        <TableHeader>
+          <TableRow className="border-b bg-muted/20 hover:bg-muted/20">
+            <TableHead className="w-12 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              #
+            </TableHead>
+            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Inquiry
+            </TableHead>
+            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Item
+            </TableHead>
+            <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Qty
+            </TableHead>
+            <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Responses
+            </TableHead>
+            <TableHead className="w-44 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Action
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {groups.flatMap((group, groupIdx) =>
+            group.lines.map((line, lineIdx) => {
+              const { item, responseCount, pendingCount, derivedStatus } = line
+              const hasResponses = responseCount > 0
+              const isMulti = group.lines.length > 1
+              const isFirst = lineIdx === 0
+              const isLastInGroup = lineIdx === group.lines.length - 1
+              const status =
+                derivedStatus === 'Awaiting'
+                  ? undefined
+                  : (derivedStatus as 'Pending' | 'Approved' | 'Rejected')
 
-function MIGroupCard({
-  index,
-  mi,
-  lines,
-  currentPM,
-  onOpen,
-}: {
-  index: number
-  mi: MaterialInquiry
-  lines: {
-    item: MaterialInquiryItem
-    responseCount: number
-    approvedCount: number
-    rejectedCount: number
-    pendingCount: number
-    derivedStatus: 'Pending' | 'Approved' | 'Rejected' | 'Awaiting'
-  }[]
-  currentPM: string
-  onOpen: () => void
-}) {
-  const stop = (e: React.MouseEvent) => e.stopPropagation()
-  const pendingLines = lines.filter((l) => l.derivedStatus === 'Pending').length
-  const approvedLines = lines.filter((l) => l.derivedStatus === 'Approved').length
-  const rejectedLines = lines.filter((l) => l.derivedStatus === 'Rejected').length
-  const awaitingLines = lines.filter((l) => l.derivedStatus === 'Awaiting').length
-
-  return (
-    <div
-      className="group cursor-pointer overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-md"
-      onClick={onOpen}
-    >
-      {/* Group header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gradient-to-r from-muted/40 via-muted/20 to-transparent px-5 py-3">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex size-8 items-center justify-center rounded-lg bg-primary/10 text-[11px] font-bold tabular-nums text-primary">
-            {String(index).padStart(2, '0')}
-          </span>
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold tracking-tight text-primary">
-                {mi.inquiryNumber}
-              </span>
-              {mi.leadName && (
-                <span className="text-xs text-muted-foreground">· {mi.leadName}</span>
-              )}
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              By {mi.requestedBy} · {formatDate(mi.createdAt)}
-              {mi.clientBudget ? <> · Budget {formatCurrency(mi.clientBudget)}</> : null}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2.5 text-[11px] font-medium">
-          <span className="text-muted-foreground">
-            {lines.length} item{lines.length !== 1 ? 's' : ''}
-          </span>
-          {pendingLines > 0 && (
-            <span className="inline-flex items-center gap-1 text-status-warning-text">
-              <span className="size-1.5 rounded-full bg-amber-500" />
-              {pendingLines} pending
-            </span>
+              return (
+                <TableRow
+                  key={`${group.mi.id}-${item.id}`}
+                  className={`relative cursor-pointer transition-colors hover:bg-muted/30 ${
+                    isMulti && !isLastInGroup ? '[&>td]:border-b-0' : ''
+                  }`}
+                  onClick={() => onOpen(group.mi.id)}
+                >
+                  <TableCell className="relative align-middle text-xs font-semibold tabular-nums text-muted-foreground">
+                    <RowAccent status={status} />
+                    {isFirst ? String(groupIdx + 1).padStart(2, '0') : ''}
+                  </TableCell>
+                  <TableCell className="align-middle">
+                    {isFirst ? (
+                      <>
+                        <p className="text-sm font-semibold text-primary">
+                          {group.mi.inquiryNumber}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {group.mi.leadName || formatDate(group.mi.createdAt)}
+                          {isMulti ? ` · ${group.lines.length} items` : ''}
+                        </p>
+                      </>
+                    ) : null}
+                  </TableCell>
+                  <TableCell className="align-middle">
+                    <p className="text-sm font-medium text-foreground/90">{item.item}</p>
+                    <p className="text-[11px] text-muted-foreground">{item.category}</p>
+                  </TableCell>
+                  <TableCell className="align-middle text-right text-sm font-semibold tabular-nums">
+                    {item.qtyRequested}
+                  </TableCell>
+                  <TableCell className="align-middle text-right text-sm tabular-nums text-muted-foreground">
+                    {hasResponses
+                      ? pendingCount > 0
+                        ? `${responseCount} · ${pendingCount} pending`
+                        : `${responseCount}`
+                      : '—'}
+                  </TableCell>
+                  <TableCell className="align-middle text-right" onClick={stopRowClick}>
+                    {!hasResponses ? (
+                      <span className="text-[11px] italic text-muted-foreground">Awaiting</span>
+                    ) : (
+                      <InlineActions
+                        status={status}
+                        onApprove={(e) => {
+                          e.stopPropagation()
+                          actOnMIItem(group.mi.id, item.id, 'Approved', currentPM, '')
+                        }}
+                        onReject={(e) => {
+                          e.stopPropagation()
+                          actOnMIItem(group.mi.id, item.id, 'Rejected', currentPM, '')
+                        }}
+                      />
+                    )}
+                  </TableCell>
+                </TableRow>
+              )
+            }),
           )}
-          {approvedLines > 0 && (
-            <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-              {approvedLines} approved
-            </span>
-          )}
-          {rejectedLines > 0 && (
-            <span className="inline-flex items-center gap-1 text-destructive">
-              <span className="size-1.5 rounded-full bg-destructive" />
-              {rejectedLines} rejected
-            </span>
-          )}
-          {awaitingLines > 0 && (
-            <span className="inline-flex items-center gap-1 text-muted-foreground">
-              <Clock className="size-3" />
-              {awaitingLines} awaiting
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Line items */}
-      <div className="divide-y">
-        {lines.map((line, i) => {
-          const { item, responseCount, approvedCount, pendingCount, derivedStatus } = line
-          const hasResponses = responseCount > 0
-          const status =
-            derivedStatus === 'Awaiting'
-              ? undefined
-              : (derivedStatus as 'Pending' | 'Approved' | 'Rejected')
-
-          return (
-            <div
-              key={item.id}
-              className="relative flex flex-wrap items-center gap-4 px-5 py-3 transition-colors hover:bg-muted/20"
-            >
-              <RowAccent status={status} />
-              <span className="w-8 shrink-0 text-[11px] font-semibold tabular-nums text-muted-foreground">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground/90">{item.item}</p>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-muted-foreground">
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
-                    {item.category}
-                  </span>
-                  <span>
-                    <span className="font-medium text-foreground/80">{item.qtyRequested}</span>{' '}
-                    units
-                  </span>
-                  {item.clientBudgetPerUnit && (
-                    <span>{formatCurrency(item.clientBudgetPerUnit)}/unit</span>
-                  )}
-                  {hasResponses ? (
-                    <span>
-                      {responseCount} response{responseCount !== 1 ? 's' : ''}
-                      {pendingCount > 0 ? ` · ${pendingCount} pending` : ''}
-                      {approvedCount > 0 && pendingCount === 0
-                        ? ` · ${approvedCount} approved`
-                        : ''}
-                    </span>
-                  ) : (
-                    <span className="italic">No responses yet</span>
-                  )}
-                </div>
-              </div>
-              <div className="shrink-0" onClick={stop}>
-                {!hasResponses ? (
-                  <StatusBadge variant="info">
-                    <Clock className="mr-1 size-3" /> Awaiting response
-                  </StatusBadge>
-                ) : (
-                  <InlineActions
-                    status={status}
-                    onApprove={(e) => {
-                      e.stopPropagation()
-                      actOnMIItem(mi.id, item.id, 'Approved', currentPM, '')
-                    }}
-                    onReject={(e) => {
-                      e.stopPropagation()
-                      actOnMIItem(mi.id, item.id, 'Rejected', currentPM, '')
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+        </TableBody>
+      </Table>
+    </ListShell>
   )
 }
 
@@ -610,8 +616,8 @@ function SOListView({
       <Table>
         <TableHeader>
           <TableRow className="border-b bg-muted/20 hover:bg-muted/20">
-            <TableHead className="w-14 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Sr. No
+            <TableHead className="w-12 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              #
             </TableHead>
             <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Order
@@ -620,12 +626,12 @@ function SOListView({
               Account
             </TableHead>
             <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              My Lines
+              Lines
             </TableHead>
             <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Total
             </TableHead>
-            <TableHead className="w-48 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <TableHead className="w-44 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Action
             </TableHead>
           </TableRow>
@@ -639,23 +645,22 @@ function SOListView({
                 className="relative cursor-pointer transition-colors hover:bg-muted/30"
                 onClick={() => onOpen(so.id)}
               >
-                <TableCell className="relative text-xs font-semibold tabular-nums text-muted-foreground">
+                <TableCell className="relative align-middle text-xs font-semibold tabular-nums text-muted-foreground">
                   <RowAccent status={so.pmApprovalStatus} />
                   {String(idx + 1).padStart(2, '0')}
                 </TableCell>
-                <TableCell>
+                <TableCell className="align-middle">
                   <p className="text-sm font-semibold text-primary">{so.orderNumber}</p>
                   <p className="text-[11px] text-muted-foreground">{formatDate(so.date)}</p>
                 </TableCell>
-                <TableCell className="text-sm">{so.accountName}</TableCell>
-                <TableCell className="text-right">
-                  <p className="text-sm font-semibold tabular-nums">{myLines.length}</p>
-                  <p className="text-[11px] text-muted-foreground">of {so.lineItems.length}</p>
+                <TableCell className="align-middle text-sm">{so.accountName}</TableCell>
+                <TableCell className="align-middle text-right text-sm tabular-nums text-muted-foreground">
+                  {myLines.length} / {so.lineItems.length}
                 </TableCell>
-                <TableCell className="text-right text-sm font-semibold tabular-nums">
+                <TableCell className="align-middle text-right text-sm font-semibold tabular-nums">
                   {formatCurrency(so.total)}
                 </TableCell>
-                <TableCell className="text-right" onClick={stopRowClick}>
+                <TableCell className="align-middle text-right" onClick={stopRowClick}>
                   <InlineActions
                     status={so.pmApprovalStatus}
                     onApprove={(e) => {
@@ -677,7 +682,7 @@ function SOListView({
   )
 }
 
-// ── Purchase Request list (grouped by PR; line-item approvals inside) ──
+// ── Purchase Request list — flat table; line-item level approvals ──
 function PRListView({
   groups,
   currentPM,
@@ -690,145 +695,92 @@ function PRListView({
   currentPM: string
   onOpen: (id: string) => void
 }) {
+  const stopRowClick = (e: React.MouseEvent) => e.stopPropagation()
   return (
-    <div className="space-y-3">
-      {groups.map((group, idx) => (
-        <PRGroupCard
-          key={group.pr.id}
-          index={idx + 1}
-          pr={group.pr}
-          lines={group.lines}
-          currentPM={currentPM}
-          onOpen={() => onOpen(group.pr.id)}
-        />
-      ))}
-    </div>
-  )
-}
-
-function PRGroupCard({
-  index,
-  pr,
-  lines,
-  currentPM,
-  onOpen,
-}: {
-  index: number
-  pr: PurchaseRequest
-  lines: { item: PurchaseRequestItem; approval: PRCategoryApproval }[]
-  currentPM: string
-  onOpen: () => void
-}) {
-  const stop = (e: React.MouseEvent) => e.stopPropagation()
-  const pendingLines = lines.filter((l) => l.approval.status === 'Pending').length
-  const approvedLines = lines.filter((l) => l.approval.status === 'Approved').length
-  const rejectedLines = lines.filter((l) => l.approval.status === 'Rejected').length
-
-  return (
-    <div
-      className="group cursor-pointer overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-md"
-      onClick={onOpen}
-    >
-      {/* Group header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gradient-to-r from-muted/40 via-muted/20 to-transparent px-5 py-3">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex size-8 items-center justify-center rounded-lg bg-primary/10 text-[11px] font-bold tabular-nums text-primary">
-            {String(index).padStart(2, '0')}
-          </span>
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold tracking-tight text-primary">
-                {pr.prNumber}
-              </span>
-              {pr.salesOrderNumber && (
-                <span className="text-xs text-muted-foreground">
-                  → {pr.salesOrderNumber}
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              By {pr.requestedBy} · {formatDate(pr.createdAt)}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2.5 text-[11px] font-medium">
-          <span className="text-muted-foreground">
-            {lines.length} item{lines.length !== 1 ? 's' : ''}
-          </span>
-          {pendingLines > 0 && (
-            <span className="inline-flex items-center gap-1 text-status-warning-text">
-              <span className="size-1.5 rounded-full bg-amber-500" />
-              {pendingLines} pending
-            </span>
+    <ListShell>
+      <Table>
+        <TableHeader>
+          <TableRow className="border-b bg-muted/20 hover:bg-muted/20">
+            <TableHead className="w-12 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              #
+            </TableHead>
+            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              PR
+            </TableHead>
+            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Item
+            </TableHead>
+            <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Qty
+            </TableHead>
+            <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Est. Total
+            </TableHead>
+            <TableHead className="w-44 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Action
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {groups.flatMap((group, groupIdx) =>
+            group.lines.map(({ item, approval }, lineIdx) => {
+              const estTotal = item.qty * (item.estimatedRate ?? 0)
+              const isMulti = group.lines.length > 1
+              const isFirst = lineIdx === 0
+              const isLastInGroup = lineIdx === group.lines.length - 1
+              return (
+                <TableRow
+                  key={`${group.pr.id}-${item.id}-${approval.id}`}
+                  className={`relative cursor-pointer transition-colors hover:bg-muted/30 ${
+                    isMulti && !isLastInGroup ? '[&>td]:border-b-0' : ''
+                  }`}
+                  onClick={() => onOpen(group.pr.id)}
+                >
+                  <TableCell className="relative align-middle text-xs font-semibold tabular-nums text-muted-foreground">
+                    <RowAccent status={approval.status} />
+                    {isFirst ? String(groupIdx + 1).padStart(2, '0') : ''}
+                  </TableCell>
+                  <TableCell className="align-middle">
+                    {isFirst ? (
+                      <>
+                        <p className="text-sm font-semibold text-primary">{group.pr.prNumber}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {group.pr.salesOrderNumber || formatDate(group.pr.createdAt)}
+                          {isMulti ? ` · ${group.lines.length} items` : ''}
+                        </p>
+                      </>
+                    ) : null}
+                  </TableCell>
+                  <TableCell className="align-middle">
+                    <p className="text-sm font-medium text-foreground/90">{item.item}</p>
+                    <p className="text-[11px] text-muted-foreground">{item.category}</p>
+                  </TableCell>
+                  <TableCell className="align-middle text-right text-sm font-semibold tabular-nums">
+                    {item.qty}
+                  </TableCell>
+                  <TableCell className="align-middle text-right text-sm tabular-nums text-muted-foreground">
+                    {estTotal > 0 ? formatCurrency(estTotal) : '—'}
+                  </TableCell>
+                  <TableCell className="align-middle text-right" onClick={stopRowClick}>
+                    <InlineActions
+                      status={approval.status}
+                      onApprove={(e) => {
+                        e.stopPropagation()
+                        actOnPRCategory(group.pr.id, approval.category, currentPM, 'Approved', '')
+                      }}
+                      onReject={(e) => {
+                        e.stopPropagation()
+                        actOnPRCategory(group.pr.id, approval.category, currentPM, 'Rejected', '')
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
+              )
+            }),
           )}
-          {approvedLines > 0 && (
-            <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-              {approvedLines} approved
-            </span>
-          )}
-          {rejectedLines > 0 && (
-            <span className="inline-flex items-center gap-1 text-destructive">
-              <span className="size-1.5 rounded-full bg-destructive" />
-              {rejectedLines} rejected
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Line items */}
-      <div className="divide-y">
-        {lines.map(({ item, approval }, i) => {
-          const estTotal = item.qty * (item.estimatedRate ?? 0)
-          return (
-            <div
-              key={`${item.id}-${approval.id}`}
-              className="relative flex flex-wrap items-center gap-4 px-5 py-3 transition-colors hover:bg-muted/20"
-            >
-              <RowAccent status={approval.status} />
-              <span className="w-8 shrink-0 text-[11px] font-semibold tabular-nums text-muted-foreground">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground/90">{item.item}</p>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-muted-foreground">
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
-                    {item.category}
-                  </span>
-                  <span>
-                    <span className="font-medium text-foreground/80">{item.qty}</span> units
-                  </span>
-                  {item.estimatedRate && (
-                    <span>@ {formatCurrency(item.estimatedRate)}/unit</span>
-                  )}
-                  {estTotal > 0 && (
-                    <span>
-                      Est.{' '}
-                      <span className="font-medium text-foreground/80">
-                        {formatCurrency(estTotal)}
-                      </span>
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="shrink-0" onClick={stop}>
-                <InlineActions
-                  status={approval.status}
-                  onApprove={(e) => {
-                    e.stopPropagation()
-                    actOnPRCategory(pr.id, approval.category, currentPM, 'Approved', '')
-                  }}
-                  onReject={(e) => {
-                    e.stopPropagation()
-                    actOnPRCategory(pr.id, approval.category, currentPM, 'Rejected', '')
-                  }}
-                />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+        </TableBody>
+      </Table>
+    </ListShell>
   )
 }
 
@@ -850,8 +802,8 @@ function POListView({
       <Table>
         <TableHeader>
           <TableRow className="border-b bg-muted/20 hover:bg-muted/20">
-            <TableHead className="w-14 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Sr. No
+            <TableHead className="w-12 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              #
             </TableHead>
             <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               PO
@@ -860,12 +812,12 @@ function POListView({
               Vendor
             </TableHead>
             <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              My Items
+              Items
             </TableHead>
             <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Grand Total
+              Total
             </TableHead>
-            <TableHead className="w-48 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <TableHead className="w-44 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Action
             </TableHead>
           </TableRow>
@@ -879,26 +831,24 @@ function POListView({
                 className="relative cursor-pointer transition-colors hover:bg-muted/30"
                 onClick={() => onOpen(po.id)}
               >
-                <TableCell className="relative text-xs font-semibold tabular-nums text-muted-foreground">
+                <TableCell className="relative align-middle text-xs font-semibold tabular-nums text-muted-foreground">
                   <RowAccent status={po.pmApprovalStatus} />
                   {String(idx + 1).padStart(2, '0')}
                 </TableCell>
-                <TableCell>
+                <TableCell className="align-middle">
                   <p className="text-sm font-semibold text-primary">{po.poNumber}</p>
                   <p className="text-[11px] text-muted-foreground">
-                    <Clock className="mr-0.5 inline size-3" />
                     {formatDate(po.expectedDelivery)}
                   </p>
                 </TableCell>
-                <TableCell className="text-sm">{po.vendorName}</TableCell>
-                <TableCell className="text-right">
-                  <p className="text-sm font-semibold tabular-nums">{myItems.length}</p>
-                  <p className="text-[11px] text-muted-foreground">of {po.items.length}</p>
+                <TableCell className="align-middle text-sm">{po.vendorName}</TableCell>
+                <TableCell className="align-middle text-right text-sm tabular-nums text-muted-foreground">
+                  {myItems.length} / {po.items.length}
                 </TableCell>
-                <TableCell className="text-right text-sm font-semibold tabular-nums">
+                <TableCell className="align-middle text-right text-sm font-semibold tabular-nums">
                   {formatCurrency(po.grandTotal)}
                 </TableCell>
-                <TableCell className="text-right" onClick={stopRowClick}>
+                <TableCell className="align-middle text-right" onClick={stopRowClick}>
                   <InlineActions
                     status={po.pmApprovalStatus}
                     onApprove={(e) => {
@@ -910,6 +860,117 @@ function POListView({
                       actOnPO(po.id, 'Rejected', currentPM, '')
                     }}
                   />
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </ListShell>
+  )
+}
+
+// ── Demo Request list ──
+function DemoListView({
+  demos,
+  currentPM,
+  onOpen,
+}: {
+  demos: DemoRequest[]
+  currentPM: string
+  onOpen: (id: string) => void
+}) {
+  const stopRowClick = (e: React.MouseEvent) => e.stopPropagation()
+  return (
+    <ListShell>
+      <Table>
+        <TableHeader>
+          <TableRow className="border-b bg-muted/20 hover:bg-muted/20">
+            <TableHead className="w-12 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              #
+            </TableHead>
+            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Demo
+            </TableHead>
+            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Account
+            </TableHead>
+            <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Items
+            </TableHead>
+            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Return By
+            </TableHead>
+            <TableHead className="w-44 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Action
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {demos.map((demo, idx) => {
+            const pending = demo.status === 'Pending PM Approval'
+            const approved = demo.status === 'PM Approved'
+            const rejected = demo.status === 'PM Rejected'
+            const accentStatus: 'Pending' | 'Approved' | 'Rejected' | undefined = pending
+              ? 'Pending'
+              : approved
+              ? 'Approved'
+              : rejected
+              ? 'Rejected'
+              : undefined
+            const totalQty = demo.items.reduce((s, i) => s + i.qty, 0)
+            return (
+              <TableRow
+                key={demo.id}
+                className="relative cursor-pointer transition-colors hover:bg-muted/30"
+                onClick={() => onOpen(demo.id)}
+              >
+                <TableCell className="relative align-middle text-xs font-semibold tabular-nums text-muted-foreground">
+                  <RowAccent status={accentStatus} />
+                  {String(idx + 1).padStart(2, '0')}
+                </TableCell>
+                <TableCell className="align-middle">
+                  <p className="text-sm font-semibold text-primary">{demo.demoNumber}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {demo.dealName || demo.leadName || formatDate(demo.createdAt)}
+                  </p>
+                </TableCell>
+                <TableCell className="align-middle text-sm">{demo.accountName}</TableCell>
+                <TableCell className="align-middle text-right text-sm tabular-nums text-muted-foreground">
+                  {demo.items.length} line{demo.items.length !== 1 ? 's' : ''} · {totalQty} units
+                </TableCell>
+                <TableCell className="align-middle text-sm text-muted-foreground">
+                  {formatDate(demo.expectedReturnDate)}
+                  {demo.isOverdue && demo.overdueByDays ? (
+                    <span className="ml-1 text-[11px] font-medium text-destructive">
+                      · {demo.overdueByDays}d late
+                    </span>
+                  ) : null}
+                </TableCell>
+                <TableCell className="align-middle text-right" onClick={stopRowClick}>
+                  {pending ? (
+                    <InlineActions
+                      status="Pending"
+                      onApprove={(e) => {
+                        e.stopPropagation()
+                        actOnDemo(demo.id, 'PM Approved', currentPM, '')
+                      }}
+                      onReject={(e) => {
+                        e.stopPropagation()
+                        actOnDemo(demo.id, 'PM Rejected', currentPM, '')
+                      }}
+                    />
+                  ) : approved || rejected ? (
+                    <InlineActions
+                      status={approved ? 'Approved' : 'Rejected'}
+                      onApprove={() => {}}
+                      onReject={() => {}}
+                    />
+                  ) : (
+                    <span className="text-[11px] italic text-muted-foreground">
+                      {demo.status}
+                    </span>
+                  )}
                 </TableCell>
               </TableRow>
             )

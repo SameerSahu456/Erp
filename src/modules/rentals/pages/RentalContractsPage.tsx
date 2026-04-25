@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { ListPageShell } from '@/components/page'
 import {
   BusinessMetricsTable,
   type TabConfig,
@@ -143,23 +144,31 @@ export default function RentalContractsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">
-          Rental Contracts
-        </h1>
+    <ListPageShell
+      title="Rental Contracts"
+      subtitle="Active, upcoming, and closed rental agreements with customers."
+      breadcrumbs={[{ label: 'Rentals' }, { label: 'Contracts' }]}
+      actions={
         <Button render={<Link to="/rentals/contracts/new" />}>
           <Plus className="mr-2 size-4" />
           Create Contract
         </Button>
-      </div>
-
+      }
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         persistKey="rentals-contracts"
         onRowClick={(row) => navigate(`/rentals/contracts/${row.id}`)}
+        emptyState={{
+          title: 'No rental contracts yet',
+          description: 'Create a contract to start tracking rentals, billing, and returns.',
+          action: {
+            label: 'Create Contract',
+            onClick: () => navigate('/rentals/contracts/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }

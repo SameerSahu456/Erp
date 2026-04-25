@@ -1,34 +1,19 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
+import { Server } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { PageHeader } from '@/components/page'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import {
   BusinessMetricsTable,
   type TabConfig,
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
 
 import { mockDevices } from '../data/devices'
-import { mockWarehouses } from '../data/warehouses'
 import type { Device } from '../types'
+import { AssignRackDialog, type RackAssignment } from '../components/AssignRackDialog'
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return '-'
@@ -52,60 +37,13 @@ function AssignToRackPage() {
     [],
   )
 
-  const [rackAssignments, setRackAssignments] = useState<Record<string, { warehouse: string; row: string; rack: string; bin: string }>>({})
+  const [rackAssignments, setRackAssignments] = useState<Record<string, RackAssignment>>({})
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
   const [selectedDeviceForAssign, setSelectedDeviceForAssign] = useState<Device | null>(null)
-  const [selectedWarehouse, setSelectedWarehouse] = useState('')
-  const [selectedRow, setSelectedRow] = useState('')
-  const [selectedRack, setSelectedRack] = useState('')
-  const [selectedBin, setSelectedBin] = useState('')
-
-  const warehouse = useMemo(
-    () => mockWarehouses.find((w) => w.id === selectedWarehouse),
-    [selectedWarehouse],
-  )
-
-  const warehouseRow = useMemo(
-    () => warehouse?.rows.find((r) => r.id === selectedRow),
-    [warehouse, selectedRow],
-  )
-
-  const rack = useMemo(
-    () => warehouseRow?.racks.find((r) => r.id === selectedRack),
-    [warehouseRow, selectedRack],
-  )
 
   const openAssignDialog = (device: Device) => {
     setSelectedDeviceForAssign(device)
-    setSelectedWarehouse('')
-    setSelectedRow('')
-    setSelectedRack('')
-    setSelectedBin('')
     setAssignDialogOpen(true)
-  }
-
-  const handleAssignRack = () => {
-    if (!selectedDeviceForAssign || !selectedWarehouse || !selectedRow || !selectedRack || !selectedBin) {
-      toast.error('Please select warehouse, row, rack, and bin.')
-      return
-    }
-    const wh = mockWarehouses.find((w) => w.id === selectedWarehouse)
-    const row = wh?.rows.find((r) => r.id === selectedRow)
-    const rk = row?.racks.find((r) => r.id === selectedRack)
-    const bn = rk?.bins.find((b) => b.id === selectedBin)
-
-    const location = `${row?.name}-${rk?.name}-${bn?.name}`
-    setRackAssignments((prev) => ({
-      ...prev,
-      [selectedDeviceForAssign.id]: {
-        warehouse: wh?.name ?? '',
-        row: row?.name ?? '',
-        rack: rk?.name ?? '',
-        bin: bn?.name ?? '',
-      },
-    }))
-    toast.success(`${selectedDeviceForAssign.barcode} assigned to ${location} at ${wh?.name}`)
-    setAssignDialogOpen(false)
   }
 
   const pendingRows = useMemo(
@@ -117,6 +55,7 @@ function AssignToRackPage() {
           barcode: d.barcode,
           partSerial: `${d.model}\n${d.serialNumber}`,
           biosNo: d.biosNo ?? '-',
+          category: d.category,
           brand: d.brand,
           grade: d.grade ?? '-',
           qcDate: formatDate(d.qcPassedAt),
@@ -129,22 +68,6 @@ function AssignToRackPage() {
     [qcPassedDevices, rackAssignments],
   )
 
-  const assignedRows = useMemo(
-    () =>
-      assignedDevices.map((d) => ({
-        id: d.id,
-        barcode: d.barcode,
-        partSerial: `${d.model}\n${d.serialNumber}`,
-        biosNo: d.biosNo ?? '-',
-        brand: d.brand,
-        grade: d.grade ?? '-',
-        rack: d.rackLocation ?? '-',
-        warehouse: d.warehouseName ?? '-',
-        _hasAssignment: true,
-      })),
-    [assignedDevices],
-  )
-
   const tabs: TabConfig[] = useMemo(
     () => [
       {
@@ -154,6 +77,7 @@ function AssignToRackPage() {
           { key: 'barcode', label: 'Barcode', sortable: true },
           { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
+          { key: 'category', label: 'Category', sortable: true },
           { key: 'brand', label: 'Brand', sortable: true },
           { key: 'grade', label: 'Grade', align: 'center' as const },
           { key: 'qcDate', label: 'QC Passed', sortable: true },
@@ -162,23 +86,8 @@ function AssignToRackPage() {
         ],
         data: pendingRows,
       },
-      {
-        id: 'assigned',
-        label: `Already Assigned (${assignedRows.length})`,
-        columns: [
-          { key: 'barcode', label: 'Barcode', sortable: true },
-          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
-          { key: 'biosNo', label: 'BIOS No', sortable: true },
-          { key: 'brand', label: 'Brand' },
-          { key: 'grade', label: 'Grade', align: 'center' as const },
-          { key: 'warehouse', label: 'Warehouse' },
-          { key: 'rack', label: 'Rack Location' },
-          { key: 'actions', label: 'Action' },
-        ],
-        data: assignedRows,
-      },
     ],
-    [pendingRows, assignedRows],
+    [pendingRows],
   )
 
   const cellFormatter: CellFormatter = useCallback(
@@ -190,11 +99,20 @@ function AssignToRackPage() {
       }
       if (key === 'partSerial') {
         const [part, serial] = String(value).split('\n')
+        const device = mockDevices.find((d) => d.id === row.id)
+        const isAssembly = device?.deviceKind === 'ASSEMBLY'
         return {
           display: (
             <div className="flex flex-col leading-tight">
-              <span className="font-medium">{part}</span>
-              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
+              <span className="flex items-center gap-1.5 font-medium">
+                {isAssembly && (
+                  <Server className="size-3.5 text-primary" aria-label="Assembly" />
+                )}
+                {part}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                S/N: {serial}
+              </span>
             </div>
           ),
         }
@@ -241,12 +159,11 @@ function AssignToRackPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="cpt-page-title">Assign to Rack</h1>
-        <p className="text-sm text-muted-foreground">
-          Assign QC-passed devices to warehouse rack locations.
-        </p>
-      </div>
+      <PageHeader
+        title="Assign to Rack"
+        subtitle="Assign QC-passed devices to warehouse rack locations."
+        breadcrumbs={[{ label: 'WMS' }, { label: 'Assign to Rack' }]}
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -292,119 +209,18 @@ function AssignToRackPage() {
         onRowClick={(row) => navigate(`/wms/devices/${row.id}?from=rack`)}
       />
 
-      {/* Assign Dialog */}
-      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              Assign Rack: {selectedDeviceForAssign?.barcode}
-            </DialogTitle>
-            {selectedDeviceForAssign && (
-              <p className="text-sm text-muted-foreground">
-                {selectedDeviceForAssign.brand} {selectedDeviceForAssign.model} — Grade {selectedDeviceForAssign.grade ?? 'N/A'}
-              </p>
-            )}
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Warehouse</Label>
-              <Select
-                value={selectedWarehouse}
-                onValueChange={(val) => {
-                  setSelectedWarehouse(val)
-                  setSelectedRow('')
-                  setSelectedRack('')
-                  setSelectedBin('')
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select warehouse..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockWarehouses.map((wh) => (
-                    <SelectItem key={wh.id} value={wh.id}>
-                      {wh.name} ({wh.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {warehouse && (
-              <div className="space-y-2">
-                <Label>Row</Label>
-                <Select
-                  value={selectedRow}
-                  onValueChange={(val) => {
-                    setSelectedRow(val)
-                    setSelectedRack('')
-                    setSelectedBin('')
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select row..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {warehouse.rows.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {warehouseRow && (
-              <div className="space-y-2">
-                <Label>Rack</Label>
-                <Select
-                  value={selectedRack}
-                  onValueChange={(val) => {
-                    setSelectedRack(val)
-                    setSelectedBin('')
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select rack..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {warehouseRow.racks.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.name} ({r.capacityUsed}% used)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {rack && (
-              <div className="space-y-2">
-                <Label>Bin</Label>
-                <Select value={selectedBin} onValueChange={setSelectedBin}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select bin..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rack.bins
-                      .filter((b) => b.status !== 'Full')
-                      .map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.name} ({b.itemCount}/{b.maxItems} items)
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAssignRack}>Assign</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AssignRackDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        device={selectedDeviceForAssign}
+        onAssigned={(assignment) => {
+          if (!selectedDeviceForAssign) return
+          setRackAssignments((prev) => ({
+            ...prev,
+            [selectedDeviceForAssign.id]: assignment,
+          }))
+        }}
+      />
     </div>
   )
 }

@@ -9,6 +9,7 @@ import {
   type TabConfig,
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
+import { ListPageShell } from '@/components/page'
 import { mockBatches } from '../data/batches'
 import type { InwardType } from '../types'
 
@@ -19,6 +20,7 @@ const INWARD_TYPE_LABELS: Record<InwardType, string> = {
   INTERNAL_TRANSFER: 'Internal Transfer',
   ADVANCE_RETURN: 'Return',
   REFURB_PURCHASE: 'Refurb Purchase',
+  REPLACEMENT: 'Replacement',
 }
 
 const INWARD_TYPE_VARIANT: Record<InwardType, 'success' | 'warning' | 'info' | 'neutral'> = {
@@ -28,6 +30,7 @@ const INWARD_TYPE_VARIANT: Record<InwardType, 'success' | 'warning' | 'info' | '
   INTERNAL_TRANSFER: 'success',
   ADVANCE_RETURN: 'success',
   REFURB_PURCHASE: 'info',
+  REPLACEMENT: 'warning',
 }
 
 function formatDate(dateStr: string) {
@@ -126,26 +129,34 @@ function InwardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="cpt-page-title">
-          Inward / GRN
-        </h1>
+    <ListPageShell
+      title="Inward / GRN"
+      subtitle="Incoming device batches — from POs, returns, demos, and transfers."
+      breadcrumbs={[{ label: 'WMS' }, { label: 'Inward' }]}
+      actions={
         <Button onClick={() => navigate('/wms/inward/new')}>
           <Plus className="size-4" data-icon="inline-start" />
           Create Batch
         </Button>
-      </div>
-
+      }
+    >
       <div className="bmt-search-md">
         <BusinessMetricsTable
           tabs={tabs}
           cellFormatter={cellFormatter}
           persistKey="wms-inward"
           onRowClick={(row) => navigate(`/wms/inward/${row.id}/devices`)}
+          emptyState={{
+            title: 'No batches yet',
+            description: 'Create an inward batch to register devices arriving at the warehouse.',
+            action: {
+              label: 'Create Batch',
+              onClick: () => navigate('/wms/inward/new'),
+            },
+          }}
         />
       </div>
-    </div>
+    </ListPageShell>
   )
 }
 

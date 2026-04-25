@@ -9,6 +9,7 @@ import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
 import type { TabConfig, CellFormatter } from "@/components/common/BusinessMetricsTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import type { StatusBadgeVariant } from "@/components/common/StatusBadge"
+import { ListPageShell } from "@/components/page"
 
 import { accounts } from "@/modules/crm/data/accounts"
 import { invoices } from "@/modules/crm/data/invoices"
@@ -166,23 +167,33 @@ function AccountsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Accounts</h2>
+    <ListPageShell
+      title="Accounts"
+      subtitle="Companies you do business with, their owners, and outstanding invoices."
+      breadcrumbs={[{ label: 'CRM' }, { label: 'Accounts' }]}
+      actions={
         <Button onClick={() => navigate("/crm/accounts/new")}>
           <Plus className="mr-1 size-4" />
           Add Account
         </Button>
-      </div>
-
+      }
+    >
       <BusinessMetricsTable
         tabs={[accountsTab]}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="crm-accounts"
         onRowClick={(row) => navigate(`/crm/accounts/${row.id}`)}
+        emptyState={{
+          title: 'No accounts yet',
+          description: 'Add companies you do business with to track revenue and invoices.',
+          action: {
+            label: 'Add Account',
+            onClick: () => navigate('/crm/accounts/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

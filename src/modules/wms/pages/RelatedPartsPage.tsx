@@ -9,6 +9,7 @@ import {
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
 import { StatsRow, type StatCardData } from '@/components/common/StatsRow'
+import { ListPageShell } from '@/components/page'
 import { mockRelatedParts } from '../data/related-parts'
 import { mockParts } from '@/modules/ims/data/parts'
 import type { PartRelationType } from '../types'
@@ -144,21 +145,22 @@ function RelatedPartsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="cpt-page-title">
-            Related & Replaceable Parts
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage part alternatives, upgrades, downgrades, and compatibility mappings
-          </p>
-        </div>
-      </div>
-
-      <StatsRow stats={stats} />
-      <BusinessMetricsTable tabs={tabs} cellFormatter={cellFormatter} persistKey="wms-related-parts" />
-    </div>
+    <ListPageShell
+      title="Related & Replaceable Parts"
+      subtitle="Part alternatives, upgrades, downgrades, and compatibility mappings."
+      breadcrumbs={[{ label: 'WMS' }, { label: 'BOM', href: '/wms/bom' }, { label: 'Related Parts' }]}
+      stats={<StatsRow stats={stats} />}
+    >
+      <BusinessMetricsTable
+        tabs={tabs}
+        cellFormatter={cellFormatter}
+        persistKey="wms-related-parts"
+        emptyState={{
+          title: 'No part relationships configured',
+          description: 'Define alternatives, upgrades, and compatibility mappings to help assembly and substitution.',
+        }}
+      />
+    </ListPageShell>
   )
 }
 

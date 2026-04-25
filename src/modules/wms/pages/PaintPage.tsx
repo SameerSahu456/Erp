@@ -26,9 +26,10 @@ import {
   type TabConfig,
   type CellFormatter,
 } from '@/components/common/BusinessMetricsTable'
+import { PageHeader } from '@/components/page'
 
-import type { PaintJob, PaintPanelType } from '../types'
-import { mockPaintJobs } from '../data/paint-jobs'
+import type { PaintJob, PaintJobHistoryEntry, PaintPanelType } from '../types'
+import { mockPaintJobs, PAINT_VENDORS } from '../data/paint-jobs'
 import { mockDevices } from '../data/devices'
 
 // Group-level status derived from each device's panels:
@@ -53,14 +54,6 @@ const PANEL_LABELS: Record<PaintPanelType, string> = {
   TOP_COVER: 'Top Cover',
   BOTTOM_COVER: 'Bottom Cover',
 }
-
-// Paint-vendor directory for this flow.
-const PAINT_VENDORS: { id: string; name: string; contact: string }[] = [
-  { id: 'pv-01', name: 'Mumbai Paint Shop', contact: '+91 98765 43210' },
-  { id: 'pv-02', name: 'Bangalore AutoPaint', contact: '+91 98700 12345' },
-  { id: 'pv-03', name: 'Chennai Coat & Paint', contact: '+91 98123 45678' },
-  { id: 'pv-04', name: 'Delhi Refinish Studio', contact: '+91 98998 00011' },
-]
 
 interface PaintGroup {
   deviceId: string
@@ -96,6 +89,7 @@ function PaintPage() {
   const [sendDeviceId, setSendDeviceId] = useState<string | null>(null)
   const [vendorId, setVendorId] = useState('')
   const [sendNotes, setSendNotes] = useState('')
+  const [isRepaint, setIsRepaint] = useState(false)
 
   const groups = useMemo<PaintGroup[]>(() => {
     const byDevice = new Map<string, PaintJob[]>()
@@ -140,12 +134,21 @@ function PaintPage() {
     setSendDeviceId(deviceId)
     setVendorId('')
     setSendNotes('')
+    setIsRepaint(false)
+  }
+
+  const openRepaintDialog = (deviceId: string) => {
+    setSendDeviceId(deviceId)
+    setVendorId('')
+    setSendNotes('')
+    setIsRepaint(true)
   }
 
   const closeSendDialog = () => {
     setSendDeviceId(null)
     setVendorId('')
     setSendNotes('')
+    setIsRepaint(false)
   }
 
   const submitSendToVendor = () => {
@@ -156,6 +159,12 @@ function PaintPage() {
     }
     const vendor = PAINT_VENDORS.find((v) => v.id === vendorId)!
     const now = new Date().toISOString()
+    const historyEntry: PaintJobHistoryEntry = {
+      event: isRepaint ? 'REPAINT_SENT' : 'SENT',
+      vendor: vendor.name,
+      notes: sendNotes || undefined,
+      at: now,
+    }
     setPaintJobs((prev) =>
       prev.map((j) =>
         sendGroup.jobIds.includes(j.id)
@@ -163,13 +172,17 @@ function PaintPage() {
               ...j,
               status: 'IN_PAINT' as const,
               assignedTo: vendor.name,
-              startedAt: j.startedAt ?? now,
+              startedAt: isRepaint ? now : j.startedAt ?? now,
+              completedAt: isRepaint ? undefined : j.completedAt,
+              history: [...(j.history ?? []), historyEntry],
             }
           : j,
       ),
     )
     toast.success(
-      `${sendGroup.deviceBarcode} sent to ${vendor.name} (${sendGroup.panels.length} panel${sendGroup.panels.length > 1 ? 's' : ''})`,
+      isRepaint
+        ? `${sendGroup.deviceBarcode} sent for repaint to ${vendor.name}`
+        : `${sendGroup.deviceBarcode} sent to ${vendor.name} (${sendGroup.panels.length} panel${sendGroup.panels.length > 1 ? 's' : ''})`,
     )
     closeSendDialog()
   }
@@ -181,7 +194,12 @@ function PaintPage() {
     setPaintJobs((prev) =>
       prev.map((j) =>
         group.jobIds.includes(j.id)
-          ? { ...j, status: 'COLLECTED' as const, completedAt: j.completedAt ?? now }
+          ? {
+              ...j,
+              status: 'COLLECTED' as const,
+              completedAt: j.completedAt ?? now,
+              history: [...(j.history ?? []), { event: 'COMPLETED' as const, at: now }],
+            }
           : j,
       ),
     )
@@ -297,13 +315,22 @@ function PaintPage() {
                 </button>
               )}
               {status === 'SENT' && (
-                <button
-                  type="button"
-                  onClick={() => completeGroup(deviceId)}
-                  className="text-sm font-medium wms-link"
-                >
-                  Complete
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => completeGroup(deviceId)}
+                    className="text-sm font-medium wms-link"
+                  >
+                    Complete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openRepaintDialog(deviceId)}
+                    className="text-sm font-medium wms-link"
+                  >
+                    Repaint
+                  </button>
+                </>
               )}
               {status === 'DONE' && (
                 <span className="text-xs text-muted-foreground">—</span>
@@ -320,21 +347,20 @@ function PaintPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="cpt-page-title">Paint Shop</h1>
-        <p className="text-sm text-muted-foreground">
-          Send device panels to paint vendors and mark the job complete when panels return.
-        </p>
-      </div>
+      <PageHeader
+        title="Paint Shop"
+        subtitle="Send device panels to paint vendors and mark the job complete when panels return."
+        breadcrumbs={[{ label: 'WMS' }, { label: 'Paint Shop' }]}
+      />
 
       {/* Status Summary */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 rounded-lg border border-border bg-card px-4 py-3">
         {(Object.keys(statusCounts) as GroupStatus[]).map((status) => (
           <div key={status} className="flex items-center gap-2">
             <StatusBadge variant={GROUP_STATUS_VARIANT[status]}>
               {GROUP_STATUS_LABELS[status]}
             </StatusBadge>
-            <span className="text-sm font-medium">{statusCounts[status]}</span>
+            <span className="text-sm font-medium tabular-nums">{statusCounts[status]}</span>
           </div>
         ))}
       </div>
@@ -351,7 +377,7 @@ function PaintPage() {
       <Dialog open={sendDeviceId !== null} onOpenChange={(open) => { if (!open) closeSendDialog() }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Send to Vendor</DialogTitle>
+            <DialogTitle>{isRepaint ? 'Send for Repaint' : 'Send to Vendor'}</DialogTitle>
           </DialogHeader>
           {sendGroup && (
             <div className="space-y-4">

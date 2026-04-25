@@ -1,16 +1,11 @@
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { ListPageShell } from '@/components/page'
 
 import { mockSalesInvoices } from '@/modules/invoices/data/sales-invoices'
 import { mockPurchaseInvoices } from '@/modules/invoices/data/purchase-invoices'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
+import { formatINR as formatCurrency } from '@/lib/currency'
 
 type PaymentRow = Record<string, unknown> & {
   date: string
@@ -100,16 +95,22 @@ const cellFormatter: CellFormatter = (value, key, _row) => {
 
 function PaymentsPage() {
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-display font-semibold">Payments</h2>
-
+    <ListPageShell
+      title="Payments"
+      subtitle="Customer receipts and vendor payments across invoice types."
+      breadcrumbs={[{ label: 'Accounting' }, { label: 'Payments' }]}
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="accounting-payments"
+        emptyState={{
+          title: 'No payments recorded',
+          description: 'Payments appear here as invoices are paid or receipts are issued.',
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

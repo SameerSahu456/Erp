@@ -113,7 +113,7 @@ function PRDetailPage() {
             <TableRow>
               <TableHead className="w-10">#</TableHead>
               <TableHead>Part</TableHead>
-              <TableHead>SKU</TableHead>
+              <TableHead>Part no</TableHead>
               <TableHead>Category</TableHead>
               <TableHead className="text-right">Qty</TableHead>
               <TableHead className="text-right">Unit Cost</TableHead>
@@ -338,7 +338,7 @@ function PRDetailPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Main content */}
         <div className="lg:col-span-2">
-          <DetailTabs tabs={tabs} defaultTab="items" />
+          <DetailTabs cardContent tabs={tabs} defaultTab="items" />
         </div>
 
         {/* Right sidebar */}

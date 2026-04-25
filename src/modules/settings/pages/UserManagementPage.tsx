@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { PageHeader } from '@/components/page'
 import {
   Select,
   SelectContent,
@@ -152,17 +153,20 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold">User Management</h1>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger
-            render={
-              <Button>
-                <Plus className="mr-1.5 size-4" />
-                Add User
-              </Button>
-            }
-          />
+      <PageHeader
+        title="User Management"
+        subtitle="Add, edit, and deactivate users across roles and departments."
+        breadcrumbs={[{ label: 'Settings' }, { label: 'Users' }]}
+        actions={
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger
+              render={
+                <Button>
+                  <Plus className="mr-1.5 size-4" />
+                  Add User
+                </Button>
+              }
+            />
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New User</DialogTitle>
@@ -249,7 +253,8 @@ export default function UserManagementPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       <StatsRow
         stats={[

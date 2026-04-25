@@ -204,7 +204,7 @@ function PartPickerDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Search by part name, SKU, condition, or brand. Each variant is individually priced.
+            Search by part name, Part no, condition, or brand. Each variant is individually priced.
           </DialogDescription>
         </DialogHeader>
 
@@ -213,7 +213,7 @@ function PartPickerDialog({
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search parts, variants, SKU, brand, condition..."
+              placeholder="Search parts, variants, Part no, brand, condition..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"

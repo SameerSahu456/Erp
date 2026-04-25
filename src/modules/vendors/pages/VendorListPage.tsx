@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { StatsRow } from '@/components/common/StatsRow'
 import { Badge } from '@/components/ui/badge'
+import { ListPageShell } from '@/components/page'
 
 import { mockVendorRegistrations } from '@/modules/vendors/data/vendors'
 import type { VendorOnboardingStatus } from '@/modules/vendors/types'
@@ -148,32 +149,43 @@ function VendorListPage() {
   const suspendedCount = mockVendorRegistrations.filter((v) => v.status === 'Suspended').length
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-display font-semibold">Vendor Management</h2>
+    <ListPageShell
+      title="Vendor Management"
+      subtitle="Registered vendors, onboarding pipeline, and suspension flags."
+      breadcrumbs={[{ label: 'Vendors' }]}
+      actions={
         <Button onClick={() => navigate('/vendors/new')}>
           <Plus className="mr-1 size-4" />
           Register Vendor
         </Button>
-      </div>
-
-      <StatsRow
-        stats={[
-          { label: 'Total Vendors', value: totalVendors, icon: Building2 },
-          { label: 'Active', value: activeCount, icon: CheckCircle },
-          { label: 'Pending Approval', value: pendingCount, icon: Clock },
-          { label: 'Suspended', value: suspendedCount, icon: AlertTriangle, className: 'text-destructive' },
-        ]}
-      />
-
+      }
+      stats={
+        <StatsRow
+          stats={[
+            { label: 'Total Vendors', value: totalVendors, icon: Building2 },
+            { label: 'Active', value: activeCount, icon: CheckCircle },
+            { label: 'Pending Approval', value: pendingCount, icon: Clock },
+            { label: 'Suspended', value: suspendedCount, icon: AlertTriangle, className: 'text-destructive' },
+          ]}
+        />
+      }
+    >
       <BusinessMetricsTable
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
         persistKey="vendors"
         onRowClick={(row) => navigate(`/vendors/${row.id}`)}
+        emptyState={{
+          title: 'No vendors yet',
+          description: 'Register a vendor to start sourcing parts and tracking spend.',
+          action: {
+            label: 'Register Vendor',
+            onClick: () => navigate('/vendors/new'),
+          },
+        }}
       />
-    </div>
+    </ListPageShell>
   )
 }
 

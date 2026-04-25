@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import {
   FileText,
   ShoppingCart,
@@ -22,10 +24,21 @@ import {
 } from 'recharts'
 
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { PageHeader } from '@/components/page'
 
 import { mockPurchaseRequests } from '@/modules/procurement/data/purchase-requests'
 import { mockPurchaseOrders } from '@/modules/procurement/data/purchase-orders'
@@ -201,13 +214,11 @@ function StarRating({ rating }: { rating: number }) {
 function ProcurementDashboard() {
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-display font-semibold">Procurement Dashboard</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Overview of purchase requests, orders, vendor performance, and spend analytics.
-        </p>
-      </div>
+      <PageHeader
+        title="Procurement Dashboard"
+        subtitle="Overview of purchase requests, orders, vendor performance, and spend analytics."
+        breadcrumbs={[{ label: 'Procurement' }, { label: 'Dashboard' }]}
+      />
 
       {/* KPI Stats Row */}
       <StatsRow
@@ -436,46 +447,89 @@ function ProcurementDashboard() {
           <CardContent>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {pendingPRs.map((pr) => (
-                <div
-                  key={pr.id}
-                  className="flex flex-col justify-between rounded-lg border p-4 transition-colors hover:bg-muted/30"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <Link
-                        to={`/procurement/pr/${pr.id}`}
-                        className="text-sm font-medium text-primary hover:underline"
-                      >
-                        {pr.prNumber}
-                      </Link>
-                      <StatusBadge variant={getPRStatusVariant(pr.status)}>
-                        {pr.status}
-                      </StatusBadge>
-                    </div>
-                    <p className="text-sm font-medium">{pr.title}</p>
-                    <div className="space-y-0.5 text-xs text-muted-foreground">
-                      <p>{pr.requestedBy} &middot; {pr.department}</p>
-                      <p className="font-sans font-semibold text-foreground">
-                        {formatCurrency(pr.totalEstimated)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 gap-1.5">
-                      <XCircle className="size-3.5" />
-                      Reject
-                    </Button>
-                    <Button size="sm" className="flex-1 gap-1.5">
-                      <CheckCircle2 className="size-3.5" />
-                      Approve
-                    </Button>
-                  </div>
-                </div>
+                <PendingApprovalCard key={pr.id} pr={pr} />
               ))}
             </div>
           </CardContent>
         </Card>
       )}
+    </div>
+  )
+}
+
+type PendingApprovalCardPR = (typeof mockPurchaseRequests)[number]
+
+function PendingApprovalCard({ pr }: { pr: PendingApprovalCardPR }) {
+  const [pending, setPending] = useState<null | 'approve' | 'reject'>(null)
+
+  const handleConfirm = () => {
+    if (pending === 'approve') toast.success(`${pr.prNumber} approved`)
+    else if (pending === 'reject') toast.success(`${pr.prNumber} rejected`)
+    setPending(null)
+  }
+
+  return (
+    <div className="flex flex-col justify-between rounded-lg border p-4 transition-colors hover:bg-muted/30">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <Link
+            to={`/procurement/pr/${pr.id}`}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            {pr.prNumber}
+          </Link>
+          <StatusBadge variant={getPRStatusVariant(pr.status)}>
+            {pr.status}
+          </StatusBadge>
+        </div>
+        <p className="text-sm font-medium">{pr.title}</p>
+        <div className="space-y-0.5 text-xs text-muted-foreground">
+          <p>{pr.requestedBy} &middot; {pr.department}</p>
+          <p className="font-sans font-semibold text-foreground">
+            {formatCurrency(pr.totalEstimated)}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5"
+          onClick={() => setPending('reject')}
+        >
+          <XCircle className="size-3.5" />
+          Reject
+        </Button>
+        <Button size="sm" className="flex-1 gap-1.5" onClick={() => setPending('approve')}>
+          <CheckCircle2 className="size-3.5" />
+          Approve
+        </Button>
+      </div>
+      <AlertDialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pending === 'approve'
+                ? `Approve ${pr.prNumber}?`
+                : `Reject ${pr.prNumber}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pending === 'approve'
+                ? `This will approve a request worth ${formatCurrency(pr.totalEstimated)} from ${pr.requestedBy}.`
+                : `This will reject the request from ${pr.requestedBy}. The requester will be notified.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant={pending === 'reject' ? 'destructive' : 'default'}
+              onClick={handleConfirm}
+            >
+              {pending === 'approve' ? 'Approve' : 'Reject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -1,5 +1,12 @@
 import type { PaintJob } from '../types'
 
+export const PAINT_VENDORS: { id: string; name: string; contact: string }[] = [
+  { id: 'pv-01', name: 'Mumbai Paint Shop', contact: '+91 98765 43210' },
+  { id: 'pv-02', name: 'Bangalore AutoPaint', contact: '+91 98700 12345' },
+  { id: 'pv-03', name: 'Chennai Coat & Paint', contact: '+91 98123 45678' },
+  { id: 'pv-04', name: 'Delhi Refinish Studio', contact: '+91 98998 00011' },
+]
+
 export const mockPaintJobs: PaintJob[] = [
   {
     id: 'paint-001',

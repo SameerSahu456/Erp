@@ -1,16 +1,31 @@
 import type { DemoRequest, DemoRequestItem } from '../types'
 import { getDefaultVariantForPart } from '@/modules/ims/data/variants'
+import { mockPricing } from '@/modules/ims/data/pricing'
 
-type RawDemoLine = Omit<DemoRequestItem, 'variantId' | 'condition' | 'variantSku'>
+// Raw lines may omit pricing — it's seeded from mockPricing during enrichment so the
+// PM-approved pricing is always present (and overridable during PM approval).
+type RawDemoLine =
+  Omit<DemoRequestItem, 'variantId' | 'condition' | 'variantSku' | 'unitPrice' | 'amount'>
+  & { unitPrice?: number }
 type RawDemoRequest = Omit<DemoRequest, 'items'> & { items: RawDemoLine[] }
+
+function lookupSeedPrice(partId: string): number {
+  const entry = mockPricing.find((p) => p.partId === partId && p.variant === 'new' && !p.tag)
+    ?? mockPricing.find((p) => p.partId === partId && p.variant === 'new')
+    ?? mockPricing.find((p) => p.partId === partId)
+  return entry?.sellPrice ?? 0
+}
 
 function enrichDemoLine(line: RawDemoLine): DemoRequestItem {
   const variant = getDefaultVariantForPart(line.partId)
+  const unitPrice = line.unitPrice ?? lookupSeedPrice(line.partId)
   return {
     ...line,
     variantId: variant?.id ?? 'VAR-UNKNOWN',
     condition: variant?.condition ?? 'New',
     variantSku: variant?.variantSku ?? line.partSku,
+    unitPrice,
+    amount: unitPrice * line.qty,
   }
 }
 
@@ -316,6 +331,126 @@ const rawDemoRequests: RawDemoRequest[] = [
     createdAt: '2026-04-12T00:00:00Z',
     updatedAt: '2026-04-13T00:00:00Z',
     notes: 'Rejected by PM — stock insufficient. Sales to discuss alternatives with customer.',
+  },
+  {
+    id: 'DEMO-008',
+    demoNumber: 'DEMO-2026-008',
+    dealId: 'DEAL-009',
+    dealName: 'Reliance Jio Edge Rollout',
+    accountId: 'ACC-004',
+    accountName: 'Reliance Jio',
+    contactName: 'Pooja Iyer',
+    contactPhone: '+91 99776 54321',
+    contactEmail: 'pooja.iyer@ril.com',
+    items: [
+      {
+        id: 'DRI-008-01',
+        partId: 'PART-008',
+        partName: 'Dell PowerEdge R650xs',
+        partSku: 'DL-PE-R650XS',
+        category: 'Servers',
+        brand: 'Dell',
+        qty: 2,
+      },
+      {
+        id: 'DRI-008-02',
+        partId: 'PART-012',
+        partName: 'Cisco Catalyst 9200L-48P',
+        partSku: 'CSC-C9200L-48P',
+        category: 'Networking',
+        brand: 'Cisco',
+        qty: 1,
+      },
+    ],
+    status: 'Pending PM Approval',
+    productManager: 'Vikram Singh',
+    productManagerEmail: 'vikram@comprinttech.com',
+    shippingAddress: 'Reliance Corporate Park, Ghansoli, Navi Mumbai 400701',
+    expectedReturnDate: '2026-05-15',
+    isOverdue: false,
+    requestedBy: 'Amit Patel',
+    createdAt: '2026-04-20T00:00:00Z',
+    notes: 'Edge DC PoC for Jio rollout. Awaiting PM approval — strategic account, recommend fast-track.',
+  },
+  {
+    id: 'DEMO-009',
+    demoNumber: 'DEMO-2026-009',
+    leadId: 'LEAD-012',
+    leadName: 'Anjali Nair (Wipro)',
+    accountId: 'ACC-012',
+    accountName: 'Wipro Limited',
+    contactName: 'Anjali Nair',
+    contactPhone: '+91 98111 22334',
+    contactEmail: 'anjali.nair@wipro.com',
+    items: [
+      {
+        id: 'DRI-009-01',
+        partId: 'PART-017',
+        partName: 'Lenovo ThinkPad X1 Carbon Gen 11',
+        partSku: 'LEN-TP-X1CG11',
+        category: 'Laptops',
+        brand: 'Lenovo',
+        qty: 4,
+      },
+      {
+        id: 'DRI-009-02',
+        partId: 'PART-016',
+        partName: 'APC Smart-UPS 1500VA',
+        partSku: 'APC-UPS-1500',
+        category: 'UPS & Power',
+        brand: 'APC',
+        qty: 2,
+      },
+    ],
+    status: 'Pending PM Approval',
+    productManager: 'Rahul Mehta',
+    productManagerEmail: 'rahul@comprinttech.com',
+    shippingAddress: 'Wipro Technology Campus, Sarjapur Road, Bangalore 560035',
+    expectedReturnDate: '2026-05-20',
+    isOverdue: false,
+    requestedBy: 'Sneha Desai',
+    createdAt: '2026-04-22T00:00:00Z',
+    notes: 'Laptop + UPS pilot for Wipro engineering team. Awaiting PM approval.',
+  },
+  {
+    id: 'DEMO-010',
+    demoNumber: 'DEMO-2026-010',
+    dealId: 'DEAL-011',
+    dealName: 'ICICI Analytics Platform',
+    accountId: 'ACC-013',
+    accountName: 'ICICI Bank',
+    contactName: 'Vivek Menon',
+    contactPhone: '+91 99334 55667',
+    contactEmail: 'vivek.menon@icicibank.com',
+    items: [
+      {
+        id: 'DRI-010-01',
+        partId: 'PART-011',
+        partName: 'NetApp FAS2820',
+        partSku: 'NA-FAS-2820',
+        category: 'Storage',
+        brand: 'NetApp',
+        qty: 1,
+      },
+      {
+        id: 'DRI-010-02',
+        partId: 'PART-015',
+        partName: 'Dell U2723QE 27" 4K Monitor',
+        partSku: 'DL-MON-U2723QE',
+        category: 'Monitors',
+        brand: 'Dell',
+        qty: 2,
+      },
+    ],
+    status: 'Pending PM Approval',
+    productManager: 'Priya Sharma',
+    productManagerEmail: 'priya@comprinttech.com',
+    shippingAddress: 'ICICI Tower, BKC, Mumbai 400051',
+    expectedReturnDate: '2026-05-25',
+    isOverdue: false,
+    requestedBy: 'Rahul Verma',
+    createdAt: '2026-04-23T00:00:00Z',
+    notes: 'Storage + monitors for ICICI analytics PoC. Awaiting PM approval.',
   },
 ]
 
