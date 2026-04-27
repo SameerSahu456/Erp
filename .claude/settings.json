@@ -65,7 +65,10 @@
       "Bash(git -C /Users/macbookpro/Documents/erp-demo remote -v)",
       "Bash(npx --no-install vercel --version)",
       "Bash(npx -y vercel@latest --version)",
-      "Bash(npx -y vercel@latest deploy --prod --yes)"
+      "Bash(npx -y vercel@latest deploy --prod --yes)",
+      "Bash(npx vercel *)",
+      "Bash(git ls-remote *)",
+      "Bash(git fetch *)"
     ]
   }
 }
