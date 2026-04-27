@@ -50,7 +50,6 @@ import { contacts } from '../data/contacts'
 import { quotes } from '../data/quotes'
 import { invoices } from '../data/invoices'
 import { mockActivities } from '../data/activities'
-import { mockNotes } from '../data/notes'
 import { materialInquiries } from '../data/material-inquiries'
 import { mockComments } from '../data/comments'
 import { DEAL_STAGES, type Activity } from '../types'
@@ -181,10 +180,6 @@ function DealDetailPage() {
 
   const activityCount = mockActivities.filter(
     (a) => a.entityType === 'deal' && a.entityId === deal.id
-  ).length
-
-  const noteCount = mockNotes.filter(
-    (n) => n.entityType === 'deal' && n.entityId === deal.id
   ).length
 
   // Related quotes and invoices by account
@@ -596,19 +591,16 @@ function DealDetailPage() {
     {
       id: 'quotes',
       label: 'Quotes',
-      count: relatedQuotes.length,
       content: quotesContent,
     },
     {
       id: 'invoices',
       label: 'Invoices',
-      count: relatedInvoices.length,
       content: invoicesContent,
     },
     {
       id: 'notes',
       label: 'Notes',
-      count: noteCount,
       content: <NotesSection entityType="deal" entityId={deal.id} />,
     },
     {

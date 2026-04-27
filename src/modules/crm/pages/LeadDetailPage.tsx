@@ -27,7 +27,6 @@ import { NotesSection } from '../components/NotesSection'
 import { leads } from '../data/leads'
 import { quotes } from '../data/quotes'
 import { mockActivities } from '../data/activities'
-import { mockNotes } from '../data/notes'
 import { materialInquiries } from '../data/material-inquiries'
 import { mockComments } from '../data/comments'
 import { LEAD_STAGES, type Activity } from '../types'
@@ -168,10 +167,6 @@ function LeadDetailPage() {
 
   const activityCount = mockActivities.filter(
     (a) => a.entityType === 'lead' && a.entityId === lead.id
-  ).length
-
-  const noteCount = mockNotes.filter(
-    (n) => n.entityType === 'lead' && n.entityId === lead.id
   ).length
 
   // Match quotes by leadId
@@ -560,13 +555,11 @@ function LeadDetailPage() {
     {
       id: 'notes',
       label: 'Notes',
-      count: noteCount,
       content: <NotesSection entityType="lead" entityId={lead.id} />,
     },
     {
       id: 'quotes',
       label: 'Quotes',
-      count: relatedQuotes.length,
       content: quotesContent,
     },
     {
