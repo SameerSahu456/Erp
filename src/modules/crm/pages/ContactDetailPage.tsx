@@ -103,12 +103,14 @@ function ContactDetailPage() {
           <CardTitle>Contact Information</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex items-start gap-2">
-              <Mail className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Email</dt>
-                <dd className="text-sm">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                <Mail className="size-3.5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Email</dt>
+                <dd className="mt-0.5 truncate text-[13px]">
                   <a
                     href={`mailto:${contact.email}`}
                     className="text-primary underline-offset-4 hover:underline"
@@ -118,11 +120,13 @@ function ContactDetailPage() {
                 </dd>
               </div>
             </div>
-            <div className="flex items-start gap-2">
-              <Phone className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Phone</dt>
-                <dd className="text-sm">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                <Phone className="size-3.5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Phone</dt>
+                <dd className="mt-0.5 truncate text-[13px]">
                   <a
                     href={`tel:${contact.phone}`}
                     className="text-primary underline-offset-4 hover:underline"
@@ -132,18 +136,22 @@ function ContactDetailPage() {
                 </dd>
               </div>
             </div>
-            <div className="flex items-start gap-2">
-              <User className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Designation</dt>
-                <dd className="text-sm">{contact.designation}</dd>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                <User className="size-3.5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Designation</dt>
+                <dd className="mt-0.5 truncate text-[13px] text-foreground">{contact.designation}</dd>
               </div>
             </div>
-            <div className="flex items-start gap-2">
-              <Building2 className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Account</dt>
-                <dd className="text-sm">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                <Building2 className="size-3.5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Account</dt>
+                <dd className="mt-0.5 truncate text-[13px]">
                   <Link
                     to={`/crm/accounts/${contact.accountId}`}
                     className="text-primary underline-offset-4 hover:underline"
@@ -153,18 +161,22 @@ function ContactDetailPage() {
                 </dd>
               </div>
             </div>
-            <div className="flex items-start gap-2">
-              <CalendarDays className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Last Contact</dt>
-                <dd className="text-sm">{formatDate(contact.lastContact)}</dd>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                <CalendarDays className="size-3.5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Last Contact</dt>
+                <dd className="mt-0.5 truncate text-[13px] text-foreground">{formatDate(contact.lastContact)}</dd>
               </div>
             </div>
-            <div className="flex items-start gap-2">
-              <CalendarDays className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Created</dt>
-                <dd className="text-sm">{formatDate(contact.createdAt)}</dd>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                <CalendarDays className="size-3.5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Created</dt>
+                <dd className="mt-0.5 truncate text-[13px] text-foreground">{formatDate(contact.createdAt)}</dd>
               </div>
             </div>
           </dl>
@@ -197,6 +209,7 @@ function ContactDetailPage() {
   return (
     <div className="space-y-6">
       <EntityHeader
+        sticky
         title={contact.name}
         subtitle={subtitle}
         backHref="/crm/contacts"
@@ -243,90 +256,30 @@ function ContactDetailPage() {
         </div>
 
         {/* Right column - 1/3 */}
-        <div className="space-y-4">
-          {/* Account Card */}
-          {account && (
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>Account</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs font-ui text-muted-foreground">Name</dt>
-                    <dd className="text-sm">
-                      <Link
-                        to={`/crm/accounts/${account.id}`}
-                        className="text-primary underline-offset-4 hover:underline"
-                      >
-                        {account.name}
-                      </Link>
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs font-ui text-muted-foreground">Industry</dt>
-                    <dd className="text-sm">{account.industry}</dd>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs font-ui text-muted-foreground">Type</dt>
-                    <dd className="text-sm">{account.type}</dd>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs font-ui text-muted-foreground">City</dt>
-                    <dd className="text-sm">{account.city}</dd>
-                  </div>
-                </dl>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Account Team */}
+        <div className="space-y-4 lg:mt-14">
+          {/* Account Owners */}
           {uniqueOwners.length > 0 && (
             <Card size="sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="size-4" />
-                  Account Team
-                  <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
-                    {uniqueOwners.length}
-                  </span>
-                </CardTitle>
+                <CardTitle>Account Owners</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
                   {uniqueOwners.map((ownerName, idx) => {
                     const info = MOCK_MANAGERS[ownerName]
-                    const isPrimary = idx === 0
+                    const role = info?.role ?? (idx === 0 ? 'Primary Manager' : 'Co-Manager')
                     return (
-                      <div key={ownerName} className={cn('flex items-start gap-3', idx > 0 && 'border-t pt-3')}>
-                        <div
-                          className={cn(
-                            'flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-medium',
-                            AVATAR_COLORS[idx % AVATAR_COLORS.length]
-                          )}
-                        >
+                      <div key={ownerName} className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 p-2 transition-colors hover:bg-muted/60">
+                        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-primary/20">
                           {ownerName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
                         </div>
-                        <div className="min-w-0 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium">{ownerName}</p>
-                            {isPrimary && (
-                              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                                Primary
-                              </span>
-                            )}
-                          </div>
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <p className="truncate text-xs font-medium">{ownerName}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{role}</p>
                           {info && (
                             <>
-                              <p className="text-xs text-muted-foreground">{info.role}</p>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Mail className="size-3 shrink-0" />
-                                <span className="truncate">{info.email}</span>
-                              </div>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Phone className="size-3 shrink-0" />
-                                <span>{info.phone}</span>
-                              </div>
+                              <p className="truncate text-[10px] text-muted-foreground">{info.email}</p>
+                              <p className="truncate text-[10px] text-muted-foreground">{info.phone}</p>
                             </>
                           )}
                         </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Building2, Briefcase, UserCog } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -139,9 +139,17 @@ function AccountFormPage() {
           <CardTitle>{isEdit ? 'Edit Account Details' : 'New Account Details'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Column 1 */}
+          <div className="grid grid-cols-1 gap-x-7 gap-y-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Column 1 — Company Details */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Building2 className="size-3.5" strokeWidth={2} />
+                </span>
+                <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                  Company Details
+                </h3>
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="account-name" className="font-ui">
                   Name <span className="text-destructive">*</span>
@@ -194,8 +202,16 @@ function AccountFormPage() {
               </div>
             </div>
 
-            {/* Column 2 */}
+            {/* Column 2 — Size & Revenue */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                  <Briefcase className="size-3.5" strokeWidth={2} />
+                </span>
+                <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                  Size &amp; Revenue
+                </h3>
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="account-location" className="font-ui">Location</Label>
                 <Input
@@ -249,8 +265,16 @@ function AccountFormPage() {
               </div>
             </div>
 
-            {/* Column 3 */}
+            {/* Column 3 — Status & Ownership */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                  <UserCog className="size-3.5" strokeWidth={2} />
+                </span>
+                <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                  Status &amp; Ownership
+                </h3>
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="account-city" className="font-ui">City</Label>
                 <Input

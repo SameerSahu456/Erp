@@ -137,14 +137,6 @@ const MOCK_MANAGERS: Record<string, { email: string; phone: string; role: string
   'Rahul Verma': { email: 'rahul.verma@comprint.in', phone: '+91 98200 33333', role: 'Account Manager' },
 }
 
-const AVATAR_COLORS = [
-  'bg-primary/10 text-primary',
-  'bg-emerald-500/10 text-emerald-600',
-  'bg-amber-500/10 text-amber-600',
-  'bg-violet-500/10 text-violet-600',
-  'bg-rose-500/10 text-rose-600',
-]
-
 function DealDetailPage() {
   const { id: dealId } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -156,6 +148,7 @@ function DealDetailPage() {
   const [addAddressOpen, setAddAddressOpen] = useState(false)
   const [localAddresses, setLocalAddresses] = useState<AccountAddress[]>([])
   const [addressesInitialized, setAddressesInitialized] = useState(false)
+  const [showAllAddresses, setShowAllAddresses] = useState(false)
 
   const { user } = useAuth()
   const deal = deals.find((d) => d.id === dealId)
@@ -221,11 +214,6 @@ function DealDetailPage() {
   // Calculated metrics — use updated value from SO if available
   const displayValue = updatedDealValue ?? deal.value
   const activeProbability = activeStage === 'Closed Won' ? 100 : deal.probability
-  const expectedRevenue = (displayValue * activeProbability) / 100
-  const daysOpen = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(deal.createdAt).getTime()) / (1000 * 60 * 60 * 24))
-  )
 
   function handleStageChange(newStage: string) {
     if (newStage === 'Closed Won') {
@@ -260,11 +248,18 @@ function DealDetailPage() {
       )}
 
       {/* Stage Progress — below categories */}
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Stage Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card size="sm" className="data-[size=sm]:py-3 data-[size=sm]:gap-2">
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Stage Progress
+            </p>
+            {!isClosedLost && (
+              <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                {Math.max(currentStageIndex + 1, 1)} / {pipelineStages.length}
+              </span>
+            )}
+          </div>
           {isClosedLost ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -287,7 +282,7 @@ function DealDetailPage() {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-1">
+            <div className="flex items-stretch gap-1">
               {pipelineStages.map((stage, index) => {
                 const isActive = index === currentStageIndex
                 const isCompleted = index < currentStageIndex
@@ -295,16 +290,20 @@ function DealDetailPage() {
                   <div key={stage} className="flex flex-1 flex-col items-center gap-1.5">
                     <div
                       className={cn(
-                        'h-2 w-full rounded-full transition-colors',
-                        isCompleted && 'bg-primary',
-                        isActive && 'bg-primary',
+                        'h-[3px] w-full rounded-full transition-all',
+                        isCompleted && 'bg-status-success-text',
+                        isActive && 'bg-status-success-text shadow-[0_0_0_2px_rgba(6,118,71,0.18)]',
                         !isCompleted && !isActive && 'bg-muted'
                       )}
                     />
                     <span
                       className={cn(
                         'text-[10px] font-ui leading-tight',
-                        isActive ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                        isActive
+                          ? 'font-semibold text-status-success-text'
+                          : isCompleted
+                            ? 'text-foreground/80'
+                            : 'text-muted-foreground'
                       )}
                     >
                       {stage}
@@ -314,6 +313,96 @@ function DealDetailPage() {
               })}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Deal Info Card */}
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>Deal Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                <Building2 className="size-3.5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Account</dt>
+                <dd className="mt-0.5 truncate text-[13px]">
+                  <Link
+                    to={`/crm/accounts/${deal.accountId}`}
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    {deal.accountName}
+                  </Link>
+                </dd>
+              </div>
+            </div>
+            {[
+              { icon: Briefcase, label: 'Company Size', value: deal.companySize ?? '—' },
+              { icon: Users, label: 'Employees', value: deal.employees?.toLocaleString('en-IN') ?? '—' },
+              { icon: MapPin, label: 'Location', value: deal.location ?? '—' },
+              { icon: Building2, label: 'Type', value: deal.customerType ?? '—' },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex items-center gap-3">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                  <Icon className="size-3.5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">{label}</dt>
+                  <dd className="mt-0.5 truncate text-[13px] text-foreground">{value}</dd>
+                </div>
+              </div>
+            ))}
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                <Target className="size-3.5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Stage</dt>
+                <dd className="mt-1">
+                  <StatusBadge variant={getDealStageVariant(activeStage)}>{activeStage}</StatusBadge>
+                </dd>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                <IndianRupee className="size-3.5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Value</dt>
+                <dd className="mt-0.5 truncate text-[13px] font-semibold tabular-nums text-foreground">
+                  {formatCurrency(displayValue)}
+                </dd>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                <TrendingUp className="size-3.5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Probability</dt>
+                <dd className="mt-0.5 truncate text-[13px] font-semibold tabular-nums text-foreground">
+                  {activeProbability}%
+                </dd>
+              </div>
+            </div>
+            {[
+              { icon: CalendarDays, label: 'Close Date', value: formatDate(deal.closeDate) },
+              { icon: CalendarDays, label: 'Created', value: formatDate(deal.createdAt) },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex items-center gap-3">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                  <Icon className="size-3.5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">{label}</dt>
+                  <dd className="mt-0.5 truncate text-[13px] text-foreground">{value}</dd>
+                </div>
+              </div>
+            ))}
+          </dl>
         </CardContent>
       </Card>
 
@@ -327,116 +416,6 @@ function DealDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Deal Info Card */}
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Deal Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex items-start gap-2">
-              <Building2 className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Account</dt>
-                <dd className="text-sm">
-                  <Link
-                    to={`/crm/accounts/${deal.accountId}`}
-                    className="text-primary underline-offset-4 hover:underline"
-                  >
-                    {deal.accountName}
-                  </Link>
-                </dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Briefcase className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Company Size</dt>
-                <dd className="text-sm">{deal.companySize ?? '—'}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Users className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Employees</dt>
-                <dd className="text-sm">{deal.employees?.toLocaleString('en-IN') ?? '—'}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <MapPin className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Location</dt>
-                <dd className="text-sm">{deal.location ?? '—'}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Building2 className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Type</dt>
-                <dd className="text-sm">{deal.customerType ?? '—'}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Target className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Stage</dt>
-                <dd>
-                  <StatusBadge variant={getDealStageVariant(activeStage)}>{activeStage}</StatusBadge>
-                </dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <IndianRupee className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Value</dt>
-                <dd className="text-sm font-medium">{formatCurrency(displayValue)}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <TrendingUp className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Probability</dt>
-                <dd className="text-sm">{activeProbability}%</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <CalendarDays className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Close Date</dt>
-                <dd className="text-sm">{formatDate(deal.closeDate)}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <CalendarDays className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Created</dt>
-                <dd className="text-sm">{formatDate(deal.createdAt)}</dd>
-              </div>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
-
-      {/* Key Metrics */}
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Key Metrics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-ui text-muted-foreground">Expected Revenue</dt>
-              <dd className="mt-1 text-lg font-semibold">{formatCurrency(expectedRevenue)}</dd>
-              <p className="text-[10px] text-muted-foreground">Value x Probability</p>
-            </div>
-            <div>
-              <dt className="text-xs font-ui text-muted-foreground">Days Open</dt>
-              <dd className="mt-1 text-lg font-semibold">{daysOpen}</dd>
-              <p className="text-[10px] text-muted-foreground">Since creation</p>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
     </div>
   )
 
@@ -670,15 +649,15 @@ function DealDetailPage() {
   return (
     <div className="space-y-6">
       <EntityHeader
-        title={deal.name}
-        subtitle={deal.accountName}
+        sticky
+        title={deal.accountName}
+        subtitle={contactSpoc?.name ?? deal.name}
         status={{ label: activeStage, variant: getDealStageVariant(activeStage) }}
         badges={deal.priority ? (
           <Badge variant={priorityVariant} className="uppercase text-[10px] tracking-wider">
             {deal.priority} Priority
           </Badge>
         ) : undefined}
-        owners={dealOwners.map((name, i) => ({ name, role: i === 0 ? 'Primary Owner' : 'Co-Owner' }))}
         backHref="/crm/deals"
         actions={
           <>
@@ -737,53 +716,29 @@ function DealDetailPage() {
         </div>
 
         {/* Right column - 1/3 */}
-        <div className="space-y-4">
-          {/* Account Team Card */}
+        <div className="space-y-4 lg:mt-14">
+          {/* Account Owners Card */}
           <Card size="sm">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="size-4" />
-                Account Team
-                <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
-                  {dealOwners.length}
-                </span>
-              </CardTitle>
+              <CardTitle>Account Owners</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
                 {dealOwners.map((ownerName, idx) => {
                   const info = MOCK_MANAGERS[ownerName]
-                  const isPrimary = idx === 0
+                  const role = info?.role ?? (idx === 0 ? 'Primary Manager' : 'Co-Manager')
                   return (
-                    <div key={ownerName} className={cn('flex items-start gap-3', idx > 0 && 'border-t pt-3')}>
-                      <div
-                        className={cn(
-                          'flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-medium',
-                          AVATAR_COLORS[idx % AVATAR_COLORS.length]
-                        )}
-                      >
+                    <div key={ownerName} className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 p-2 transition-colors hover:bg-muted/60">
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-primary/20">
                         {ownerName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
                       </div>
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">{ownerName}</p>
-                          {isPrimary && (
-                            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                              Primary
-                            </span>
-                          )}
-                        </div>
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <p className="truncate text-xs font-medium">{ownerName}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{role}</p>
                         {info && (
                           <>
-                            <p className="text-xs text-muted-foreground">{info.role}</p>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Mail className="size-3 shrink-0" />
-                              <span className="truncate">{info.email}</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Phone className="size-3 shrink-0" />
-                              <span>{info.phone}</span>
-                            </div>
+                            <p className="truncate text-[10px] text-muted-foreground">{info.email}</p>
+                            <p className="truncate text-[10px] text-muted-foreground">{info.phone}</p>
                           </>
                         )}
                       </div>
@@ -806,69 +761,48 @@ function DealDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Deal Summary Card */}
-          <Card size="sm">
-            <CardHeader>
-              <CardTitle>Deal Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Value</dt>
-                  <dd className="text-sm font-medium">{formatCurrency(displayValue)}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Probability</dt>
-                  <dd className="text-sm">{activeProbability}%</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Expected Close</dt>
-                  <dd className="text-sm">{formatDate(deal.closeDate)}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Days Open</dt>
-                  <dd className="text-sm">{daysOpen}</dd>
-                </div>
-              </dl>
-            </CardContent>
-          </Card>
-
           {/* Account Info Card */}
           {account && (
             <Card size="sm">
               <CardHeader>
                 <CardTitle>Account Info</CardTitle>
               </CardHeader>
-              <CardContent>
-                <dl className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs font-ui text-muted-foreground">Account</dt>
-                    <dd className="text-sm">
-                      <Link
-                        to={`/crm/accounts/${account.id}`}
-                        className="text-primary underline-offset-4 hover:underline"
-                      >
-                        {account.name}
-                      </Link>
-                    </dd>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
+                  <Link
+                    to={`/crm/accounts/${account.id}`}
+                    className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    {account.name}
+                  </Link>
+                </div>
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
+                  <div>
+                    <dt className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Industry</dt>
+                    <dd className="text-xs">{account.industry}</dd>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs font-ui text-muted-foreground">Industry</dt>
-                    <dd className="text-sm">{account.industry}</dd>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs font-ui text-muted-foreground">Type</dt>
-                    <dd className="text-sm">{account.type}</dd>
+                  <div>
+                    <dt className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</dt>
+                    <dd className="text-xs">{account.type}</dd>
                   </div>
                 </dl>
                 {contactSpoc && (
-                  <div className="mt-4 border-t border-border/50 pt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Contact SPOC</p>
-                    <div className="space-y-1.5">
-                      <p className="text-sm font-medium">{contactSpoc.name}</p>
-                      <p className="text-xs text-muted-foreground">{contactSpoc.designation}</p>
-                      <p className="text-xs text-muted-foreground">{contactSpoc.email}</p>
-                      <p className="text-xs text-muted-foreground">{contactSpoc.phone}</p>
+                  <div className="border-t border-border/50 pt-3">
+                    <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Contact SPOC</p>
+                    <div className="flex items-baseline gap-1.5">
+                      <p className="text-xs font-medium">{contactSpoc.name}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">— {contactSpoc.designation}</p>
+                    </div>
+                    <div className="mt-1 flex flex-col gap-0.5 text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Mail className="size-3 shrink-0" />
+                        <span className="truncate">{contactSpoc.email}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Phone className="size-3 shrink-0" />
+                        <span>{contactSpoc.phone}</span>
+                      </span>
                     </div>
                   </div>
                 )}
@@ -882,11 +816,6 @@ function DealDetailPage() {
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="size-4" />
                 Addresses
-                {allAddresses.length > 0 && (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
-                    {allAddresses.length}
-                  </span>
-                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -905,7 +834,7 @@ function DealDetailPage() {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {allAddresses.map((addr, idx) => (
+                  {(showAllAddresses ? allAddresses : allAddresses.slice(0, 2)).map((addr, idx) => (
                     <div key={addr.id} className={cn('space-y-1', idx > 0 && 'border-t pt-3')}>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{addr.label}</span>
@@ -917,6 +846,15 @@ function DealDetailPage() {
                       <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
                     </div>
                   ))}
+                  {allAddresses.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllAddresses((v) => !v)}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      {showAllAddresses ? 'Show less' : `Show more (${allAddresses.length - 2})`}
+                    </button>
+                  )}
                 </div>
               )}
             </CardContent>

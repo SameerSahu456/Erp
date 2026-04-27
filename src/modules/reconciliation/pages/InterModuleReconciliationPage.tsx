@@ -3,8 +3,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
+import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/page'
-import { CheckCircle, AlertTriangle, FileText } from 'lucide-react'
+import { CheckCircle, AlertTriangle, FileText, Inbox } from 'lucide-react'
 import {
   Table,
   TableHeader,
@@ -146,6 +147,17 @@ function InterModuleReconciliationPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {threeWayMatches.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="p-0">
+                      <EmptyState
+                        icon={Inbox}
+                        title="No PO entries to match"
+                        description="Once purchase orders are received, the GRN and invoice three-way match will appear here."
+                      />
+                    </TableCell>
+                  </TableRow>
+                )}
                 {threeWayMatches.map((match) => {
                   const isMismatch = match.matchStatus === 'Mismatch'
                   return (

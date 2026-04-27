@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { User, Building2 } from 'lucide-react'
+
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -86,9 +88,17 @@ function ContactFormPage() {
           <CardTitle>{isEdit ? 'Edit Contact Details' : 'New Contact Details'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {/* Left column */}
+          <div className="grid grid-cols-1 gap-x-7 gap-y-6 md:grid-cols-2">
+            {/* Left column — Contact Details */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <User className="size-3.5" strokeWidth={2} />
+                </span>
+                <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                  Contact Details
+                </h3>
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="contact-name" className="font-ui">
                   Name <span className="text-destructive">*</span>
@@ -137,8 +147,16 @@ function ContactFormPage() {
               </div>
             </div>
 
-            {/* Right column */}
+            {/* Right column — Organization */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                  <Building2 className="size-3.5" strokeWidth={2} />
+                </span>
+                <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                  Organization
+                </h3>
+              </div>
               <div className="space-y-1.5">
                 <Label className="font-ui">Account</Label>
                 <Select value={accountId} onValueChange={(val) => { if (val) setAccountId(val) }}>
@@ -187,9 +205,17 @@ function ContactFormPage() {
             </div>
           </div>
 
-          {/* Full width notes */}
-          <div className="mt-6 space-y-1.5">
-            <Label htmlFor="contact-notes" className="font-ui">Notes</Label>
+        </CardContent>
+      </Card>
+
+      {/* Notes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-1.5">
+            <Label htmlFor="contact-notes" className="sr-only">Notes</Label>
             <Textarea
               id="contact-notes"
               placeholder="Add any notes about this contact..."

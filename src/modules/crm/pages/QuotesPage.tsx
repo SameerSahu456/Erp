@@ -268,30 +268,35 @@ function QuotesPage() {
       value: stats.total,
       icon: FileText,
       sub: `${formatFullCurrency(stats.totalValue)} value`,
+      accent: 'primary' as const,
     },
     {
       label: 'Draft',
       value: stats.draft,
       icon: Clock,
       sub: 'pending review',
+      accent: 'warning' as const,
     },
     {
       label: 'Sent',
       value: stats.sent,
       icon: Send,
       sub: 'awaiting response',
+      accent: 'info' as const,
     },
     {
       label: 'Accepted',
       value: stats.accepted,
       icon: CheckCircle2,
       sub: formatCurrency(stats.acceptedValue),
+      accent: 'success' as const,
     },
     {
       label: 'Win Rate',
       value: `${stats.conversionRate}%`,
       icon: Sparkles,
       sub: 'conversion',
+      accent: 'teal' as const,
     },
   ]
 
@@ -315,6 +320,7 @@ function QuotesPage() {
       stats={<StatsRow stats={kpiStats} />}
     >
       <BusinessMetricsTable
+        className="bmt-search-wide"
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}

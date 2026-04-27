@@ -9,6 +9,7 @@ import {
   History,
   MapPin,
   Plus,
+  StickyNote,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -16,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -309,68 +310,61 @@ function SalesOrderFormPage() {
         </div>
       )}
 
-      {/* Header fields card */}
-      <Card size="sm">
-        <CardHeader className="border-b bg-muted/30">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ShoppingCart className="size-4 text-primary" />
-              Order Details
-            </CardTitle>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {autoSaveStatus === 'saving' && (
-                <>
-                  <Loader2 className="size-3.5 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              )}
-              {autoSaveStatus === 'saved' && (
-                <>
-                  <CheckCircle className="size-3.5 text-emerald-600" />
-                  <span>Saved</span>
-                </>
-              )}
+      {/* Order Details — clean Account-form pattern */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <ShoppingCart className="size-4" />
             </div>
+            <div className="flex-1">
+              <h3 className="text-base font-semibold leading-tight tracking-tight">Order Details</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">Customer, dates, and order configuration</p>
+            </div>
+            {autoSaveStatus !== 'idle' && (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                {autoSaveStatus === 'saving' ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="size-3.5 text-emerald-600" />
+                    Saved
+                  </>
+                )}
+              </span>
+            )}
           </div>
-        </CardHeader>
-        <CardContent className="pt-5">
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="so-number" className="font-ui">Order Number</Label>
-                <Input id="so-number" value={orderNumber} readOnly className="bg-muted/50" />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-ui">
-                  Account <span className="text-destructive">*</span>
-                </Label>
-                <Select value={accountId} onValueChange={(val) => { if (val) setAccountId(val) }}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((acc) => (
-                      <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="so-date" className="font-ui">Order Date</Label>
-                <Input
-                  id="so-date"
-                  type="date"
-                  value={orderDate}
-                  onChange={(e) => setOrderDate(e.target.value)}
-                />
-              </div>
+          <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Account <span className="text-destructive">*</span></Label>
+              <Select value={accountId} onValueChange={(val) => { if (val) setAccountId(val) }}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="font-ui">Status</Label>
+            <div className="space-y-2">
+              <Label htmlFor="so-date">Order Date</Label>
+              <Input
+                id="so-date"
+                type="date"
+                value={orderDate}
+                onChange={(e) => setOrderDate(e.target.value)}
+              />
+            </div>
+
+            {isEdit && (
+              <div className="space-y-2">
+                <Label>Status</Label>
                 <Select value={status} onValueChange={(val) => setStatus(val as SalesOrder['status'])}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -382,76 +376,107 @@ function SalesOrderFormPage() {
                   </SelectContent>
                 </Select>
               </div>
+            )}
 
-              <div className="space-y-1.5">
-                <Label className="font-ui">Order Type</Label>
-                <Select value={orderType} onValueChange={(val) => setOrderType(val as OrderType)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select order type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ORDER_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-ui">Dispatch Method</Label>
-                <Select value={dispatchMethod} onValueChange={setDispatchMethod}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select dispatch method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DISPATCH_METHODS.map((m) => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Order Type</Label>
+              <Select value={orderType} onValueChange={(val) => setOrderType(val as OrderType)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select order type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ORDER_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="font-ui">Payment Terms</Label>
-                <Select value={paymentTerms} onValueChange={setPaymentTerms}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select payment terms" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAYMENT_TERMS.map((t) => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Dispatch Method</Label>
+              <Select value={dispatchMethod} onValueChange={setDispatchMethod}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select dispatch method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DISPATCH_METHODS.map((m) => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-ui">Categories Interested</Label>
-                <MultiSelect
-                  options={IMS_CATEGORIES}
-                  value={categories}
-                  onValueChange={setCategories}
-                  placeholder="Select categories..."
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Payment Terms</Label>
+              <Select value={paymentTerms} onValueChange={setPaymentTerms}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select payment terms" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_TERMS.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 sm:col-span-2 lg:col-span-3">
+              <Label>Categories Interested</Label>
+              <MultiSelect
+                options={IMS_CATEGORIES}
+                value={categories}
+                onValueChange={setCategories}
+                placeholder="Select categories..."
+              />
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Addresses — billing & shipping with multi-select */}
-          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
+      {/* Line Items — placed right after Order Details so the BOM is the second visible section */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+              <ClipboardList className="size-4" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold leading-tight tracking-tight">Line Items</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">Build the bill of materials for this order</p>
+            </div>
+          </div>
+          <QuoteBuilderPanel
+            accountId={accountId || undefined}
+            accountName={selectedAccount?.name}
+            mode="embedded"
+          />
+        </CardContent>
+      </Card>
+
+      {/* Addresses — separate card, same pattern */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+              <MapPin className="size-4" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold leading-tight tracking-tight">Addresses</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">Pick or add billing &amp; shipping addresses</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Billing */}
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="font-ui">Billing Addresses</Label>
+                <Label className="text-sm font-medium">Billing</Label>
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs"
                   onClick={() => { setAddAddressType('Billing'); setAddAddressOpen(true) }}
                 >
-                  <Plus className="size-3 mr-1" />
-                  Add Billing
+                  <Plus className="mr-1 size-3" /> Add
                 </Button>
               </div>
               {billingAddressOptions.length > 0 ? (
@@ -459,15 +484,21 @@ function SalesOrderFormPage() {
                   {billingAddressOptions.map((addr) => {
                     const checked = selectedBillingIds.includes(addr.id)
                     return (
-                      <label key={addr.id} className={cn('flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors', checked ? 'border-primary bg-primary/5' : 'hover:bg-muted/50')}>
+                      <label
+                        key={addr.id}
+                        className={cn(
+                          'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors',
+                          checked ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
+                        )}
+                      >
                         <input type="checkbox" checked={checked} onChange={() => toggleSOAddress(addr.id, 'billing')} className="mt-0.5 size-4 accent-primary" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <span className="text-sm font-medium">{addr.label}</span>
                             <Badge variant="outline" className="text-[10px]">{addr.source}</Badge>
                             {addr.isDefault && <Badge variant="secondary" className="text-[10px]">Default</Badge>}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
                           <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
                         </div>
                       </label>
@@ -476,23 +507,34 @@ function SalesOrderFormPage() {
                 </div>
               ) : (
                 <div className="rounded-lg border border-dashed p-4 text-center">
-                  <MapPin className="size-5 mx-auto text-muted-foreground mb-1.5" />
+                  <MapPin className="mx-auto mb-1.5 size-5 text-muted-foreground" />
                   <p className="text-xs text-muted-foreground">No billing addresses available.</p>
-                  <p className="text-xs text-muted-foreground">Click "Add Address" to create one.</p>
+                  <p className="text-xs text-muted-foreground">Click "Add" to create one.</p>
                 </div>
               )}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Or enter manually</Label>
+                <Textarea
+                  value={manualBillingAddress}
+                  onChange={(e) => setManualBillingAddress(e.target.value)}
+                  placeholder="Type a billing address…"
+                  rows={2}
+                  className="resize-none text-sm"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
+
+            {/* Shipping */}
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="font-ui">Shipping Addresses</Label>
+                <Label className="text-sm font-medium">Shipping</Label>
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs"
                   onClick={() => { setAddAddressType('Shipping'); setAddAddressOpen(true) }}
                 >
-                  <Plus className="size-3 mr-1" />
-                  Add Shipping
+                  <Plus className="mr-1 size-3" /> Add
                 </Button>
               </div>
               {shippingAddressOptions.length > 0 ? (
@@ -500,15 +542,21 @@ function SalesOrderFormPage() {
                   {shippingAddressOptions.map((addr) => {
                     const checked = selectedShippingIds.includes(addr.id)
                     return (
-                      <label key={addr.id} className={cn('flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors', checked ? 'border-primary bg-primary/5' : 'hover:bg-muted/50')}>
+                      <label
+                        key={addr.id}
+                        className={cn(
+                          'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors',
+                          checked ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
+                        )}
+                      >
                         <input type="checkbox" checked={checked} onChange={() => toggleSOAddress(addr.id, 'shipping')} className="mt-0.5 size-4 accent-primary" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <span className="text-sm font-medium">{addr.label}</span>
                             <Badge variant="outline" className="text-[10px]">{addr.source}</Badge>
                             {addr.isDefault && <Badge variant="secondary" className="text-[10px]">Default</Badge>}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
                           <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
                         </div>
                       </label>
@@ -517,41 +565,44 @@ function SalesOrderFormPage() {
                 </div>
               ) : (
                 <div className="rounded-lg border border-dashed p-4 text-center">
-                  <MapPin className="size-5 mx-auto text-muted-foreground mb-1.5" />
+                  <MapPin className="mx-auto mb-1.5 size-5 text-muted-foreground" />
                   <p className="text-xs text-muted-foreground">No shipping addresses available.</p>
-                  <p className="text-xs text-muted-foreground">Click "Add Address" to create one.</p>
+                  <p className="text-xs text-muted-foreground">Click "Add" to create one.</p>
                 </div>
               )}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Or enter manually</Label>
+                <Textarea
+                  value={manualShippingAddress}
+                  onChange={(e) => setManualShippingAddress(e.target.value)}
+                  placeholder="Type a shipping address…"
+                  rows={2}
+                  className="resize-none text-sm"
+                />
+              </div>
             </div>
-          </div>
-
-          {/* Notes */}
-          <div className="mt-5 space-y-1.5">
-            <Label htmlFor="so-notes" className="font-ui">Notes</Label>
-            <Textarea
-              id="so-notes"
-              placeholder="Add any notes..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Line Items — per-line Part Number / Description (embedded: header & footer hidden to avoid duplicates) */}
-      <Card size="sm">
-        <CardHeader className="border-b bg-muted/30">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ClipboardList className="size-4 text-primary" />
-            Line Items
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-5">
-          <QuoteBuilderPanel
-            accountId={accountId || undefined}
-            accountName={selectedAccount?.name}
-            mode="embedded"
+      {/* Notes — own card, same pattern */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400">
+              <StickyNote className="size-4" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold leading-tight tracking-tight">Notes</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">Add any notes or special instructions</p>
+            </div>
+          </div>
+          <Textarea
+            id="so-notes"
+            placeholder="Add any notes..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={4}
           />
         </CardContent>
       </Card>

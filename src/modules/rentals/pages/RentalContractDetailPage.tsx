@@ -146,9 +146,9 @@ export default function RentalContractDetailPage() {
           Initiate Return (Bulk)
         </Button>
       </div>
-      <div className="overflow-x-auto rounded-md border">
+      <div className="max-h-[520px] overflow-auto rounded-md border">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_var(--border)]">
             <TableRow>
               <TableHead>Barcode</TableHead>
               <TableHead>Model</TableHead>

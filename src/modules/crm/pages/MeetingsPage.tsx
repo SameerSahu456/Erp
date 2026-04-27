@@ -95,16 +95,16 @@ function MeetingsPage() {
   })
 
   const stats: StatCardData[] = [
-    { label: 'Scheduled', value: meetings.filter((m) => m.status === 'Scheduled').length, variant: 'info' },
-    { label: 'Completed', value: meetings.filter((m) => m.status === 'Completed').length, variant: 'success' },
+    { label: 'Scheduled', value: meetings.filter((m) => m.status === 'Scheduled').length, accent: 'info' },
+    { label: 'Completed', value: meetings.filter((m) => m.status === 'Completed').length, accent: 'success' },
     { label: 'This Week', value: meetings.filter((m) => {
       const d = new Date(m.date)
       const now = new Date()
       const weekEnd = new Date(now)
       weekEnd.setDate(now.getDate() + (7 - now.getDay()))
       return d >= now && d <= weekEnd
-    }).length },
-    { label: 'Total', value: meetings.length },
+    }).length, accent: 'violet' },
+    { label: 'Total', value: meetings.length, accent: 'primary' },
   ]
 
   function handleCreate() {
@@ -181,7 +181,7 @@ function MeetingsPage() {
     >
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card">
+          <div className="rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
             <EmptyState
               icon={CalendarDays}
               title={hasFilters ? 'No meetings match your filters' : 'No meetings yet'}
@@ -201,7 +201,7 @@ function MeetingsPage() {
           filtered.map((meeting) => (
             <div
               key={meeting.id}
-              className="rounded-lg border bg-card px-5 py-4 transition-colors hover:bg-muted/30"
+              className="rounded-xl border border-border bg-card px-5 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)] transition-all hover:-translate-y-px hover:border-primary/20 hover:shadow-[0_4px_12px_-4px_rgba(16,24,40,0.06),0_2px_4px_-2px_rgba(16,24,40,0.04)]"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">

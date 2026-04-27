@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Inbox } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/page'
 import {
   Select,
@@ -96,6 +98,17 @@ function VendorReconciliationPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {vendorInvoices.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="p-0">
+                          <EmptyState
+                            icon={Inbox}
+                            title="No invoices on file"
+                            description="No purchase invoices recorded for this vendor in the selected period."
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {vendorInvoices.map((inv) => (
                       <TableRow key={inv.id}>
                         <TableCell className="font-medium">{inv.invoiceNumber}</TableCell>

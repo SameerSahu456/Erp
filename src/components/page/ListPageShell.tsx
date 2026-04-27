@@ -23,7 +23,7 @@ function ListPageShell({
   ...headerProps
 }: ListPageShellProps) {
   return (
-    <div className={cn('flex flex-col gap-6', className)}>
+    <div className={cn('flex flex-col gap-5', className)}>
       <PageHeader {...headerProps} />
       {stats && <div>{stats}</div>}
       {toolbar && <div>{toolbar}</div>}

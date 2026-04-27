@@ -10,7 +10,6 @@ import {
   MapPin,
   Mail,
   Phone,
-  User,
   Users,
   Plus,
   Download,
@@ -136,11 +135,13 @@ const AVATAR_COLORS = [
 /** Detail row for overview section */
 function InfoRow({ icon: Icon, label, children }: { icon: React.ElementType; label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3 py-2.5">
-      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-      <div className="min-w-0">
-        <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</dt>
-        <dd className="mt-0.5 text-sm text-foreground">{children}</dd>
+    <div className="flex items-center gap-3 py-2">
+      <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+        <Icon className="size-3.5" strokeWidth={2} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">{label}</dt>
+        <dd className="mt-0.5 truncate text-[13px] text-foreground">{children}</dd>
       </div>
     </div>
   )
@@ -205,11 +206,6 @@ function AccountDetailPage() {
   const wonDealValue = accountDeals
     .filter((d) => d.stage === 'Closed Won')
     .reduce((sum, d) => sum + d.value, 0)
-
-  // Recent activities (last 3)
-  const recentActivities = mockActivities
-    .filter((a) => a.entityType === 'account' && a.entityId === account.id)
-    .slice(0, 3)
 
   function handleDelete() {
     setDeleteDialogOpen(false)
@@ -287,36 +283,6 @@ function AccountDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Categories */}
-      {(account.categoriesInterested?.length || account.categoriesBuyed?.length) ? (
-        <Card size="sm">
-          <CardHeader className="pb-0">
-            <CardTitle className="text-sm">Categories</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {account.categoriesInterested && account.categoriesInterested.length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Interested</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {account.categoriesInterested.map((cat) => (
-                    <Badge key={cat} variant="primary-soft" size="sm">{cat}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-            {account.categoriesBuyed && account.categoriesBuyed.length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Bought</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {account.categoriesBuyed.map((cat) => (
-                    <Badge key={cat} variant="success-soft" size="sm">{cat}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   )
 
@@ -338,40 +304,49 @@ function AccountDetailPage() {
       {accountContacts.length > 0 ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {accountContacts.map((contact) => (
-            <Card key={contact.id} size="sm">
-              <CardContent className="pt-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                    {contact.name
-                      .split(' ')
-                      .map((p) => p[0])
-                      .join('')
-                      .toUpperCase()
-                      .slice(0, 2)}
-                  </div>
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <p className="text-sm font-medium">{contact.name}</p>
-                    <p className="text-xs text-muted-foreground">{contact.designation}</p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Mail className="size-3 shrink-0" />
-                      <span className="truncate">{contact.email}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Phone className="size-3 shrink-0" />
-                      <span>{contact.phone}</span>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground">
-                      Last contact: {formatDate(contact.lastContact)}
-                    </p>
-                  </div>
+            <Link
+              key={contact.id}
+              to={`/crm/contacts/${contact.id}`}
+              className="group rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-all hover:-translate-y-px hover:border-primary/25 hover:shadow-[0_8px_20px_-6px_rgba(16,24,40,0.10),0_4px_10px_-4px_rgba(16,24,40,0.06)]"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-card transition-transform group-hover:scale-105">
+                  {contact.name
+                    .split(' ')
+                    .map((p) => p[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2)}
                 </div>
-              </CardContent>
-            </Card>
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="truncate text-[13px] font-semibold text-foreground">
+                    {contact.name}
+                  </p>
+                  <p className="truncate text-[11.5px] text-muted-foreground">
+                    {contact.designation}
+                  </p>
+                  <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                    <Mail className="size-3 shrink-0" />
+                    <span className="truncate">{contact.email}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                    <Phone className="size-3 shrink-0" />
+                    <span>{contact.phone}</span>
+                  </div>
+                  <p className="pt-1 text-[10.5px] text-muted-foreground/80">
+                    Last contact: {formatDate(contact.lastContact)}
+                  </p>
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center">
-          <p className="text-sm text-muted-foreground">No contacts linked to this account</p>
+        <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-12 text-center">
+          <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+            <Plus className="size-4" />
+          </div>
+          <p className="text-[13px] font-medium text-foreground">No contacts linked to this account</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Add a contact to start building relationships.
           </p>
@@ -412,7 +387,7 @@ function AccountDetailPage() {
           </Table>
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center">
+        <div className="rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-10 text-center">
           <p className="text-sm text-muted-foreground">No deals for this account</p>
         </div>
       )}
@@ -452,7 +427,7 @@ function AccountDetailPage() {
             </Table>
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed p-6 text-center">
+          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-8 text-center">
             <p className="text-sm text-muted-foreground">No sales orders</p>
           </div>
         )}
@@ -491,7 +466,7 @@ function AccountDetailPage() {
             </Table>
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed p-6 text-center">
+          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-8 text-center">
             <p className="text-sm text-muted-foreground">No invoices</p>
           </div>
         )}
@@ -555,7 +530,7 @@ function AccountDetailPage() {
           </Table>
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center">
+        <div className="rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-10 text-center">
           <p className="text-sm text-muted-foreground">No quotes for this account</p>
         </div>
       )}
@@ -595,7 +570,7 @@ function AccountDetailPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed p-6 text-center">
+          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-8 text-center">
             <p className="text-sm text-muted-foreground">No billing addresses added</p>
           </div>
         )}
@@ -625,7 +600,7 @@ function AccountDetailPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed p-6 text-center">
+          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-8 text-center">
             <p className="text-sm text-muted-foreground">No shipping addresses added</p>
           </div>
         )}
@@ -722,6 +697,7 @@ function AccountDetailPage() {
   return (
     <div className="space-y-6">
       <EntityHeader
+        sticky
         title={account.name}
         subtitle={subtitle}
         status={{ label: account.status, variant: getAccountStatusVariant(account.status) }}
@@ -778,53 +754,29 @@ function AccountDetailPage() {
         </div>
 
         {/* Sidebar — 1/3 */}
-        <div className="space-y-4">
-          {/* Account Team */}
+        <div className="space-y-4 lg:mt-14">
+          {/* Account Owners */}
           <Card size="sm">
-            <CardHeader className="pb-0">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Users className="size-4" />
-                Account Team
-                <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
-                  {accountOwners.length}
-                </span>
-              </CardTitle>
+            <CardHeader>
+              <CardTitle>Account Owners</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3 pt-1">
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
                 {accountOwners.map((ownerName, idx) => {
                   const info = MOCK_MANAGERS[ownerName]
-                  const isPrimary = idx === 0
+                  const role = info?.role ?? (idx === 0 ? 'Primary Manager' : 'Co-Manager')
                   return (
-                    <div key={ownerName} className={cn('flex items-start gap-3', idx > 0 && 'border-t pt-3')}>
-                      <div
-                        className={cn(
-                          'flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-medium',
-                          AVATAR_COLORS[idx % AVATAR_COLORS.length]
-                        )}
-                      >
+                    <div key={ownerName} className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 p-2 transition-colors hover:bg-muted/60">
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-primary/20">
                         {ownerName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
                       </div>
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">{ownerName}</p>
-                          {isPrimary && (
-                            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                              Primary
-                            </span>
-                          )}
-                        </div>
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <p className="truncate text-xs font-medium">{ownerName}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{role}</p>
                         {info && (
                           <>
-                            <p className="text-xs text-muted-foreground">{info.role}</p>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Mail className="size-3 shrink-0" />
-                              <span className="truncate">{info.email}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Phone className="size-3 shrink-0" />
-                              <span>{info.phone}</span>
-                            </div>
+                            <p className="truncate text-[10px] text-muted-foreground">{info.email}</p>
+                            <p className="truncate text-[10px] text-muted-foreground">{info.phone}</p>
                           </>
                         )}
                       </div>
@@ -835,64 +787,69 @@ function AccountDetailPage() {
             </CardContent>
           </Card>
 
+          {/* Categories */}
+          {(account.categoriesInterested?.length || account.categoriesBuyed?.length) ? (
+            <Card size="sm">
+              <CardHeader className="pb-0">
+                <CardTitle className="text-[13px] font-medium tracking-tight">Categories</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3.5">
+                {account.categoriesInterested && account.categoriesInterested.length > 0 && (
+                  <div>
+                    <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/80">Interested</p>
+                    <div className="flex flex-wrap gap-1">
+                      {account.categoriesInterested.map((cat) => (
+                        <Badge key={cat} variant="primary-soft" size="sm" className="text-[10.5px] font-normal">{cat}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {account.categoriesBuyed && account.categoriesBuyed.length > 0 && (
+                  <div>
+                    <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/80">Bought</p>
+                    <div className="flex flex-wrap gap-1">
+                      {account.categoriesBuyed.map((cat) => (
+                        <Badge key={cat} variant="success-soft" size="sm" className="text-[10.5px] font-normal">{cat}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
+
           {/* Financial Summary */}
           <Card size="sm">
             <CardHeader className="pb-0">
-              <CardTitle className="text-sm">Financial Summary</CardTitle>
+              <CardTitle className="text-[13px] font-medium tracking-tight">Financial Summary</CardTitle>
             </CardHeader>
             <CardContent>
-              <dl className="space-y-3 pt-1">
+              <dl className="space-y-2.5 pt-1">
                 <div className="flex items-center justify-between">
-                  <dt className="text-xs text-muted-foreground">Total Revenue</dt>
-                  <dd className="text-sm font-semibold tabular-nums">{formatCurrency(paidInvoicesTotal)}</dd>
+                  <dt className="text-[11px] text-muted-foreground/80">Total Revenue</dt>
+                  <dd className="text-[12.5px] font-medium tabular-nums tracking-tight">{formatCurrency(paidInvoicesTotal)}</dd>
                 </div>
                 <div className="flex items-center justify-between">
-                  <dt className="text-xs text-muted-foreground">Outstanding</dt>
-                  <dd className={cn('text-sm font-semibold tabular-nums', outstandingTotal > 0 && 'text-destructive')}>
+                  <dt className="text-[11px] text-muted-foreground/80">Outstanding</dt>
+                  <dd className={cn('text-[12.5px] font-medium tabular-nums tracking-tight', outstandingTotal > 0 && 'text-destructive')}>
                     {formatCurrency(outstandingTotal)}
                   </dd>
                 </div>
-                <div className="border-t border-border/50 pt-3 flex items-center justify-between">
-                  <dt className="text-xs text-muted-foreground">Total Orders</dt>
-                  <dd className="text-sm tabular-nums">{accountOrders.length}</dd>
+                <div className="flex items-center justify-between border-t border-border/40 pt-2.5">
+                  <dt className="text-[11px] text-muted-foreground/80">Total Orders</dt>
+                  <dd className="text-[12.5px] tabular-nums tracking-tight">{accountOrders.length}</dd>
                 </div>
                 <div className="flex items-center justify-between">
-                  <dt className="text-xs text-muted-foreground">Avg Order Value</dt>
-                  <dd className="text-sm tabular-nums">{formatCurrency(avgOrderValue)}</dd>
+                  <dt className="text-[11px] text-muted-foreground/80">Avg Order Value</dt>
+                  <dd className="text-[12.5px] tabular-nums tracking-tight">{formatCurrency(avgOrderValue)}</dd>
                 </div>
                 <div className="flex items-center justify-between">
-                  <dt className="text-xs text-muted-foreground">Open Deals</dt>
-                  <dd className="text-sm tabular-nums">
+                  <dt className="text-[11px] text-muted-foreground/80">Open Deals</dt>
+                  <dd className="text-[12.5px] tabular-nums tracking-tight">
                     {accountDeals.filter((d) => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length}
                   </dd>
                 </div>
               </dl>
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card size="sm">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-sm">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentActivities.length > 0 ? (
-                <div className="space-y-3 pt-1">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <User className="size-3 shrink-0 text-muted-foreground" />
-                        <span className="text-sm font-medium">{activity.title}</span>
-                      </div>
-                      <p className="pl-5 text-xs text-muted-foreground">
-                        {activity.user} &middot; {formatDate(activity.timestamp)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground pt-1">No recent activity.</p>
-              )}
             </CardContent>
           </Card>
         </div>

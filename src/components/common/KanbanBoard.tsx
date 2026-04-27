@@ -213,14 +213,19 @@ function KanbanColumn<T extends { id: string }>({
         "cpt-kcol flex flex-col",
         isOver && "ring-2 ring-primary/30"
       )}
+      style={
+        column.color
+          ? ({ ['--cpt-col-accent' as string]: column.color } as React.CSSProperties)
+          : undefined
+      }
     >
       {/* Column header — Comprint style */}
       <div className="cpt-kcol-h">
         <span className="flex items-center gap-1.5">
           {column.color && (
             <span
-              className="inline-block size-[7px] rounded-full"
-              style={{ backgroundColor: column.color }}
+              className="inline-block size-[6px] rounded-full"
+              style={{ backgroundColor: column.color, boxShadow: `0 0 0 2px ${column.color}22` }}
             />
           )}
           {column.label}

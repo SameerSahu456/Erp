@@ -179,6 +179,7 @@ function AccountsPage() {
       }
     >
       <BusinessMetricsTable
+        className="bmt-search-wide"
         tabs={[accountsTab]}
         cellFormatter={cellFormatter}
         pageSize={10}

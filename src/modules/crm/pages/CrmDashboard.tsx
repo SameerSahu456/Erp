@@ -404,6 +404,7 @@ function CrmDashboard() {
             value: openDeals.length,
             icon: Handshake,
             trend: { value: 8, isPositive: true },
+            accent: "primary",
           },
           {
             label: "Untouched Deals",
@@ -413,17 +414,20 @@ function CrmDashboard() {
               value: untouchedDeals.length,
               isPositive: untouchedDeals.length === 0,
             },
+            accent: untouchedDeals.length > 0 ? "danger" : "success",
           },
           {
             label: "My Leads",
             value: myLeads.length,
             icon: Users,
             trend: { value: 12, isPositive: true },
+            accent: "info",
           },
           {
             label: "My Calls Today",
             value: callsToday.length,
             icon: Phone,
+            accent: "violet",
           },
         ]}
       />
@@ -438,11 +442,13 @@ function CrmDashboard() {
             trend: overdueTasks.length > 0
               ? { value: overdueTasks.length, isPositive: false }
               : undefined,
+            accent: overdueTasks.length > 0 ? "warning" : "primary",
           },
           {
             label: "Upcoming Meetings",
             value: scheduledMeetings.length,
             icon: CalendarClock,
+            accent: "info",
           },
           {
             label: "Closing This Month",
@@ -452,12 +458,14 @@ function CrmDashboard() {
               value: closingThisMonth.length,
               isPositive: closingThisMonth.length > 0,
             },
+            accent: "teal",
           },
           {
             label: "Revenue (Won)",
             value: fmt(totalRevenue),
             icon: IndianRupee,
             trend: { value: 15, isPositive: true },
+            accent: "success",
           },
         ]}
       />
@@ -469,12 +477,14 @@ function CrmDashboard() {
             label: "Total Accounts",
             value: filteredAccounts.length,
             icon: Building2,
+            accent: "primary",
           },
           {
             label: "Conversion Rate",
             value: `${conversionRate}%`,
             icon: TrendingUp,
             trend: { value: 3, isPositive: true },
+            accent: "teal",
           },
           {
             label: "Deals Closing This Month",
@@ -482,11 +492,13 @@ function CrmDashboard() {
               closingThisMonth.reduce((s, d) => s + d.value, 0)
             ),
             icon: CalendarDays,
+            accent: "violet",
           },
           {
             label: "Pipeline Value",
             value: fmt(openDeals.reduce((s, d) => s + d.value, 0)),
             icon: Handshake,
+            accent: "success",
           },
         ]}
       />

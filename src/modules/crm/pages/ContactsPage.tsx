@@ -79,6 +79,7 @@ function ContactsPage() {
       }
     >
       <BusinessMetricsTable
+        className="bmt-search-wide"
         tabs={[contactsTab]}
         cellFormatter={contactCellFormatter}
         pageSize={10}

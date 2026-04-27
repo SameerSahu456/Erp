@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { toast } from 'sonner'
 import {
-  ArrowLeft,
   Package,
   Package2,
   Plus,
@@ -33,6 +32,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { EntityHeader } from '../components/EntityHeader'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -172,27 +172,28 @@ function SalesOrderDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={goBack}>
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="cpt-page-title">
-              {so.orderNumber}
-            </h1>
+      <EntityHeader
+        sticky
+        title={so.orderNumber}
+        subtitle={`${so.accountName} · ${formatCurrency(so.total)} · ${formatDate(so.date)}`}
+        status={{ label: so.status, variant: STATUS_VARIANT[so.status] ?? 'neutral' }}
+        badges={
+          <>
             {so.version > 1 && (
               <Badge variant="outline" className="gap-1 font-mono">
                 <GitBranch className="size-3" />
                 Rev {so.version}
               </Badge>
             )}
-            <StatusBadge variant={STATUS_VARIANT[so.status] ?? 'neutral'}>{so.status}</StatusBadge>
-            <StatusBadge variant={
-              so.approvalStatus === 'Approved' ? 'success' :
-              so.approvalStatus === 'Rejected' ? 'error' : 'warning'
-            }>
+            <StatusBadge
+              variant={
+                so.approvalStatus === 'Approved'
+                  ? 'success'
+                  : so.approvalStatus === 'Rejected'
+                    ? 'error'
+                    : 'warning'
+              }
+            >
               {so.approvalStatus}
             </StatusBadge>
             {so.hasPartConfig && (
@@ -201,59 +202,51 @@ function SalesOrderDetailPage() {
                 Part Config
               </StatusBadge>
             )}
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {so.accountName} &middot; {formatCurrency(so.total)} &middot; {formatDate(so.date)}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownload}
-          >
-            <Download className="size-3.5 mr-1" />
-            Download
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/crm/sales-orders/${so.id}/edit`)}
-          >
-            <Pencil className="size-3.5 mr-1" />
-            Edit
-          </Button>
-          {canAmend && (
+          </>
+        }
+        backHref="/crm/sales-orders"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Download className="size-3.5 mr-1" />
+              Download
+            </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setAmendOpen(true)}
+              onClick={() => navigate(`/crm/sales-orders/${so.id}/edit`)}
             >
-              <GitBranch className="size-3.5 mr-1" />
-              Amend
+              <Pencil className="size-3.5 mr-1" />
+              Edit
             </Button>
-          )}
-          {so.approvalStatus === 'Approved' && !so.purchaseRequestId && (
-            <Button
-              size="sm"
-              onClick={() => navigate(`/crm/purchase-requests/new?salesOrderId=${so.id}`)}
-            >
-              <Plus className="size-3.5 mr-1" />
-              Create PR
-            </Button>
-          )}
-          {so.purchaseRequestId && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/crm/purchase-requests/${so.purchaseRequestId}`)}
-            >
-              <FileText className="size-3.5 mr-1" />
-              View PR
-            </Button>
-          )}
-        </div>
-      </div>
+            {canAmend && (
+              <Button variant="outline" size="sm" onClick={() => setAmendOpen(true)}>
+                <GitBranch className="size-3.5 mr-1" />
+                Amend
+              </Button>
+            )}
+            {so.approvalStatus === 'Approved' && !so.purchaseRequestId && (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/crm/purchase-requests/new?salesOrderId=${so.id}`)}
+              >
+                <Plus className="size-3.5 mr-1" />
+                Create PR
+              </Button>
+            )}
+            {so.purchaseRequestId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/crm/purchase-requests/${so.purchaseRequestId}`)}
+              >
+                <FileText className="size-3.5 mr-1" />
+                View PR
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {/* Order Information + Contact Information */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -263,12 +256,14 @@ function SalesOrderDetailPage() {
             <CardTitle>Order Information</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex items-start gap-2">
-                <Building2 className="mt-0.5 size-4 text-muted-foreground" />
-                <div>
-                  <dt className="text-xs font-ui text-muted-foreground">Company Name</dt>
-                  <dd className="text-sm font-medium">
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                  <Building2 className="size-3.5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Company Name</dt>
+                  <dd className="mt-0.5 truncate text-[13px] font-medium">
                     {account ? (
                       <Link to={`/crm/accounts/${account.id}`} className="text-primary hover:underline">
                         {so.accountName}
@@ -277,36 +272,44 @@ function SalesOrderDetailPage() {
                   </dd>
                 </div>
               </div>
-              <div className="flex items-start gap-2">
-                <CalendarDays className="mt-0.5 size-4 text-muted-foreground" />
-                <div>
-                  <dt className="text-xs font-ui text-muted-foreground">Sale Date</dt>
-                  <dd className="text-sm">{formatDate(so.date)}</dd>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                  <CalendarDays className="size-3.5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Sale Date</dt>
+                  <dd className="mt-0.5 truncate text-[13px] text-foreground">{formatDate(so.date)}</dd>
                 </div>
               </div>
-              <div className="flex items-start gap-2">
-                <Package className="mt-0.5 size-4 text-muted-foreground" />
-                <div>
-                  <dt className="text-xs font-ui text-muted-foreground">Order Type</dt>
-                  <dd className="text-sm">{so.status === 'Draft' ? 'Draft' : 'Standard'}</dd>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                  <Package className="size-3.5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Order Type</dt>
+                  <dd className="mt-0.5 truncate text-[13px] text-foreground">{so.status === 'Draft' ? 'Draft' : 'Standard'}</dd>
                 </div>
               </div>
-              <div className="flex items-start gap-2">
-                <IndianRupee className="mt-0.5 size-4 text-muted-foreground" />
-                <div>
-                  <dt className="text-xs font-ui text-muted-foreground">Payment Status</dt>
-                  <dd>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                  <IndianRupee className="size-3.5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Payment Status</dt>
+                  <dd className="mt-1">
                     <StatusBadge variant={so.approvalStatus === 'Approved' ? 'success' : 'warning'}>
                       {so.approvalStatus === 'Approved' ? 'Confirmed' : 'Pending'}
                     </StatusBadge>
                   </dd>
                 </div>
               </div>
-              <div className="flex items-start gap-2 sm:col-span-2">
-                <Tag className="mt-0.5 size-4 text-muted-foreground" />
-                <div>
-                  <dt className="text-xs font-ui text-muted-foreground">Categories</dt>
-                  <dd className="flex flex-wrap gap-1.5 mt-1">
+              <div className="flex items-start gap-3 sm:col-span-2">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                  <Tag className="size-3.5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Categories</dt>
+                  <dd className="mt-1.5 flex flex-wrap gap-1.5">
                     {categories.map((cat) => (
                       <Badge key={cat} variant="secondary" size="sm">{cat}</Badge>
                     ))}
@@ -324,32 +327,38 @@ function SalesOrderDetailPage() {
           </CardHeader>
           <CardContent>
             {contactSpoc ? (
-              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex items-start gap-2">
-                  <User className="mt-0.5 size-4 text-muted-foreground" />
-                  <div>
-                    <dt className="text-xs font-ui text-muted-foreground">Contact Name</dt>
-                    <dd className="text-sm font-medium">{contactSpoc.name}</dd>
-                    <dd className="text-xs text-muted-foreground">{contactSpoc.title}</dd>
+              <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                    <User className="size-3.5" strokeWidth={2} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Contact Name</dt>
+                    <dd className="mt-0.5 truncate text-[13px] font-medium">{contactSpoc.name}</dd>
+                    <dd className="truncate text-[11px] text-muted-foreground">{contactSpoc.title}</dd>
                   </div>
                 </div>
-                <div className="flex items-start gap-2">
-                  <Phone className="mt-0.5 size-4 text-muted-foreground" />
-                  <div>
-                    <dt className="text-xs font-ui text-muted-foreground">Contact Number</dt>
-                    <dd className="text-sm">{contactSpoc.phone}</dd>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                    <Phone className="size-3.5" strokeWidth={2} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Contact Number</dt>
+                    <dd className="mt-0.5 truncate text-[13px] text-foreground">{contactSpoc.phone}</dd>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 sm:col-span-2">
-                  <Mail className="mt-0.5 size-4 text-muted-foreground" />
-                  <div>
-                    <dt className="text-xs font-ui text-muted-foreground">Email</dt>
-                    <dd className="text-sm">{contactSpoc.email}</dd>
+                <div className="flex items-center gap-3 sm:col-span-2">
+                  <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                    <Mail className="size-3.5" strokeWidth={2} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Email</dt>
+                    <dd className="mt-0.5 truncate text-[13px] text-foreground">{contactSpoc.email}</dd>
                   </div>
                 </div>
               </dl>
             ) : (
-              <p className="text-sm text-muted-foreground">No contact associated with this account.</p>
+              <p className="text-[13px] text-muted-foreground">No contact associated with this account.</p>
             )}
           </CardContent>
         </Card>

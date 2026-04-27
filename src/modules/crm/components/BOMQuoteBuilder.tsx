@@ -277,16 +277,8 @@ export function BOMQuoteBuilder({
   const totalCost = lines.reduce((s, l) => s + lineCost(l), 0)
   const gst = subtotal * 0.18
   const grandTotal = subtotal + gst
-  const overallMargin = marginPct(totalCost, subtotal)
-  const grossProfit = subtotal - totalCost
 
   const lineCount = lines.length
-
-  const lineMargins = lines.map((l) => marginPct(l.cost, l.price))
-  const avgLineMargin = lineMargins.length
-    ? Math.round(lineMargins.reduce((a, b) => a + b, 0) / lineMargins.length)
-    : 0
-  const linesBelowTarget = lineMargins.filter((m) => m < 18).length
 
   /* ---- group lines by section ---- */
 
@@ -345,25 +337,40 @@ export function BOMQuoteBuilder({
     <div className="space-y-4">
       {/* ---- Top info bar (hidden in compact mode) ---- */}
       {!compact && (
-        <div className="flex items-center justify-between rounded-xl border bg-accent/40 px-5 py-3.5">
-          <div>
-            <div className="flex items-center gap-2 text-[13.5px] font-semibold">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-4 shadow-[0_1px_3px_rgba(16,24,40,0.04),0_1px_2px_rgba(16,24,40,0.03)]">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 text-[14px] font-semibold tracking-tight">
               <span>{quoteNumber}</span>
-              <span className="text-muted-foreground font-normal">·</span>
-              <span>{customerDisplay}</span>
-              {leadId && <span className="cond-badge new" style={{ fontSize: 9 }}>Lead</span>}
-              {dealId && <span className="cond-badge new" style={{ fontSize: 9 }}>Deal</span>}
+              <span className="font-normal text-muted-foreground/60">·</span>
+              <span className="truncate text-muted-foreground">{customerDisplay}</span>
+              {leadId && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400">
+                  Lead
+                </span>
+              )}
+              {dealId && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violet-700 dark:text-violet-400">
+                  Deal
+                </span>
+              )}
             </div>
-            <div className="cpt-muted text-[12px] mt-1">
-              Draft · {lineCount} line items · Valid until May 20, 2026
+            <div className="mt-1.5 flex items-center gap-2 text-[12px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                Draft
+              </span>
+              <span className="text-muted-foreground/40">·</span>
+              <span className="tabular-nums">{lineCount} line items</span>
+              <span className="text-muted-foreground/40">·</span>
+              <span>Valid until May 20, 2026</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="h-9">
               <Download className="size-3.5" data-icon="inline-start" />
               Export PDF
             </Button>
-            <Button size="sm">
+            <Button size="sm" className="h-9">
               <Check className="size-3.5" data-icon="inline-start" />
               Submit for approval
             </Button>
@@ -374,17 +381,18 @@ export function BOMQuoteBuilder({
       {/* ---- Split layout (stacked in compact mode) ---- */}
       <div className={compact ? "space-y-4" : "grid grid-cols-[1fr_340px] gap-5 items-start"}>
         {/* ---- LEFT: BOM Table ---- */}
-        <div className="cpt-table-wrap rounded-lg border border-[var(--border,#E4E7EC)] bg-[var(--card,#fff)]">
-          <div className="cpt-card-header">
+        <div className="cpt-table-wrap">
+          <div className="flex items-center justify-between border-b border-border bg-secondary/40 px-5 py-3">
             <div>
-              <div className="cpt-card-title">Bill of Materials</div>
-              <div className="cpt-card-sub">
-                Click ▸ to expand parent assemblies · Inline edit qty & price · Margin shown per line
+              <div className="text-[13.5px] font-semibold tracking-tight">Bill of Materials</div>
+              <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                Click ▸ to expand parent assemblies · Inline edit qty &amp; price · Margin shown per line
               </div>
             </div>
             <Button
               size="sm"
               onClick={() => setPicker({ section: 'servers', parentUid: null })}
+              className="h-8"
             >
               <Plus className="size-3.5" data-icon="inline-start" />
               Add server
@@ -432,9 +440,13 @@ export function BOMQuoteBuilder({
         {/* ---- RIGHT: Sidebar ---- */}
         <div className="space-y-4">
           {/* Pricing Summary */}
-          <div className="rounded-lg border border-[var(--border,#E4E7EC)] bg-[var(--card,#fff)] p-5">
-            <div className="text-[14px] font-semibold mb-4">Pricing Summary</div>
-            <div className="space-y-3 text-[13px]">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_3px_rgba(16,24,40,0.04),0_1px_2px_rgba(16,24,40,0.03)]">
+            <div className="border-b border-border bg-secondary/40 px-4 py-2.5">
+              <div className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Pricing Summary
+              </div>
+            </div>
+            <div className="space-y-2 p-4 text-[12px]">
               <SummaryRow label="Gross total" value={fmtINR(grossTotal)} />
               <SummaryRow
                 label="Total cost (internal)"
@@ -449,58 +461,13 @@ export function BOMQuoteBuilder({
               </div>
               <SummaryRow label="Subtotal" value={fmtINR(subtotal)} bold />
               <SummaryRow label="GST @18%" value={fmtINR(gst)} />
-              <div className="border-t border-[var(--border,#E4E7EC)] pt-3 flex items-center justify-between font-semibold text-[14px]">
+              <div className="-mx-4 mt-2 flex items-center justify-between border-t border-border bg-secondary/30 px-4 pt-3 pb-1 text-[13.5px] font-semibold">
                 <span>Grand total</span>
-                <span className="tabular-nums">{fmtINR(grandTotal)}</span>
+                <span className="tabular-nums tracking-tight">{fmtINR(grandTotal)}</span>
               </div>
             </div>
           </div>
 
-          {/* Margin Health */}
-          <div className="rounded-lg border border-[var(--border,#E4E7EC)] bg-[var(--card,#fff)] p-5">
-            <div className="text-[14px] font-semibold mb-4">Margin Health</div>
-            <div className="text-center mb-3">
-              <span
-                className={`text-[32px] font-bold tabular-nums ${
-                  overallMargin >= 30
-                    ? 'text-[#067647]'
-                    : overallMargin >= 18
-                      ? 'text-[#B54708]'
-                      : 'text-[#B42318]'
-                }`}
-              >
-                {overallMargin}%
-              </span>
-              <div className="cpt-muted text-[12px] mt-0.5">Overall margin</div>
-            </div>
-            <div className="bom-prog mb-4">
-              <span
-                style={{
-                  width: `${Math.min(overallMargin, 100)}%`,
-                  background:
-                    overallMargin >= 30
-                      ? '#067647'
-                      : overallMargin >= 18
-                        ? '#B54708'
-                        : '#B42318',
-                }}
-              />
-            </div>
-            <div className="space-y-2.5 text-[13px]">
-              <SummaryRow label="Gross profit" value={fmtINR(grossProfit)} />
-              <SummaryRow label="Avg line margin" value={`${avgLineMargin}%`} />
-              <div className="flex items-center justify-between">
-                <span className="cpt-muted">Lines below 18%</span>
-                <span
-                  className={`font-medium tabular-nums ${
-                    linesBelowTarget > 0 ? 'text-[#B42318]' : 'text-[#067647]'
-                  }`}
-                >
-                  {linesBelowTarget}
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

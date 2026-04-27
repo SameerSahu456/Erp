@@ -91,6 +91,7 @@ function SalesOrdersPage() {
       }
     >
       <BusinessMetricsTable
+        className="bmt-search-wide"
         tabs={[ordersTab]}
         cellFormatter={cellFormatter}
         pageSize={10}

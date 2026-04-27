@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback, useRef } from "react"
 import { Plus, LayoutGrid, List, Search, X, TrendingUp, Users, Target, DollarSign, Filter } from "lucide-react"
-import { useNavigate, Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { usePersistedState } from "@/hooks/use-persisted-state"
 import { toast } from "sonner"
 import { parseISO } from "date-fns"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import { KanbanBoard } from "@/components/common/KanbanBoard"
 import type { KanbanColumnConfig } from "@/components/common/KanbanBoard"
 import { BusinessMetricsTable } from "@/components/common/BusinessMetricsTable"
@@ -27,6 +27,8 @@ import {
 import { LostReasonDialog } from "../components/LostReasonDialog"
 
 import { deals } from "@/modules/crm/data/deals"
+import { contacts } from "@/modules/crm/data/contacts"
+import { leads } from "@/modules/crm/data/leads"
 import { DEAL_STAGES, MOCK_USERS } from "@/modules/crm/types"
 import type { Deal } from "@/modules/crm/types"
 import {
@@ -225,30 +227,49 @@ function DealsPage() {
 
   const priorityVariant = (p: string) => p === 'High' ? 'destructive' as const : p === 'Medium' ? 'warning' as const : 'secondary' as const
 
-  const renderDealCard = (deal: Deal) => (
-    <div className="cursor-pointer" onClick={() => navigate(`/crm/deals/${deal.id}`)}>
-    <Card size="sm">
-      <CardContent className="space-y-2">
-        <div>
-          <p className="text-xs text-muted-foreground font-medium">{deal.accountName}</p>
-          <p className="font-medium text-sm">{deal.name}</p>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold font-sans">
-            {formatCurrency(deal.value)}
-          </span>
-          <Badge variant={priorityVariant(deal.priority)} className="text-[10px]">
+  const renderDealCard = (deal: Deal) => {
+    const spocName = contacts.find((c) => c.accountId === deal.accountId)?.name
+    const owner = deal.assignedTo ?? deal.owner
+    return (
+      <div
+        className="cpt-kcard cursor-pointer"
+        onClick={() => navigate(`/crm/deals/${deal.id}`)}
+        role="button"
+        tabIndex={0}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold leading-snug text-foreground">
+              {deal.accountName}
+            </p>
+            <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
+              {spocName ?? deal.name}
+            </p>
+          </div>
+          <Badge
+            variant={priorityVariant(deal.priority)}
+            className="shrink-0 px-1.5 py-0 text-[10px] leading-[1.6]"
+          >
             {deal.priority}
           </Badge>
         </div>
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{deal.assignedTo ?? deal.owner}</span>
-          <span>{deal.closeDate}</span>
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-[13.5px] font-semibold tabular-nums text-foreground">
+            {formatCurrency(deal.value)}
+          </span>
+          <span className="rounded-md bg-secondary/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {deal.closeDate}
+          </span>
         </div>
-      </CardContent>
-    </Card>
-    </div>
-  )
+        <div className="mt-2 flex items-center gap-1.5 border-t border-border/60 pt-2 text-[11px] text-muted-foreground">
+          <span className="inline-flex size-[18px] items-center justify-center rounded-full bg-accent text-[9px] font-semibold uppercase text-foreground">
+            {owner.slice(0, 1)}
+          </span>
+          <span className="truncate">{owner}</span>
+        </div>
+      </div>
+    )
+  }
 
   // Search-filtered deals for list view
   const searchFilteredDeals = useMemo(() => {
@@ -264,29 +285,65 @@ function DealsPage() {
     id: "deals",
     label: "All Deals",
     columns: [
-      { key: "account", label: "Account Name", sortable: true },
-      { key: "name", label: "Name", sortable: true },
-      { key: "stage", label: "Stage", sortable: true, filterable: true },
-      { key: "value", label: "Value", sortable: true, align: "right" },
-      { key: "priority", label: "Priority", sortable: true, filterable: true },
-      { key: "assignedTo", label: "Assigned To", sortable: true, filterable: true },
-      { key: "closeDate", label: "Close Date", sortable: true },
+      { key: "company", label: "Company", sortable: true, width: "200px" },
+      { key: "overdue", label: "Overdue", sortable: true, align: "right", width: "90px" },
+      { key: "contactName", label: "Contact Name", sortable: true, width: "160px" },
+      { key: "phone", label: "Phone", width: "140px" },
+      { key: "designation", label: "Designation", sortable: true, filterable: true, width: "150px" },
+      { key: "email", label: "Email", width: "200px" },
+      { key: "source", label: "Source", sortable: true, filterable: true, width: "110px" },
+      { key: "location", label: "Location", sortable: true, filterable: true, width: "120px" },
+      { key: "categories", label: "Categories", sortable: true, filterable: true, width: "160px" },
+      { key: "requirement", label: "Requirement", width: "260px" },
+      { key: "stage", label: "Stage", sortable: true, filterable: true, width: "130px" },
+      { key: "priority", label: "Priority", sortable: true, filterable: true, width: "100px" },
+      { key: "type", label: "Type", sortable: true, filterable: true, width: "130px" },
+      { key: "orderType", label: "Order Type", sortable: true, filterable: true, width: "120px" },
+      { key: "assignedTo", label: "Assigned To", sortable: true, filterable: true, width: "140px" },
     ],
-    data: searchFilteredDeals.map((d) => ({
-      id: d.id,
-      account: d.accountName,
-      name: d.name,
-      stage: d.stage,
-      value: d.value,
-      priority: d.priority,
-      assignedTo: d.assignedTo ?? d.owner,
-      closeDate: d.closeDate,
-    })),
+    data: searchFilteredDeals.map((d) => {
+      const spoc = contacts.find((c) => c.accountId === d.accountId)
+      const sourceLead = d.leadId ? leads.find((l) => l.id === d.leadId) : undefined
+      const today = new Date()
+      const close = parseISO(d.closeDate)
+      const daysOverdue = Math.floor((today.getTime() - close.getTime()) / (1000 * 60 * 60 * 24))
+      const isClosed = d.stage === "Closed Won" || d.stage === "Closed Lost"
+      return {
+        id: d.id,
+        company: d.accountName,
+        overdue: !isClosed && daysOverdue > 0 ? daysOverdue : 0,
+        contactName: spoc?.name ?? "—",
+        phone: spoc?.phone ?? "—",
+        designation: spoc?.designation ?? "—",
+        email: spoc?.email ?? "—",
+        source: sourceLead?.source ?? "—",
+        location: d.location ?? "—",
+        categories: d.categories.join(", "),
+        requirement: d.description,
+        stage: d.stage,
+        priority: d.priority,
+        type: d.customerType ?? "—",
+        orderType: d.orderType ?? "—",
+        assignedTo: d.assignedTo ?? d.owner,
+      }
+    }),
   }), [searchFilteredDeals])
 
+  const TRUNCATE_KEYS: Record<string, number> = {
+    email: 180,
+    designation: 130,
+    categories: 140,
+    requirement: 240,
+    company: 180,
+    contactName: 140,
+  }
+
   const listCellFormatter: CellFormatter = (value, key, row) => {
-    if (key === "value" && typeof value === "number") {
-      return { display: formatCurrency(value) }
+    if (key === "overdue" && typeof value === "number") {
+      if (value <= 0) return { display: <span className="text-muted-foreground">—</span> }
+      return {
+        display: <span className="text-destructive font-medium">{value}d</span>,
+      }
     }
     if (key === "stage" && typeof value === "string") {
       const variant = stageVariant[value] ?? "neutral"
@@ -297,6 +354,19 @@ function DealsPage() {
     if (key === "priority" && typeof value === "string") {
       return {
         display: <Badge variant={priorityVariant(value)} className="text-[10px]">{value}</Badge>,
+      }
+    }
+    const max = TRUNCATE_KEYS[key]
+    if (max && typeof value === "string" && value) {
+      return {
+        display: (
+          <div
+            title={value}
+            style={{ maxWidth: max, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {value}
+          </div>
+        ),
       }
     }
     const stage = row["stage"]
@@ -318,30 +388,34 @@ function DealsPage() {
   // Search + Filters toggle (shared between views)
   const searchBar = (
     <div className="flex items-center gap-2">
-      <div className="relative max-w-sm flex-1 min-w-[200px]">
-        <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+      <div className="relative max-w-md flex-1 min-w-[240px]">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/70" />
         <Input
-          placeholder="Search deals..."
+          placeholder="Search by company, contact, or owner..."
           value={kanbanSearch}
           onChange={(e) => setKanbanSearch(e.target.value)}
-          className="h-8 pl-8 pr-8 text-[13px]"
+          className="h-9 pl-9 pr-8 text-[13px] shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
         />
         {kanbanSearch && (
-          <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setKanbanSearch("")}>
+          <button
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-0.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            onClick={() => setKanbanSearch("")}
+            aria-label="Clear search"
+          >
             <X className="size-3.5" />
           </button>
         )}
       </div>
       <Button
-        variant={filtersOpen ? "default" : "outline"}
+        variant={filtersOpen || activeFilterCount > 0 ? "default" : "outline"}
         size="sm"
         onClick={() => setFiltersOpen((v) => !v)}
-        className="h-8 text-[13px]"
+        className="h-9 text-[13px]"
       >
-        <Filter className="size-4 mr-1" />
+        <Filter className="mr-1.5 size-3.5" />
         Filters
         {activeFilterCount > 0 && (
-          <Badge variant="secondary" className="ml-1.5 h-4 px-1.5 text-[10px]">
+          <Badge variant="secondary" className="ml-1.5 h-[18px] min-w-[18px] justify-center px-1.5 text-[10px] font-semibold">
             {activeFilterCount}
           </Badge>
         )}
@@ -350,15 +424,23 @@ function DealsPage() {
   )
 
   const filterPanel = (
-    <aside className="w-60 shrink-0 space-y-4 rounded-md border bg-card p-4 h-fit">
+    <aside className="h-fit w-64 shrink-0 space-y-4 rounded-2xl border border-border bg-card p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Filters</h3>
+        <div className="flex items-center gap-2">
+          <Filter className="size-3.5 text-muted-foreground" />
+          <h3 className="text-[13px] font-semibold tracking-tight">Filters</h3>
+          {activeFilterCount > 0 && (
+            <Badge variant="secondary" className="h-[18px] min-w-[18px] justify-center px-1.5 text-[10px]">
+              {activeFilterCount}
+            </Badge>
+          )}
+        </div>
         <button
-          className="text-muted-foreground hover:text-foreground"
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           onClick={() => setFiltersOpen(false)}
           aria-label="Close filters"
         >
-          <X className="size-4" />
+          <X className="size-3.5" />
         </button>
       </div>
       <div className="space-y-1">
@@ -457,29 +539,43 @@ function DealsPage() {
 
   const headerActions = (
     <>
-      <div className="flex overflow-hidden rounded-md border border-border">
-        <Button
-          variant={view === "kanban" ? "default" : "ghost"}
-          size="sm"
+      <div
+        className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-secondary/60 p-0.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+        role="tablist"
+        aria-label="View mode"
+      >
+        <button
+          type="button"
           onClick={() => setView("kanban")}
-          className="rounded-none border-0"
           aria-label="Kanban view"
           aria-pressed={view === "kanban"}
+          className={cn(
+            "inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium transition-all",
+            view === "kanban"
+              ? "bg-card text-foreground shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
+              : "text-muted-foreground hover:text-foreground"
+          )}
         >
-          <LayoutGrid className="size-4" />
-        </Button>
-        <Button
-          variant={view === "list" ? "default" : "ghost"}
-          size="sm"
+          <LayoutGrid className="size-3.5" />
+          Kanban
+        </button>
+        <button
+          type="button"
           onClick={() => setView("list")}
-          className="rounded-none border-0"
           aria-label="List view"
           aria-pressed={view === "list"}
+          className={cn(
+            "inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium transition-all",
+            view === "list"
+              ? "bg-card text-foreground shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
+              : "text-muted-foreground hover:text-foreground"
+          )}
         >
-          <List className="size-4" />
-        </Button>
+          <List className="size-3.5" />
+          List
+        </button>
       </div>
-      <Button onClick={() => navigate("/crm/deals/new")}>
+      <Button onClick={() => navigate("/crm/deals/new")} className="h-9">
         <Plus className="mr-1 size-4" />
         Add Deal
       </Button>
@@ -487,22 +583,25 @@ function DealsPage() {
   )
 
   const kpiStats = [
-    { label: "Total Deals", value: summaryStats.total, icon: Users },
-    { label: "Active", value: summaryStats.active, icon: Target },
+    { label: "Total Deals", value: summaryStats.total, icon: Users, accent: "primary" as const },
+    { label: "Active", value: summaryStats.active, icon: Target, accent: "info" as const },
     {
       label: "Pipeline Value",
       value: formatCurrencyShort(summaryStats.totalValue),
       icon: DollarSign,
+      accent: "violet" as const,
     },
     {
       label: "Won Value",
       value: formatCurrencyShort(summaryStats.wonValue),
       icon: DollarSign,
+      accent: "success" as const,
     },
     {
       label: "Win Rate",
       value: `${summaryStats.convRate.toFixed(0)}%`,
       icon: TrendingUp,
+      accent: "teal" as const,
     },
   ]
 
@@ -528,9 +627,11 @@ function DealsPage() {
               />
             ) : (
               <BusinessMetricsTable
+                className="cpt-compact"
                 tabs={[listTab]}
                 cellFormatter={listCellFormatter}
                 pageSize={10}
+                searchable={false}
                 persistKey="crm-deals"
                 onRowClick={(row) => navigate(`/crm/deals/${row.id}`)}
                 emptyState={{

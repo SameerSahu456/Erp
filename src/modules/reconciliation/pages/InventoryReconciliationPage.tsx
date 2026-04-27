@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Package, AlertTriangle } from 'lucide-react'
+import { Package, AlertTriangle, Inbox } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/page'
 import {
   Table,
@@ -90,6 +91,17 @@ function InventoryReconciliationPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {items.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="p-0">
+                      <EmptyState
+                        icon={Inbox}
+                        title="No items to reconcile"
+                        description="Add inventory items to begin a physical count vs. system reconciliation."
+                      />
+                    </TableCell>
+                  </TableRow>
+                )}
                 {items.map((item) => {
                   const variance = item.physicalQty - item.systemQty
                   const hasVariance = variance !== 0

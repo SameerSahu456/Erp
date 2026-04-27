@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { XCircle, Search, X } from 'lucide-react'
+import { XCircle, Search, X, Filter } from 'lucide-react'
 
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { StatusBadge } from '@/components/common/StatusBadge'
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
 import { Badge } from '@/components/ui/badge'
@@ -20,38 +19,45 @@ import { ListPageShell } from '@/components/page'
 import { leads } from '@/modules/crm/data/leads'
 
 const formatCurrency = (value: number) =>
-  `\u20B9${(value / 100000).toFixed(1)}L`
+  `₹${(value / 100000).toFixed(1)}L`
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 
 function RejectedLeadsPage() {
   const navigate = useNavigate()
-  const [reasonFilter, setReasonFilter] = useState('')
+  const [search, setSearch] = useState('')
   const [ownerFilter, setOwnerFilter] = useState<string>('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const rejectedLeads = useMemo(() => {
+    const q = search.trim().toLowerCase()
     return leads.filter((l) => {
       if (l.stage !== 'Rejected') return false
-      if (reasonFilter && !l.rejectionReason?.toLowerCase().includes(reasonFilter.toLowerCase())) return false
+      if (q) {
+        const haystack = `${l.name} ${l.company} ${l.rejectionReason ?? ''}`.toLowerCase()
+        if (!haystack.includes(q)) return false
+      }
       if (ownerFilter !== 'all' && l.owner !== ownerFilter) return false
       if (dateFrom && l.rejectedAt && l.rejectedAt < dateFrom) return false
       if (dateTo && l.rejectedAt && l.rejectedAt > dateTo) return false
       return true
     })
-  }, [reasonFilter, ownerFilter, dateFrom, dateTo])
+  }, [search, ownerFilter, dateFrom, dateTo])
 
   const owners = useMemo(() => {
     const set = new Set(leads.filter((l) => l.stage === 'Rejected').map((l) => l.owner))
     return Array.from(set).sort()
   }, [])
 
-  const hasActiveFilters = reasonFilter || ownerFilter !== 'all' || dateFrom || dateTo
+  const activeFilterCount =
+    (ownerFilter !== 'all' ? 1 : 0) +
+    (dateFrom ? 1 : 0) +
+    (dateTo ? 1 : 0)
 
   function clearFilters() {
-    setReasonFilter('')
     setOwnerFilter('all')
     setDateFrom('')
     setDateTo('')
@@ -118,52 +124,97 @@ function RejectedLeadsPage() {
     return null
   }
 
-  const toolbar = (
-    <div className="flex flex-wrap items-end gap-3">
-      <div className="relative w-64">
-        <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+  const searchBar = (
+    <div className="flex items-center gap-2">
+      <div className="relative max-w-sm flex-1 min-w-[200px]">
+        <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search rejection reason..."
-          value={reasonFilter}
-          onChange={(e) => setReasonFilter(e.target.value)}
-          className="pl-9"
+          placeholder="Search rejected leads..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-8 pl-8 pr-8 text-[13px]"
         />
+        {search && (
+          <button
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            onClick={() => setSearch('')}
+          >
+            <X className="size-3.5" />
+          </button>
+        )}
       </div>
-      <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-        <SelectTrigger className="w-48">
-          <SelectValue placeholder="Filter by owner" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Owners</SelectItem>
-          {owners.map((owner) => (
-            <SelectItem key={owner} value={owner}>{owner}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <div className="flex items-center gap-2">
+      <Button
+        variant={filtersOpen ? 'default' : 'outline'}
+        size="sm"
+        onClick={() => setFiltersOpen((v) => !v)}
+        className="h-8 text-[13px]"
+      >
+        <Filter className="size-4 mr-1" />
+        Filters
+        {activeFilterCount > 0 && (
+          <Badge variant="secondary" className="ml-1.5 h-4 px-1.5 text-[10px]">
+            {activeFilterCount}
+          </Badge>
+        )}
+      </Button>
+    </div>
+  )
+
+  const filterPanel = (
+    <aside className="w-60 shrink-0 space-y-4 rounded-md border bg-card p-4 h-fit">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Filters</h3>
+        <button
+          className="text-muted-foreground hover:text-foreground"
+          onClick={() => setFiltersOpen(false)}
+          aria-label="Close filters"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Owner</label>
+        <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+          <SelectTrigger className="w-full h-8 text-[13px]">
+            <SelectValue placeholder="All Owners" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Owners</SelectItem>
+            {owners.map((owner) => (
+              <SelectItem key={owner} value={owner}>{owner}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">From</label>
         <Input
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
-          className="w-40"
-          placeholder="From"
+          className="w-full h-8 text-[13px]"
         />
-        <span className="text-xs text-muted-foreground">to</span>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">To</label>
         <Input
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
-          className="w-40"
-          placeholder="To"
+          className="w-full h-8 text-[13px]"
         />
       </div>
-      {hasActiveFilters && (
-        <Button variant="ghost" size="sm" onClick={clearFilters}>
-          <X className="size-3.5 mr-1" />
-          Clear
+      {activeFilterCount > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={clearFilters}
+          className="w-full h-8 text-[13px]"
+        >
+          Clear all
         </Button>
       )}
-    </div>
+    </aside>
   )
 
   return (
@@ -177,19 +228,24 @@ function RejectedLeadsPage() {
           {rejectedLeads.length}
         </span>
       }
-      toolbar={toolbar}
+      toolbar={searchBar}
     >
-      <BusinessMetricsTable
-        tabs={[tab]}
-        cellFormatter={cellFormatter}
-        pageSize={10}
-        persistKey="crm-rejected-leads"
-        onRowClick={(row) => navigate(`/crm/leads/${row.id}`)}
-        emptyState={{
-          title: 'No rejected leads',
-          description: 'Leads you mark as lost will appear here for review and reactivation.',
-        }}
-      />
+      <div className="flex gap-3">
+        {filtersOpen && filterPanel}
+        <div className="flex-1 min-w-0">
+          <BusinessMetricsTable
+            tabs={[tab]}
+            cellFormatter={cellFormatter}
+            pageSize={10}
+            persistKey="crm-rejected-leads"
+            onRowClick={(row) => navigate(`/crm/leads/${row.id}`)}
+            emptyState={{
+              title: 'No rejected leads',
+              description: 'Leads you mark as lost will appear here for review and reactivation.',
+            }}
+          />
+        </div>
+      </div>
     </ListPageShell>
   )
 }

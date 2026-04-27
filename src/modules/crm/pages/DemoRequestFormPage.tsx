@@ -7,6 +7,8 @@ import {
   Package2,
   Search,
   Trash2,
+  Truck,
+  Users,
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -492,11 +494,16 @@ function DemoRequestFormPage() {
       {/* Customer */}
       <Card>
         <CardHeader className="border-b">
-          <div>
-            <CardTitle>Customer</CardTitle>
-            <CardDescription>
-              Account, contact, and shipping address for the demo unit.
-            </CardDescription>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Users className="size-4" strokeWidth={2} />
+            </span>
+            <div>
+              <CardTitle>Customer</CardTitle>
+              <CardDescription>
+                Account, contact, and shipping address for the demo unit.
+              </CardDescription>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -597,11 +604,16 @@ function DemoRequestFormPage() {
       {/* Items */}
       <Card>
         <CardHeader className="border-b">
-          <div>
-            <CardTitle>Demo items</CardTitle>
-            <CardDescription>
-              Search a part and add it as a line. Enter quantity and unit price manually for each line.
-            </CardDescription>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+              <Package className="size-4" strokeWidth={2} />
+            </span>
+            <div>
+              <CardTitle>Demo items</CardTitle>
+              <CardDescription>
+                Search a part and add it as a line. Enter quantity and unit price manually for each line.
+              </CardDescription>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4 pb-4">
@@ -738,11 +750,16 @@ function DemoRequestFormPage() {
       {/* Logistics */}
       <Card>
         <CardHeader className="border-b">
-          <div>
-            <CardTitle>Logistics</CardTitle>
-            <CardDescription>
-              Return date, owner, and any context that helps the PM approve quickly.
-            </CardDescription>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+              <Truck className="size-4" strokeWidth={2} />
+            </span>
+            <div>
+              <CardTitle>Logistics</CardTitle>
+              <CardDescription>
+                Return date, owner, and any context that helps the PM approve quickly.
+              </CardDescription>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

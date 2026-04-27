@@ -97,10 +97,10 @@ function TasksPage() {
   })
 
   const stats: StatCardData[] = [
-    { label: 'To Do', value: tasks.filter((t) => t.status === 'To Do').length },
-    { label: 'In Progress', value: tasks.filter((t) => t.status === 'In Progress').length, variant: 'info' },
-    { label: 'Completed', value: tasks.filter((t) => t.status === 'Completed').length, variant: 'success' },
-    { label: 'Overdue', value: tasks.filter((t) => t.status !== 'Completed' && t.status !== 'Cancelled' && new Date(t.dueDate) < new Date()).length, variant: 'warning' },
+    { label: 'To Do', value: tasks.filter((t) => t.status === 'To Do').length, accent: 'primary' },
+    { label: 'In Progress', value: tasks.filter((t) => t.status === 'In Progress').length, accent: 'info' },
+    { label: 'Completed', value: tasks.filter((t) => t.status === 'Completed').length, accent: 'success' },
+    { label: 'Overdue', value: tasks.filter((t) => t.status !== 'Completed' && t.status !== 'Cancelled' && new Date(t.dueDate) < new Date()).length, accent: 'danger' },
   ]
 
   const isOverdue = (task: Task) =>
@@ -177,7 +177,7 @@ function TasksPage() {
     >
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card">
+          <div className="rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
             <EmptyState
               icon={ListChecks}
               title={hasFilters ? 'No tasks match your filters' : 'No tasks yet'}
@@ -197,7 +197,7 @@ function TasksPage() {
           filtered.map((task) => (
             <div
               key={task.id}
-              className="flex items-center gap-4 rounded-lg border bg-card px-5 py-3.5 transition-colors hover:bg-muted/30"
+              className="flex items-center gap-4 rounded-xl border border-border bg-card px-5 py-3.5 shadow-[0_1px_2px_rgba(16,24,40,0.03)] transition-all hover:-translate-y-px hover:border-primary/20 hover:shadow-[0_4px_12px_-4px_rgba(16,24,40,0.06),0_2px_4px_-2px_rgba(16,24,40,0.04)]"
             >
               {/* Status icon */}
               <div className="shrink-0">{getStatusIcon(task.status)}</div>

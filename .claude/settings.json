@@ -60,7 +60,9 @@
       "Bash(git -C /Users/macbookpro/Documents/erp-demo diff src/modules/wms/pages/InwardFormPage.tsx)",
       "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
       "Bash(lsof -i :5173 -sTCP:LISTEN)",
-      "Bash(grep -v \":0$\")"
+      "Bash(grep -v \":0$\")",
+      "Bash(git -C /Users/macbookpro/Documents/erp-demo status)",
+      "Bash(git -C /Users/macbookpro/Documents/erp-demo remote -v)"
     ]
   }
 }

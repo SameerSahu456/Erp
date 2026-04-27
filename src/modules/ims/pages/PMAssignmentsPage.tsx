@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { usePersistedState } from '@/hooks/use-persisted-state'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, UserCog } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ListPageShell } from '@/components/page'
+import { EmptyState } from '@/components/common/EmptyState'
 import {
   Select,
   SelectContent,
@@ -383,8 +384,21 @@ export default function PMAssignmentsPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                  No assignments found.
+                <td colSpan={8} className="p-0">
+                  <EmptyState
+                    icon={UserCog}
+                    title="No assignments found"
+                    description={
+                      assignments.length === 0
+                        ? 'Assign a product manager to a category to grant view or edit access.'
+                        : 'No assignments match the current filters. Clear filters to see all assignments.'
+                    }
+                    action={
+                      assignments.length === 0
+                        ? { label: 'Add Assignment', onClick: openAddDialog }
+                        : undefined
+                    }
+                  />
                 </td>
               </tr>
             )}

@@ -138,6 +138,7 @@ function LeadDetailPage() {
   const [addAddressOpen, setAddAddressOpen] = useState(false)
   const [localAddresses, setLocalAddresses] = useState<AccountAddress[]>([])
   const [addressesInitialized, setAddressesInitialized] = useState(false)
+  const [showAllAddresses, setShowAllAddresses] = useState(false)
   const { user } = useAuth()
   const userCanReinstate = canReinstateLead(user.role)
 
@@ -251,11 +252,18 @@ function LeadDetailPage() {
       )}
 
       {/* Stage Progress — below categories */}
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Stage Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card size="sm" className="data-[size=sm]:py-3 data-[size=sm]:gap-2">
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Stage Progress
+            </p>
+            {!isLost && !isRejected && (
+              <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                {Math.max(currentStageIndex + 1, 1)} / {pipelineStages.length}
+              </span>
+            )}
+          </div>
           {isLost ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -304,7 +312,7 @@ function LeadDetailPage() {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-1">
+            <div className="flex items-stretch gap-1">
               {pipelineStages.map((stage, index) => {
                 const isActive = index === currentStageIndex
                 const isCompleted = index < currentStageIndex
@@ -312,16 +320,20 @@ function LeadDetailPage() {
                   <div key={stage} className="flex flex-1 flex-col items-center gap-1.5">
                     <div
                       className={cn(
-                        'h-2 w-full rounded-full transition-colors',
-                        isCompleted && 'bg-primary',
-                        isActive && 'bg-primary',
+                        'h-[3px] w-full rounded-full transition-all',
+                        isCompleted && 'bg-status-success-text',
+                        isActive && 'bg-status-success-text shadow-[0_0_0_2px_rgba(6,118,71,0.18)]',
                         !isCompleted && !isActive && 'bg-muted'
                       )}
                     />
                     <span
                       className={cn(
                         'text-[10px] font-ui leading-tight',
-                        isActive ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                        isActive
+                          ? 'font-semibold text-status-success-text'
+                          : isCompleted
+                            ? 'text-foreground/80'
+                            : 'text-muted-foreground'
                       )}
                     >
                       {stage}
@@ -334,6 +346,53 @@ function LeadDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Lead Info Card */}
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>Lead Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+            {[
+              { icon: Building2, label: 'Company', value: lead.company },
+              { icon: Briefcase, label: 'Company Size', value: lead.companySize ?? '—' },
+              { icon: Users, label: 'Employees', value: lead.employees?.toLocaleString('en-IN') ?? '—' },
+              { icon: MapPin, label: 'Location', value: lead.location ?? '—' },
+              { icon: Building2, label: 'Type', value: lead.customerType ?? '—' },
+              { icon: Mail, label: 'Email', value: lead.email },
+              { icon: Phone, label: 'Phone', value: lead.phone },
+              { icon: Globe, label: 'Source', value: lead.source },
+              {
+                icon: IndianRupee,
+                label: 'Value',
+                value: formatCurrency(lead.value),
+                emphasis: true,
+              },
+              { icon: CalendarDays, label: 'Created', value: formatDate(lead.createdAt) },
+            ].map(({ icon: Icon, label, value, emphasis }) => (
+              <div key={label} className="flex items-center gap-3">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/70 text-muted-foreground">
+                  <Icon className="size-3.5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
+                    {label}
+                  </dt>
+                  <dd
+                    className={cn(
+                      'mt-0.5 truncate text-[13px] text-foreground',
+                      emphasis && 'font-semibold tabular-nums'
+                    )}
+                  >
+                    {value}
+                  </dd>
+                </div>
+              </div>
+            ))}
+          </dl>
+        </CardContent>
+      </Card>
+
       {/* Description Card */}
       <Card size="sm">
         <CardHeader>
@@ -341,87 +400,6 @@ function LeadDetailPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">{lead.description}</p>
-        </CardContent>
-      </Card>
-
-      {/* Lead Info Card */}
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Lead Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex items-start gap-2">
-              <Building2 className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Company</dt>
-                <dd className="text-sm">{lead.company}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Briefcase className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Company Size</dt>
-                <dd className="text-sm">{lead.companySize ?? '—'}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Users className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Employees</dt>
-                <dd className="text-sm">{lead.employees?.toLocaleString('en-IN') ?? '—'}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <MapPin className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Location</dt>
-                <dd className="text-sm">{lead.location ?? '—'}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Building2 className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Type</dt>
-                <dd className="text-sm">{lead.customerType ?? '—'}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Mail className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Email</dt>
-                <dd className="text-sm">{lead.email}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Phone className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Phone</dt>
-                <dd className="text-sm">{lead.phone}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Globe className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Source</dt>
-                <dd className="text-sm">{lead.source}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <IndianRupee className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Value</dt>
-                <dd className="text-sm font-medium">{formatCurrency(lead.value)}</dd>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <CalendarDays className="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <dt className="text-xs font-ui text-muted-foreground">Created</dt>
-                <dd className="text-sm">{formatDate(lead.createdAt)}</dd>
-              </div>
-            </div>
-          </dl>
         </CardContent>
       </Card>
 
@@ -495,9 +473,12 @@ function LeadDetailPage() {
           </Table>
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center">
-          <p className="text-sm text-muted-foreground">No quotes linked to this lead</p>
-          <p className="mt-1 text-xs text-muted-foreground">
+        <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-12 text-center">
+          <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+            <Plus className="size-4" />
+          </div>
+          <p className="text-[13px] font-medium text-foreground">No quotes linked to this lead</p>
+          <p className="text-xs text-muted-foreground">
             Create a quote to start building a proposal.
           </p>
         </div>
@@ -559,9 +540,14 @@ function LeadDetailPage() {
           })}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center">
-          <p className="text-sm text-muted-foreground">No material inquiries linked to this lead</p>
-          <p className="mt-1 text-xs text-muted-foreground">
+        <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-12 text-center">
+          <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+            <Plus className="size-4" />
+          </div>
+          <p className="text-[13px] font-medium text-foreground">
+            No material inquiries linked to this lead
+          </p>
+          <p className="text-xs text-muted-foreground">
             Create an inquiry to check material availability and pricing.
           </p>
         </div>
@@ -621,15 +607,15 @@ function LeadDetailPage() {
   return (
     <div className="space-y-6">
       <EntityHeader
-        title={lead.name}
-        subtitle={lead.company}
+        sticky
+        title={lead.company}
+        subtitle={lead.name}
         status={{ label: activeStage, variant: getStageVariant(activeStage) }}
         badges={
           <Badge variant={priorityVariant} className="uppercase text-[10px] tracking-wider">
             {lead.priority} Priority
           </Badge>
         }
-        owner={{ name: displayOwnerName, role: displayOwnerRole }}
         backHref="/crm/leads"
         actions={
           <>
@@ -791,94 +777,59 @@ function LeadDetailPage() {
         </div>
 
         {/* Right column - 1/3 */}
-        <div className="space-y-4">
+        <div className="space-y-4 lg:mt-14">
           {/* BDE / Account Owner Card */}
           <Card size="sm">
             <CardHeader>
-              <CardTitle>{displayOwnerRole}</CardTitle>
+              <CardTitle>Account Owners</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                  {displayOwnerName
-                    .split(' ')
-                    .map((p) => p[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2)}
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                {/* Primary Owner (BDE for pre-qualified, Account Owner otherwise) */}
+                <div className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 p-2 transition-colors hover:bg-muted/60">
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-primary/20">
+                    {displayOwnerName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <p className="truncate text-xs font-medium">{displayOwnerName}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{displayOwnerRole}</p>
+                    {ownerInfo && (
+                      <>
+                        <p className="truncate text-[10px] text-muted-foreground">{ownerInfo.email}</p>
+                        <p className="truncate text-[10px] text-muted-foreground">{ownerInfo.phone}</p>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="min-w-0 space-y-1">
-                  <p className="text-sm font-medium">{displayOwnerName}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{displayOwnerRole}</p>
-                  {ownerInfo && (
-                    <>
-                      <p className="text-xs text-muted-foreground">{ownerInfo.email}</p>
-                      <p className="text-xs text-muted-foreground">{ownerInfo.phone}</p>
-                    </>
-                  )}
-                </div>
-              </div>
-              {/* Show BDE info below Account Owner for qualified+ leads */}
-              {!isPreQualified && lead.bde && (
-                <div className="border-t border-border/50 pt-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">BDE (Original)</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                {/* BDE (Original) — shown for qualified+ leads */}
+                {!isPreQualified && lead.bde && (
+                  <div className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 p-2 transition-colors hover:bg-muted/60">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-primary/20">
                       {lead.bde.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
-                    <p className="text-sm text-muted-foreground">{lead.bde}</p>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="truncate text-xs font-medium">{lead.bde}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">BDE (Original)</p>
+                    </div>
                   </div>
-                </div>
-              )}
-              {/* Pre-Sales Manager */}
-              {lead.presalesManager && (
-                <div className="border-t border-border/50 pt-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pre-Sales Manager</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                )}
+                {/* Pre-Sales Manager */}
+                {lead.presalesManager && (
+                  <div className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 p-2 transition-colors hover:bg-muted/60">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-primary/20">
                       {lead.presalesManager.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
-                    <p className="text-sm text-muted-foreground">{lead.presalesManager}</p>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="truncate text-xs font-medium">{lead.presalesManager}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pre-Sales Mgr</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
               {/* Show "Assigned at Qualified" hint for pre-qualified leads */}
               {isPreQualified && (
-                <p className="text-xs text-muted-foreground/60 italic">Account Owner assigned at Qualified stage</p>
+                <p className="text-xs italic text-muted-foreground/60">Account Owner assigned at Qualified stage</p>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Lead Info Card */}
-          <Card size="sm">
-            <CardHeader>
-              <CardTitle>Lead Info</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Source</dt>
-                  <dd className="text-sm">{lead.source}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Created</dt>
-                  <dd className="text-sm">{formatDate(lead.createdAt)}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Last Contact</dt>
-                  <dd className="text-sm">{formatDate(lead.lastContact)}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Value</dt>
-                  <dd className="text-sm font-medium">{formatCurrency(lead.value)}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs font-ui text-muted-foreground">Stage</dt>
-                  <dd>
-                    <StatusBadge variant={getStageVariant(lead.stage)}>{lead.stage}</StatusBadge>
-                  </dd>
-                </div>
-              </dl>
             </CardContent>
           </Card>
 
@@ -888,11 +839,6 @@ function LeadDetailPage() {
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="size-4" />
                 Addresses
-                {allAddresses.length > 0 && (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
-                    {allAddresses.length}
-                  </span>
-                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -911,7 +857,7 @@ function LeadDetailPage() {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {allAddresses.map((addr, idx) => (
+                  {(showAllAddresses ? allAddresses : allAddresses.slice(0, 2)).map((addr, idx) => (
                     <div key={addr.id} className={cn('space-y-1', idx > 0 && 'border-t pt-3')}>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{addr.label}</span>
@@ -923,6 +869,15 @@ function LeadDetailPage() {
                       <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} — {addr.pincode}</p>
                     </div>
                   ))}
+                  {allAddresses.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllAddresses((v) => !v)}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      {showAllAddresses ? 'Show less' : `Show more (${allAddresses.length - 2})`}
+                    </button>
+                  )}
                 </div>
               )}
             </CardContent>

@@ -110,10 +110,12 @@ function CalendarPage() {
   const selectedItems = selectedDate ? (itemsByDate[selectedDate] ?? []) : []
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="cpt-page-title">Calendar</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="text-[22px] font-[650] leading-tight tracking-[-0.02em] text-foreground">
+          Calendar
+        </h1>
+        <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted-foreground">
           Tasks and meetings at a glance
         </p>
       </div>
@@ -121,20 +123,20 @@ function CalendarPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Calendar Grid */}
         <div className="lg:col-span-2">
-          <div className="rounded-lg border bg-card">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_3px_rgba(16,24,40,0.04),0_1px_2px_rgba(16,24,40,0.03)]">
             {/* Month Header */}
-            <div className="flex items-center justify-between border-b px-5 py-3">
-              <h2 className="text-lg font-semibold">
+            <div className="flex items-center justify-between border-b border-border bg-secondary/40 px-5 py-3">
+              <h2 className="text-[15px] font-semibold tracking-tight">
                 {MONTHS[currentMonth]} {currentYear}
               </h2>
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" onClick={goToday}>
+                <Button variant="outline" size="sm" onClick={goToday} className="h-8">
                   Today
                 </Button>
-                <Button variant="ghost" size="sm" onClick={prevMonth}>
+                <Button variant="ghost" size="sm" onClick={prevMonth} className="h-8 w-8 p-0">
                   <ChevronLeft className="size-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={nextMonth}>
+                <Button variant="ghost" size="sm" onClick={nextMonth} className="h-8 w-8 p-0">
                   <ChevronRight className="size-4" />
                 </Button>
               </div>
@@ -202,9 +204,9 @@ function CalendarPage() {
 
         {/* Sidebar: Selected Day Details */}
         <div>
-          <div className="rounded-lg border bg-card">
-            <div className="border-b px-5 py-3">
-              <h3 className="text-sm font-semibold">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_3px_rgba(16,24,40,0.04),0_1px_2px_rgba(16,24,40,0.03)]">
+            <div className="border-b border-border bg-secondary/40 px-5 py-3">
+              <h3 className="text-[13.5px] font-semibold tracking-tight">
                 {selectedDate
                   ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', {
                       weekday: 'long',
@@ -230,7 +232,7 @@ function CalendarPage() {
                     if (item.kind === 'meeting') {
                       const m = item.data
                       return (
-                        <div key={m.id} className="rounded-md border p-3">
+                        <div key={m.id} className="rounded-xl border border-border bg-card p-3 transition-shadow hover:shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
                           <div className="flex items-start gap-2">
                             <Video className="mt-0.5 size-3.5 shrink-0 text-blue-500" />
                             <div className="min-w-0">
@@ -269,7 +271,7 @@ function CalendarPage() {
                     } else {
                       const t = item.data
                       return (
-                        <div key={t.id} className="rounded-md border p-3">
+                        <div key={t.id} className="rounded-xl border border-border bg-card p-3 transition-shadow hover:shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
                           <div className="flex items-start gap-2">
                             {t.status === 'Completed' ? (
                               <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-green-500" />

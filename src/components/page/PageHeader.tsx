@@ -40,8 +40,8 @@ function PageHeader({
   return (
     <header
       className={cn(
-        'flex flex-col gap-3',
-        !compact && 'mb-1',
+        'flex flex-col gap-2.5',
+        !compact && 'mb-0.5',
         className
       )}
     >
@@ -55,14 +55,14 @@ function PageHeader({
               type="button"
               onClick={goBack}
               aria-label="Go back"
-              className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-all hover:-translate-y-px hover:border-primary/25 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ArrowLeft className="size-4" />
             </button>
           )}
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[22px] font-[650] leading-tight tracking-tight text-foreground">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-[22px] font-[650] leading-tight tracking-[-0.02em] text-foreground">
                 {title}
               </h1>
               {status && (
@@ -71,9 +71,9 @@ function PageHeader({
               {badges}
             </div>
             {subtitle && (
-              <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+              <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted-foreground">{subtitle}</p>
             )}
-            {meta && <div className="mt-2">{meta}</div>}
+            {meta && <div className="mt-2.5">{meta}</div>}
           </div>
         </div>
         {actions && (

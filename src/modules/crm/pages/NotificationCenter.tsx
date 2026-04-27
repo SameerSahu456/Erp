@@ -61,37 +61,48 @@ function NotificationCenter() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-display font-semibold">
+          <h1 className="text-[22px] font-[650] leading-tight tracking-[-0.02em] text-foreground">
             Notification Center
-          </h2>
+          </h1>
           {unreadCount > 0 && (
-            <Badge variant="destructive" className="text-xs">
+            <Badge variant="destructive" className="text-[11px] font-semibold">
               {unreadCount} unread
             </Badge>
           )}
         </div>
-        <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0}>
-          <CheckCheck className="mr-1 size-4" />
+        <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0} className="h-9">
+          <CheckCheck className="mr-1.5 size-3.5" />
           Mark All as Read
         </Button>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-1 rounded-lg border p-1 w-fit">
-        {FILTER_TABS.map((tab) => (
-          <Button
-            key={tab}
-            variant={activeFilter === tab ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveFilter(tab)}
-          >
-            {tab}
-          </Button>
-        ))}
+      <div
+        className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-secondary/60 p-0.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+        role="tablist"
+      >
+        {FILTER_TABS.map((tab) => {
+          const active = activeFilter === tab
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveFilter(tab)}
+              aria-pressed={active}
+              className={`inline-flex h-7 items-center rounded-md px-3 text-[12px] font-medium transition-all ${
+                active
+                  ? 'bg-card text-foreground shadow-[0_1px_2px_rgba(16,24,40,0.06)]'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab}
+            </button>
+          )
+        })}
       </div>
 
       {/* Notification List */}
@@ -111,10 +122,10 @@ function NotificationCenter() {
             <button
               key={notification.id}
               type="button"
-              className={`w-full text-left rounded-lg border p-4 transition-colors hover:bg-muted/50 cursor-pointer ${
+              className={`group w-full cursor-pointer rounded-2xl border p-4 text-left transition-all hover:-translate-y-px hover:border-primary/20 hover:shadow-[0_4px_12px_-4px_rgba(16,24,40,0.06),0_2px_4px_-2px_rgba(16,24,40,0.04)] ${
                 !notification.read
-                  ? "bg-primary/5 border-primary/20"
-                  : "bg-background"
+                  ? "border-primary/25 bg-primary/[0.04] shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+                  : "border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
               }`}
               onClick={() => markAsRead(notification.id)}
             >
@@ -122,37 +133,37 @@ function NotificationCenter() {
                 {/* Unread dot */}
                 <div className="mt-1.5 shrink-0">
                   {!notification.read ? (
-                    <span className="block size-2.5 rounded-full bg-primary" />
+                    <span className="block size-2 rounded-full bg-primary shadow-[0_0_0_3px_rgba(15,27,45,0.12)]" />
                   ) : (
-                    <span className="block size-2.5" />
+                    <span className="block size-2" />
                   )}
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
                     <span
-                      className={`font-medium text-sm ${
-                        !notification.read ? "" : "text-muted-foreground"
+                      className={`text-[13px] font-semibold ${
+                        !notification.read ? 'text-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       {notification.title}
                     </span>
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                         typeBadgeVariant[notification.type]
                       }`}
                     >
                       {typeLabel[notification.type]}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className="truncate text-[12.5px] text-muted-foreground">
                     {notification.description}
                   </p>
                 </div>
 
                 {/* Timestamp */}
-                <span className="text-xs text-muted-foreground shrink-0 mt-0.5">
+                <span className="mt-0.5 shrink-0 text-[11px] tabular-nums text-muted-foreground">
                   {notification.timestamp}
                 </span>
               </div>

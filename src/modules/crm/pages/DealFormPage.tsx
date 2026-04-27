@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { Building2, Target, UserCog } from 'lucide-react'
+
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -96,9 +98,17 @@ function DealFormPage() {
           <CardTitle>{isEdit ? 'Edit Deal Details' : 'New Deal Details'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Column 1 — Account Name first, then Name */}
+          <div className="grid grid-cols-1 gap-x-7 gap-y-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Column 1 — Account & Company */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Building2 className="size-3.5" strokeWidth={2} />
+                </span>
+                <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                  Account &amp; Company
+                </h3>
+              </div>
               <div className="space-y-1.5">
                 <Label className="font-ui">
                   Account Name <span className="text-destructive">*</span>
@@ -176,8 +186,16 @@ function DealFormPage() {
               </div>
             </div>
 
-            {/* Column 2 */}
+            {/* Column 2 — Deal & Pricing */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                  <Target className="size-3.5" strokeWidth={2} />
+                </span>
+                <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                  Deal &amp; Pricing
+                </h3>
+              </div>
               <div className="space-y-1.5">
                 <Label className="font-ui">Stage</Label>
                 <Select value={stage} onValueChange={(val) => setStage(val as Deal['stage'])}>
@@ -261,8 +279,16 @@ function DealFormPage() {
               </div>
             </div>
 
-            {/* Column 3 */}
+            {/* Column 3 — Assignment */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                  <UserCog className="size-3.5" strokeWidth={2} />
+                </span>
+                <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                  Assignment
+                </h3>
+              </div>
               <div className="space-y-1.5">
                 <Label className="font-ui">Owner</Label>
                 <Select value={owner} onValueChange={setOwner}>
@@ -293,27 +319,36 @@ function DealFormPage() {
             </div>
           </div>
 
-          {/* Full width description */}
-          <div className="mt-6 space-y-1.5">
-            <Label htmlFor="deal-description" className="font-ui">Description</Label>
-            <Textarea
-              id="deal-description"
-              placeholder="Add a description for this deal..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-            />
-          </div>
+        </CardContent>
+      </Card>
 
-          {/* Categories */}
-          <div className="mt-6 space-y-1.5">
-            <Label className="font-ui">Categories</Label>
-            <MultiSelect
-              options={IMS_CATEGORIES}
-              value={categories}
-              onValueChange={setCategories}
-              placeholder="Select categories..."
-            />
+      {/* Description & Categories */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Requirements &amp; Categories</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="deal-description" className="font-ui">Description</Label>
+              <Textarea
+                id="deal-description"
+                placeholder="Add a description for this deal..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="font-ui">Categories</Label>
+              <MultiSelect
+                options={IMS_CATEGORIES}
+                value={categories}
+                onValueChange={setCategories}
+                placeholder="Select categories..."
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

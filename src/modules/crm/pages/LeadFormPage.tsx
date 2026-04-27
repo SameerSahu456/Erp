@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { Building2, Target, UserCog } from 'lucide-react'
+
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -103,9 +105,19 @@ function LeadFormPage() {
           <CardTitle>{isEdit ? 'Edit Lead Details' : 'New Lead Details'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Column 1 */}
+          <div className="grid grid-cols-1 gap-x-7 gap-y-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Column 1 — Contact & Company */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Building2 className="size-3.5" strokeWidth={2} />
+                </span>
+                <div>
+                  <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                    Contact &amp; Company
+                  </h3>
+                </div>
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="lead-name" className="font-ui">
                   Name <span className="text-destructive">*</span>
@@ -174,8 +186,18 @@ function LeadFormPage() {
               </div>
             </div>
 
-            {/* Column 2 */}
+            {/* Column 2 — Lead & Pricing */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                  <Target className="size-3.5" strokeWidth={2} />
+                </span>
+                <div>
+                  <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                    Lead &amp; Pricing
+                  </h3>
+                </div>
+              </div>
               <div className="space-y-1.5">
                 <Label className="font-ui">Company Size</Label>
                 <Select value={companySize} onValueChange={setCompanySize}>
@@ -261,8 +283,18 @@ function LeadFormPage() {
               </div>
             </div>
 
-            {/* Column 3 */}
+            {/* Column 3 — Assignment & Type */}
             <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-3">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                  <UserCog className="size-3.5" strokeWidth={2} />
+                </span>
+                <div>
+                  <h3 className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-foreground">
+                    Assignment &amp; Type
+                  </h3>
+                </div>
+              </div>
               <div className="space-y-1.5">
                 <Label className="font-ui">Assigned To</Label>
                 <Select value={assignedTo} onValueChange={setAssignedTo}>
@@ -334,42 +366,50 @@ function LeadFormPage() {
             </div>
           </div>
 
-          {/* Full width description */}
-          <div className="mt-6 space-y-1.5">
-            <Label htmlFor="lead-description" className="font-ui">
-              Description <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              id="lead-description"
-              placeholder="Describe what the customer needs..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              required
-            />
-          </div>
+        </CardContent>
+      </Card>
 
-          {/* Categories */}
-          <div className="mt-6 space-y-1.5">
-            <Label className="font-ui">Categories</Label>
-            <MultiSelect
-              options={IMS_CATEGORIES}
-              value={categories}
-              onValueChange={setCategories}
-              placeholder="Select categories..."
-            />
-          </div>
+      {/* Requirements & Notes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Requirements &amp; Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="lead-description" className="font-ui">
+                Description <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="lead-description"
+                placeholder="Describe what the customer needs..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                required
+              />
+            </div>
 
-          {/* Full width notes */}
-          <div className="mt-6 space-y-1.5">
-            <Label htmlFor="lead-notes" className="font-ui">Notes</Label>
-            <Textarea
-              id="lead-notes"
-              placeholder="Add any notes about this lead..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={4}
-            />
+            <div className="space-y-1.5">
+              <Label className="font-ui">Categories</Label>
+              <MultiSelect
+                options={IMS_CATEGORIES}
+                value={categories}
+                onValueChange={setCategories}
+                placeholder="Select categories..."
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="lead-notes" className="font-ui">Notes</Label>
+              <Textarea
+                id="lead-notes"
+                placeholder="Add any notes about this lead..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={4}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

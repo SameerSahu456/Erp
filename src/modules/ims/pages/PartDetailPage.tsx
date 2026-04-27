@@ -686,10 +686,10 @@ export default function PartDetailPage() {
                   {currencyFmt.format(variant.unitPrice)} / unit
                 </span>
               </h3>
-              <div className="rounded-md border">
+              <div className="max-h-[420px] overflow-y-auto rounded-md border">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
+                  <thead className="sticky top-0 z-10 bg-muted/50 shadow-[0_1px_0_0_var(--border)]">
+                    <tr className="border-b">
                       <th className="px-3 py-2 text-left font-medium">Part no</th>
                       <th className="px-3 py-2 text-left font-medium">Serial No</th>
                       <th className="px-3 py-2 text-right font-medium">Price</th>

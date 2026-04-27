@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
 import {
-  ArrowLeft,
   Package,
   User,
   Phone,
@@ -22,6 +21,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { EntityHeader } from '../components/EntityHeader'
 import { demoRequests } from '../data/demo-requests'
 import { salesOrders } from '../data/sales-orders'
 import type { DemoRequestStatus } from '../types'
@@ -142,29 +142,21 @@ function DemoRequestDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={goBack}>
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="cpt-page-title">
-              {demo.demoNumber}
-            </h1>
-            <StatusBadge variant={STATUS_VARIANT[demo.status]}>{demo.status}</StatusBadge>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {demo.accountName} &middot; {totalItems} item{totalItems > 1 ? 's' : ''}
-          </p>
-        </div>
-        {canCreateSO && (
-          <Button onClick={handleCreateSO} className="shrink-0">
-            <ShoppingCart className="size-4" />
-            Create SO
-          </Button>
-        )}
-      </div>
+      <EntityHeader
+        sticky
+        title={demo.demoNumber}
+        subtitle={`${demo.accountName} · ${totalItems} item${totalItems > 1 ? 's' : ''}`}
+        status={{ label: demo.status, variant: STATUS_VARIANT[demo.status] }}
+        backHref="/crm/demo-requests"
+        actions={
+          canCreateSO ? (
+            <Button onClick={handleCreateSO} className="shrink-0">
+              <ShoppingCart className="size-4" />
+              Create SO
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Linked SO / PO banner — shown after conversion */}
       {demo.salesOrderId && (
@@ -219,7 +211,7 @@ function DemoRequestDetailPage() {
       )}
 
       {/* Workflow Stepper */}
-      <div className="rounded-lg border bg-card p-6">
+      <div className="rounded-2xl border border-border bg-card p-6">
         <h2 className="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
           Demo Lifecycle
         </h2>
@@ -266,7 +258,7 @@ function DemoRequestDetailPage() {
       {/* Info Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Contact */}
-        <div className="rounded-lg border bg-card p-5">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
           <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
             <User className="size-4" />
             Customer Contact
@@ -296,7 +288,7 @@ function DemoRequestDetailPage() {
         </div>
 
         {/* PM Approval */}
-        <div className="rounded-lg border bg-card p-5">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
           <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
             <CheckCircle2 className="size-4" />
             PM Approval
@@ -329,7 +321,7 @@ function DemoRequestDetailPage() {
         </div>
 
         {/* Dates */}
-        <div className="rounded-lg border bg-card p-5">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
           <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
             <Calendar className="size-4" />
             Dates & Return
@@ -380,7 +372,7 @@ function DemoRequestDetailPage() {
       </div>
 
       {/* Demo Items */}
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-2xl border border-border bg-card">
         <div className="border-b px-6 py-4">
           <h2 className="font-semibold flex items-center gap-2">
             <Package className="size-4" />
@@ -437,7 +429,7 @@ function DemoRequestDetailPage() {
 
       {/* Source & Notes */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-2xl border border-border bg-card p-6">
           <h3 className="mb-3 font-semibold">Source</h3>
           <dl className="space-y-2 text-sm">
             {demo.dealId && (
@@ -466,7 +458,7 @@ function DemoRequestDetailPage() {
         </div>
 
         {demo.notes && (
-          <div className="rounded-lg border bg-card p-6">
+          <div className="rounded-2xl border border-border bg-card p-6">
             <h3 className="mb-3 font-semibold">Notes</h3>
             <p className="text-sm text-muted-foreground">{demo.notes}</p>
             {demo.returnNotes && (

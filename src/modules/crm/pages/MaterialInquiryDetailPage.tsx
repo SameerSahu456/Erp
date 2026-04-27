@@ -204,17 +204,17 @@ function MaterialInquiryDetailPage() {
           <CardTitle>Client Requirements</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
             {mi.clientBudget && (
               <div>
-                <dt className="text-xs font-ui text-muted-foreground">Overall Budget</dt>
-                <dd className="mt-1 text-sm font-medium">{formatCurrency(mi.clientBudget)}</dd>
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Overall Budget</dt>
+                <dd className="mt-1 text-[15px] font-semibold tabular-nums tracking-tight">{formatCurrency(mi.clientBudget)}</dd>
               </div>
             )}
             {mi.clientTimeline && (
               <div>
-                <dt className="text-xs font-ui text-muted-foreground">Timeline</dt>
-                <dd className="mt-1 text-sm">{mi.clientTimeline}</dd>
+                <dt className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Timeline</dt>
+                <dd className="mt-1 text-[13px] text-foreground">{mi.clientTimeline}</dd>
               </div>
             )}
           </dl>
@@ -597,6 +597,7 @@ function MaterialInquiryDetailPage() {
   return (
     <div className="space-y-6">
       <EntityHeader
+        sticky
         title={mi.inquiryNumber}
         subtitle={`Requested by ${mi.requestedBy}`}
         status={{ label: mi.status, variant: getMIStatusVariant(mi.status) }}

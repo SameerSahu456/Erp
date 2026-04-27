@@ -82,10 +82,10 @@ function DemoRequestsPage() {
   )
 
   const stats: StatCardData[] = [
-    { label: 'Total Demos', value: rows.length },
-    { label: 'With Customer', value: withCustomer.length },
-    { label: 'Pending Approval', value: pendingApproval.length },
-    { label: 'Overdue Returns', value: overdue.length, variant: overdue.length > 0 ? 'error' : undefined },
+    { label: 'Total Demos', value: rows.length, accent: 'primary' },
+    { label: 'With Customer', value: withCustomer.length, accent: 'info' },
+    { label: 'Pending Approval', value: pendingApproval.length, accent: 'warning' },
+    { label: 'Overdue Returns', value: overdue.length, accent: overdue.length > 0 ? 'danger' : 'primary' },
   ]
 
   const tabs: TabConfig[] = [
@@ -182,6 +182,7 @@ function DemoRequestsPage() {
       }
     >
       <BusinessMetricsTable
+        className="bmt-search-wide"
         tabs={tabs}
         cellFormatter={cellFormatter}
         persistKey="crm-demo-requests"

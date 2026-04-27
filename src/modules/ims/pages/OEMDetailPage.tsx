@@ -189,10 +189,10 @@ export default function OEMDetailPage() {
         </div>
 
         {models.length > 0 ? (
-          <div className="overflow-x-auto rounded-md border">
+          <div className="max-h-[480px] overflow-auto rounded-md border">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
+              <thead className="sticky top-0 z-10 bg-muted/50 shadow-[0_1px_0_0_var(--border)]">
+                <tr className="border-b">
                   <th className="px-3 py-2 text-left font-medium">Model</th>
                   <th className="px-3 py-2 text-left font-medium">Part no</th>
                   <th className="px-3 py-2 text-left font-medium">Category</th>

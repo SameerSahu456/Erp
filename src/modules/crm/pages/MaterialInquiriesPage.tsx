@@ -82,6 +82,7 @@ function MaterialInquiriesPage() {
       }
     >
       <BusinessMetricsTable
+        className="bmt-search-wide"
         tabs={[miTab]}
         cellFormatter={cellFormatter}
         pageSize={10}

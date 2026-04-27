@@ -67,9 +67,9 @@ function PurchaseRequestsPage() {
   const readyForProcurement = useMemo(() => rows.filter((r) => ['Final Approved', 'Sent to Procurement'].includes(r.status)), [rows])
 
   const stats: StatCardData[] = [
-    { label: 'Total PRs', value: rows.length },
-    { label: 'Pending PM Approval', value: pendingPM.length },
-    { label: 'Ready for Procurement', value: readyForProcurement.length },
+    { label: 'Total PRs', value: rows.length, accent: 'primary' },
+    { label: 'Pending PM Approval', value: pendingPM.length, accent: 'warning' },
+    { label: 'Ready for Procurement', value: readyForProcurement.length, accent: 'success' },
   ]
 
   const tabs: TabConfig[] = [
@@ -157,6 +157,7 @@ function PurchaseRequestsPage() {
       stats={<StatsRow stats={stats} />}
     >
       <BusinessMetricsTable
+        className="bmt-search-wide"
         tabs={tabs}
         cellFormatter={cellFormatter}
         pageSize={10}
