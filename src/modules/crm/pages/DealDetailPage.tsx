@@ -287,19 +287,18 @@ function DealDetailPage() {
                 const isActive = index === currentStageIndex
                 const isCompleted = index < currentStageIndex
                 return (
-                  <div key={stage} className="flex flex-1 flex-col items-center gap-2.5">
+                  <div key={stage} className="flex flex-1 flex-col items-center gap-1.5">
                     <div
                       className={cn(
-                        'h-[10px] w-full rounded-full transition-all',
+                        'h-[3px] w-full rounded-full transition-all',
                         isCompleted && 'bg-status-success-text',
-                        isActive &&
-                          'bg-status-success-text shadow-[0_0_0_3px_rgba(6,118,71,0.22),0_3px_8px_-2px_rgba(6,118,71,0.32)]',
+                        isActive && 'bg-status-success-text shadow-[0_0_0_2px_rgba(6,118,71,0.18)]',
                         !isCompleted && !isActive && 'bg-muted'
                       )}
                     />
                     <span
                       className={cn(
-                        'text-[12px] font-ui leading-tight',
+                        'text-[10px] font-ui leading-tight',
                         isActive
                           ? 'font-semibold text-status-success-text'
                           : isCompleted
