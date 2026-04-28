@@ -69,7 +69,10 @@
       "Bash(npx vercel *)",
       "Bash(git ls-remote *)",
       "Bash(git fetch *)",
-      "Bash(git rev-list *)"
+      "Bash(git rev-list *)",
+      "Bash(npx --yes vercel --version)",
+      "Bash(git -C /Users/macbookpro/Documents/erp-demo status --short)",
+      "Bash(git -C /Users/macbookpro/Documents/erp-demo branch --show-current)"
     ]
   }
 }

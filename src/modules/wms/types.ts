@@ -68,12 +68,12 @@ export const DEVICE_STATUS_VARIANT: Record<DeviceStatus, DeviceStatusVariant> = 
 
 // ── Workflow Stages (simplified for stepper) ──
 export const WMS_WORKFLOW_STAGES = [
-  { id: 'inward', label: 'Inward / GRN' },
-  { id: 'inspection', label: 'Inspection' },
-  { id: 'repair', label: 'Repair / Paint' },
-  { id: 'qc', label: 'Quality Control' },
-  { id: 'inventory', label: 'Inventory' },
-  { id: 'dispatch', label: 'Dispatch' },
+  { id: 'inward', label: 'Inward / GRN', accent: 'info' },
+  { id: 'inspection', label: 'Inspection', accent: 'warning' },
+  { id: 'repair', label: 'Repair / Paint', accent: 'violet' },
+  { id: 'qc', label: 'Quality Control', accent: 'teal' },
+  { id: 'inventory', label: 'Inventory', accent: 'success' },
+  { id: 'dispatch', label: 'Dispatch', accent: 'primary' },
 ] as const
 
 // ── Batch Types ──

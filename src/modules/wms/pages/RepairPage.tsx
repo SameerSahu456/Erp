@@ -661,10 +661,10 @@ function RepairPage() {
 
       <StatsRow
         stats={[
-          { label: 'Total Jobs', value: summaryStats.total, icon: Wrench },
-          { label: 'In Progress', value: summaryStats.inProgress, icon: PlayCircle },
-          { label: 'Completed Today', value: summaryStats.completedToday, icon: CheckCircle2 },
-          { label: 'Rework Count', value: summaryStats.reworkCount, icon: RefreshCw },
+          { label: 'Total Jobs', value: summaryStats.total, icon: Wrench, accent: 'primary' as const },
+          { label: 'In Progress', value: summaryStats.inProgress, icon: PlayCircle, accent: 'info' as const },
+          { label: 'Completed Today', value: summaryStats.completedToday, icon: CheckCircle2, accent: 'success' as const },
+          { label: 'Rework Count', value: summaryStats.reworkCount, icon: RefreshCw, accent: 'warning' as const },
         ]}
       />
 

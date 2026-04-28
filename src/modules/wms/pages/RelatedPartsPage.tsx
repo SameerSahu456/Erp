@@ -80,10 +80,10 @@ function RelatedPartsPage() {
   const compatible = useMemo(() => rows.filter((r) => r.relation === 'COMPATIBLE'), [rows])
 
   const stats: StatCardData[] = [
-    { label: 'Total Mappings', value: rows.length },
-    { label: 'Alternatives', value: alternatives.length },
-    { label: 'Upgrades', value: upgrades.length },
-    { label: 'Compatible', value: compatible.length },
+    { label: 'Total Mappings', value: rows.length, accent: 'primary' as const },
+    { label: 'Alternatives', value: alternatives.length, accent: 'info' as const },
+    { label: 'Upgrades', value: upgrades.length, accent: 'violet' as const },
+    { label: 'Compatible', value: compatible.length, accent: 'success' as const },
   ]
 
   const tabs: TabConfig[] = [

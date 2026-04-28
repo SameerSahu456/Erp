@@ -134,10 +134,10 @@ function PurchaseOrdersPage() {
       stats={
         <StatsRow
           stats={[
-            { label: 'Total POs', value: totalPOs, icon: ShoppingCart },
-            { label: 'In Transit', value: inTransitCount, icon: Truck },
-            { label: 'Fully Received', value: fullyReceivedCount, icon: PackageCheck },
-            { label: 'Total Order Value', value: formatShort(totalOrderValue), icon: IndianRupee },
+            { label: 'Total POs', value: totalPOs, icon: ShoppingCart, accent: 'primary' as const },
+            { label: 'In Transit', value: inTransitCount, icon: Truck, accent: 'warning' as const },
+            { label: 'Fully Received', value: fullyReceivedCount, icon: PackageCheck, accent: 'success' as const },
+            { label: 'Total Order Value', value: formatShort(totalOrderValue), icon: IndianRupee, accent: 'teal' as const },
           ]}
         />
       }

@@ -38,6 +38,14 @@ import {
 import { WorkflowStepper, type StepConfig } from '@/components/common/WorkflowStepper'
 import { Timeline, type TimelineEntry } from '@/components/common/Timeline'
 import {
+  ChartDefs,
+  PremiumTooltip,
+  PREMIUM_TOOLTIP_CURSOR_BAR,
+  horizontalFill,
+  radialFill,
+  type ChartAccent,
+} from '@/components/common/chartTheme'
+import {
   DEVICE_STATUS_LABELS,
   DEVICE_STATUS_VARIANT,
   WMS_WORKFLOW_STAGES,
@@ -78,20 +86,19 @@ const REPAIR_STATUSES: DeviceStatus[] = [
   'IN_PAINT_SHOP',
 ]
 
-// Analytics stage definitions — the key pipeline stages the user tracks
+// Analytics stage definitions — the key pipeline stages the user tracks.
+// `accent` drives the premium gradient palette via chartTheme.
 const ANALYTICS_STAGES = [
-  { key: 'assignmentPending', label: 'Assignment Pending', color: '#94a3b8', statuses: ['RECEIVED'] as DeviceStatus[] },
-  { key: 'pendingInspection', label: 'Pending Inspection', color: '#f59e0b', statuses: ['PENDING_INSPECTION', 'UNDER_INSPECTION'] as DeviceStatus[] },
-  { key: 'inspected', label: 'Inspected', color: '#6366f1', statuses: ['INSPECTED'] as DeviceStatus[] },
-  { key: 'waitingForSpares', label: 'Waiting for Spares', color: '#ef4444', statuses: ['WAITING_FOR_SPARES'] as DeviceStatus[] },
-  { key: 'inPaint', label: 'In Paint', color: '#ec4899', statuses: ['IN_PAINT_SHOP'] as DeviceStatus[] },
-  { key: 'inRepair', label: 'In Repair', color: '#8b5cf6', statuses: ['READY_FOR_REPAIR', 'UNDER_REPAIR', 'IN_L3_REPAIR', 'IN_DISPLAY_REPAIR', 'IN_BATTERY_BOOST'] as DeviceStatus[] },
-  { key: 'inQC', label: 'In QC', color: '#3b82f6', statuses: ['AWAITING_QC', 'UNDER_QC'] as DeviceStatus[] },
-  { key: 'readyForStock', label: 'Ready for Stock', color: '#14b8a6', statuses: ['READY_FOR_STOCK'] as DeviceStatus[] },
-  { key: 'inStock', label: 'In Stock', color: '#22c55e', statuses: ['IN_STOCK'] as DeviceStatus[] },
+  { key: 'assignmentPending', label: 'Assignment Pending', accent: 'slate' as ChartAccent, statuses: ['RECEIVED'] as DeviceStatus[] },
+  { key: 'pendingInspection', label: 'Pending Inspection', accent: 'amber' as ChartAccent, statuses: ['PENDING_INSPECTION', 'UNDER_INSPECTION'] as DeviceStatus[] },
+  { key: 'inspected', label: 'Inspected', accent: 'indigo' as ChartAccent, statuses: ['INSPECTED'] as DeviceStatus[] },
+  { key: 'waitingForSpares', label: 'Waiting for Spares', accent: 'danger' as ChartAccent, statuses: ['WAITING_FOR_SPARES'] as DeviceStatus[] },
+  { key: 'inPaint', label: 'In Paint', accent: 'pink' as ChartAccent, statuses: ['IN_PAINT_SHOP'] as DeviceStatus[] },
+  { key: 'inRepair', label: 'In Repair', accent: 'violet' as ChartAccent, statuses: ['READY_FOR_REPAIR', 'UNDER_REPAIR', 'IN_L3_REPAIR', 'IN_DISPLAY_REPAIR', 'IN_BATTERY_BOOST'] as DeviceStatus[] },
+  { key: 'inQC', label: 'In QC', accent: 'sky' as ChartAccent, statuses: ['AWAITING_QC', 'UNDER_QC'] as DeviceStatus[] },
+  { key: 'readyForStock', label: 'Ready for Stock', accent: 'teal' as ChartAccent, statuses: ['READY_FOR_STOCK'] as DeviceStatus[] },
+  { key: 'inStock', label: 'In Stock', accent: 'emerald' as ChartAccent, statuses: ['IN_STOCK'] as DeviceStatus[] },
 ] as const
-
-const PIE_COLORS = ['#94a3b8', '#f59e0b', '#6366f1', '#ef4444', '#ec4899', '#8b5cf6', '#3b82f6', '#14b8a6', '#22c55e']
 
 function WmsDashboard() {
   // Count devices per stage
@@ -130,6 +137,7 @@ function WmsDashboard() {
       id: stage.id,
       label: stage.label,
       description: `${stageCounts[stage.id]} devices`,
+      accent: stage.accent,
       status:
         idx < activeIdx
           ? 'completed' as const
@@ -155,7 +163,7 @@ function WmsDashboard() {
     ANALYTICS_STAGES.map((stage) => ({
       name: stage.label,
       count: analyticsCounts[stage.key],
-      color: stage.color,
+      accent: stage.accent,
     })),
     [analyticsCounts]
   )
@@ -163,10 +171,10 @@ function WmsDashboard() {
   // Pie chart data (exclude zero-count stages)
   const pieChartData = useMemo(() =>
     ANALYTICS_STAGES
-      .map((stage, i) => ({
+      .map((stage) => ({
         name: stage.label,
         value: analyticsCounts[stage.key],
-        color: PIE_COLORS[i],
+        accent: stage.accent,
       }))
       .filter((d) => d.value > 0),
     [analyticsCounts]
@@ -264,12 +272,21 @@ function WmsDashboard() {
         breadcrumbs={[{ label: 'WMS' }, { label: 'Dashboard' }]}
       />
 
-      {/* Workflow Stepper */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Workflow Pipeline</CardTitle>
+      {/* Workflow Stepper — premium gradient surface */}
+      <Card className="relative overflow-hidden border-border/60 bg-gradient-to-br from-card via-card to-violet-50/30 dark:to-violet-950/20 shadow-sm">
+        {/* Soft accent glow in top-right */}
+        <div
+          className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-violet-400/10 blur-3xl dark:bg-violet-500/15"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -left-24 -bottom-24 h-56 w-56 rounded-full bg-sky-400/10 blur-3xl dark:bg-sky-500/15"
+          aria-hidden
+        />
+        <CardHeader className="relative">
+          <CardTitle className="font-display tracking-tight">Workflow Pipeline</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative pt-2 pb-6">
           <WorkflowStepper steps={workflowSteps} />
         </CardContent>
       </Card>
@@ -282,24 +299,28 @@ function WmsDashboard() {
             value: totalDevices,
             icon: Package,
             trend: { value: 12, isPositive: true },
+            accent: 'primary' as const,
           },
           {
             label: 'In Repair',
             value: inRepair,
             icon: Wrench,
             trend: { value: 5, isPositive: false },
+            accent: 'warning' as const,
           },
           {
             label: 'Pending QC',
             value: pendingQC,
             icon: ClipboardCheck,
             trend: { value: 8, isPositive: true },
+            accent: 'info' as const,
           },
           {
             label: 'Ready for Dispatch',
             value: readyForDispatch,
             icon: Truck,
             trend: { value: 15, isPositive: true },
+            accent: 'success' as const,
           },
         ]}
       />
@@ -312,24 +333,28 @@ function WmsDashboard() {
             value: analyticsCounts.assignmentPending,
             icon: Clock,
             trend: { value: 3, isPositive: false },
+            accent: 'warning' as const,
           },
           {
             label: 'Pending Inspection',
             value: analyticsCounts.pendingInspection,
             icon: Search,
             trend: { value: 6, isPositive: false },
+            accent: 'info' as const,
           },
           {
             label: 'Inspected',
             value: analyticsCounts.inspected,
             icon: Eye,
             trend: { value: 10, isPositive: true },
+            accent: 'violet' as const,
           },
           {
             label: 'Waiting for Spares',
             value: analyticsCounts.waitingForSpares,
             icon: Package,
             trend: { value: 2, isPositive: false },
+            accent: 'danger' as const,
           },
         ]}
       />
@@ -341,24 +366,28 @@ function WmsDashboard() {
             label: 'In Paint',
             value: analyticsCounts.inPaint,
             icon: Paintbrush,
+            accent: 'violet' as const,
           },
           {
             label: 'In Repair',
             value: analyticsCounts.inRepair,
             icon: Wrench,
             trend: { value: 4, isPositive: false },
+            accent: 'warning' as const,
           },
           {
             label: 'In QC',
             value: analyticsCounts.inQC,
             icon: ShieldCheck,
             trend: { value: 7, isPositive: true },
+            accent: 'info' as const,
           },
           {
             label: 'Ready for Stock',
             value: analyticsCounts.readyForStock,
             icon: PackageCheck,
             trend: { value: 9, isPositive: true },
+            accent: 'success' as const,
           },
         ]}
       />
@@ -371,6 +400,7 @@ function WmsDashboard() {
             value: analyticsCounts.inStock,
             icon: Warehouse,
             trend: { value: 14, isPositive: true },
+            accent: 'teal' as const,
           },
         ]}
         className="lg:grid-cols-4"
@@ -386,12 +416,15 @@ function WmsDashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart data={barChartData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <ChartDefs />
+                <CartesianGrid strokeDasharray="3 6" horizontal={false} className="stroke-border/50" />
                 <XAxis
                   type="number"
                   tick={{ fontSize: 12 }}
                   className="fill-muted-foreground"
                   allowDecimals={false}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <YAxis
                   type="category"
@@ -399,18 +432,16 @@ function WmsDashboard() {
                   width={130}
                   tick={{ fontSize: 12 }}
                   className="fill-muted-foreground"
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 8,
-                    fontSize: 13,
-                  }}
+                  cursor={PREMIUM_TOOLTIP_CURSOR_BAR}
+                  content={<PremiumTooltip />}
                 />
-                <Bar dataKey="count" name="Devices" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="count" name="Devices" radius={[0, 6, 6, 0]} filter="url(#cpt-chart-shadow)">
                   {barChartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
+                    <Cell key={i} fill={horizontalFill(entry.accent)} />
                   ))}
                 </Bar>
               </BarChart>
@@ -426,6 +457,7 @@ function WmsDashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
               <PieChart>
+                <ChartDefs />
                 <Pie
                   data={pieChartData}
                   cx="50%"
@@ -434,21 +466,19 @@ function WmsDashboard() {
                   outerRadius={120}
                   paddingAngle={3}
                   dataKey="value"
+                  stroke="hsl(var(--card))"
+                  strokeWidth={2}
                   label={({ name, value }) => `${name}: ${value}`}
                 >
                   {pieChartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
+                    <Cell key={i} fill={radialFill(entry.accent)} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 8,
-                    fontSize: 13,
-                  }}
+                <Tooltip content={<PremiumTooltip />} />
+                <Legend
+                  iconType="circle"
+                  wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
                 />
-                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>

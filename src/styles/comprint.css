@@ -906,13 +906,15 @@
 .wms-link-btn:disabled { color: #98A2B3; cursor: not-allowed; text-decoration: none; }
 
 /* ═══════════════════════════════════════════════════════════
-   CRM — Premium Polish
-   Scoped under [data-module="crm"] so polish stays contained
-   to /crm/* routes. Adds luxe hover behavior, refined borders,
-   smoother easing, and tighter inner-card rhythm.
+   Premium Polish — applied to every module
+   Scoped under [data-module] (any value) so the layer lights up
+   on every routed page — CRM, WMS, IMS, Procurement, Reports,
+   Settings, and any other module rendered through AppShell.
+   Adds luxe hover behavior, refined borders, smoother easing,
+   and tighter inner-card rhythm.
    ═══════════════════════════════════════════════════════════ */
 
-[data-module="crm"] {
+[data-module] {
   --crm-ease: cubic-bezier(0.22, 0.68, 0, 1);
   --crm-hairline: color-mix(in srgb, var(--border, #E4E7EC) 70%, transparent);
   --crm-accent: color-mix(in srgb, var(--primary, #0F1B2D) 22%, var(--border, #E4E7EC));
@@ -929,7 +931,7 @@
 }
 
 /* ── Shared <Card> primitive: gentle hover lift + accent ring ── */
-[data-module="crm"] [data-slot="card"] {
+[data-module] [data-slot="card"] {
   border-color: var(--crm-hairline);
   box-shadow: var(--crm-shadow-rest);
   transition:
@@ -937,16 +939,16 @@
     border-color 220ms var(--crm-ease),
     transform 220ms var(--crm-ease);
 }
-[data-module="crm"]:not([data-page-type="detail"]) [data-slot="card"]:hover {
+[data-module]:not([data-page-type="detail"]) [data-slot="card"]:hover {
   border-color: var(--crm-accent);
   box-shadow: var(--crm-shadow-hover), var(--crm-ring);
   transform: translateY(-1px);
 }
-[data-module="crm"] [data-slot="card-header"] {
+[data-module] [data-slot="card-header"] {
   padding-top: 2px;
   padding-bottom: 2px;
 }
-[data-module="crm"] [data-slot="card-footer"] {
+[data-module] [data-slot="card-footer"] {
   background:
     linear-gradient(
       180deg,
@@ -956,13 +958,13 @@
 }
 
 /* ── KPI cards: enhanced lift, longer accent bar, halo on icon ── */
-[data-module="crm"] .cpt-kpi {
+[data-module] .cpt-kpi {
   transition:
     box-shadow 240ms var(--crm-ease),
     border-color 240ms var(--crm-ease),
     transform 240ms var(--crm-ease);
 }
-[data-module="crm"] .cpt-kpi::before {
+[data-module] .cpt-kpi::before {
   height: 3px;
   background: linear-gradient(
     90deg,
@@ -972,28 +974,28 @@
   );
   opacity: 0.18;
 }
-[data-module="crm"]:not([data-page-type="detail"]) .cpt-kpi:hover {
+[data-module]:not([data-page-type="detail"]) .cpt-kpi:hover {
   box-shadow:
     0 1px 0 rgba(16,24,40,0.02),
     0 14px 32px -10px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 22%, rgba(16,24,40,0.10)),
     0 6px 14px -6px rgba(16,24,40,0.07);
   transform: translateY(-2px);
 }
-[data-module="crm"] .cpt-kpi:hover::before {
+[data-module] .cpt-kpi:hover::before {
   opacity: 1;
 }
-[data-module="crm"] .cpt-kpi:hover .cpt-kpi-icon {
+[data-module] .cpt-kpi:hover .cpt-kpi-icon {
   transform: scale(1.06);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--cpt-kpi-icon-fg, var(--primary, #0F1B2D)) 8%, transparent);
 }
-[data-module="crm"] .cpt-kpi-icon {
+[data-module] .cpt-kpi-icon {
   transition:
     transform 240ms var(--crm-ease),
     box-shadow 240ms var(--crm-ease);
 }
 
 /* ── Kanban column: subtle inner gradient + glowing accent stripe ── */
-[data-module="crm"] .cpt-kcol {
+[data-module] .cpt-kcol {
   background:
     linear-gradient(
       180deg,
@@ -1002,20 +1004,20 @@
     );
   border-color: var(--crm-hairline);
 }
-[data-module="crm"] .cpt-kcol::before {
+[data-module] .cpt-kcol::before {
   height: 3px;
   opacity: 0.95;
   box-shadow: 0 6px 14px -6px var(--cpt-col-accent, color-mix(in srgb, var(--primary, #0F1B2D) 35%, transparent));
 }
 
 /* ── Kanban card: deeper lift with accent ring on hover ── */
-[data-module="crm"] .cpt-kcard {
+[data-module] .cpt-kcard {
   transition:
     box-shadow 220ms var(--crm-ease),
     border-color 220ms var(--crm-ease),
     transform 220ms var(--crm-ease);
 }
-[data-module="crm"] .cpt-kcard:hover {
+[data-module] .cpt-kcard:hover {
   box-shadow:
     0 1px 0 rgba(16,24,40,0.02),
     0 12px 26px -8px rgba(16,24,40,0.14),
@@ -1024,7 +1026,7 @@
   border-color: var(--crm-accent);
   transform: translateY(-2px);
 }
-[data-module="crm"] .cpt-kcard:active {
+[data-module] .cpt-kcard:active {
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(16,24,40,0.06);
   cursor: grabbing;
@@ -1032,39 +1034,39 @@
 
 /* ── Inline mini-cards used across detail pages
    (rounded-lg + border + bg-card + p-3.5 pattern) ── */
-[data-module="crm"] .rounded-lg.border.bg-card,
-[data-module="crm"] .rounded-md.border.bg-card,
-[data-module="crm"] .rounded-xl.border.bg-card,
-[data-module="crm"] .rounded-\[12px\].border.bg-card,
-[data-module="crm"] .rounded-\[14px\].border.bg-card {
+[data-module] .rounded-lg.border.bg-card,
+[data-module] .rounded-md.border.bg-card,
+[data-module] .rounded-xl.border.bg-card,
+[data-module] .rounded-\[12px\].border.bg-card,
+[data-module] .rounded-\[14px\].border.bg-card {
   transition:
     box-shadow 200ms var(--crm-ease),
     border-color 200ms var(--crm-ease),
     transform 200ms var(--crm-ease),
     background-color 200ms var(--crm-ease);
 }
-[data-module="crm"]:not([data-page-type="detail"]) .rounded-lg.border.bg-card:hover,
-[data-module="crm"]:not([data-page-type="detail"]) .rounded-md.border.bg-card:hover,
-[data-module="crm"]:not([data-page-type="detail"]) .rounded-xl.border.bg-card:hover,
-[data-module="crm"]:not([data-page-type="detail"]) .rounded-\[12px\].border.bg-card:hover,
-[data-module="crm"]:not([data-page-type="detail"]) .rounded-\[14px\].border.bg-card:hover {
+[data-module]:not([data-page-type="detail"]) .rounded-lg.border.bg-card:hover,
+[data-module]:not([data-page-type="detail"]) .rounded-md.border.bg-card:hover,
+[data-module]:not([data-page-type="detail"]) .rounded-xl.border.bg-card:hover,
+[data-module]:not([data-page-type="detail"]) .rounded-\[12px\].border.bg-card:hover,
+[data-module]:not([data-page-type="detail"]) .rounded-\[14px\].border.bg-card:hover {
   border-color: var(--crm-accent);
   box-shadow: 0 8px 18px -8px rgba(16,24,40,0.10), 0 2px 6px -2px rgba(16,24,40,0.05);
   transform: translateY(-1px);
 }
 
 /* Mini-cards inside a hovering parent Card should not double-lift */
-[data-module="crm"] [data-slot="card"]:hover .rounded-lg.border.bg-card:not(:hover),
-[data-module="crm"] [data-slot="card"]:hover .rounded-md.border.bg-card:not(:hover) {
+[data-module] [data-slot="card"]:hover .rounded-lg.border.bg-card:not(:hover),
+[data-module] [data-slot="card"]:hover .rounded-md.border.bg-card:not(:hover) {
   box-shadow: none;
   transform: none;
 }
 
 /* ── Table rows: smooth highlight sweep ── */
-[data-module="crm"] .cpt-tbl tbody tr {
+[data-module] .cpt-tbl tbody tr {
   transition: background-color 180ms var(--crm-ease);
 }
-[data-module="crm"] .cpt-tbl tbody tr:hover {
+[data-module] .cpt-tbl tbody tr:hover {
   background:
     linear-gradient(
       90deg,
@@ -1072,34 +1074,34 @@
       color-mix(in srgb, var(--accent, #EEF1F6) 35%, var(--card, #fff)) 100%
     );
 }
-[data-module="crm"] .cpt-table-wrap {
+[data-module] .cpt-table-wrap {
   border-color: var(--crm-hairline);
 }
 
 /* ── Buttons: refined press / luxe primary gradient ── */
-[data-module="crm"] .cpt-btn {
+[data-module] .cpt-btn {
   transition:
     background-color 160ms var(--crm-ease),
     border-color 160ms var(--crm-ease),
     box-shadow 160ms var(--crm-ease),
     transform 160ms var(--crm-ease);
 }
-[data-module="crm"] .cpt-btn:hover {
+[data-module] .cpt-btn:hover {
   border-color: var(--crm-accent);
   box-shadow: 0 1px 2px rgba(16,24,40,0.06), 0 4px 10px -4px rgba(16,24,40,0.08);
   transform: translateY(-0.5px);
 }
-[data-module="crm"] .cpt-btn:active {
+[data-module] .cpt-btn:active {
   transform: translateY(0);
   box-shadow: inset 0 1px 2px rgba(16,24,40,0.08);
 }
-[data-module="crm"] .cpt-btn-primary {
+[data-module] .cpt-btn-primary {
   background: linear-gradient(180deg, #1E2A3D 0%, var(--primary, #0F1B2D) 100%);
   box-shadow:
     0 1px 2px rgba(16,24,40,0.18),
     inset 0 1px 0 rgba(255,255,255,0.10);
 }
-[data-module="crm"] .cpt-btn-primary:hover {
+[data-module] .cpt-btn-primary:hover {
   background: linear-gradient(180deg, #283448 0%, #15243A 100%);
   box-shadow:
     0 1px 2px rgba(16,24,40,0.22),
@@ -1108,11 +1110,11 @@
 }
 
 /* ── Filter chips & segmented control: subtle press feel ── */
-[data-module="crm"] .cpt-filter-chip:hover {
+[data-module] .cpt-filter-chip:hover {
   box-shadow: 0 2px 6px -2px rgba(16,24,40,0.08);
   transform: translateY(-0.5px);
 }
-[data-module="crm"] .cpt-seg button.on {
+[data-module] .cpt-seg button.on {
   box-shadow:
     0 1px 3px rgba(16,24,40,0.08),
     0 1px 2px rgba(16,24,40,0.04),
@@ -1120,36 +1122,36 @@
 }
 
 /* ── Badges & pills: gentle hover halo ── */
-[data-module="crm"] .cpt-badge {
+[data-module] .cpt-badge {
   transition: box-shadow 180ms var(--crm-ease), transform 180ms var(--crm-ease);
 }
-[data-module="crm"] .cpt-badge:hover {
+[data-module] .cpt-badge:hover {
   box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 10%, transparent);
 }
 
 /* ── Avatar / detail-head: gentle hover ── */
-[data-module="crm"] .cpt-detail-avatar {
+[data-module] .cpt-detail-avatar {
   transition: transform 220ms var(--crm-ease), box-shadow 220ms var(--crm-ease);
 }
-[data-module="crm"] .cpt-detail-avatar:hover {
+[data-module] .cpt-detail-avatar:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px -6px rgba(16,24,40,0.18);
 }
 
 /* ── Tabs: refined active underline + count chip ── */
-[data-module="crm"] .cpt-tab {
+[data-module] .cpt-tab {
   transition:
     color 180ms var(--crm-ease),
     border-color 180ms var(--crm-ease),
     background-color 180ms var(--crm-ease);
   border-radius: 6px 6px 0 0;
 }
-[data-module="crm"] .cpt-tab:hover:not(.active) {
+[data-module] .cpt-tab:hover:not(.active) {
   background: color-mix(in srgb, var(--accent, #EEF1F6) 50%, transparent);
 }
 
 /* ── Inputs / search: focus ring with primary tint ── */
-[data-module="crm"] .cpt-search-field:focus-within {
+[data-module] .cpt-search-field:focus-within {
   border-color: var(--primary, #0F1B2D);
   box-shadow:
     0 0 0 3px color-mix(in srgb, var(--primary, #0F1B2D) 8%, transparent),
@@ -1157,41 +1159,41 @@
 }
 
 /* ── Sticky entity header: refined bleed shadow ── */
-[data-module="crm"] .sticky.top-14 {
+[data-module] .sticky.top-14 {
   box-shadow:
     0 1px 0 rgba(16,24,40,0.04),
     0 6px 16px -10px rgba(16,24,40,0.10);
 }
 
-/* ── Scrollbar inside CRM kanban / drawers: thinner & quieter ── */
-[data-module="crm"] ::-webkit-scrollbar {
+/* ── Scrollbar inside module pages: thinner & quieter ── */
+[data-module] ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-[data-module="crm"] ::-webkit-scrollbar-thumb {
+[data-module] ::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--muted-foreground, #525C6F) 30%, transparent);
   border-radius: 999px;
 }
-[data-module="crm"] ::-webkit-scrollbar-thumb:hover {
+[data-module] ::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--muted-foreground, #525C6F) 55%, transparent);
 }
 
 /* ── Reduce motion: honor user preference ── */
 @media (prefers-reduced-motion: reduce) {
-  [data-module="crm"] [data-slot="card"],
-  [data-module="crm"] .cpt-kpi,
-  [data-module="crm"] .cpt-kcard,
-  [data-module="crm"] .cpt-btn,
-  [data-module="crm"] .cpt-detail-avatar,
-  [data-module="crm"] .rounded-lg.border.bg-card,
-  [data-module="crm"] .rounded-md.border.bg-card {
+  [data-module] [data-slot="card"],
+  [data-module] .cpt-kpi,
+  [data-module] .cpt-kcard,
+  [data-module] .cpt-btn,
+  [data-module] .cpt-detail-avatar,
+  [data-module] .rounded-lg.border.bg-card,
+  [data-module] .rounded-md.border.bg-card {
     transition: none !important;
     transform: none !important;
   }
 }
 
 /* ── Dark mode tweaks for premium polish ── */
-.dark [data-module="crm"] {
+.dark [data-module] {
   --crm-hairline: color-mix(in srgb, var(--border, #252A38) 80%, transparent);
   --crm-accent: color-mix(in srgb, var(--primary, #D0D5DD) 28%, var(--border, #252A38));
   --crm-shadow-rest:
@@ -1203,7 +1205,7 @@
     0 6px 14px -6px rgba(0,0,0,0.35);
   --crm-ring: 0 0 0 1px color-mix(in srgb, var(--primary, #D0D5DD) 16%, transparent);
 }
-.dark [data-module="crm"] .cpt-kcol {
+.dark [data-module] .cpt-kcol {
   background:
     linear-gradient(
       180deg,
@@ -1211,13 +1213,13 @@
       color-mix(in srgb, var(--background, #0A0D14) 70%, var(--card, #141820)) 100%
     );
 }
-.dark [data-module="crm"] .cpt-btn-primary {
+.dark [data-module] .cpt-btn-primary {
   background: linear-gradient(180deg, #2A3344 0%, #1A2333 100%);
 }
-.dark [data-module="crm"] .cpt-btn-primary:hover {
+.dark [data-module] .cpt-btn-primary:hover {
   background: linear-gradient(180deg, #344057 0%, #20293E 100%);
 }
-.dark [data-module="crm"] .cpt-tbl tbody tr:hover {
+.dark [data-module] .cpt-tbl tbody tr:hover {
   background:
     linear-gradient(
       90deg,
@@ -1227,7 +1229,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CRM — Luxury Layer
+   Luxury Layer — applied to every module
    Sits on top of the polish above. Adds:
    • Atmospheric page backdrop (very subtle radial light)
    • Satin inner highlights on cards (top edge gloss)
@@ -1237,7 +1239,7 @@
    • Spotlight sheen that drifts across cards on hover
    ═══════════════════════════════════════════════════════════ */
 
-[data-module="crm"] {
+[data-module] {
   /* Premium decel — eases cleanly from any starting velocity */
   --crm-ease-lux: cubic-bezier(0.16, 1, 0.3, 1);
   /* Warm "gold thread" — used as a 1px accent on active/hovered surfaces */
@@ -1259,11 +1261,11 @@
 
 /* ── Atmospheric backdrop — a quiet radial wash sits behind content
    to give the page real depth without competing with it. ── */
-[data-module="crm"] {
+[data-module] {
   position: relative;
   isolation: isolate;
 }
-[data-module="crm"]::before {
+[data-module]::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1286,7 +1288,7 @@
    No internal color overlay. The card surface stays white at all
    times. Hover only adjusts shadow + lift (and only on non-detail
    pages — see [data-page-type="detail"] override below). */
-[data-module="crm"] [data-slot="card"] {
+[data-module] [data-slot="card"] {
   position: relative;
   border-color: transparent;
   background-color: var(--card, #fff);
@@ -1295,24 +1297,24 @@
     box-shadow 360ms var(--crm-ease-lux),
     transform 360ms var(--crm-ease-lux);
 }
-[data-module="crm"]:not([data-page-type="detail"]) [data-slot="card"]:hover {
+[data-module]:not([data-page-type="detail"]) [data-slot="card"]:hover {
   box-shadow: var(--crm-lux-hover);
   transform: translateY(-2px);
 }
 /* Detail pages: cards stay still — no lift, no hover shadow.
    Restore a visible 1px hairline border so cards remain framed. */
-[data-module="crm"][data-page-type="detail"] [data-slot="card"],
-[data-module="crm"][data-page-type="detail"] .cpt-kpi,
-[data-module="crm"][data-page-type="detail"] .rounded-lg.border.bg-card,
-[data-module="crm"][data-page-type="detail"] .rounded-md.border.bg-card,
-[data-module="crm"][data-page-type="detail"] .rounded-xl.border.bg-card {
+[data-module][data-page-type="detail"] [data-slot="card"],
+[data-module][data-page-type="detail"] .cpt-kpi,
+[data-module][data-page-type="detail"] .rounded-lg.border.bg-card,
+[data-module][data-page-type="detail"] .rounded-md.border.bg-card,
+[data-module][data-page-type="detail"] .rounded-xl.border.bg-card {
   border-color: var(--border, #E4E7EC);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.7),
     0 1px 2px rgba(16,24,40,0.03);
 }
-[data-module="crm"][data-page-type="detail"] [data-slot="card"]:hover,
-[data-module="crm"][data-page-type="detail"] .cpt-kpi:hover {
+[data-module][data-page-type="detail"] [data-slot="card"]:hover,
+[data-module][data-page-type="detail"] .cpt-kpi:hover {
   border-color: var(--border, #E4E7EC);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.7),
@@ -1321,7 +1323,7 @@
 }
 
 /* ── KPI cards — pure white body, accent halo around card on hover ── */
-[data-module="crm"] .cpt-kpi {
+[data-module] .cpt-kpi {
   border-color: transparent;
   background-color: var(--card, #fff);
   box-shadow: var(--crm-lux-rest);
@@ -1329,7 +1331,7 @@
     box-shadow 380ms var(--crm-ease-lux),
     transform 380ms var(--crm-ease-lux);
 }
-[data-module="crm"]:not([data-page-type="detail"]) .cpt-kpi:hover {
+[data-module]:not([data-page-type="detail"]) .cpt-kpi:hover {
   transform: translateY(-3px);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 28%, var(--border, #E4E7EC)),
@@ -1337,15 +1339,15 @@
     0 18px 36px -12px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 28%, rgba(16,24,40,0.14)),
     0 8px 16px -8px rgba(16,24,40,0.10);
 }
-[data-module="crm"][data-page-type="detail"] .cpt-kpi:hover {
+[data-module][data-page-type="detail"] .cpt-kpi:hover {
   transform: none;
   box-shadow: var(--crm-lux-rest);
 }
-[data-module="crm"] .cpt-kpi-value {
+[data-module] .cpt-kpi-value {
   font-feature-settings: "tnum", "ss01", "cv11";
   letter-spacing: -0.028em;
 }
-[data-module="crm"] .cpt-kpi-label {
+[data-module] .cpt-kpi-label {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1354,7 +1356,7 @@
 }
 
 /* ── Kanban card — pure white body, lift on hover ── */
-[data-module="crm"] .cpt-kcard {
+[data-module] .cpt-kcard {
   position: relative;
   background-color: var(--card, #fff);
   box-shadow: var(--crm-lux-rest);
@@ -1362,13 +1364,13 @@
     box-shadow 320ms var(--crm-ease-lux),
     transform 320ms var(--crm-ease-lux);
 }
-[data-module="crm"] .cpt-kcard:hover {
+[data-module] .cpt-kcard:hover {
   box-shadow: var(--crm-lux-hover);
   transform: translateY(-3px);
 }
 
 /* ── Kanban column — refined glassy backdrop ── */
-[data-module="crm"] .cpt-kcol {
+[data-module] .cpt-kcol {
   background:
     linear-gradient(
       180deg,
@@ -1379,7 +1381,7 @@
     inset 0 1px 0 rgba(255,255,255,0.7),
     0 1px 2px rgba(16,24,40,0.03);
 }
-[data-module="crm"] .cpt-kcol::before {
+[data-module] .cpt-kcol::before {
   height: 2px;
   border-radius: 14px 14px 0 0;
   box-shadow:
@@ -1388,7 +1390,7 @@
 }
 
 /* ── Premium primary CTA — richer gradient, soft glow on hover ── */
-[data-module="crm"] .cpt-btn-primary {
+[data-module] .cpt-btn-primary {
   background:
     linear-gradient(180deg, #243248 0%, var(--primary, #0F1B2D) 100%);
   border-color: transparent;
@@ -1399,7 +1401,7 @@
     0 4px 10px -4px rgba(15,27,45,0.25);
   letter-spacing: 0.01em;
 }
-[data-module="crm"] .cpt-btn-primary:hover {
+[data-module] .cpt-btn-primary:hover {
   background:
     linear-gradient(180deg, #2C3B53 0%, #16243A 100%);
   box-shadow:
@@ -1410,7 +1412,7 @@
     0 0 0 4px rgba(15,27,45,0.06);
   transform: translateY(-1px);
 }
-[data-module="crm"] .cpt-btn-primary:active {
+[data-module] .cpt-btn-primary:active {
   transform: translateY(0);
   box-shadow:
     0 0 0 1px rgba(15,27,45,0.95),
@@ -1419,13 +1421,13 @@
 }
 
 /* ── Secondary buttons — subtle satin top + fine border ── */
-[data-module="crm"] .cpt-btn:not(.cpt-btn-primary):not(.cpt-btn-ghost) {
+[data-module] .cpt-btn:not(.cpt-btn-primary):not(.cpt-btn-ghost) {
   box-shadow:
     0 1px 0 rgba(255,255,255,0.6) inset,
     0 1px 1px rgba(16,24,40,0.03),
     0 1px 2px rgba(16,24,40,0.04);
 }
-[data-module="crm"] .cpt-btn:not(.cpt-btn-primary):not(.cpt-btn-ghost):hover {
+[data-module] .cpt-btn:not(.cpt-btn-primary):not(.cpt-btn-ghost):hover {
   box-shadow:
     0 1px 0 rgba(255,255,255,0.7) inset,
     0 2px 4px rgba(16,24,40,0.05),
@@ -1433,13 +1435,13 @@
 }
 
 /* ── Tables — premium header, refined row hover ── */
-[data-module="crm"] .cpt-table-wrap {
+[data-module] .cpt-table-wrap {
   box-shadow:
     0 1px 0 rgba(255,255,255,0.6) inset,
     0 1px 2px rgba(16,24,40,0.03),
     0 4px 14px -6px rgba(16,24,40,0.05);
 }
-[data-module="crm"] .cpt-tbl thead th {
+[data-module] .cpt-tbl thead th {
   background:
     linear-gradient(
       180deg,
@@ -1449,10 +1451,10 @@
   font-weight: 600;
   letter-spacing: 0.075em;
 }
-[data-module="crm"] .cpt-tbl tbody tr {
+[data-module] .cpt-tbl tbody tr {
   transition: background 220ms var(--crm-ease-lux), box-shadow 220ms var(--crm-ease-lux);
 }
-[data-module="crm"] .cpt-tbl tbody tr:hover {
+[data-module] .cpt-tbl tbody tr:hover {
   background:
     linear-gradient(
       90deg,
@@ -1463,12 +1465,12 @@
 }
 
 /* ── Badges — refined dot halo, pill-press feel on hover ── */
-[data-module="crm"] .cpt-badge {
+[data-module] .cpt-badge {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.45),
     0 0 0 1px color-mix(in srgb, currentColor 12%, transparent);
 }
-[data-module="crm"] .cpt-badge:hover {
+[data-module] .cpt-badge:hover {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.55),
     0 0 0 1px color-mix(in srgb, currentColor 18%, transparent),
@@ -1476,40 +1478,40 @@
 }
 
 /* ── Page heading — luxe tracking ── */
-[data-module="crm"] .cpt-page-title,
-[data-module="crm"] h1 {
+[data-module] .cpt-page-title,
+[data-module] h1 {
   letter-spacing: -0.022em;
   font-feature-settings: "ss01", "cv11";
 }
-[data-module="crm"] .text-\[11px\].uppercase,
-[data-module="crm"] .text-\[10\.5px\].uppercase {
+[data-module] .text-\[11px\].uppercase,
+[data-module] .text-\[10\.5px\].uppercase {
   letter-spacing: 0.085em;
   font-weight: 600;
 }
 
-/* ── Tabular numbers everywhere by default in CRM ── */
-[data-module="crm"] {
+/* ── Tabular numbers everywhere by default ── */
+[data-module] {
   font-feature-settings: "ss01", "cv11";
 }
-[data-module="crm"] .num,
-[data-module="crm"] .tabular-nums,
-[data-module="crm"] .cpt-num,
-[data-module="crm"] [class*="font-bold"][class*="tabular-nums"] {
+[data-module] .num,
+[data-module] .tabular-nums,
+[data-module] .cpt-num,
+[data-module] [class*="font-bold"][class*="tabular-nums"] {
   font-feature-settings: "tnum", "ss01", "cv11";
 }
 
 /* ── Gold-thread focus accent — appears only on keyboard focus,
    marking the interactive surface with a luxurious 1px warm hairline. ── */
-[data-module="crm"] :focus-visible {
+[data-module] :focus-visible {
   outline: none;
   box-shadow:
     0 0 0 1px var(--crm-thread),
     0 0 0 4px var(--crm-thread-soft) !important;
   border-radius: inherit;
 }
-[data-module="crm"] [data-slot="card"]:focus-within,
-[data-module="crm"] .cpt-kcard:focus-within,
-[data-module="crm"] .cpt-kpi:focus-within {
+[data-module] [data-slot="card"]:focus-within,
+[data-module] .cpt-kcard:focus-within,
+[data-module] .cpt-kpi:focus-within {
   box-shadow:
     0 0 0 1px var(--crm-thread),
     0 0 0 4px var(--crm-thread-soft),
@@ -1517,7 +1519,7 @@
 }
 
 /* ── Sticky entity header — finer glass + crisp underline ── */
-[data-module="crm"] .sticky.top-14 {
+[data-module] .sticky.top-14 {
   backdrop-filter: blur(14px) saturate(180%);
   -webkit-backdrop-filter: blur(14px) saturate(180%);
   border-bottom-color: color-mix(in srgb, var(--border, #E4E7EC) 80%, transparent);
@@ -1528,17 +1530,17 @@
 }
 
 /* ── Mini-card (rounded-lg border bg-card) — satin + lift on list/form pages ── */
-[data-module="crm"] .rounded-lg.border.bg-card,
-[data-module="crm"] .rounded-md.border.bg-card,
-[data-module="crm"] .rounded-xl.border.bg-card {
+[data-module] .rounded-lg.border.bg-card,
+[data-module] .rounded-md.border.bg-card,
+[data-module] .rounded-xl.border.bg-card {
   position: relative;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.6),
     0 1px 2px rgba(16,24,40,0.03);
 }
-[data-module="crm"]:not([data-page-type="detail"]) .rounded-lg.border.bg-card:hover,
-[data-module="crm"]:not([data-page-type="detail"]) .rounded-md.border.bg-card:hover,
-[data-module="crm"]:not([data-page-type="detail"]) .rounded-xl.border.bg-card:hover {
+[data-module]:not([data-page-type="detail"]) .rounded-lg.border.bg-card:hover,
+[data-module]:not([data-page-type="detail"]) .rounded-md.border.bg-card:hover,
+[data-module]:not([data-page-type="detail"]) .rounded-xl.border.bg-card:hover {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.85),
     0 0 0 1px var(--crm-accent),
@@ -1548,7 +1550,7 @@
 }
 
 /* ── Avatar / detail-head — soft glow on hover ── */
-[data-module="crm"] .cpt-detail-avatar:hover {
+[data-module] .cpt-detail-avatar:hover {
   box-shadow:
     0 0 0 1px var(--crm-thread),
     0 0 0 4px var(--crm-thread-soft),
@@ -1557,19 +1559,19 @@
 
 /* ── Reduce motion: extend prior rule to luxury layer ── */
 @media (prefers-reduced-motion: reduce) {
-  [data-module="crm"] [data-slot="card"]::after,
-  [data-module="crm"] .cpt-kpi::after,
-  [data-module="crm"] .cpt-kcard::after {
+  [data-module] [data-slot="card"]::after,
+  [data-module] .cpt-kpi::after,
+  [data-module] .cpt-kcard::after {
     transition: none !important;
     opacity: 0 !important;
   }
-  [data-module="crm"]::before {
+  [data-module]::before {
     display: none;
   }
 }
 
 /* ── Dark mode — adapt satin highlights and atmospheric backdrop ── */
-.dark [data-module="crm"] {
+.dark [data-module] {
   --crm-lux-rest:
     0 0 0 1px color-mix(in srgb, var(--border, #252A38) 90%, transparent),
     0 1px 0 rgba(255,255,255,0.04) inset,
@@ -1583,7 +1585,7 @@
   --crm-thread: rgba(212, 184, 116, 0.45);
   --crm-thread-soft: rgba(212, 184, 116, 0.15);
 }
-.dark [data-module="crm"]::before {
+.dark [data-module]::before {
   background:
     radial-gradient(
       80% 60% at 50% -10%,
@@ -1596,9 +1598,9 @@
       transparent 70%
     );
 }
-.dark [data-module="crm"] [data-slot="card"]::after,
-.dark [data-module="crm"] .cpt-kpi::after,
-.dark [data-module="crm"] .cpt-kcard::after {
+.dark [data-module] [data-slot="card"]::after,
+.dark [data-module] .cpt-kpi::after,
+.dark [data-module] .cpt-kcard::after {
   background:
     radial-gradient(
       70% 50% at 30% 0%,
@@ -1607,7 +1609,7 @@
     );
   mix-blend-mode: screen;
 }
-.dark [data-module="crm"] .cpt-tbl thead th {
+.dark [data-module] .cpt-tbl thead th {
   background:
     linear-gradient(
       180deg,
@@ -1615,14 +1617,14 @@
       color-mix(in srgb, var(--background, #0A0D14) 60%, var(--card, #141820)) 100%
     );
 }
-.dark [data-module="crm"] .cpt-btn-primary {
+.dark [data-module] .cpt-btn-primary {
   background: linear-gradient(180deg, #2F394C 0%, #1B2434 100%);
   box-shadow:
     0 0 0 1px rgba(255,255,255,0.10),
     0 1px 0 rgba(255,255,255,0.08) inset,
     0 2px 6px rgba(0,0,0,0.40);
 }
-.dark [data-module="crm"] .cpt-btn-primary:hover {
+.dark [data-module] .cpt-btn-primary:hover {
   background: linear-gradient(180deg, #3A4660 0%, #232F46 100%);
   box-shadow:
     0 0 0 1px rgba(255,255,255,0.12),
@@ -1632,21 +1634,21 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CRM — Primitive Coverage
+   Primitive Coverage — applied to every module
    Brings the luxury treatment to every shadcn primitive that
-   appears inside [data-module="crm"]: buttons, inputs, dialogs,
+   appears inside [data-module]: buttons, inputs, dialogs,
    popovers, sheets, dropdowns, switches, checkboxes, tabs,
    tooltips, alerts, calendar, badges. Portal-rendered surfaces
-   (Dialog/Sheet/Popover/Tooltip/Dropdown) are covered globally
-   by adding a [data-crm-portal] attribute the body sets when
-   navigation enters /crm; if absent, content slots inherit a
-   sensible polish from default shadcn classes.
+   (Dialog/Sheet/Popover/Tooltip/Dropdown) are polished globally
+   in the Portal-rendered Surfaces block above so popups feel
+   identical across CRM, WMS, IMS, Procurement, Reports, and
+   Settings.
    ═══════════════════════════════════════════════════════════ */
 
 /* ── Buttons (shadcn data-slot="button") ──
    Layered with satin top, inner highlight, hover lift +
    accent-tinted shadow per variant. */
-[data-module="crm"] [data-slot="button"] {
+[data-module] [data-slot="button"] {
   position: relative;
   font-feature-settings: "ss01", "cv11";
   letter-spacing: 0.005em;
@@ -1657,15 +1659,15 @@
     transform 200ms var(--crm-ease-lux),
     color 200ms var(--crm-ease-lux);
 }
-[data-module="crm"] [data-slot="button"]:hover:not(:disabled) {
+[data-module] [data-slot="button"]:hover:not(:disabled) {
   transform: translateY(-1px);
 }
-[data-module="crm"] [data-slot="button"]:active:not(:disabled) {
+[data-module] [data-slot="button"]:active:not(:disabled) {
   transform: translateY(0);
 }
 
 /* Default (slate primary) — glossy gradient */
-[data-module="crm"] [data-slot="button"].bg-\[\#0F1B2D\] {
+[data-module] [data-slot="button"].bg-\[\#0F1B2D\] {
   background: linear-gradient(180deg, #243248 0%, #0F1B2D 100%) !important;
   box-shadow:
     0 0 0 1px rgba(15,27,45,0.95),
@@ -1673,7 +1675,7 @@
     0 1px 2px rgba(16,24,40,0.20),
     0 4px 10px -4px rgba(15,27,45,0.30);
 }
-[data-module="crm"] [data-slot="button"].bg-\[\#0F1B2D\]:hover:not(:disabled) {
+[data-module] [data-slot="button"].bg-\[\#0F1B2D\]:hover:not(:disabled) {
   background: linear-gradient(180deg, #2C3B53 0%, #16243A 100%) !important;
   box-shadow:
     0 0 0 1px rgba(15,27,45,0.95),
@@ -1683,15 +1685,15 @@
 }
 
 /* Outline / secondary / destructive (light-bg variants) — satin top */
-[data-module="crm"] [data-slot="button"].border-\[\#D0D5DD\],
-[data-module="crm"] [data-slot="button"].bg-\[\#EEF0F3\] {
+[data-module] [data-slot="button"].border-\[\#D0D5DD\],
+[data-module] [data-slot="button"].bg-\[\#EEF0F3\] {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.7),
     0 1px 1px rgba(16,24,40,0.03),
     0 1px 2px rgba(16,24,40,0.04);
 }
-[data-module="crm"] [data-slot="button"].border-\[\#D0D5DD\]:hover:not(:disabled),
-[data-module="crm"] [data-slot="button"].bg-\[\#EEF0F3\]:hover:not(:disabled) {
+[data-module] [data-slot="button"].border-\[\#D0D5DD\]:hover:not(:disabled),
+[data-module] [data-slot="button"].bg-\[\#EEF0F3\]:hover:not(:disabled) {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.85),
     0 0 0 1px var(--crm-accent),
@@ -1700,40 +1702,40 @@
 }
 
 /* Semantic solid buttons — gradient + matching halo on hover */
-[data-module="crm"] [data-slot="button"].bg-\[\#067647\] {
+[data-module] [data-slot="button"].bg-\[\#067647\] {
   background: linear-gradient(180deg, #0A8B53 0%, #056338 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.18),
     0 1px 2px rgba(6,118,71,0.30),
     0 4px 10px -4px rgba(6,118,71,0.30);
 }
-[data-module="crm"] [data-slot="button"].bg-\[\#067647\]:hover:not(:disabled) {
+[data-module] [data-slot="button"].bg-\[\#067647\]:hover:not(:disabled) {
   background: linear-gradient(180deg, #0CA060 0%, #066E3F 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.22),
     0 12px 24px -6px rgba(6,118,71,0.45);
 }
-[data-module="crm"] [data-slot="button"].bg-\[\#175CD3\] {
+[data-module] [data-slot="button"].bg-\[\#175CD3\] {
   background: linear-gradient(180deg, #2A72E8 0%, #134AA8 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.18),
     0 1px 2px rgba(23,92,211,0.30),
     0 4px 10px -4px rgba(23,92,211,0.30);
 }
-[data-module="crm"] [data-slot="button"].bg-\[\#175CD3\]:hover:not(:disabled) {
+[data-module] [data-slot="button"].bg-\[\#175CD3\]:hover:not(:disabled) {
   background: linear-gradient(180deg, #3A86FF 0%, #1654BF 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.22),
     0 12px 24px -6px rgba(23,92,211,0.45);
 }
-[data-module="crm"] [data-slot="button"].bg-\[\#B54708\] {
+[data-module] [data-slot="button"].bg-\[\#B54708\] {
   background: linear-gradient(180deg, #D2570B 0%, #9F3D06 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.18),
     0 1px 2px rgba(181,71,8,0.30),
     0 4px 10px -4px rgba(181,71,8,0.30);
 }
-[data-module="crm"] [data-slot="button"].bg-\[\#B54708\]:hover:not(:disabled) {
+[data-module] [data-slot="button"].bg-\[\#B54708\]:hover:not(:disabled) {
   background: linear-gradient(180deg, #E96612 0%, #B54708 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.22),
@@ -1741,11 +1743,11 @@
 }
 
 /* Tinted-light variants — subtle halo on hover */
-[data-module="crm"] [data-slot="button"][class*="bg-[#EEF1F6]"]:hover:not(:disabled),
-[data-module="crm"] [data-slot="button"][class*="bg-[#ECFDF3]"]:hover:not(:disabled),
-[data-module="crm"] [data-slot="button"][class*="bg-[#FEF3F2]"]:hover:not(:disabled),
-[data-module="crm"] [data-slot="button"][class*="bg-[#FFFAEB]"]:hover:not(:disabled),
-[data-module="crm"] [data-slot="button"][class*="bg-[#EFF4FF]"]:hover:not(:disabled) {
+[data-module] [data-slot="button"][class*="bg-[#EEF1F6]"]:hover:not(:disabled),
+[data-module] [data-slot="button"][class*="bg-[#ECFDF3]"]:hover:not(:disabled),
+[data-module] [data-slot="button"][class*="bg-[#FEF3F2]"]:hover:not(:disabled),
+[data-module] [data-slot="button"][class*="bg-[#FFFAEB]"]:hover:not(:disabled),
+[data-module] [data-slot="button"][class*="bg-[#EFF4FF]"]:hover:not(:disabled) {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.7),
     0 0 0 1px color-mix(in srgb, currentColor 18%, transparent),
@@ -1753,16 +1755,16 @@
 }
 
 /* Ghost / link — refined hover bg */
-[data-module="crm"] [data-slot="button"].border-transparent.bg-transparent:hover:not(:disabled) {
+[data-module] [data-slot="button"].border-transparent.bg-transparent:hover:not(:disabled) {
   background: color-mix(in srgb, var(--accent, #EEF1F6) 60%, transparent) !important;
 }
 
 /* ── Inputs / Textarea / Select-trigger ──
    Resting: subtle inset shadow ("the page presses in").
    Focus: gold-thread ring. */
-[data-module="crm"] [data-slot="input"],
-[data-module="crm"] [data-slot="textarea"],
-[data-module="crm"] [data-slot="select-trigger"] {
+[data-module] [data-slot="input"],
+[data-module] [data-slot="textarea"],
+[data-module] [data-slot="select-trigger"] {
   box-shadow:
     inset 0 1px 2px rgba(16,24,40,0.04),
     0 1px 0 rgba(255,255,255,0.5);
@@ -1771,17 +1773,17 @@
     box-shadow 220ms var(--crm-ease-lux),
     background-color 180ms var(--crm-ease-lux);
 }
-[data-module="crm"] [data-slot="input"]:hover:not(:disabled):not(:focus),
-[data-module="crm"] [data-slot="textarea"]:hover:not(:disabled):not(:focus),
-[data-module="crm"] [data-slot="select-trigger"]:hover:not(:disabled):not([data-state="open"]) {
+[data-module] [data-slot="input"]:hover:not(:disabled):not(:focus),
+[data-module] [data-slot="textarea"]:hover:not(:disabled):not(:focus),
+[data-module] [data-slot="select-trigger"]:hover:not(:disabled):not([data-state="open"]) {
   border-color: color-mix(in srgb, var(--primary, #0F1B2D) 18%, var(--input, #D0D5DD));
 }
-[data-module="crm"] [data-slot="input"]:focus,
-[data-module="crm"] [data-slot="input"]:focus-visible,
-[data-module="crm"] [data-slot="textarea"]:focus,
-[data-module="crm"] [data-slot="textarea"]:focus-visible,
-[data-module="crm"] [data-slot="select-trigger"][data-state="open"],
-[data-module="crm"] [data-slot="select-trigger"]:focus-visible {
+[data-module] [data-slot="input"]:focus,
+[data-module] [data-slot="input"]:focus-visible,
+[data-module] [data-slot="textarea"]:focus,
+[data-module] [data-slot="textarea"]:focus-visible,
+[data-module] [data-slot="select-trigger"][data-state="open"],
+[data-module] [data-slot="select-trigger"]:focus-visible {
   border-color: var(--crm-thread) !important;
   box-shadow:
     inset 0 1px 2px rgba(16,24,40,0.04),
@@ -1791,7 +1793,7 @@
 }
 
 /* ── Tabs (shadcn) — luxe underline + smooth transition ── */
-[data-module="crm"] [data-slot="tabs-list"] {
+[data-module] [data-slot="tabs-list"] {
   position: relative;
   border-bottom: 1px solid var(--border, #E4E7EC);
   background: transparent;
@@ -1799,7 +1801,7 @@
   padding: 0;
   gap: 2px;
 }
-[data-module="crm"] [data-slot="tabs-trigger"] {
+[data-module] [data-slot="tabs-trigger"] {
   position: relative;
   border-radius: 6px 6px 0 0;
   border: none;
@@ -1813,17 +1815,17 @@
     color 180ms var(--crm-ease-lux),
     background-color 180ms var(--crm-ease-lux);
 }
-[data-module="crm"] [data-slot="tabs-trigger"]:hover:not([data-state="active"]) {
+[data-module] [data-slot="tabs-trigger"]:hover:not([data-state="active"]) {
   color: var(--foreground, #0F1B2D);
   background: color-mix(in srgb, var(--accent, #EEF1F6) 55%, transparent);
 }
-[data-module="crm"] [data-slot="tabs-trigger"][data-state="active"] {
+[data-module] [data-slot="tabs-trigger"][data-state="active"] {
   color: var(--foreground, #0F1B2D);
   font-weight: 650;
   background: transparent;
   box-shadow: none;
 }
-[data-module="crm"] [data-slot="tabs-trigger"][data-state="active"]::after {
+[data-module] [data-slot="tabs-trigger"][data-state="active"]::after {
   content: "";
   position: absolute;
   inset: auto 8px 0 8px;
@@ -1834,20 +1836,20 @@
 }
 
 /* ── Switch — premium track + gold-thread focus ── */
-[data-module="crm"] [data-slot="switch"] {
+[data-module] [data-slot="switch"] {
   box-shadow:
     inset 0 1px 2px rgba(16,24,40,0.06),
     0 1px 0 rgba(255,255,255,0.4);
   transition: background-color 220ms var(--crm-ease-lux), box-shadow 220ms var(--crm-ease-lux);
 }
-[data-module="crm"] [data-slot="switch"][data-state="checked"] {
+[data-module] [data-slot="switch"][data-state="checked"] {
   background: linear-gradient(180deg, #243248 0%, var(--primary, #0F1B2D) 100%);
   box-shadow:
     inset 0 1px 2px rgba(0,0,0,0.30),
     0 0 0 1px rgba(15,27,45,0.95),
     0 4px 10px -4px rgba(15,27,45,0.30);
 }
-[data-module="crm"] [data-slot="switch-thumb"] {
+[data-module] [data-slot="switch-thumb"] {
   box-shadow:
     0 1px 0 rgba(255,255,255,0.8) inset,
     0 1px 3px rgba(16,24,40,0.18),
@@ -1855,13 +1857,13 @@
 }
 
 /* ── Checkbox — refined focus ring ── */
-[data-module="crm"] [data-slot="checkbox"] {
+[data-module] [data-slot="checkbox"] {
   transition:
     background-color 180ms var(--crm-ease-lux),
     border-color 180ms var(--crm-ease-lux),
     box-shadow 220ms var(--crm-ease-lux);
 }
-[data-module="crm"] [data-slot="checkbox"][data-state="checked"] {
+[data-module] [data-slot="checkbox"][data-state="checked"] {
   background: linear-gradient(180deg, #243248 0%, var(--primary, #0F1B2D) 100%);
   border-color: var(--primary, #0F1B2D);
   box-shadow:
@@ -1871,7 +1873,7 @@
 }
 
 /* ── Alerts — subtle gradient + warm halo ── */
-[data-module="crm"] [data-slot="alert"] {
+[data-module] [data-slot="alert"] {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.6),
     0 1px 2px rgba(16,24,40,0.04),
@@ -1885,14 +1887,14 @@
 }
 
 /* ── shadcn Badge — subtle satin + hover halo ── */
-[data-module="crm"] [class*="badgeVariants"],
-[data-module="crm"] [data-slot="badge"] {
+[data-module] [class*="badgeVariants"],
+[data-module] [data-slot="badge"] {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.45),
     0 0 0 1px color-mix(in srgb, currentColor 10%, transparent);
   transition: box-shadow 180ms var(--crm-ease-lux), transform 180ms var(--crm-ease-lux);
 }
-[data-module="crm"] [data-slot="badge"]:hover {
+[data-module] [data-slot="badge"]:hover {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.55),
     0 0 0 1px color-mix(in srgb, currentColor 18%, transparent),
@@ -1903,10 +1905,10 @@
    The form pages use cards with an icon header per section.
    We tint the parent Card with a 2px left bar matching the
    icon's color via a CSS variable set on the card. ── */
-[data-module="crm"] [data-slot="card"][data-accent] {
+[data-module] [data-slot="card"][data-accent] {
   position: relative;
 }
-[data-module="crm"] [data-slot="card"][data-accent]::before {
+[data-module] [data-slot="card"][data-accent]::before {
   content: "";
   position: absolute;
   inset: 12px auto 12px 0;
@@ -1915,20 +1917,20 @@
   background: var(--cpt-card-accent, var(--primary, #0F1B2D));
   opacity: 0.7;
 }
-[data-module="crm"] [data-slot="card"][data-accent="success"] { --cpt-card-accent: #067647; }
-[data-module="crm"] [data-slot="card"][data-accent="info"]    { --cpt-card-accent: #175CD3; }
-[data-module="crm"] [data-slot="card"][data-accent="warning"] { --cpt-card-accent: #B54708; }
-[data-module="crm"] [data-slot="card"][data-accent="danger"]  { --cpt-card-accent: #B42318; }
-[data-module="crm"] [data-slot="card"][data-accent="violet"]  { --cpt-card-accent: #6938EF; }
-[data-module="crm"] [data-slot="card"][data-accent="teal"]    { --cpt-card-accent: #0E9384; }
+[data-module] [data-slot="card"][data-accent="success"] { --cpt-card-accent: #067647; }
+[data-module] [data-slot="card"][data-accent="info"]    { --cpt-card-accent: #175CD3; }
+[data-module] [data-slot="card"][data-accent="warning"] { --cpt-card-accent: #B54708; }
+[data-module] [data-slot="card"][data-accent="danger"]  { --cpt-card-accent: #B42318; }
+[data-module] [data-slot="card"][data-accent="violet"]  { --cpt-card-accent: #6938EF; }
+[data-module] [data-slot="card"][data-accent="teal"]    { --cpt-card-accent: #0E9384; }
 
 /* ═══════════════════════════════════════════════════════════
-   CRM — Portal-rendered Surfaces
+   Portal-rendered Surfaces — global polish
    Dialogs, Sheets, Popovers, Dropdowns, Tooltips, Hover
    Cards, Toast, and Calendar grids are appended to <body>
-   and therefore live OUTSIDE [data-module="crm"]. We polish
-   them globally — the styles are gentle enough that other
-   modules benefit too, but tuned for the CRM context.
+   and therefore live OUTSIDE the [data-module] subtree.
+   We polish them globally so popups feel identical across
+   every module — same shadows, easing, and surface treatment.
    ═══════════════════════════════════════════════════════════ */
 
 /* Modal/Dialog content + Sheet content — premium surface */

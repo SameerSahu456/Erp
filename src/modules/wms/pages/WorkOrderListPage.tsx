@@ -107,10 +107,10 @@ function WorkOrderListPage() {
   const urgent = useMemo(() => rows.filter((r) => r.priority === 'Urgent' || r.priority === 'High'), [rows])
 
   const stats: StatCardData[] = [
-    { label: 'Total Work Orders', value: rows.length },
-    { label: 'In Progress', value: inProgress.length },
-    { label: 'Sales', value: salesOrders.length },
-    { label: 'Rental', value: rentalOrders.length },
+    { label: 'Total Work Orders', value: rows.length, accent: 'primary' as const },
+    { label: 'In Progress', value: inProgress.length, accent: 'info' as const },
+    { label: 'Sales', value: salesOrders.length, accent: 'violet' as const },
+    { label: 'Rental', value: rentalOrders.length, accent: 'teal' as const },
   ]
 
   const tabs: TabConfig[] = [

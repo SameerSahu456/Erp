@@ -43,6 +43,17 @@ import { StatsRow } from "@/components/common/StatsRow"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import type { StatusBadgeVariant } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/page"
+import {
+  ChartDefs,
+  PremiumTooltip,
+  PREMIUM_TOOLTIP_CURSOR_BAR,
+  PREMIUM_TOOLTIP_CURSOR_LINE,
+  CHART_COLORS,
+  verticalFill,
+  horizontalFill,
+  radialFill,
+  type ChartAccent,
+} from "@/components/common/chartTheme"
 
 import { leads } from "@/modules/crm/data/leads"
 import { deals } from "@/modules/crm/data/deals"
@@ -75,27 +86,27 @@ const fmtShort = (v: number) => {
   return String(v)
 }
 
-const STAGE_COLORS: Record<string, string> = {
-  New: "#6366f1",
-  Procurement: "#8b5cf6",
-  Cold: "#94a3b8",
-  Proposal: "#f59e0b",
-  Negotiation: "#3b82f6",
-  "Closed Won": "#22c55e",
-  "Closed Lost": "#ef4444",
+const STAGE_ACCENTS: Record<string, ChartAccent> = {
+  New: "indigo",
+  Procurement: "violet",
+  Cold: "slate",
+  Proposal: "amber",
+  Negotiation: "info",
+  "Closed Won": "emerald",
+  "Closed Lost": "danger",
 }
 
-const PIE_COLORS = [
-  "#6366f1",
-  "#8b5cf6",
-  "#ec4899",
-  "#f59e0b",
-  "#3b82f6",
-  "#22c55e",
-  "#14b8a6",
-  "#ef4444",
-  "#94a3b8",
-  "#d946ef",
+const PIE_ACCENTS: ChartAccent[] = [
+  "indigo",
+  "violet",
+  "pink",
+  "amber",
+  "info",
+  "emerald",
+  "teal",
+  "danger",
+  "slate",
+  "rose",
 ]
 
 const dealStageVariant: Record<string, StatusBadgeVariant> = {
@@ -513,33 +524,37 @@ function CrmDashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={stageDistribution}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <ChartDefs />
+                <CartesianGrid strokeDasharray="3 6" vertical={false} className="stroke-border/50" />
                 <XAxis
                   dataKey="stage"
                   tick={{ fontSize: 12 }}
                   className="fill-muted-foreground"
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <YAxis
                   tick={{ fontSize: 12 }}
                   className="fill-muted-foreground"
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip
-                  formatter={(value: number, name: string) =>
-                    name === "value" ? fmt(value) : value
+                  cursor={PREMIUM_TOOLTIP_CURSOR_BAR}
+                  content={
+                    <PremiumTooltip
+                      formatter={(value, name) =>
+                        name === "value" ? [fmt(Number(value)), name] : [value, name]
+                      }
+                    />
                   }
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 13,
-                  }}
                 />
-                <Legend />
-                <Bar dataKey="count" name="Deals" radius={[4, 4, 0, 0]}>
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                <Bar dataKey="count" name="Deals" radius={[6, 6, 0, 0]} filter="url(#cpt-chart-shadow)">
                   {stageDistribution.map((entry) => (
                     <Cell
                       key={entry.stage}
-                      fill={STAGE_COLORS[entry.stage] ?? "#6366f1"}
+                      fill={verticalFill(STAGE_ACCENTS[entry.stage] ?? "indigo")}
                     />
                   ))}
                 </Bar>
@@ -556,6 +571,7 @@ function CrmDashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
+                <ChartDefs />
                 <Pie
                   data={leadDistribution}
                   cx="50%"
@@ -564,23 +580,18 @@ function CrmDashboard() {
                   outerRadius={100}
                   paddingAngle={3}
                   dataKey="value"
+                  stroke="hsl(var(--card))"
+                  strokeWidth={2}
                   label={({ name, value }) => `${name}: ${value}`}
                 >
                   {leadDistribution.map((_, i) => (
                     <Cell
                       key={i}
-                      fill={PIE_COLORS[i % PIE_COLORS.length]}
+                      fill={radialFill(PIE_ACCENTS[i % PIE_ACCENTS.length]!)}
                     />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 13,
-                  }}
-                />
+                <Tooltip content={<PremiumTooltip />} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -596,35 +607,46 @@ function CrmDashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={revenueTrend}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <LineChart data={revenueTrend} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                <ChartDefs />
+                <defs>
+                  <linearGradient id="crm-revenue-area" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={CHART_COLORS.emerald.via} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={CHART_COLORS.emerald.via} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 6" vertical={false} className="stroke-border/50" />
                 <XAxis
                   dataKey="month"
                   tick={{ fontSize: 12 }}
                   className="fill-muted-foreground"
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <YAxis
                   tickFormatter={fmtShort}
                   tick={{ fontSize: 12 }}
                   className="fill-muted-foreground"
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip
-                  formatter={(value: number) => fmt(value)}
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 13,
-                  }}
+                  cursor={PREMIUM_TOOLTIP_CURSOR_LINE}
+                  content={
+                    <PremiumTooltip
+                      formatter={(value, name) => [fmt(Number(value)), name]}
+                    />
+                  }
                 />
                 <Line
                   type="monotone"
                   dataKey="revenue"
                   name="Revenue"
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
+                  stroke={`url(#${"cpt-grad-h"}-emerald)`}
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: CHART_COLORS.emerald.via, strokeWidth: 2, stroke: "hsl(var(--card))" }}
+                  activeDot={{ r: 7, fill: CHART_COLORS.emerald.via, strokeWidth: 3, stroke: "hsl(var(--card))" }}
+                  filter="url(#cpt-chart-shadow)"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -639,12 +661,15 @@ function CrmDashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={kanbanData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <ChartDefs />
+                <CartesianGrid strokeDasharray="3 6" horizontal={false} className="stroke-border/50" />
                 <XAxis
                   type="number"
                   tickFormatter={fmtShort}
                   tick={{ fontSize: 12 }}
                   className="fill-muted-foreground"
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <YAxis
                   type="category"
@@ -652,23 +677,24 @@ function CrmDashboard() {
                   width={100}
                   tick={{ fontSize: 12 }}
                   className="fill-muted-foreground"
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip
-                  formatter={(value: number, name: string) =>
-                    name === "value" ? fmt(value) : value
+                  cursor={PREMIUM_TOOLTIP_CURSOR_BAR}
+                  content={
+                    <PremiumTooltip
+                      formatter={(value, name) =>
+                        name === "value" ? [fmt(Number(value)), name] : [value, name]
+                      }
+                    />
                   }
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 13,
-                  }}
                 />
-                <Bar dataKey="value" name="Pipeline Value" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="value" name="Pipeline Value" radius={[0, 6, 6, 0]} filter="url(#cpt-chart-shadow)">
                   {kanbanData.map((entry) => (
                     <Cell
                       key={entry.stage}
-                      fill={STAGE_COLORS[entry.stage] ?? "#6366f1"}
+                      fill={horizontalFill(STAGE_ACCENTS[entry.stage] ?? "indigo")}
                     />
                   ))}
                 </Bar>
@@ -688,29 +714,30 @@ function CrmDashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={tasksByStatus}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <ChartDefs />
+                <CartesianGrid strokeDasharray="3 6" vertical={false} className="stroke-border/50" />
                 <XAxis
                   dataKey="status"
                   tick={{ fontSize: 12 }}
                   className="fill-muted-foreground"
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <YAxis
                   tick={{ fontSize: 12 }}
                   className="fill-muted-foreground"
                   allowDecimals={false}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 13,
-                  }}
+                  cursor={PREMIUM_TOOLTIP_CURSOR_BAR}
+                  content={<PremiumTooltip />}
                 />
-                <Bar dataKey="count" name="Tasks" radius={[4, 4, 0, 0]}>
-                  <Cell fill="#f59e0b" />
-                  <Cell fill="#3b82f6" />
-                  <Cell fill="#22c55e" />
+                <Bar dataKey="count" name="Tasks" radius={[6, 6, 0, 0]} filter="url(#cpt-chart-shadow)">
+                  <Cell fill={verticalFill("amber")} />
+                  <Cell fill={verticalFill("info")} />
+                  <Cell fill={verticalFill("emerald")} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

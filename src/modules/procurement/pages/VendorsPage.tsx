@@ -135,10 +135,10 @@ function VendorsPage() {
   const totalSpend = mockVendors.reduce((sum, v) => sum + v.totalSpend, 0)
 
   const stats = [
-    { label: 'Active Vendors', value: activeCount, icon: Store },
-    { label: 'Total Orders', value: totalOrders, icon: ShoppingCart },
-    { label: 'Avg Rating', value: `${avgRating}/5`, icon: Star },
-    { label: 'Total Spend', value: formatShort(totalSpend), icon: IndianRupee },
+    { label: 'Active Vendors', value: activeCount, icon: Store, accent: 'success' as const },
+    { label: 'Total Orders', value: totalOrders, icon: ShoppingCart, accent: 'info' as const },
+    { label: 'Avg Rating', value: `${avgRating}/5`, icon: Star, accent: 'warning' as const },
+    { label: 'Total Spend', value: formatShort(totalSpend), icon: IndianRupee, accent: 'teal' as const },
   ]
 
   return (

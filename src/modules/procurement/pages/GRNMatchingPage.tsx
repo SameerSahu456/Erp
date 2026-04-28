@@ -112,13 +112,14 @@ function GRNMatchingPage() {
       stats={
         <StatsRow
           stats={[
-            { label: 'Total Entries', value: mockGRNMatches.length, icon: Package },
-            { label: 'Matched', value: totalMatched, icon: CheckCircle },
-            { label: 'Pending', value: totalPending, icon: Clock },
+            { label: 'Total Entries', value: mockGRNMatches.length, icon: Package, accent: 'primary' as const },
+            { label: 'Matched', value: totalMatched, icon: CheckCircle, accent: 'success' as const },
+            { label: 'Pending', value: totalPending, icon: Clock, accent: 'warning' as const },
             {
               label: 'Discrepancies',
               value: totalDiscrepancies,
               icon: AlertTriangle,
+              accent: 'danger' as const,
               ...(totalDiscrepancies > 0 ? { className: 'border-destructive/40 bg-destructive/5' } : {}),
             },
           ]}

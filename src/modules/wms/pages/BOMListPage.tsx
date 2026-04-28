@@ -82,10 +82,10 @@ function BOMListPage() {
   const activeBOMs = useMemo(() => rows.filter((r) => r.status === 'Active'), [rows])
 
   const stats: StatCardData[] = [
-    { label: 'Total BOMs', value: rows.length },
-    { label: 'Assembly', value: assemblyBOMs.length },
-    { label: 'Disassembly', value: disassemblyBOMs.length },
-    { label: 'Active', value: activeBOMs.length },
+    { label: 'Total BOMs', value: rows.length, accent: 'primary' as const },
+    { label: 'Assembly', value: assemblyBOMs.length, accent: 'info' as const },
+    { label: 'Disassembly', value: disassemblyBOMs.length, accent: 'violet' as const },
+    { label: 'Active', value: activeBOMs.length, accent: 'success' as const },
   ]
 
   const tabs: TabConfig[] = [

@@ -10,6 +10,14 @@ import { EntityHeader } from '@/modules/crm/components/EntityHeader'
 import { DetailTabs } from '@/modules/crm/components/DetailTabs'
 import { BusinessMetricsTable } from '@/components/common/BusinessMetricsTable'
 import type { TabConfig, CellFormatter } from '@/components/common/BusinessMetricsTable'
+import {
+  ChartDefs,
+  PremiumTooltip,
+  PREMIUM_TOOLTIP_CURSOR_LINE,
+  CHART_COLORS,
+  verticalFill,
+  horizontalGradId,
+} from '@/components/common/chartTheme'
 
 import { mockVendors } from '@/modules/procurement/data/vendors'
 import { mockPurchaseOrders } from '@/modules/procurement/data/purchase-orders'
@@ -199,20 +207,26 @@ function VendorDetailPage() {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={performanceData} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                <YAxis yAxisId="left" tick={{ fontSize: 12 }} className="text-muted-foreground" label={{ value: 'Orders', angle: -90, position: 'insideLeft', offset: 20, style: { fontSize: 11, fill: 'hsl(var(--muted-foreground))' } }} />
-                <YAxis yAxisId="right" orientation="right" domain={[70, 100]} tick={{ fontSize: 12 }} className="text-muted-foreground" label={{ value: 'On-Time %', angle: 90, position: 'insideRight', offset: 20, style: { fontSize: 11, fill: 'hsl(var(--muted-foreground))' } }} />
+                <ChartDefs />
+                <CartesianGrid strokeDasharray="3 6" vertical={false} className="stroke-border/50" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+                <YAxis yAxisId="left" tick={{ fontSize: 12 }} className="fill-muted-foreground" axisLine={false} tickLine={false} label={{ value: 'Orders', angle: -90, position: 'insideLeft', offset: 20, style: { fontSize: 11, fill: 'hsl(var(--muted-foreground))' } }} />
+                <YAxis yAxisId="right" orientation="right" domain={[70, 100]} tick={{ fontSize: 12 }} className="fill-muted-foreground" axisLine={false} tickLine={false} label={{ value: 'On-Time %', angle: 90, position: 'insideRight', offset: 20, style: { fontSize: 11, fill: 'hsl(var(--muted-foreground))' } }} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 8,
-                    fontSize: 13,
-                  }}
+                  cursor={PREMIUM_TOOLTIP_CURSOR_LINE}
+                  content={<PremiumTooltip />}
                 />
-                <Bar yAxisId="left" dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={32} name="Orders" />
-                <Line yAxisId="right" type="monotone" dataKey="onTime" stroke="hsl(var(--chart-2, #10b981))" strokeWidth={2} dot={{ r: 4 }} name="On-Time %" />
+                <Bar yAxisId="left" dataKey="orders" fill={verticalFill('indigo')} radius={[6, 6, 0, 0]} barSize={32} name="Orders" filter="url(#cpt-chart-shadow)" />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="onTime"
+                  stroke={`url(#${horizontalGradId('emerald')})`}
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: CHART_COLORS.emerald.via, strokeWidth: 2, stroke: 'hsl(var(--card))' }}
+                  activeDot={{ r: 7, fill: CHART_COLORS.emerald.via, strokeWidth: 3, stroke: 'hsl(var(--card))' }}
+                  name="On-Time %"
+                />
               </ComposedChart>
             </ResponsiveContainer>
           </div>

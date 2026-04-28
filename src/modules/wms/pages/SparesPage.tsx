@@ -322,10 +322,10 @@ function SparesPage() {
 
       <StatsRow
         stats={[
-          { label: 'Requested', value: summaryStats.totalRequested, icon: Clock },
-          { label: 'In Stock', value: summaryStats.inStock, icon: Package },
-          { label: 'Ordered', value: summaryStats.ordered, icon: ShoppingCart },
-          { label: 'Fulfilled', value: summaryStats.fulfilled, icon: CheckCircle2 },
+          { label: 'Requested', value: summaryStats.totalRequested, icon: Clock, accent: 'warning' as const },
+          { label: 'In Stock', value: summaryStats.inStock, icon: Package, accent: 'info' as const },
+          { label: 'Ordered', value: summaryStats.ordered, icon: ShoppingCart, accent: 'violet' as const },
+          { label: 'Fulfilled', value: summaryStats.fulfilled, icon: CheckCircle2, accent: 'success' as const },
         ]}
       />
 

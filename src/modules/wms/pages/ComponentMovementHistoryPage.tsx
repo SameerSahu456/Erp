@@ -117,10 +117,10 @@ export default function ComponentMovementHistoryPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <DataCard title="Total Movements" value={stats.total} />
-        <DataCard title="Installed" value={stats.installed} />
-        <DataCard title="Removed" value={stats.removed} />
-        <DataCard title="Transfers" value={stats.transferred} />
+        <DataCard label="Total Movements" value={stats.total} accent="primary" />
+        <DataCard label="Installed" value={stats.installed} accent="success" />
+        <DataCard label="Removed" value={stats.removed} accent="warning" />
+        <DataCard label="Transfers" value={stats.transferred} accent="info" />
       </div>
 
       {/* Filters */}

@@ -435,10 +435,10 @@ function ReplacementRequestsPage() {
 
       <StatsRow
         stats={[
-          { label: 'Pending', value: summary.pending, icon: Clock },
-          { label: 'Approved', value: summary.approved, icon: CheckCircle2 },
-          { label: 'Issued', value: summary.issued, icon: PackageCheck },
-          { label: 'Rejected', value: summary.rejected, icon: XCircle },
+          { label: 'Pending', value: summary.pending, icon: Clock, accent: 'warning' as const },
+          { label: 'Approved', value: summary.approved, icon: CheckCircle2, accent: 'info' as const },
+          { label: 'Issued', value: summary.issued, icon: PackageCheck, accent: 'success' as const },
+          { label: 'Rejected', value: summary.rejected, icon: XCircle, accent: 'danger' as const },
         ]}
       />
 

@@ -258,10 +258,10 @@ export default function UserManagementPage() {
 
       <StatsRow
         stats={[
-          { label: 'Total Users', value: users.length, icon: Users },
-          { label: 'Active', value: activeUsers.length, icon: UserCheck },
-          { label: 'Inactive', value: inactiveUsers.length, icon: UserX },
-          { label: 'Admins', value: adminUsers.length, icon: Shield },
+          { label: 'Total Users', value: users.length, icon: Users, accent: 'primary' as const },
+          { label: 'Active', value: activeUsers.length, icon: UserCheck, accent: 'success' as const },
+          { label: 'Inactive', value: inactiveUsers.length, icon: UserX, accent: 'warning' as const },
+          { label: 'Admins', value: adminUsers.length, icon: Shield, accent: 'violet' as const },
         ]}
       />
 

@@ -93,10 +93,10 @@ export default function InventoryPage() {
   ).length
 
   const stats = [
-    { label: 'Total In Stock', value: inStockDevices.length, icon: Package },
-    { label: 'Grade A', value: gradeACount, icon: Award },
-    { label: 'Grade B', value: gradeBCount, icon: ShieldCheck },
-    { label: 'Ready for Dispatch', value: readyForDispatch, icon: Truck },
+    { label: 'Total In Stock', value: inStockDevices.length, icon: Package, accent: 'primary' as const },
+    { label: 'Grade A', value: gradeACount, icon: Award, accent: 'success' as const },
+    { label: 'Grade B', value: gradeBCount, icon: ShieldCheck, accent: 'info' as const },
+    { label: 'Ready for Dispatch', value: readyForDispatch, icon: Truck, accent: 'violet' as const },
   ]
 
   const inStockTab: TabConfig = {

@@ -39,6 +39,15 @@ import { StatsRow } from '@/components/common/StatsRow'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { PageHeader } from '@/components/page'
+import {
+  ChartDefs,
+  PremiumTooltip,
+  PREMIUM_TOOLTIP_CURSOR_BAR,
+  CHART_COLORS,
+  horizontalFill,
+  radialFill,
+  type ChartAccent,
+} from '@/components/common/chartTheme'
 
 import { mockPurchaseRequests } from '@/modules/procurement/data/purchase-requests'
 import { mockPurchaseOrders } from '@/modules/procurement/data/purchase-orders'
@@ -97,15 +106,18 @@ const totalSpendThisMonth = mockPurchaseOrders
 
 // ── Chart data ──
 
-const prStatusColors: Record<string, string> = {
-  Draft: '#94a3b8',
-  Submitted: '#6366f1',
-  'Under Review': '#f59e0b',
-  Approved: '#22c55e',
-  'Partially Approved': '#eab308',
-  Rejected: '#ef4444',
-  'Converted to PO': '#10b981',
+const prStatusAccents: Record<string, ChartAccent> = {
+  Draft: 'slate',
+  Submitted: 'indigo',
+  'Under Review': 'amber',
+  Approved: 'emerald',
+  'Partially Approved': 'warning',
+  Rejected: 'danger',
+  'Converted to PO': 'teal',
 }
+
+const prStatusSolid = (status: string): string =>
+  CHART_COLORS[prStatusAccents[status] ?? 'slate'].solid
 
 const prStatusData = Object.entries(
   mockPurchaseRequests.reduce<Record<string, number>>((acc, pr) => {
@@ -143,15 +155,6 @@ const pendingPRs = mockPurchaseRequests.filter(
 const topVendors = [...mockVendors]
   .sort((a, b) => b.totalSpend - a.totalSpend)
   .slice(0, 5)
-
-// ── Recharts tooltip style ──
-
-const tooltipStyle = {
-  backgroundColor: 'hsl(var(--popover))',
-  border: '1px solid hsl(var(--border))',
-  borderRadius: 8,
-  fontSize: 13,
-}
 
 // ── Custom label for pie chart ──
 
@@ -228,23 +231,27 @@ function ProcurementDashboard() {
             value: openPRs,
             icon: FileText,
             trend: { value: 5, isPositive: true },
+            accent: 'info' as const,
           },
           {
             label: 'Active POs',
             value: activePOs,
             icon: ShoppingCart,
             trend: { value: 12, isPositive: true },
+            accent: 'violet' as const,
           },
           {
             label: 'Pending Approvals',
             value: pendingApprovalCount,
             icon: Clock,
+            accent: 'warning' as const,
           },
           {
             label: 'Total Spend This Month',
             value: formatShortCurrency(totalSpendThisMonth),
             icon: IndianRupee,
             trend: { value: 8, isPositive: true },
+            accent: 'teal' as const,
           },
         ]}
       />
@@ -260,6 +267,7 @@ function ProcurementDashboard() {
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
+                  <ChartDefs />
                   <Pie
                     data={prStatusData}
                     cx="50%"
@@ -270,21 +278,25 @@ function ProcurementDashboard() {
                     dataKey="value"
                     labelLine={false}
                     label={renderPieLabel}
+                    stroke="hsl(var(--card))"
+                    strokeWidth={2}
                   >
                     {prStatusData.map((entry) => (
                       <Cell
                         key={entry.name}
-                        fill={prStatusColors[entry.name] || '#94a3b8'}
-                        strokeWidth={0}
+                        fill={radialFill(prStatusAccents[entry.name] ?? 'slate')}
                       />
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(value: number, name: string) => [
-                      `${value} request${value !== 1 ? 's' : ''}`,
-                      name,
-                    ]}
+                    content={
+                      <PremiumTooltip
+                        formatter={(value, name) => [
+                          `${value} request${Number(value) !== 1 ? 's' : ''}`,
+                          name,
+                        ]}
+                      />
+                    }
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -294,8 +306,8 @@ function ProcurementDashboard() {
               {prStatusData.map((entry) => (
                 <div key={entry.name} className="flex items-center gap-1.5">
                   <span
-                    className="inline-block size-2.5 rounded-full"
-                    style={{ backgroundColor: prStatusColors[entry.name] }}
+                    className="inline-block size-2.5 rounded-full ring-2 ring-card"
+                    style={{ backgroundColor: prStatusSolid(entry.name) }}
                   />
                   <span className="text-xs text-muted-foreground">
                     {entry.name} ({entry.value})
@@ -319,29 +331,39 @@ function ProcurementDashboard() {
                   layout="vertical"
                   margin={{ top: 0, right: 24, left: 0, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
+                  <ChartDefs />
+                  <CartesianGrid strokeDasharray="3 6" horizontal={false} className="stroke-border/50" />
                   <XAxis
                     type="number"
                     tickFormatter={(v: number) => formatShortCurrency(v)}
                     tick={{ fontSize: 12 }}
-                    stroke="hsl(var(--muted-foreground))"
+                    className="fill-muted-foreground"
+                    axisLine={false}
+                    tickLine={false}
                   />
                   <YAxis
                     type="category"
                     dataKey="name"
                     width={140}
                     tick={{ fontSize: 12 }}
-                    stroke="hsl(var(--muted-foreground))"
+                    className="fill-muted-foreground"
+                    axisLine={false}
+                    tickLine={false}
                   />
                   <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(value: number) => [formatCurrency(value), 'Spend']}
+                    cursor={PREMIUM_TOOLTIP_CURSOR_BAR}
+                    content={
+                      <PremiumTooltip
+                        formatter={(value) => [formatCurrency(Number(value)), 'Spend']}
+                      />
+                    }
                   />
                   <Bar
                     dataKey="spend"
-                    fill="hsl(var(--primary))"
-                    radius={[0, 4, 4, 0]}
+                    fill={horizontalFill('violet')}
+                    radius={[0, 6, 6, 0]}
                     barSize={20}
+                    filter="url(#cpt-chart-shadow)"
                   />
                 </BarChart>
               </ResponsiveContainer>

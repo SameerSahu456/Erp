@@ -78,15 +78,16 @@ export default function ImsDashboard() {
     }, [])
 
   const stats = [
-    { label: 'Total Items', value: totalItems, icon: Package },
+    { label: 'Total Items', value: totalItems, icon: Package, accent: 'primary' as const },
     {
       label: 'Low Stock Alerts',
       value: lowStockAlerts,
       icon: AlertTriangle,
       trend: lowStockAlerts > 0 ? { value: lowStockAlerts, isPositive: false } : undefined,
+      accent: 'warning' as const,
     },
-    { label: 'Total Categories', value: totalCategories, icon: FolderTree },
-    { label: 'Total Value', value: currencyFmt.format(totalValue), icon: IndianRupee },
+    { label: 'Total Categories', value: totalCategories, icon: FolderTree, accent: 'violet' as const },
+    { label: 'Total Value', value: currencyFmt.format(totalValue), icon: IndianRupee, accent: 'teal' as const },
   ]
 
   const summaryTab: TabConfig = {

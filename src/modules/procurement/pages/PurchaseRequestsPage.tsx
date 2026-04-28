@@ -116,11 +116,13 @@ function PurchaseRequestsPage() {
       label: 'Total PRs',
       value: totalPRs,
       icon: FileText,
+      accent: 'primary' as const,
     },
     {
       label: 'Pending Approval',
       value: pendingCount,
       icon: Clock,
+      accent: 'warning' as const,
       ...(pendingCount > 0 && {
         className: 'border-status-warning-text/20 bg-status-warning-bg/30',
       }),
@@ -129,11 +131,13 @@ function PurchaseRequestsPage() {
       label: 'Approved',
       value: approvedCount,
       icon: CheckCircle,
+      accent: 'success' as const,
     },
     {
       label: 'Total Value',
       value: `₹${formatShort(totalValue)}`,
       icon: IndianRupee,
+      accent: 'teal' as const,
     },
   ]
 

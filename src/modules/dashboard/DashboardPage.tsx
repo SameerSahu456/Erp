@@ -57,11 +57,11 @@ const kpiStats: DataCardProps[] = [
 
 // ---------- Workflow Stepper Data ----------
 const workflowSteps: StepConfig[] = [
-  { id: "inward", label: "Inward", icon: PackageCheck, status: "completed", description: "Received at warehouse" },
-  { id: "inspection", label: "Inspection", icon: Search, status: "completed", description: "Initial assessment done" },
-  { id: "repair", label: "Repair", icon: Wrench, status: "active", description: "In progress" },
-  { id: "qc", label: "QC", icon: ClipboardCheck, status: "pending", description: "Awaiting quality check" },
-  { id: "inventory", label: "Inventory", icon: HardDrive, status: "pending", description: "Ready for stock" },
+  { id: "inward", label: "Inward", icon: PackageCheck, status: "completed", description: "Received at warehouse", accent: "info" },
+  { id: "inspection", label: "Inspection", icon: Search, status: "completed", description: "Initial assessment done", accent: "warning" },
+  { id: "repair", label: "Repair", icon: Wrench, status: "active", description: "In progress", accent: "violet" },
+  { id: "qc", label: "QC", icon: ClipboardCheck, status: "pending", description: "Awaiting quality check", accent: "teal" },
+  { id: "inventory", label: "Inventory", icon: HardDrive, status: "pending", description: "Ready for stock", accent: "success" },
 ]
 
 // ---------- Business Metrics Table Data ----------
@@ -211,11 +211,21 @@ export default function DashboardPage() {
         <StatsRow stats={kpiStats} />
       </section>
 
-      {/* Section 2: Workflow Stepper */}
+      {/* Section 2: Workflow Stepper — premium gradient surface */}
       <section className="space-y-3">
         <SectionHeader title="WMS Device Lifecycle" />
-        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
-          <WorkflowStepper steps={workflowSteps} />
+        <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card via-card to-violet-50/30 dark:to-violet-950/20 p-6 pb-7 shadow-card">
+          <div
+            className="pointer-events-none absolute -right-24 -top-24 h-60 w-60 rounded-full bg-violet-400/10 blur-3xl dark:bg-violet-500/15"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -left-24 -bottom-24 h-60 w-60 rounded-full bg-sky-400/10 blur-3xl dark:bg-sky-500/15"
+            aria-hidden
+          />
+          <div className="relative">
+            <WorkflowStepper steps={workflowSteps} />
+          </div>
         </div>
       </section>
 

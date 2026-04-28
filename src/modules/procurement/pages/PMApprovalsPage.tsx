@@ -191,11 +191,11 @@ function PMApprovalsPage() {
   const pendingDemos = myDemos.filter((d) => d.status === 'Pending PM Approval')
 
   const stats: StatCardData[] = [
-    { label: 'MI Line Items', value: pendingMIItemsCount, icon: Search },
-    { label: 'Sales Orders', value: pendingSOs.length, icon: ShoppingCart },
-    { label: 'PR Items', value: pendingPRItemsCount, icon: FileText },
-    { label: 'Purchase Orders', value: pendingPOs.length, icon: ClipboardList },
-    { label: 'Demo Requests', value: pendingDemos.length, icon: Monitor },
+    { label: 'MI Line Items', value: pendingMIItemsCount, icon: Search, accent: 'info' as const },
+    { label: 'Sales Orders', value: pendingSOs.length, icon: ShoppingCart, accent: 'violet' as const },
+    { label: 'PR Items', value: pendingPRItemsCount, icon: FileText, accent: 'warning' as const },
+    { label: 'Purchase Orders', value: pendingPOs.length, icon: ClipboardList, accent: 'primary' as const },
+    { label: 'Demo Requests', value: pendingDemos.length, icon: Monitor, accent: 'teal' as const },
   ]
 
   const pmInitials = currentPM

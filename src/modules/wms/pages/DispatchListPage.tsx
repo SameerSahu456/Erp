@@ -139,10 +139,10 @@ function DispatchListPage() {
       stats={
         <StatsRow
           stats={[
-            { label: 'Pending Assembly', value: pending, icon: ClipboardList },
-            { label: 'In Flight', value: inFlight, icon: Truck },
-            { label: 'Delivered / Closed', value: delivered, icon: CheckCircle2 },
-            { label: 'Total Invoiced', value: formatCurrency(totalInvoiced), icon: FileCheck },
+            { label: 'Pending Assembly', value: pending, icon: ClipboardList, accent: 'warning' as const },
+            { label: 'In Flight', value: inFlight, icon: Truck, accent: 'info' as const },
+            { label: 'Delivered / Closed', value: delivered, icon: CheckCircle2, accent: 'success' as const },
+            { label: 'Total Invoiced', value: formatCurrency(totalInvoiced), icon: FileCheck, accent: 'teal' as const },
           ]}
         />
       }

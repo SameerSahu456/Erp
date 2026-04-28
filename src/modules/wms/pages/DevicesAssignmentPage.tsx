@@ -421,10 +421,10 @@ function DevicesAssignmentPage() {
 
       <StatsRow
         stats={[
-          { label: 'L2 Pending', value: l2UnassignedCount, icon: Wrench },
-          { label: 'L3 Pending', value: l3UnassignedCount, icon: Cpu },
-          { label: 'Display Pending', value: displayUnassignedCount, icon: Monitor },
-          { label: 'Total Devices', value: allDeviceRows.length, icon: CheckCircle2 },
+          { label: 'L2 Pending', value: l2UnassignedCount, icon: Wrench, accent: 'warning' as const },
+          { label: 'L3 Pending', value: l3UnassignedCount, icon: Cpu, accent: 'info' as const },
+          { label: 'Display Pending', value: displayUnassignedCount, icon: Monitor, accent: 'violet' as const },
+          { label: 'Total Devices', value: allDeviceRows.length, icon: CheckCircle2, accent: 'primary' as const },
         ]}
       />
 
