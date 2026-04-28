@@ -57,7 +57,7 @@ const PRIORITY_VARIANT: Record<ReplacementPriority, StatusBadgeVariant> = {
 }
 
 const NEXT_STEP_VARIANT: Record<ReplacementNextStep, StatusBadgeVariant> = {
-  'Outward Dispatch': 'success',
+  'Dispatch': 'success',
   'Pricing Update': 'warning',
   'Pending Decision': 'neutral',
 }
@@ -122,8 +122,8 @@ function ReplacementRequestsPage() {
       const route =
         actionTarget.nextStep === 'Pricing Update'
           ? 'Pricing Update — SO line will be amended.'
-          : actionTarget.nextStep === 'Outward Dispatch'
-            ? 'Outward Dispatch — same part, no pricing change.'
+          : actionTarget.nextStep === 'Dispatch'
+            ? 'Dispatch — same part, no pricing change.'
             : 'Awaiting replacement-part decision.'
       toast.success(`${actionTarget.requestNumber} approved. ${route}`)
     } else if (actionMode === 'reject') {
@@ -423,7 +423,7 @@ function ReplacementRequestsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Replacement Requests"
-        subtitle="Customer replacements raised against dispatched Sales Orders. Same-part requests route to outward dispatch; different-part requests trigger SO pricing updates."
+        subtitle="Customer replacements raised against dispatched Sales Orders. Same-part requests route to dispatch; different-part requests trigger SO pricing updates."
         breadcrumbs={[{ label: 'Warehouse' }, { label: 'Replacement Requests' }]}
         actions={
           <Button onClick={() => navigate('/wms/replacements/new')}>
@@ -503,7 +503,7 @@ function ReplacementRequestsPage() {
                   </div>
                 )}
                 <div className="col-span-2 flex items-center gap-2 rounded-md border bg-background p-2 text-sm">
-                  {actionTarget.nextStep === 'Outward Dispatch' && <Truck className="size-4 text-emerald-600" />}
+                  {actionTarget.nextStep === 'Dispatch' && <Truck className="size-4 text-emerald-600" />}
                   {actionTarget.nextStep === 'Pricing Update' && <IndianRupee className="size-4 text-amber-600" />}
                   {actionTarget.nextStep === 'Pending Decision' && <Clock className="size-4 text-muted-foreground" />}
                   <span className="font-medium">{actionTarget.nextStep}</span>

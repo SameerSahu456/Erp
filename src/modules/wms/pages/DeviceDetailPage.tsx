@@ -36,7 +36,6 @@ import { mockRepairJobs } from '../data/repairs'
 import { mockPaintJobs, PAINT_VENDORS } from '../data/paint-jobs'
 import { mockQCRecords } from '../data/qc-records'
 import { mockSpareRequests } from '../data/spare-requests'
-import { mockOutwardRecords } from '../data/outward'
 import { QCDialog } from '../components/QCDialog'
 import { AssignRackDialog } from '../components/AssignRackDialog'
 import {
@@ -51,48 +50,9 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   DEVICE_STATUS_LABELS,
   DEVICE_STATUS_VARIANT,
-  type Device,
   type DeviceStatus,
   type PaintPanelType,
 } from '../types'
-
-// Some outward records reference device ids that don't exist in mockDevices
-// (dev-031…dev-045 etc.). Construct a minimal Device from the OutwardDevice
-// data so the detail page still renders instead of showing "Device not found".
-function synthesizeDeviceFromOutward(id: string): Device | undefined {
-  for (const outward of mockOutwardRecords) {
-    const od = outward.devices.find((d) => d.deviceId === id)
-    if (!od) continue
-    return {
-      id: od.deviceId,
-      barcode: od.barcode,
-      batchId: '',
-      batchNumber: outward.outwardNumber,
-      category: 'Device',
-      brand: od.brand,
-      model: od.model,
-      serialNumber: od.serialNumber,
-      status:
-        od.qcResult === 'Passed'
-          ? 'READY_FOR_DISPATCH'
-          : od.qcResult === 'Failed'
-            ? 'UNDER_OUTWARD_QC'
-            : 'AWAITING_OUTWARD_QC',
-      grade: od.grade,
-      requiresRepair: false,
-      requiresPaint: false,
-      requiresSpares: false,
-      repairCompleted: true,
-      paintCompleted: true,
-      sparesIssued: true,
-      qcFailCount: 0,
-      outwardQcFailCount: od.qcResult === 'Failed' ? 1 : 0,
-      receivedAt: outward.createdAt,
-      location: outward.customerName,
-    }
-  }
-  return undefined
-}
 
 const L1_L2_ENGINEERS = ['Ravi Kumar', 'Priya Nair', 'Sanjay Gupta']
 const DISPLAY_ENGINEERS = ['Karthik Rao', 'Neha Bansal']
@@ -141,7 +101,7 @@ function DeviceDetailPage() {
   )
 
   const device = useMemo(
-    () => mockDevices.find((d) => d.id === id) ?? (id ? synthesizeDeviceFromOutward(id) : undefined),
+    () => mockDevices.find((d) => d.id === id),
     [id],
   )
   const inspection = useMemo(
@@ -180,14 +140,6 @@ function DeviceDetailPage() {
 
   const [qcDialogOpen, setQcDialogOpen] = useState(false)
   const [assignRackOpen, setAssignRackOpen] = useState(false)
-  const qcOutwardCtx = useMemo(() => {
-    if (!id) return null
-    for (const outward of mockOutwardRecords) {
-      const od = outward.devices.find((d) => d.deviceId === id)
-      if (od) return { outward, device: od }
-    }
-    return null
-  }, [id])
 
   if (!device) {
     return (
@@ -280,7 +232,7 @@ function DeviceDetailPage() {
     timelineEntries.push({
       id: `qc-${rec.id}`,
       icon: CheckCircle2,
-      title: `${rec.qcType === 'INWARD' ? 'Inward QC' : 'Outward QC'} — ${rec.result === 'PASSED' ? 'Passed' : 'Failed'}${rec.grade ? ` (Grade ${rec.grade})` : ''}`,
+      title: `Inward QC — ${rec.result === 'PASSED' ? 'Passed' : 'Failed'}${rec.grade ? ` (Grade ${rec.grade})` : ''}`,
       description: rec.notes,
       user: rec.inspectedBy,
       timestamp: formatDate(rec.inspectedAt),
@@ -330,10 +282,7 @@ function DeviceDetailPage() {
       : undefined
   const canStartQC =
     from === 'qc' &&
-    (device.status === 'AWAITING_QC' ||
-      device.status === 'UNDER_QC' ||
-      device.status === 'AWAITING_OUTWARD_QC' ||
-      device.status === 'UNDER_OUTWARD_QC')
+    (device.status === 'AWAITING_QC' || device.status === 'UNDER_QC')
   const canAssignRack =
     from === 'rack' &&
     (device.status === 'READY_FOR_STOCK' ||
@@ -445,13 +394,6 @@ function DeviceDetailPage() {
     setPaintNotes('')
     setSendVendorOpen(true)
   }
-
-  const qcDialogType: 'INWARD' | 'OUTWARD' =
-    device.status === 'AWAITING_OUTWARD_QC' ||
-    device.status === 'UNDER_OUTWARD_QC' ||
-    (!!qcOutwardCtx && device.status !== 'AWAITING_QC' && device.status !== 'UNDER_QC')
-      ? 'OUTWARD'
-      : 'INWARD'
 
   const handleStartQC = () => {
     setQcDialogOpen(true)
@@ -634,29 +576,51 @@ function DeviceDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Line items — server assemblies only, in repair / QC / rack contexts */}
+      {/* BOM Components — captured during inward batch creation. Always shown
+          for assembly devices so the chassis breakdown is auditable from any
+          context (inventory, repair, QC, rack). */}
       {device.deviceKind === 'ASSEMBLY' &&
         device.components &&
-        device.components.length > 0 &&
-        (from === 'repair' || from === 'qc' || from === 'rack') && (
+        device.components.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Line items</CardTitle>
+              <CardTitle className="flex items-center justify-between gap-2">
+                <span>BOM Components</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  {device.components.length} component{device.components.length === 1 ? '' : 's'}
+                  {device.bomNumber ? ` · ${device.bomNumber}` : ''}
+                </span>
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 border-t">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b text-left text-xs uppercase text-muted-foreground">
-                      <th className="py-2 pr-3 font-medium">Part</th>
-                      <th className="py-2 pr-3 font-medium">Part No</th>
+                    <tr className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <th className="px-3 py-2 font-medium">Part Number</th>
+                      <th className="px-3 py-2 font-medium">Serial Number</th>
+                      <th className="px-3 py-2 font-medium">Position</th>
+                      <th className="w-14 px-3 py-2 text-right font-medium">Qty</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y">
                     {device.components.map((c) => (
-                      <tr key={c.slotId} className="border-b last:border-b-0">
-                        <td className="py-2 pr-3 font-medium">{c.partName}</td>
-                        <td className="py-2 pr-3 font-mono text-xs">{c.serialNumber}</td>
+                      <tr key={c.slotId}>
+                        <td className="px-3 py-2">
+                          <div className="text-sm font-medium">{c.partName}</div>
+                          {c.partSku && (
+                            <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                              {c.partSku}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 font-mono text-xs">
+                          {c.serialNumber || <span className="text-muted-foreground">—</span>}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">
+                          {c.position ?? '—'}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">1</td>
                       </tr>
                     ))}
                   </tbody>
@@ -791,9 +755,7 @@ function DeviceDetailPage() {
       <QCDialog
         open={qcDialogOpen}
         onOpenChange={setQcDialogOpen}
-        qcType={qcDialogType}
         device={device}
-        outwardCtx={qcDialogType === 'OUTWARD' ? qcOutwardCtx : null}
       />
 
       <AssignRackDialog

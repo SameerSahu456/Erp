@@ -275,7 +275,7 @@ function ReplacementRequestFormPage() {
     const priceDelta =
       form.replacementType === 'Same Part' ? 0 : replacementTotal - originalTotal
     const nextStep: ReplacementNextStep =
-      form.replacementType === 'Same Part' ? 'Outward Dispatch' : 'Pricing Update'
+      form.replacementType === 'Same Part' ? 'Dispatch' : 'Pricing Update'
 
     const nextSeq = String(mockReplacementRequests.length + 1).padStart(3, '0')
     const newRequest: ReplacementRequest = {
@@ -308,8 +308,8 @@ function ReplacementRequestFormPage() {
     }
     mockReplacementRequests.unshift(newRequest)
     const routeMsg =
-      nextStep === 'Outward Dispatch'
-        ? 'Routed to Outward Dispatch (same part).'
+      nextStep === 'Dispatch'
+        ? 'Routed to Dispatch (same part).'
         : 'Routed to Pricing Update (different part).'
     toast.success(`${newRequest.requestNumber} created. ${routeMsg}`)
     navigate('/wms/replacements')
@@ -581,7 +581,7 @@ function ReplacementRequestFormPage() {
                     )}
                   </div>
                   <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-                    Same SKU from stock → Outward Dispatch.
+                    Same SKU from stock → Dispatch.
                   </p>
                 </div>
               </button>

@@ -52,12 +52,7 @@ const InspectionPage = lazy(() => import('@/modules/wms/pages/InspectionPage'))
 const RepairPage = lazy(() => import('@/modules/wms/pages/RepairPage'))
 const PaintPage = lazy(() => import('@/modules/wms/pages/PaintPage'))
 const QCPage = lazy(() => import('@/modules/wms/pages/QCPage'))
-const OutwardQCPage = lazy(() => import('@/modules/wms/pages/OutwardQCPage'))
 const InventoryPage = lazy(() => import('@/modules/wms/pages/InventoryPage'))
-const OutwardPage = lazy(() => import('@/modules/wms/pages/OutwardPage'))
-const OutwardFormPage = lazy(() => import('@/modules/wms/pages/OutwardFormPage'))
-const OutwardDetailPage = lazy(() => import('@/modules/wms/pages/OutwardDetailPage'))
-const DispatchPage = lazy(() => import('@/modules/wms/pages/DispatchPage'))
 const DispatchListPage = lazy(() => import('@/modules/wms/pages/DispatchListPage'))
 const DispatchDetailPage = lazy(() => import('@/modules/wms/pages/DispatchDetailPage'))
 const DispatchFormPage = lazy(() => import('@/modules/wms/pages/DispatchFormPage'))
@@ -253,12 +248,7 @@ export const router = createBrowserRouter([
       { path: '/wms/repair', element: <LazyRoute><RepairPage /></LazyRoute> },
       { path: '/wms/paint', element: <LazyRoute><PaintPage /></LazyRoute> },
       { path: '/wms/qc', element: <LazyRoute><QCPage /></LazyRoute> },
-      { path: '/wms/outward-qc', element: <LazyRoute><OutwardQCPage /></LazyRoute> },
       { path: '/wms/inventory', element: <LazyRoute><InventoryPage /></LazyRoute> },
-      { path: '/wms/outward', element: <LazyRoute><OutwardPage /></LazyRoute> },
-      { path: '/wms/outward/new', element: <LazyRoute><OutwardFormPage /></LazyRoute> },
-      { path: '/wms/outward/:id', element: <LazyRoute><OutwardDetailPage /></LazyRoute> },
-      { path: '/wms/dispatch', element: <LazyRoute><DispatchPage /></LazyRoute> },
       { path: '/wms/dispatches', element: <LazyRoute><DispatchListPage /></LazyRoute> },
       { path: '/wms/dispatches/new', element: <LazyRoute><DispatchFormPage /></LazyRoute> },
       { path: '/wms/dispatches/:id', element: <LazyRoute><DispatchDetailPage /></LazyRoute> },

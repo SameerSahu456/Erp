@@ -15,8 +15,6 @@ export const DEVICE_STATUSES = [
   'UNDER_QC',
   'READY_FOR_STOCK',
   'IN_STOCK',
-  'AWAITING_OUTWARD_QC',
-  'UNDER_OUTWARD_QC',
   'READY_FOR_DISPATCH',
   'DISPATCHED',
   'SCRAPPED',
@@ -40,8 +38,6 @@ export const DEVICE_STATUS_LABELS: Record<DeviceStatus, string> = {
   UNDER_QC: 'Under QC',
   READY_FOR_STOCK: 'Ready for Stock',
   IN_STOCK: 'In Stock',
-  AWAITING_OUTWARD_QC: 'Awaiting Outward QC',
-  UNDER_OUTWARD_QC: 'Under Outward QC',
   READY_FOR_DISPATCH: 'Ready for Dispatch',
   DISPATCHED: 'Dispatched',
   SCRAPPED: 'Scrapped',
@@ -65,8 +61,6 @@ export const DEVICE_STATUS_VARIANT: Record<DeviceStatus, DeviceStatusVariant> = 
   UNDER_QC: 'info',
   READY_FOR_STOCK: 'success',
   IN_STOCK: 'success',
-  AWAITING_OUTWARD_QC: 'info',
-  UNDER_OUTWARD_QC: 'info',
   READY_FOR_DISPATCH: 'success',
   DISPATCHED: 'success',
   SCRAPPED: 'error',
@@ -79,7 +73,6 @@ export const WMS_WORKFLOW_STAGES = [
   { id: 'repair', label: 'Repair / Paint' },
   { id: 'qc', label: 'Quality Control' },
   { id: 'inventory', label: 'Inventory' },
-  { id: 'outward-qc', label: 'Outward QC' },
   { id: 'dispatch', label: 'Dispatch' },
 ] as const
 
@@ -158,7 +151,6 @@ export interface Device {
   sparesIssued: boolean
   // QC tracking
   qcFailCount: number
-  outwardQcFailCount: number
   // Timestamps
   receivedAt: string
   inspectedAt?: string
@@ -302,98 +294,19 @@ export interface QCRecord {
   id: string
   deviceId: string
   deviceBarcode: string
-  qcType: 'INWARD' | 'OUTWARD'
+  qcType: 'INWARD'
   result: 'PASSED' | 'FAILED'
-  grade?: 'A' | 'B' // Only for inward QC
+  grade?: 'A' | 'B'
   failureReasons?: string[]
   inspectedBy: string
   inspectedAt: string
   notes?: string
 }
 
-// ── Outward ──
-export type OutwardType = 'SALES' | 'RENTAL' | 'DEMO' | 'INTERNAL_TRANSFER' | 'RETURN_REPLACEMENT'
-
-export interface OutwardRecord {
-  id: string
-  outwardNumber: string  // OUT-2026-001
-  type: OutwardType
-  // Source reference
-  salesOrderId?: string
-  salesOrderNumber?: string
-  rentalContractId?: string
-  demoRequestId?: string
-  // Customer/destination
-  customerName: string
-  contactPerson: string
-  contactPhone: string
-  shippingAddress: string
-  // Devices
-  devices: OutwardDevice[]
-  // Logistics
-  logistics: OutwardLogistics
-  // QC
-  qcStatus: 'Pending' | 'In Progress' | 'Passed' | 'Failed' | 'Partial'
-  qcCompletedDevices: number
-  qcFailedDevices: number
-  // Status workflow
-  status: 'Draft' | 'Pending Approval' | 'Approved' | 'Picking' | 'Packed' | 'Pending QC' | 'QC Passed' | 'Ready for Dispatch' | 'Dispatched' | 'Delivered' | 'Partially Returned'
-  // People
-  preparedBy: string
-  approvedBy?: string
-  dispatchedBy?: string
-  storeManager: string
-  // Dates
-  requestedDate: string
-  expectedDispatchDate: string
-  actualDispatchDate?: string
-  deliveredDate?: string
-  createdAt: string
-  notes?: string
-}
-
-export interface OutwardDevice {
-  deviceId: string
-  barcode: string
-  model: string
-  brand: string
-  serialNumber: string
-  grade?: 'A' | 'B'
-  qcResult?: 'Passed' | 'Failed' | 'Pending'
-  qcNotes?: string
-  packingStatus: 'Not Packed' | 'Packed' | 'Verified'
-}
-
-export interface OutwardLogistics {
-  vehicleNumber?: string
-  driverName?: string
-  driverPhone?: string
-  transporterName?: string
-  trackingNumber?: string
-  challanNumber?: string
-  estimatedDelivery?: string
-  packagingType?: string  // 'Box', 'Pallet', 'Crate'
-  totalWeight?: number  // kg
-  specialInstructions?: string
-}
-
-// Dispatch workflow stages for stepper
-export const DISPATCH_WORKFLOW_STAGES = [
-  { id: 'request', label: 'Request' },
-  { id: 'approval', label: 'Approval' },
-  { id: 'picking', label: 'Picking' },
-  { id: 'packing', label: 'Packing' },
-  { id: 'qc', label: 'Outward QC' },
-  { id: 'dispatch', label: 'Dispatch' },
-  { id: 'delivery', label: 'Delivery' },
-] as const
-
 // Return flow for QC-failed devices
 export interface ReturnRecord {
   id: string
   returnNumber: string  // RET-2026-001
-  outwardId: string
-  outwardNumber: string
   reason: 'QC_FAILED' | 'CUSTOMER_RETURN' | 'DAMAGE_IN_TRANSIT' | 'WRONG_ITEM'
   devices: ReturnDevice[]
   status: 'Initiated' | 'Received' | 'Inspected' | 'Resolved'
@@ -548,7 +461,6 @@ export interface Part {
   productManagerEmail?: string
   // Checklist assignments
   inwardChecklistId?: string
-  outwardChecklistId?: string
   inspectionChecklistId?: string
   // Stock info
   reorderLevel: number
@@ -644,9 +556,8 @@ export interface StockUnit {
 // Procurement-only tag — lives on PO / inward records, NOT on the variant
 export type PurchaseType = 'Local' | 'Import'
 
-// ── WMS Outward — SO-level Dispatch Request ──────────────────────────────────
-// Captures the external-assembly → billing → dispatch flow. Distinct from the
-// internal OutwardRecord flow below (which is the warehouse picking/packing/QC path).
+// ── WMS Dispatch Request ──────────────────────────────────
+// Captures the external-assembly → billing → dispatch flow.
 
 export type DispatchAction =
   | 'PLANNED'            // from SO; no variance
@@ -675,6 +586,21 @@ export const DISPATCH_REQUEST_STATUSES = [
 ] as const
 
 export type DispatchRequestStatus = (typeof DISPATCH_REQUEST_STATUSES)[number]
+
+export type DispatchType =
+  | 'SALES'
+  | 'RENTAL'
+  | 'DEMO'
+  | 'INTERNAL_TRANSFER'
+  | 'RETURN_REPLACEMENT'
+
+export const DISPATCH_TYPE_LABELS: Record<DispatchType, string> = {
+  SALES: 'Sales',
+  RENTAL: 'Rental',
+  DEMO: 'Demo',
+  INTERNAL_TRANSFER: 'Internal Transfer',
+  RETURN_REPLACEMENT: 'Return / Replacement',
+}
 
 export interface DispatchLineItem {
   id: string
@@ -729,12 +655,11 @@ export interface DispatchDocument {
 export interface Dispatch {
   id: string
   dispatchNumber: string          // DISP-2026-001
+  // What kind of dispatch this is (sales, rental, demo, etc.)
+  dispatchType: DispatchType
   // Source
   salesOrderId: string
   salesOrderNumber: string
-  // Linked internal Outward record (1:1 — every dispatch request ships against an outward)
-  outwardId?: string
-  outwardNumber?: string          // OUT-2026-001
   accountId: string
   accountName: string
   shippingAddress?: string
@@ -777,7 +702,7 @@ export interface SkuHistoryEntry {
 }
 
 // ── Checklist Templates ──
-export type ChecklistType = 'INWARD' | 'OUTWARD' | 'INSPECTION' | 'QC'
+export type ChecklistType = 'INWARD' | 'INSPECTION' | 'QC'
 
 export interface ChecklistTemplateItem {
   id: string
@@ -839,8 +764,12 @@ export interface WarehouseBin {
 // ── Enhanced Inward ──
 // ADVANCE_RETURN is now labelled "Return" in the UI; originType captures whether
 // the return originated from a Sale or a prior Return-for-replacement flow.
-export type InwardType = 'PURCHASE_ORDER' | 'RENTAL_RETURN' | 'DEMO_RETURN' | 'INTERNAL_TRANSFER' | 'ADVANCE_RETURN' | 'REFURB_PURCHASE' | 'REPLACEMENT'
+// Refurb purchases are no longer a separate inward type — pick PURCHASE_ORDER
+// and set purchaseOrigin='Refurb' instead. Rental returns flow through
+// ADVANCE_RETURN (originType='Return') as well.
+export type InwardType = 'PURCHASE_ORDER' | 'DEMO_RETURN' | 'INTERNAL_TRANSFER' | 'ADVANCE_RETURN' | 'REPLACEMENT'
 export type ReturnOriginType = 'Sale' | 'Return'
+export type PurchaseOriginType = 'New' | 'Refurb'
 
 export interface InwardBatchEnhanced {
   id: string
@@ -855,6 +784,8 @@ export interface InwardBatchEnhanced {
   salesOrderNumber?: string
   // Return-flow: was the source Sale or a prior Return?
   originType?: ReturnOriginType
+  // Purchase-flow: was the stock new or refurbished?
+  purchaseOrigin?: PurchaseOriginType
   // Source details
   sourceType: string  // 'Vendor', 'Customer', 'Internal', 'Demo'
   sourceName: string

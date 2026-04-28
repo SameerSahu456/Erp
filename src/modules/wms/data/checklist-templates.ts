@@ -65,23 +65,6 @@ export const mockChecklistTemplates: ChecklistTemplate[] = [
     isActive: true,
   },
   {
-    id: 'tmpl-004',
-    name: 'General Outward Checklist',
-    type: 'OUTWARD',
-    assignedTo: { level: 'category', id: 'cat-001', name: 'Laptops' },
-    items: [
-      { id: 'out-01', label: 'Cleaned', group: 'Preparation', description: 'Device externally cleaned and wiped', required: true },
-      { id: 'out-02', label: 'Graded sticker', group: 'Labeling', description: 'Grade sticker applied (A/B)', required: true },
-      { id: 'out-03', label: 'Barcode label', group: 'Labeling', description: 'Barcode label scanned and verified', required: true },
-      { id: 'out-04', label: 'Packaging', group: 'Packing', description: 'Proper box and foam packaging used', required: true },
-      { id: 'out-05', label: 'Accessories packed', group: 'Packing', description: 'Charger, cable, manual included', required: true },
-      { id: 'out-06', label: 'Documents included', group: 'Packing', description: 'Invoice, warranty card, delivery challan', required: true },
-    ],
-    createdBy: 'Admin',
-    createdAt: '2026-02-10T11:00:00Z',
-    isActive: true,
-  },
-  {
     id: 'tmpl-005',
     name: 'QC Checklist - Laptops',
     type: 'QC',

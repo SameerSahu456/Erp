@@ -11,7 +11,7 @@ import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { ListPageShell } from '@/components/page'
 
 import { useDispatches } from '../data/dispatches'
-import type { Dispatch, DispatchRequestStatus } from '../types'
+import { DISPATCH_TYPE_LABELS, type Dispatch, type DispatchRequestStatus } from '../types'
 
 const STATUS_VARIANT: Record<DispatchRequestStatus, StatusBadgeVariant> = {
   Draft: 'neutral',
@@ -47,30 +47,27 @@ function buildTab(dispatches: Dispatch[]): TabConfig {
     label: 'All Dispatches',
     columns: [
       { key: 'dispatchNumber', label: 'Dispatch #', sortable: true },
-      { key: 'outwardNumber', label: 'Outward #', sortable: true },
       { key: 'salesOrderNumber', label: 'Sales Order', sortable: true },
+      { key: 'dispatchType', label: 'Dispatch Type', sortable: true, filterable: true },
       { key: 'accountName', label: 'Account', sortable: true },
       { key: 'status', label: 'Status', sortable: true, filterable: true },
       { key: 'variance', label: 'Variance', align: 'center' },
       { key: 'externalTicketNumber', label: 'Ext. Ticket #', sortable: true },
       { key: 'assemblyCompletedAt', label: 'Assembled', sortable: true },
       { key: 'dispatchedAt', label: 'Dispatched', sortable: true },
-      { key: 'invoiceAmount', label: 'Invoice', sortable: true, align: 'right' },
     ],
     data: dispatches.map((d) => ({
       id: d.id,
       dispatchNumber: d.dispatchNumber,
-      outwardId: d.outwardId ?? '',
-      outwardNumber: d.outwardNumber ?? '',
       salesOrderId: d.salesOrderId,
       salesOrderNumber: d.salesOrderNumber,
+      dispatchType: DISPATCH_TYPE_LABELS[d.dispatchType],
       accountName: d.accountName,
       status: d.status,
       variance: countVariance(d.lineItems),
       externalTicketNumber: d.externalTicketNumber ?? '',
       assemblyCompletedAt: d.assemblyCompletedAt ?? '',
       dispatchedAt: d.dispatchedAt ?? '',
-      invoiceAmount: d.invoiceAmount ?? 0,
     })),
   }
 }
@@ -82,19 +79,6 @@ const cellFormatter: CellFormatter = (value, key, row) => {
         <Link to={`/wms/dispatches/${row['id']}`} className="font-medium wms-link">
           {value}
         </Link>
-      ),
-    }
-  }
-  if (key === 'outwardNumber' && typeof value === 'string') {
-    if (!value) return { display: <span className="text-muted-foreground">—</span> }
-    const outwardId = row['outwardId']
-    return {
-      display: outwardId ? (
-        <Link to={`/wms/outward/${outwardId}`} className="wms-link" onClick={(e) => e.stopPropagation()}>
-          {value}
-        </Link>
-      ) : (
-        <span>{value}</span>
       ),
     }
   }
@@ -124,9 +108,6 @@ const cellFormatter: CellFormatter = (value, key, row) => {
   if ((key === 'assemblyCompletedAt' || key === 'dispatchedAt') && typeof value === 'string') {
     return { display: formatDate(value || undefined) }
   }
-  if (key === 'invoiceAmount' && typeof value === 'number') {
-    return { display: value === 0 ? '—' : formatCurrency(value) }
-  }
   if (key === 'externalTicketNumber' && typeof value === 'string') {
     if (!value) return { display: <span className="text-muted-foreground">—</span> }
     return { display: <span className="font-mono text-xs">{value}</span> }
@@ -148,7 +129,7 @@ function DispatchListPage() {
     <ListPageShell
       title="Dispatch Requests"
       subtitle="SO-level dispatch requests with external assembly tracking, billing documents, and variance capture."
-      breadcrumbs={[{ label: 'WMS' }, { label: 'Outward', href: '/wms/outward' }, { label: 'Dispatches' }]}
+      breadcrumbs={[{ label: 'WMS' }, { label: 'Dispatches' }]}
       actions={
         <Button onClick={() => navigate('/wms/dispatches/new')}>
           <Plus className="mr-1 size-4" />

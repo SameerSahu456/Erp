@@ -30,8 +30,6 @@ const STATUS_FILTER_OPTIONS: DeviceStatus[] = [
   'READY_FOR_DISPATCH',
   'DISPATCHED',
   'SCRAPPED',
-  'AWAITING_OUTWARD_QC',
-  'UNDER_OUTWARD_QC',
 ]
 
 // Map location strings to warehouse IDs

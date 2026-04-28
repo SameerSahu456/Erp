@@ -27,7 +27,7 @@ export const mockBatches: InwardBatchEnhanced[] = [
   {
     id: 'batch-002',
     batchNumber: 'BATCH-2026-0002',
-    inwardType: 'RENTAL_RETURN',
+    inwardType: 'ADVANCE_RETURN',
     sourceType: 'Customer',
     sourceName: 'TCS Pune Office',
     sourceRef: 'RC-2026-0011',
@@ -51,7 +51,8 @@ export const mockBatches: InwardBatchEnhanced[] = [
   {
     id: 'batch-003',
     batchNumber: 'BATCH-2026-0003',
-    inwardType: 'REFURB_PURCHASE',
+    inwardType: 'PURCHASE_ORDER',
+    purchaseOrigin: 'Refurb',
     poNumber: 'PO-2026-1020',
     poId: 'po-003',
     sourceType: 'Vendor',
@@ -91,7 +92,8 @@ export const mockBatches: InwardBatchEnhanced[] = [
   {
     id: 'batch-005',
     batchNumber: 'BATCH-2026-0005',
-    inwardType: 'RENTAL_RETURN',
+    inwardType: 'ADVANCE_RETURN',
+    originType: 'Return',
     sourceType: 'Customer',
     sourceName: 'Infosys Bangalore Campus',
     sourceRef: 'RC-2026-0023',

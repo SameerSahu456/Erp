@@ -1,4 +1,5 @@
-import { Fragment, useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { Fragment, useState, useCallback, useLayoutEffect, useMemo, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeftRight,
@@ -7,6 +8,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  ChevronsUpDown,
   Cpu,
   FileText,
   Mail,
@@ -15,11 +17,12 @@ import {
   Package,
   Package2,
   Phone,
+  Plus,
+  Trash2,
   Receipt,
   Replace,
   RotateCcw,
   Search,
-  Server,
   Sparkles,
   Truck,
   User,
@@ -37,12 +40,13 @@ import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/page'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import {
   Select,
   SelectContent,
@@ -56,17 +60,14 @@ import { mockPurchaseOrders } from '@/modules/procurement/data/purchase-orders'
 import { salesOrders } from '@/modules/crm/data/sales-orders'
 import { demoRequests } from '@/modules/crm/data/demo-requests'
 import { mockCustomerRegistrations } from '@/modules/customers/data/customers'
-import { mockRentalContracts } from '@/modules/rentals/data/contracts'
 import { mockParts } from '@/modules/ims/data/parts'
 import { mockVariants } from '@/modules/ims/data/variants'
 import { getActiveAssemblyBOMs, findBOMById } from '../data/assembly-helpers'
 import { mockReplacementRequests } from '../data/replacement-requests'
 import type { ReplacementRequest } from '../data/replacement-requests'
-import type { PurchaseOrder } from '@/modules/procurement/types'
 import type { SalesOrder } from '@/modules/crm/types'
 import type { DemoRequest } from '@/modules/crm/types'
-import type { RentalContract } from '@/modules/rentals/types'
-import type { InwardType, ReturnOriginType } from '../types'
+import type { BillOfMaterials, InwardType, PurchaseOriginType, ReturnOriginType, VariantCondition } from '../types'
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                         */
@@ -81,20 +82,8 @@ const INWARD_TYPE_OPTIONS: {
   {
     value: 'PURCHASE_ORDER',
     label: 'Purchase Order',
-    description: 'New stock against a vendor PO',
+    description: 'Stock against a vendor PO',
     icon: FileText,
-  },
-  {
-    value: 'REFURB_PURCHASE',
-    label: 'Refurb Purchase',
-    description: 'Stock from refurb vendor',
-    icon: Sparkles,
-  },
-  {
-    value: 'RENTAL_RETURN',
-    label: 'Rental Return',
-    description: 'Returned rental units',
-    icon: RotateCcw,
   },
   {
     value: 'DEMO_RETURN',
@@ -130,19 +119,34 @@ type ItemCondition = (typeof ITEM_CONDITIONS)[number]
 /* ------------------------------------------------------------------ */
 
 interface InwardItemComponent {
-  bomItemId: string
-  slotIndex: number
-  partId: string
+  // Synthetic React key. Free-form rows use this; template-backed rows
+  // also have it so add/remove works the same way.
+  id: string
+  // Tie back to a BOM template slot when loaded from a template.
+  bomItemId?: string
+  slotIndex?: number
+  partId?: string
   partName: string
-  partSku: string
+  partSku?: string
+  variantId?: string
+  variantSku?: string
+  brand?: string
   position?: string
   serialNumber: string
-  barcode: string
+  qty: number
+  barcode?: string
+}
+
+let _componentIdCounter = 0
+function nextComponentId(): string {
+  _componentIdCounter += 1
+  return `cmp-${Date.now()}-${_componentIdCounter}`
 }
 
 // Line-level inward row: one entry per source line (PO line, SO line, demo
-// item, rental device-group). Per-unit serials/barcodes are captured later
-// on the devices page after the batch is created.
+// item, rental device-group). Each row carries a serialNumber so the inward
+// clerk can capture it inline; if qty > 1 the field acts as the lead serial
+// and per-unit values are filled out on the Batch Devices step.
 interface InwardItem {
   id: string
   partId?: string
@@ -154,6 +158,7 @@ interface InwardItem {
   brand?: string
   condition: ItemCondition
   qty: number
+  serialNumber: string
   notes: string
   // Assembly fields — populated when the inward line is a server/workstation build.
   bomId?: string
@@ -196,99 +201,76 @@ function clampRows<T>(rows: T[]): T[] {
   return rows.length > MAX_AUTOFILL_ROWS ? rows.slice(0, MAX_AUTOFILL_ROWS) : rows
 }
 
-function buildItemsFromPO(po: PurchaseOrder): InwardItem[] {
-  return clampRows(
-    po.items.map((li) => ({
-      id: nextItemId(),
-      partId: li.partId,
-      partName: li.partName,
-      partSku: li.partSku,
-      variantId: li.variantId,
-      variantSku: li.variantSku,
-      category: li.category,
-      condition: 'Untested',
-      qty: li.qtyOrdered,
-      notes: '',
-    })),
-  )
+// Each line represents one physical device — qty is always 1 — so multi-unit
+// source rows are expanded into N qty-1 rows.
+function expandUnits(count: number): number[] {
+  const n = Math.max(1, Math.floor(count || 1))
+  return Array.from({ length: n }, (_, i) => i)
 }
 
 function buildItemsFromSO(so: SalesOrder): InwardItem[] {
-  return clampRows(
-    so.lineItems.map((li) => ({
-      id: nextItemId(),
-      partId: li.partId,
-      partName: li.partName,
-      partSku: li.partSku,
-      variantId: li.variantId,
-      variantSku: li.variantSku,
-      category: li.category,
-      brand: li.brand,
-      condition: 'Untested',
-      qty: li.qty,
-      notes: '',
-    })),
-  )
-}
-
-// Rental contracts carry a serial-level device list. Group by model so each
-// unique device kind shows as one line with its returned-unit count.
-function buildItemsFromRentalContract(rc: RentalContract): InwardItem[] {
-  const grouped = new Map<string, InwardItem>()
-  for (const d of rc.devices) {
-    const key = `${d.model}::${d.brand ?? ''}`
-    const existing = grouped.get(key)
-    if (existing) {
-      existing.qty += 1
-      continue
+  const out: InwardItem[] = []
+  for (const li of so.lineItems) {
+    for (const _ of expandUnits(li.qty)) {
+      out.push({
+        id: nextItemId(),
+        partId: li.partId,
+        partName: li.partName,
+        partSku: li.partSku,
+        variantId: li.variantId,
+        variantSku: li.variantSku,
+        category: li.category,
+        brand: li.brand,
+        condition: 'Untested',
+        qty: 1,
+        serialNumber: '',
+        notes: '',
+      })
     }
-    grouped.set(key, {
-      id: nextItemId(),
-      partName: d.model,
-      partSku: d.barcode || undefined,
-      brand: d.brand,
-      condition: 'Untested',
-      qty: 1,
-      notes: '',
-    })
   }
-  return clampRows(Array.from(grouped.values()))
+  return clampRows(out)
 }
 
 function buildItemsFromReplacementRequest(rr: ReplacementRequest): InwardItem[] {
-  return clampRows([
-    {
+  return clampRows(
+    expandUnits(rr.qty).map(() => ({
       id: nextItemId(),
       partId: rr.originalPartId,
       partName: rr.originalPartName,
       partSku: rr.originalPartSku,
       condition: 'Untested',
-      qty: rr.qty,
-      notes: '',
-    },
-  ])
-}
-
-function buildItemsFromDemoRequest(dr: DemoRequest): InwardItem[] {
-  return clampRows(
-    dr.items.map((li) => ({
-      id: nextItemId(),
-      partId: li.partId,
-      partName: li.partName,
-      partSku: li.partSku,
-      variantId: li.variantId,
-      variantSku: li.variantSku,
-      category: li.category,
-      brand: li.brand,
-      condition: 'Untested',
-      qty: li.qty,
+      qty: 1,
+      serialNumber: '',
       notes: '',
     })),
   )
 }
 
+function buildItemsFromDemoRequest(dr: DemoRequest): InwardItem[] {
+  const out: InwardItem[] = []
+  for (const li of dr.items) {
+    for (const _ of expandUnits(li.qty)) {
+      out.push({
+        id: nextItemId(),
+        partId: li.partId,
+        partName: li.partName,
+        partSku: li.partSku,
+        variantId: li.variantId,
+        variantSku: li.variantSku,
+        category: li.category,
+        brand: li.brand,
+        condition: 'Untested',
+        qty: 1,
+        serialNumber: '',
+        notes: '',
+      })
+    }
+  }
+  return clampRows(out)
+}
+
 /* ------------------------------------------------------------------ */
-/*  Shared small components (mirror OutwardFormPage)                  */
+/*  Shared small components                                            */
 /* ------------------------------------------------------------------ */
 
 function SectionHeader({
@@ -437,6 +419,7 @@ interface InlineSearchRow {
   partSku: string
   category: string
   brand: string
+  condition: VariantCondition
 }
 
 const inlineSearchRows: InlineSearchRow[] = (() => {
@@ -453,112 +436,374 @@ const inlineSearchRows: InlineSearchRow[] = (() => {
         partSku: part?.sku ?? v.variantSku,
         category: part?.categoryName ?? 'Components',
         brand: part?.brand ?? '',
+        condition: v.condition,
       }
     })
 })()
 
-function InlineItemSearch({ onPick }: { onPick: (row: InlineSearchRow) => void }) {
-  const [query, setQuery] = useState('')
-  const [open, setOpen] = useState(false)
-  const wrapperRef = useRef<HTMLDivElement>(null)
+const inlineSearchRowsByVariant = new Map(inlineSearchRows.map((r) => [r.variantSku, r]))
 
-  const matches = useMemo(() => {
-    const q = query.toLowerCase().trim()
-    if (!q) return []
-    return inlineSearchRows
-      .filter((r) =>
-        r.partName.toLowerCase().includes(q) ||
-        r.partSku.toLowerCase().includes(q) ||
-        r.variantSku.toLowerCase().includes(q) ||
-        r.brand.toLowerCase().includes(q) ||
-        r.category.toLowerCase().includes(q),
-      )
-      .slice(0, 8)
-  }, [query])
+/* ------------------------------------------------------------------ */
+/*  Part combobox — Button-trigger + Command popup, mirrors the BOM    */
+/*  picker used in DispatchFormPage so both forms feel consistent.     */
+/* ------------------------------------------------------------------ */
+
+function PartCombobox({
+  value,
+  onPick,
+  onClear,
+  triggerClassName,
+  placeholder = 'Search part…',
+}: {
+  value: string
+  onPick: (row: InlineSearchRow) => void
+  onClear: () => void
+  triggerClassName?: string
+  placeholder?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null)
+  const selected = inlineSearchRowsByVariant.get(value)
+
+  useLayoutEffect(() => {
+    if (!open) return
+    function update() {
+      const el = triggerRef.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, left: r.left, width: r.width })
+    }
+    const raf = requestAnimationFrame(update)
+    window.addEventListener('scroll', update, true)
+    window.addEventListener('resize', update)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', update, true)
+      window.removeEventListener('resize', update)
+    }
+  }, [open])
 
   useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false)
+    if (!open) return
+    function onPointerDown(e: PointerEvent) {
+      const t = e.target as Node
+      if (triggerRef.current?.contains(t)) return
+      if (popupRef.current?.contains(t)) return
+      setOpen(false)
     }
-    document.addEventListener('mousedown', onClickOutside)
-    return () => document.removeEventListener('mousedown', onClickOutside)
-  }, [])
-
-  const handleSelect = (row: InlineSearchRow) => {
-    onPick(row)
-    setQuery('')
-    setOpen(false)
-  }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   return (
-    <div ref={wrapperRef} className="relative">
-      <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search items by name, SKU or brand to add…"
-          className="pl-9"
-          value={query}
-          onFocus={() => setOpen(true)}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setOpen(true)
-          }}
-        />
-        {query && (
-          <button
-            type="button"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              setQuery('')
-              setOpen(false)
-            }}
+    <>
+      <Button
+        ref={triggerRef}
+        type="button"
+        variant="outline"
+        className={cn('w-full justify-between font-normal', triggerClassName)}
+        onClick={() => {
+          setPos(null)
+          setOpen((o) => !o)
+        }}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          <span
+            className={cn(
+              'truncate text-left',
+              !selected && 'text-muted-foreground',
+            )}
           >
-            <X className="size-3.5" />
-          </button>
-        )}
-      </div>
-      {open && query.trim() !== '' && (
-        <div className="absolute z-20 mt-1 max-h-80 w-full overflow-y-auto rounded-md border bg-popover shadow-md">
-          {matches.length === 0 ? (
-            <p className="py-6 text-center text-xs text-muted-foreground">No matches.</p>
-          ) : (
-            <ul className="divide-y">
-              {matches.map((row) => (
-                <li key={row.variantId}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelect(row)}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-muted/60"
-                  >
-                    <Package className="size-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium">{row.partName}</div>
-                      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                        <span className="font-mono">{row.variantSku}</span>
-                        {row.brand && (
-                          <>
-                            <span>·</span>
-                            <span className="truncate">{row.brand}</span>
-                          </>
+            {selected ? (
+              <span className="flex flex-col leading-tight">
+                <span className="truncate text-sm font-medium">{selected.partSku}</span>
+                <span className="truncate text-[11px] text-muted-foreground">
+                  {selected.partName}
+                </span>
+              </span>
+            ) : (
+              placeholder
+            )}
+          </span>
+          {selected && (
+            <Badge
+              variant="outline"
+              className="ml-auto shrink-0 px-1.5 py-0 text-[10px] font-medium"
+            >
+              {selected.condition}
+            </Badge>
+          )}
+        </span>
+        <span className="ml-2 flex shrink-0 items-center gap-1">
+          {selected && (
+            <span
+              role="button"
+              tabIndex={-1}
+              onPointerDown={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                onClear()
+              }}
+              className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Clear selection"
+            >
+              <X className="size-3" />
+            </span>
+          )}
+          <ChevronsUpDown className="size-3.5 opacity-50" />
+        </span>
+      </Button>
+      {open && pos &&
+        createPortal(
+          <div
+            ref={popupRef}
+            style={{
+              position: 'fixed',
+              top: pos.top,
+              left: pos.left,
+              width: pos.width,
+              minWidth: 280,
+              zIndex: 50,
+            }}
+            className="overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10"
+          >
+            <Command>
+              <CommandInput placeholder="Search by SKU, name, brand…" />
+              <CommandList>
+                <CommandEmpty>No matching parts.</CommandEmpty>
+                <CommandGroup>
+                  {inlineSearchRows.map((o) => (
+                    <CommandItem
+                      key={o.variantSku}
+                      value={o.variantSku}
+                      keywords={[o.variantSku, o.partSku, o.partName, o.brand, o.condition].filter(Boolean) as string[]}
+                      onSelect={() => {
+                        onPick(o)
+                        setOpen(false)
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 size-3.5 shrink-0',
+                          value === o.variantSku ? 'opacity-100' : 'opacity-0',
                         )}
-                        {row.category && (
-                          <>
-                            <span>·</span>
-                            <span className="truncate">{row.category}</span>
-                          </>
-                        )}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{o.partSku}</div>
+                        <div className="truncate text-xs text-muted-foreground">{o.partName}</div>
                       </div>
-                    </div>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                      Add
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+                      <Badge
+                        variant="outline"
+                        className="ml-2 shrink-0 px-1.5 py-0 text-[10px] font-medium"
+                      >
+                        {o.condition}
+                      </Badge>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </div>,
+          document.body,
+        )}
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Inline BOM editor — rendered under a server / assembly line when   */
+/*  "View BOM" is toggled. Lets the clerk add components freely with   */
+/*  the same Part / Serial / Qty triplet as the parent line items.     */
+/* ------------------------------------------------------------------ */
+
+function generateAutoSerial(): string {
+  const rand = Math.random().toString(36).slice(2, 8).toUpperCase()
+  return `SN-${rand}`
+}
+
+function BomInlineEditor({
+  item,
+  templates,
+  onPickComponentPart,
+  onClearComponentPart,
+  onUpdateComponent,
+  onSerialChange,
+  onAddComponent,
+  onRemoveComponent,
+  onLoadTemplate,
+  onClearBom,
+}: {
+  item: InwardItem
+  templates: BillOfMaterials[]
+  onPickComponentPart: (idx: number, row: InlineSearchRow) => void
+  onClearComponentPart: (idx: number) => void
+  onUpdateComponent: <K extends keyof InwardItemComponent>(
+    idx: number,
+    field: K,
+    value: InwardItemComponent[K],
+  ) => void
+  onSerialChange: (idx: number, value: string) => void
+  onAddComponent: () => void
+  onRemoveComponent: (idx: number) => void
+  onLoadTemplate: (bomId: string) => void
+  onClearBom: () => void
+}) {
+  const components = item.components ?? []
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-medium text-primary">
+          <Cpu className="size-3" />
+          {item.bomName ? `Assembly · ${item.bomName}` : 'Assembly'}
+          {item.bomNumber && (
+            <span className="font-mono text-[10px] opacity-70">· {item.bomNumber}</span>
+          )}
+        </span>
+        <span className="text-muted-foreground">
+          {components.length} component{components.length === 1 ? '' : 's'}
+        </span>
+        <div className="ml-auto flex items-center gap-1.5">
+          {templates.length > 0 && (
+            <Select
+              value={item.bomId ?? ''}
+              onValueChange={(val) => { if (val) onLoadTemplate(val) }}
+            >
+              <SelectTrigger className="h-7 w-48 text-xs" aria-label="Load BOM template">
+                <SelectValue placeholder="Load template…" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((b) => (
+                  <SelectItem key={b.id} value={b.id} className="text-xs">
+                    {b.parentPartName} — {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {(item.bomId || components.length > 0) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={onClearBom}
+            >
+              <Trash2 className="size-3" />
+              Clear
+            </Button>
           )}
         </div>
-      )}
+      </div>
+
+      <div className="overflow-x-auto rounded-md border bg-background">
+        <table className="w-full table-fixed text-sm">
+          <thead>
+            <tr className="border-b bg-muted/40 text-[11px] uppercase tracking-wide text-muted-foreground">
+              <th className="w-1/2 px-3 py-2 text-left font-medium">Part Number</th>
+              <th className="w-1/2 px-3 py-2 text-left font-medium">Serial Number</th>
+              <th className="w-16 px-3 py-2 text-right font-medium">Qty</th>
+              <th className="w-10 px-1 py-2" />
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {components.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  No components yet. Add one or load a BOM template.
+                </td>
+              </tr>
+            ) : (
+              components.map((c, idx) => (
+                <tr key={c.id} className="align-top">
+                  <td className="px-3 py-2">
+                    <PartCombobox
+                      value={c.variantSku ?? ''}
+                      onPick={(row) => onPickComponentPart(idx, row)}
+                      onClear={() => onClearComponentPart(idx)}
+                      triggerClassName="h-9 text-xs"
+                      placeholder="Search component…"
+                    />
+                    {c.position && (
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        Slot · {c.position}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        placeholder="Serial #"
+                        className="h-8 flex-1 text-xs"
+                        value={c.serialNumber}
+                        onChange={(e) => onSerialChange(idx, e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        className="h-8 shrink-0"
+                        onClick={() => onSerialChange(idx, generateAutoSerial())}
+                        title="Auto-generate serial number"
+                        aria-label="Auto-generate serial number"
+                      >
+                        <Sparkles className="size-3.5" />
+                      </Button>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {c.serialNumber.trim() !== '' ? (
+                      <span
+                        className="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-dashed bg-muted/40 px-2 text-xs font-medium tabular-nums text-muted-foreground"
+                        title="Serial-tracked component — qty fixed at 1"
+                      >
+                        1
+                      </span>
+                    ) : (
+                      <Input
+                        type="number"
+                        min={0}
+                        className="ml-auto h-8 w-16 text-right text-xs"
+                        value={c.qty}
+                        onChange={(e) => onUpdateComponent(idx, 'qty', Number(e.target.value) || 0)}
+                      />
+                    )}
+                  </td>
+                  <td className="px-1 py-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => onRemoveComponent(idx)}
+                      aria-label="Remove component"
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <Button type="button" variant="ghost" size="xs" onClick={onAddComponent}>
+          <Plus className="size-3" />
+          Add component
+        </Button>
+      </div>
     </div>
   )
 }
@@ -572,7 +817,8 @@ function InwardFormPage() {
 
   /* --- Basic info state --- */
   const [batchNumber] = useState(generateBatchNumber)
-  const [inwardType, setInwardType] = useState<InwardType>('REFURB_PURCHASE')
+  const [inwardType, setInwardType] = useState<InwardType>('PURCHASE_ORDER')
+  const [purchaseOrigin, setPurchaseOrigin] = useState<PurchaseOriginType>('New')
   const [notes, setNotes] = useState('')
 
   /* --- Conditional source fields --- */
@@ -601,12 +847,6 @@ function InwardFormPage() {
          components inline beneath the row. --- */
   const [bomExpanded, setBomExpanded] = useState<Record<string, boolean>>({})
 
-  /* --- BOM capture dialog state (server / assembly items) --- */
-  const [bomDialogOpen, setBomDialogOpen] = useState(false)
-  const [bomDialogItemId, setBomDialogItemId] = useState<string | null>(null)
-  const [bomDraftBomId, setBomDraftBomId] = useState<string>('')
-  const [bomDraftComponents, setBomDraftComponents] = useState<InwardItemComponent[]>([])
-
   const activeAssemblyBOMs = useMemo(() => getActiveAssemblyBOMs(), [])
 
   /* --- Source dropdowns: show the 5 most recent so inward picking is quick.
@@ -622,12 +862,6 @@ function InwardFormPage() {
   const pickerSalesOrders = useMemo(
     () => [...salesOrders]
       .sort((a, b) => (b.createdAt ?? b.date ?? '').localeCompare(a.createdAt ?? a.date ?? ''))
-      .slice(0, PICKER_LIMIT),
-    [],
-  )
-  const pickerRentalContracts = useMemo(
-    () => [...mockRentalContracts]
-      .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
       .slice(0, PICKER_LIMIT),
     [],
   )
@@ -659,10 +893,6 @@ function InwardFormPage() {
       : undefined),
     [replacementRequestNumber],
   )
-  const selectedContract = useMemo(
-    () => (sourceRef ? mockRentalContracts.find((r) => r.contractNumber === sourceRef) : undefined),
-    [sourceRef],
-  )
   const selectedDemo = useMemo(
     () => (sourceRef ? demoRequests.find((d) => d.demoNumber === sourceRef) : undefined),
     [sourceRef],
@@ -683,6 +913,7 @@ function InwardFormPage() {
   /* --- Handlers --- */
   const handleInwardTypeChange = (nextType: InwardType) => {
     setInwardType(nextType)
+    setPurchaseOrigin('New')
     setPoNumber('')
     setSourceName('')
     setSourceRef('')
@@ -720,31 +951,60 @@ function InwardFormPage() {
     })
   }, [])
 
-  const handleInlinePick = useCallback((row: InlineSearchRow) => {
-    setItems((prev) => {
-      const existing = prev.find((it) => it.variantId === row.variantId)
-      if (existing) {
-        return prev.map((it) =>
-          it.id === existing.id ? { ...it, qty: it.qty + 1 } : it,
-        )
-      }
-      return [
-        ...prev,
-        {
-          id: nextItemId(),
-          partId: row.partId,
-          partName: row.partName,
-          partSku: row.partSku,
-          variantId: row.variantId,
-          variantSku: row.variantSku,
-          category: row.category,
-          brand: row.brand,
-          condition: 'Untested',
-          qty: 1,
-          notes: '',
-        },
-      ]
-    })
+  /* Add a blank line. The clerk picks the part inline via the row's
+     part-search field and fills serial / qty. */
+  const addBlankItem = useCallback(() => {
+    setItems((prev) => [
+      ...prev,
+      {
+        id: nextItemId(),
+        partName: '',
+        condition: 'Untested',
+        qty: 1,
+        serialNumber: '',
+        notes: '',
+      },
+    ])
+  }, [])
+
+  /* Apply a part-search pick to an existing row (replaces part fields,
+     keeps qty / serial). */
+  const applyPartToItem = useCallback((id: string, row: InlineSearchRow) => {
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === id
+          ? {
+              ...it,
+              partId: row.partId,
+              partName: row.partName,
+              partSku: row.partSku,
+              variantId: row.variantId,
+              variantSku: row.variantSku,
+              category: row.category,
+              brand: row.brand,
+            }
+          : it,
+      ),
+    )
+  }, [])
+
+  const clearPartFromItem = useCallback((id: string) => {
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === id
+          ? {
+              ...it,
+              partId: undefined,
+              partName: '',
+              partSku: undefined,
+              variantId: undefined,
+              variantSku: undefined,
+              category: undefined,
+              brand: undefined,
+            }
+          : it,
+      ),
+    )
   }, [])
 
   const toggleBomExpansion = useCallback((id: string) => {
@@ -759,6 +1019,7 @@ function InwardFormPage() {
     for (const bi of bom.items) {
       for (let i = 1; i <= bi.quantity; i += 1) {
         out.push({
+          id: nextComponentId(),
           bomItemId: bi.id,
           slotIndex: i,
           partId: bi.partId,
@@ -766,6 +1027,7 @@ function InwardFormPage() {
           partSku: bi.partSku,
           position: bi.position,
           serialNumber: '',
+          qty: 1,
           barcode: '',
         })
       }
@@ -773,69 +1035,156 @@ function InwardFormPage() {
     return out
   }, [])
 
-  const openBomDialog = useCallback(
-    (itemId: string) => {
-      const item = items.find((i) => i.id === itemId)
-      setBomDialogItemId(itemId)
-      if (item?.bomId) {
-        setBomDraftBomId(item.bomId)
-        setBomDraftComponents(item.components ?? [])
-      } else {
-        setBomDraftBomId('')
-        setBomDraftComponents([])
-      }
-      setBomDialogOpen(true)
-    },
-    [items],
-  )
+  /* Mark a line as having a BOM and expand the inline editor. We seed
+     a blank component row so View BOM immediately shows fillable
+     Part / Serial / Qty inputs instead of an empty state. */
+  const addBomToItem = useCallback((itemId: string) => {
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== itemId) return it
+        if (it.components !== undefined) return it
+        return {
+          ...it,
+          components: [
+            {
+              id: nextComponentId(),
+              partName: '',
+              serialNumber: '',
+              qty: 1,
+            },
+          ],
+        }
+      }),
+    )
+    setBomExpanded((prev) => ({ ...prev, [itemId]: true }))
+  }, [])
 
-  const handleBomSelect = useCallback(
-    (bomId: string) => {
-      setBomDraftBomId(bomId)
-      setBomDraftComponents(expandBomToDraft(bomId))
+  /* Load (or reload) a BOM template inline — used by the editor's template
+     dropdown. Replaces the previous dialog-based flow. */
+  const loadBomTemplate = useCallback(
+    (itemId: string, bomId: string) => {
+      const bom = findBOMById(bomId)
+      if (!bom) return
+      const components = expandBomToDraft(bomId)
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === itemId
+            ? {
+                ...it,
+                partName: it.partName || bom.parentPartName,
+                bomId: bom.id,
+                bomNumber: bom.bomNumber,
+                bomName: bom.name,
+                components,
+              }
+            : it,
+        ),
+      )
+      setBomExpanded((prev) => ({ ...prev, [itemId]: true }))
+      toast.success(`Loaded ${bom.name} (${components.length} slot${components.length === 1 ? '' : 's'})`)
     },
     [expandBomToDraft],
   )
 
-  const updateDraftComponent = useCallback(
-    (idx: number, field: 'serialNumber' | 'barcode', value: string) => {
-      setBomDraftComponents((prev) =>
-        prev.map((c, i) => (i === idx ? { ...c, [field]: value } : c)),
+  /* --- Inline BOM editor helpers (operate on items[].components directly) --- */
+  const updateItemComponents = useCallback(
+    (itemId: string, mapper: (cs: InwardItemComponent[]) => InwardItemComponent[]) => {
+      setItems((prev) =>
+        prev.map((it) => (it.id === itemId ? { ...it, components: mapper(it.components ?? []) } : it)),
       )
     },
     [],
   )
 
-  const handleBomDialogSave = useCallback(() => {
-    if (!bomDialogItemId || !bomDraftBomId) {
-      toast.error('Pick a BOM before saving.')
-      return
-    }
-    const bom = findBOMById(bomDraftBomId)
-    if (!bom) return
-    const missing = bomDraftComponents.filter((c) => !c.serialNumber.trim()).length
-    if (missing > 0) {
-      toast.error(`Enter serial numbers for all ${bomDraftComponents.length} components (${missing} missing).`)
-      return
-    }
-    setItems((prev) =>
-      prev.map((it) =>
-        it.id === bomDialogItemId
+  const addComponentToItem = useCallback((itemId: string) => {
+    updateItemComponents(itemId, (cs) => [
+      ...cs,
+      {
+        id: nextComponentId(),
+        partName: '',
+        serialNumber: '',
+        qty: 1,
+      },
+    ])
+  }, [updateItemComponents])
+
+  const removeComponentFromItem = useCallback((itemId: string, idx: number) => {
+    updateItemComponents(itemId, (cs) => cs.filter((_, i) => i !== idx))
+  }, [updateItemComponents])
+
+  const updateItemComponent = useCallback(
+    <K extends keyof InwardItemComponent>(
+      itemId: string,
+      idx: number,
+      field: K,
+      value: InwardItemComponent[K],
+    ) => {
+      updateItemComponents(itemId, (cs) =>
+        cs.map((c, i) => (i === idx ? { ...c, [field]: value } : c)),
+      )
+    },
+    [updateItemComponents],
+  )
+
+  const applyPartToComponent = useCallback(
+    (itemId: string, idx: number, row: InlineSearchRow) => {
+      updateItemComponents(itemId, (cs) =>
+        cs.map((c, i) =>
+          i === idx
+            ? {
+                ...c,
+                partId: row.partId,
+                partName: row.partName,
+                partSku: row.partSku,
+                variantId: row.variantId,
+                variantSku: row.variantSku,
+                brand: row.brand,
+              }
+            : c,
+        ),
+      )
+    },
+    [updateItemComponents],
+  )
+
+  const clearPartFromComponent = useCallback((itemId: string, idx: number) => {
+    updateItemComponents(itemId, (cs) =>
+      cs.map((c, i) =>
+        i === idx
           ? {
-              ...it,
-              partName: it.partName || bom.parentPartName,
-              bomId: bom.id,
-              bomNumber: bom.bomNumber,
-              bomName: bom.name,
-              components: bomDraftComponents,
+              ...c,
+              partId: undefined,
+              partName: '',
+              partSku: undefined,
+              variantId: undefined,
+              variantSku: undefined,
+              brand: undefined,
             }
-          : it,
+          : c,
       ),
     )
-    setBomDialogOpen(false)
-    setBomDialogItemId(null)
-    toast.success(`Components captured for ${bom.parentPartName} (${bomDraftComponents.length} slots)`)
-  }, [bomDialogItemId, bomDraftBomId, bomDraftComponents])
+  }, [updateItemComponents])
+
+  /* Serial-driven qty rule for BOM components: a component with a serial
+     represents a single serial-tracked unit (qty=1, locked). Without a
+     serial the qty stays editable for bulk parts (e.g. screws, RAM kits). */
+  const setComponentSerial = useCallback(
+    (itemId: string, idx: number, value: string) => {
+      const trimmed = value.trim()
+      updateItemComponents(itemId, (cs) =>
+        cs.map((c, i) =>
+          i === idx
+            ? {
+                ...c,
+                serialNumber: value,
+                qty: trimmed !== '' ? 1 : c.qty,
+              }
+            : c,
+        ),
+      )
+    },
+    [updateItemComponents],
+  )
 
   const clearItemBom = useCallback((itemId: string) => {
     setItems((prev) =>
@@ -848,8 +1197,8 @@ function InwardFormPage() {
   }, [])
 
   /* --- Derived flags --- */
-  const showVendorPoFields = inwardType === 'REFURB_PURCHASE' || inwardType === 'PURCHASE_ORDER'
-  const showReturnFields = inwardType === 'RENTAL_RETURN' || inwardType === 'DEMO_RETURN' || inwardType === 'ADVANCE_RETURN'
+  const showVendorPoFields = inwardType === 'PURCHASE_ORDER'
+  const showReturnFields = inwardType === 'DEMO_RETURN' || inwardType === 'ADVANCE_RETURN'
   const showCustomerReturnFields = inwardType === 'ADVANCE_RETURN'
   const showInternalTransferFields = inwardType === 'INTERNAL_TRANSFER'
   const showReplacementFields = inwardType === 'REPLACEMENT'
@@ -862,13 +1211,8 @@ function InwardFormPage() {
   const missingPieces: string[] = []
   if (showVendorPoFields && !poNumber.trim()) missingPieces.push('PO number')
   if (showReturnFields && !sourceName) {
-    missingPieces.push(
-      inwardType === 'RENTAL_RETURN' || inwardType === 'ADVANCE_RETURN' || inwardType === 'DEMO_RETURN'
-        ? 'Customer name'
-        : 'Source name',
-    )
+    missingPieces.push('Customer name')
   }
-  if (inwardType === 'RENTAL_RETURN' && !salesOrderNumber.trim()) missingPieces.push('SO number')
   if (showInternalTransferFields && !sourceDept) missingPieces.push('Source department')
   if (showInternalTransferFields && !employeeName.trim()) missingPieces.push('Employee name')
   if (validItemCount === 0) missingPieces.push('At least one item')
@@ -891,7 +1235,7 @@ function InwardFormPage() {
     navigate(`/wms/inward/batch-new/devices`)
   }
 
-  /* --- Dynamic step numbering (mirrors OutwardFormPage) --- */
+  /* --- Dynamic step numbering --- */
   let step = 1
   const stepInwardInfo = step++
   const stepItems = step++
@@ -973,9 +1317,40 @@ function InwardFormPage() {
             {showVendorPoFields && (
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
+                  <FieldLabel required hint="Is this a new purchase or refurb stock?">
+                    Origin
+                  </FieldLabel>
+                  <div className="grid grid-cols-2 gap-2 sm:max-w-sm">
+                    {(['New', 'Refurb'] as PurchaseOriginType[]).map((opt) => {
+                      const selected = purchaseOrigin === opt
+                      const Icon = opt === 'Refurb' ? Sparkles : Package
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setPurchaseOrigin(opt)}
+                          aria-pressed={selected}
+                          className={cn(
+                            'flex items-center justify-between gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors',
+                            selected
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-input bg-background text-foreground hover:bg-muted/60',
+                          )}
+                        >
+                          <span className="flex items-center gap-2">
+                            <Icon className="size-4" />
+                            {opt}
+                          </span>
+                          {selected && <Check className="size-4" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-2">
                   <FieldLabel
                     required
-                    hint={inwardType === 'REFURB_PURCHASE' ? 'Source PO for this refurb batch' : 'Vendor PO reference'}
+                    hint={purchaseOrigin === 'Refurb' ? 'Source PO for this refurb batch' : 'Vendor PO reference'}
                   >
                     Purchase Order #
                   </FieldLabel>
@@ -984,13 +1359,6 @@ function InwardFormPage() {
                     onValueChange={(val) => {
                       if (!val) return
                       setPoNumber(val)
-                      const po = mockPurchaseOrders.find((p) => p.poNumber === val)
-                      if (!po) return
-                      const rows = buildItemsFromPO(po)
-                      if (rows.length > 0) {
-                        setItems(rows)
-                        toast.success(`Loaded ${rows.length} item${rows.length === 1 ? '' : 's'} from ${po.poNumber}`)
-                      }
                     }}
                   >
                     <SelectTrigger className="w-full">
@@ -1060,89 +1428,7 @@ function InwardFormPage() {
                     </div>
                   </div>
                 )}
-                {inwardType === 'RENTAL_RETURN' ? (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div className="space-y-2">
-                      <FieldLabel required hint="Original SO the rental was fulfilled from">
-                        Sales Order #
-                      </FieldLabel>
-                      <Select
-                        value={salesOrderNumber}
-                        onValueChange={(val) => {
-                          if (!val) return
-                          setSalesOrderNumber(val)
-                          const so = salesOrders.find((s) => s.orderNumber === val)
-                          if (!so) return
-                          if (!sourceName.trim()) setSourceName(so.accountName)
-                          const cust = customerForAccount(so.accountName)
-                          const primary = cust?.contacts?.find((c) => c.isPrimary) ?? cust?.contacts?.[0]
-                          if (primary && !customerContact) setCustomerContact(primary.email || primary.phone || '')
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select sales order…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {pickerSalesOrders.map((so) => (
-                            <SelectItem key={so.id} value={so.orderNumber}>
-                              {so.orderNumber} · {so.accountName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <FieldLabel required>Customer Name</FieldLabel>
-                      <Select
-                        value={sourceName}
-                        onValueChange={(val) => { if (val) setSourceName(val) }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select customer…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {mockCustomerRegistrations.map((c) => (
-                            <SelectItem key={c.id} value={c.companyName}>
-                              {c.companyName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <FieldLabel hint="Auto-fills devices into Line Items">
-                        Contract Number
-                      </FieldLabel>
-                      <Select
-                        value={sourceRef}
-                        onValueChange={(val) => {
-                          if (!val) return
-                          setSourceRef(val)
-                          const rc = mockRentalContracts.find((r) => r.contractNumber === val)
-                          if (!rc) return
-                          setSourceName(rc.customerName)
-                          if (rc.contactPhone) setCustomerContact(rc.contactPhone)
-                          const rows = buildItemsFromRentalContract(rc)
-                          if (rows.length > 0) {
-                            setItems(rows)
-                            toast.success(`Loaded ${rows.length} device${rows.length === 1 ? '' : 's'} from ${rc.contractNumber}`)
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select rental contract…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {pickerRentalContracts.map((rc) => (
-                            <SelectItem key={rc.id} value={rc.contractNumber}>
-                              {rc.contractNumber} · {rc.customerName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                ) : inwardType === 'DEMO_RETURN' ? (
+                {inwardType === 'DEMO_RETURN' ? (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="space-y-2">
                       <FieldLabel hint="Auto-fills items into Line Items">
@@ -1344,25 +1630,6 @@ function InwardFormPage() {
                     />
                   )
                 })()}
-                {inwardType === 'RENTAL_RETURN' && selectedContract && (
-                  <SourceDetailsCard
-                    kind="rental"
-                    title={selectedContract.customerName}
-                    badge={selectedContract.status}
-                    rows={
-                      <>
-                        <DetailPair label="Contract #" value={selectedContract.contractNumber} icon={FileText} mono />
-                        <DetailPair label="Contact" value={selectedContract.contactPerson} icon={User} />
-                        <DetailPair label="Phone" value={selectedContract.contactPhone} icon={Phone} />
-                        <DetailPair label="Address" value={selectedContract.shippingAddress} icon={MapPin} />
-                        <DetailPair label="Start" value={selectedContract.startDate} icon={Calendar} />
-                        <DetailPair label="End" value={selectedContract.endDate} icon={Calendar} />
-                        <DetailPair label="Units" value={`${selectedContract.devices.length} devices`} icon={Package} />
-                        <DetailPair label="Monthly Rental" value={formatINR(selectedContract.monthlyRental)} icon={Receipt} />
-                      </>
-                    }
-                  />
-                )}
                 {inwardType === 'DEMO_RETURN' && selectedDemo && (
                   <SourceDetailsCard
                     kind="demo"
@@ -1512,134 +1779,155 @@ function InwardFormPage() {
           />
         </CardHeader>
         <CardContent className="p-0 border-t">
-          {showInternalTransferFields && (
-            <div className="border-b p-3">
-              <InlineItemSearch onPick={handleInlinePick} />
-            </div>
-          )}
           {items.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">
-              <Package className="mx-auto mb-2 size-6" />
-              {showInternalTransferFields
-                ? 'No lines yet. Use the search above to add items.'
-                : sourceSelected
-                  ? 'No lines yet — pick a source above to load lines.'
-                  : 'Select a source above to auto-fill lines.'}
+            <div className="space-y-3 px-4 py-8 text-center text-sm text-muted-foreground">
+              <Package className="mx-auto size-6" />
+              <p>
+                {sourceSelected
+                  ? 'No lines yet — pick a source above to auto-fill, or add a line manually.'
+                  : 'Pick a source above to auto-fill lines, or add one manually.'}
+              </p>
+              <div>
+                <Button type="button" variant="outline" size="sm" onClick={addBlankItem}>
+                  <Plus className="size-3.5" />
+                  Add line
+                </Button>
+              </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="px-3 py-2 text-left font-medium">Item</th>
-                    <th className="w-24 px-3 py-2 text-right font-medium">Qty</th>
-                    <th className="w-10 px-1 py-2" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {items.map((item) => {
-                    const expanded = !!bomExpanded[item.id]
-                    return (
-                      <Fragment key={item.id}>
-                        <tr>
-                          <td className="px-3 py-2">
-                            <div className="text-sm font-medium">
-                              {item.partName || (
-                                <span className="text-muted-foreground italic">Unnamed line</span>
-                              )}
-                            </div>
-                            {(item.variantSku || item.partSku) && (
-                              <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <span className="font-mono">{item.variantSku || item.partSku}</span>
-                                {item.brand && (
-                                  <>
-                                    <span>·</span>
-                                    <span className="truncate">{item.brand}</span>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                            {item.bomId && (
-                              <button
-                                type="button"
-                                onClick={() => toggleBomExpansion(item.id)}
-                                className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium wms-link-btn"
-                              >
-                                {expanded ? (
-                                  <ChevronDown className="size-3" />
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full table-fixed text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+                      <th className="w-1/2 px-3 py-2 text-left font-medium">Part Number</th>
+                      <th className="w-1/2 px-3 py-2 text-left font-medium">Serial Number</th>
+                      <th className="w-14 px-3 py-2 text-right font-medium">Qty</th>
+                      <th className="w-10 px-1 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {items.map((item) => {
+                      const expanded = !!bomExpanded[item.id]
+                      const hasBom = item.components !== undefined
+                      return (
+                        <Fragment key={item.id}>
+                          <tr className="align-top">
+                            <td className="px-3 py-2">
+                              <PartCombobox
+                                value={item.variantSku ?? ''}
+                                onPick={(row) => applyPartToItem(item.id, row)}
+                                onClear={() => clearPartFromItem(item.id)}
+                                triggerClassName="h-9 text-xs"
+                                placeholder="Search part number…"
+                              />
+                              <div className="mt-1 flex flex-wrap items-center gap-1">
+                                {hasBom ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleBomExpansion(item.id)}
+                                    className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10"
+                                  >
+                                    {expanded ? (
+                                      <ChevronDown className="size-3" />
+                                    ) : (
+                                      <ChevronRight className="size-3" />
+                                    )}
+                                    <Package2 className="size-3" />
+                                    {expanded ? 'Hide BOM' : 'View BOM'}
+                                    <span className="text-[10px] font-normal text-muted-foreground">
+                                      · {item.components?.length ?? 0} comp
+                                      {(item.components?.length ?? 0) === 1 ? '' : 's'}
+                                    </span>
+                                  </button>
                                 ) : (
-                                  <ChevronRight className="size-3" />
+                                  <button
+                                    type="button"
+                                    onClick={() => addBomToItem(item.id)}
+                                    className="inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted/40 hover:text-foreground"
+                                  >
+                                    <Plus className="size-3" />
+                                    Add BOM
+                                  </button>
                                 )}
-                                <Package2 className="size-3" />
-                                {expanded ? 'Hide BOM' : 'View BOM'} · {item.bomName}
-                                <Badge variant="outline" className="ml-1 text-[10px]">
-                                  {item.components?.length ?? 0} component
-                                  {(item.components?.length ?? 0) === 1 ? '' : 's'}
-                                </Badge>
-                              </button>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 align-top">
-                            <Input
-                              type="number"
-                              min={0}
-                              className="h-8 w-20 ml-auto text-right text-xs"
-                              value={item.qty}
-                              onChange={(e) =>
-                                updateItem(item.id, 'qty', Number(e.target.value) || 0)
-                              }
-                            />
-                          </td>
-                          <td className="px-1 py-2 align-top">
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => removeItem(item.id)}
-                              className="text-muted-foreground hover:text-destructive"
-                            >
-                              <X className="size-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                        {item.bomId && expanded && (
-                          <tr className="bg-muted/20">
-                            <td colSpan={3} className="px-4 py-3">
-                              <div className="flex flex-wrap items-center gap-2 text-xs">
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-medium text-primary">
-                                  <Cpu className="size-3" />
-                                  Assembly · {item.bomName}
-                                </span>
-                                <span className="text-muted-foreground">
-                                  {item.components?.length ?? 0} components captured (
-                                  {item.bomNumber})
-                                </span>
-                                <div className="ml-auto flex items-center gap-1">
-                                  <Button
-                                    variant="outline"
-                                    size="xs"
-                                    onClick={() => openBomDialog(item.id)}
-                                  >
-                                    Edit components
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="xs"
-                                    className="text-muted-foreground hover:text-destructive"
-                                    onClick={() => clearItemBom(item.id)}
-                                  >
-                                    Clear BOM
-                                  </Button>
-                                </div>
                               </div>
                             </td>
+                            <td className="px-3 py-2">
+                              <Input
+                                placeholder="Serial #"
+                                className="h-8 text-xs"
+                                value={item.serialNumber}
+                                onChange={(e) =>
+                                  updateItem(item.id, 'serialNumber', e.target.value)
+                                }
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <span
+                                className="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-dashed bg-muted/40 px-2 text-xs font-medium tabular-nums text-muted-foreground"
+                                title="Each line is one device — qty is fixed at 1"
+                              >
+                                1
+                              </span>
+                            </td>
+                            <td className="px-1 py-2">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => removeItem(item.id)}
+                                className="text-muted-foreground hover:text-destructive"
+                                aria-label="Remove line"
+                              >
+                                <X className="size-4" />
+                              </Button>
+                            </td>
                           </tr>
-                        )}
-                      </Fragment>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          {hasBom && expanded && (
+                            <tr className="bg-muted/15">
+                              <td colSpan={4} className="px-4 py-3">
+                                <BomInlineEditor
+                                  item={item}
+                                  templates={activeAssemblyBOMs}
+                                  onPickComponentPart={(idx, row) =>
+                                    applyPartToComponent(item.id, idx, row)
+                                  }
+                                  onClearComponentPart={(idx) =>
+                                    clearPartFromComponent(item.id, idx)
+                                  }
+                                  onUpdateComponent={(idx, field, value) =>
+                                    updateItemComponent(item.id, idx, field, value)
+                                  }
+                                  onSerialChange={(idx, value) =>
+                                    setComponentSerial(item.id, idx, value)
+                                  }
+                                  onAddComponent={() => addComponentToItem(item.id)}
+                                  onRemoveComponent={(idx) =>
+                                    removeComponentFromItem(item.id, idx)
+                                  }
+                                  onLoadTemplate={(bomId) => loadBomTemplate(item.id, bomId)}
+                                  onClearBom={() => clearItemBom(item.id)}
+                                />
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex items-center justify-between gap-3 border-t bg-muted/10 px-3 py-2">
+                <Button type="button" variant="ghost" size="sm" onClick={addBlankItem}>
+                  <Plus className="size-3.5" />
+                  Add line
+                </Button>
+                <span className="text-[11px] text-muted-foreground">
+                  {totalUnits > 0
+                    ? `${items.length} line${items.length === 1 ? '' : 's'} · ${totalUnits} unit${totalUnits === 1 ? '' : 's'}`
+                    : 'Pick parts and set qty'}
+                </span>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -1779,110 +2067,6 @@ function InwardFormPage() {
         </div>
       </div>
 
-      {/* BOM capture dialog (server / assembly line) */}
-      <Dialog open={bomDialogOpen} onOpenChange={setBomDialogOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0">
-          <div className="shrink-0 border-b px-6 py-4">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-lg">
-                <Server className="size-5 text-primary" />
-                Load Assembly BOM
-              </DialogTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                Pick a BOM for this server / workstation build, then enter the serial number
-                on each component shipped in this chassis.
-              </p>
-            </DialogHeader>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">BOM</Label>
-              <Select value={bomDraftBomId} onValueChange={(val) => { if (val) handleBomSelect(val) }}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose an active BOM…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeAssemblyBOMs.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.parentPartName} — {b.name} ({b.bomNumber})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {bomDraftBomId && (
-                <p className="text-xs text-muted-foreground">
-                  {bomDraftComponents.length} component slot
-                  {bomDraftComponents.length === 1 ? '' : 's'} to capture
-                </p>
-              )}
-            </div>
-
-            {bomDraftComponents.length > 0 && (
-              <div className="overflow-x-auto rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="w-10 px-3 py-2 text-left font-medium">#</th>
-                      <th className="px-3 py-2 text-left font-medium">Component</th>
-                      <th className="px-3 py-2 text-left font-medium">Position</th>
-                      <th className="px-3 py-2 text-left font-medium">
-                        Serial Number <span className="text-destructive">*</span>
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium">Barcode</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {bomDraftComponents.map((c, idx) => (
-                      <tr key={`${c.bomItemId}-${c.slotIndex}`}>
-                        <td className="px-3 py-2 text-muted-foreground">{idx + 1}</td>
-                        <td className="px-3 py-1.5">
-                          <div className="flex flex-col leading-tight">
-                            <span className="font-medium">
-                              {c.partName}
-                              {' '}
-                              <span className="text-xs text-muted-foreground">#{c.slotIndex}</span>
-                            </span>
-                            <span className="text-xs text-muted-foreground">{c.partSku}</span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                          {c.position ?? '—'}
-                        </td>
-                        <td className="px-3 py-1.5">
-                          <Input
-                            className="h-8 text-sm"
-                            placeholder="Serial #"
-                            value={c.serialNumber}
-                            onChange={(e) => updateDraftComponent(idx, 'serialNumber', e.target.value)}
-                          />
-                        </td>
-                        <td className="px-3 py-1.5">
-                          <Input
-                            className="h-8 text-sm"
-                            placeholder="Barcode (optional)"
-                            value={c.barcode}
-                            onChange={(e) => updateDraftComponent(idx, 'barcode', e.target.value)}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="shrink-0 border-t px-6 py-3">
-            <Button variant="outline" onClick={() => setBomDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleBomDialogSave} disabled={!bomDraftBomId}>
-              Save Components
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

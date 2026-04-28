@@ -63,21 +63,17 @@ import { mockDevices } from '../data/devices'
 
 const INWARD_TYPE_LABELS: Record<InwardType, string> = {
   PURCHASE_ORDER: 'Purchase Order',
-  RENTAL_RETURN: 'Rental Return',
   DEMO_RETURN: 'Demo Return',
   INTERNAL_TRANSFER: 'Internal Transfer',
   ADVANCE_RETURN: 'Return',
-  REFURB_PURCHASE: 'Refurb Purchase',
   REPLACEMENT: 'Replacement',
 }
 
 const INWARD_TYPE_VARIANT: Record<InwardType, 'success' | 'warning' | 'info' | 'neutral'> = {
   PURCHASE_ORDER: 'info',
-  RENTAL_RETURN: 'warning',
   DEMO_RETURN: 'neutral',
   INTERNAL_TRANSFER: 'success',
   ADVANCE_RETURN: 'success',
-  REFURB_PURCHASE: 'info',
   REPLACEMENT: 'warning',
 }
 
@@ -245,7 +241,6 @@ function BatchDevicesPage() {
   }
   if (batch.sourceName && batch.sourceName !== batch.vendorName) {
     const label =
-      batch.inwardType === 'RENTAL_RETURN' ||
       batch.inwardType === 'ADVANCE_RETURN' ||
       batch.inwardType === 'DEMO_RETURN'
         ? 'Customer'
@@ -256,13 +251,11 @@ function BatchDevicesPage() {
   }
   if (batch.sourceRef) {
     const refLabel =
-      batch.inwardType === 'RENTAL_RETURN'
-        ? 'Rental Contract #'
-        : batch.inwardType === 'DEMO_RETURN'
-          ? 'Demo Request #'
-          : batch.inwardType === 'INTERNAL_TRANSFER'
-            ? 'Source Department'
-            : 'Reference #'
+      batch.inwardType === 'DEMO_RETURN'
+        ? 'Demo Request #'
+        : batch.inwardType === 'INTERNAL_TRANSFER'
+          ? 'Source Department'
+          : 'Reference #'
     sourceItems.push({ kind: 'text', icon: Hash, label: refLabel, value: batch.sourceRef })
   }
   if (batch.customerContact) {
@@ -451,6 +444,7 @@ function BatchDevicesPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Barcode</TableHead>
+                          <TableHead>Part Number</TableHead>
                           <TableHead>Serial Number</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Grade</TableHead>
@@ -466,6 +460,7 @@ function BatchDevicesPage() {
                                 {d.barcode}
                               </BarcodeText>
                             </TableCell>
+                            <TableCell className="text-sm font-medium">{d.model}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">{d.serialNumber}</TableCell>
                             <TableCell>
                               <StatusBadge variant={DEVICE_STATUS_VARIANT[d.status]}>

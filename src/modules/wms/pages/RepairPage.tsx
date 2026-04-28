@@ -401,7 +401,8 @@ function RepairPage() {
         return {
           id: job.id,
           barcode: job.deviceBarcode,
-          partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
+          partNo: device?.model ?? '-',
+          serialNo: device?.serialNumber ?? '-',
           biosNo: device?.biosNo ?? '-',
           category: device?.category ?? '-',
           type: job.repairType,
@@ -424,7 +425,8 @@ function RepairPage() {
 
   const columns = [
     { key: 'barcode', label: 'Device Barcode', sortable: true },
-    { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+    { key: 'partNo', label: 'Part No', sortable: true },
+    { key: 'serialNo', label: 'Serial No', sortable: true },
     { key: 'biosNo', label: 'BIOS No', sortable: true },
     { key: 'category', label: 'Category', sortable: true },
     { key: 'status', label: 'Status' },
@@ -473,24 +475,23 @@ function RepairPage() {
           display: <span className="font-medium">{String(value)}</span>,
         }
       }
-      if (key === 'partSerial') {
-        const [part, serial] = String(value).split('\n')
+      if (key === 'partNo') {
         const device = mockDevices.find((d) => d.id === row._deviceId)
         const isAssembly = device?.deviceKind === 'ASSEMBLY'
         return {
           display: (
-            <div className="flex flex-col leading-tight">
-              <span className="flex items-center gap-1.5 font-medium">
-                {isAssembly && (
-                  <Server className="size-3.5 text-primary" aria-label="Assembly" />
-                )}
-                {part}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                S/N: {serial}
-              </span>
-            </div>
+            <span className="flex items-center gap-1.5 font-medium">
+              {isAssembly && (
+                <Server className="size-3.5 text-primary" aria-label="Assembly" />
+              )}
+              {String(value)}
+            </span>
           ),
+        }
+      }
+      if (key === 'serialNo') {
+        return {
+          display: <span className="text-sm">{String(value)}</span>,
         }
       }
       if (key === 'type') {

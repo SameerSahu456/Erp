@@ -18,6 +18,7 @@ import {
   Receipt,
   ClipboardList,
   CheckCircle2,
+  Tag,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -28,11 +29,12 @@ import type { StatusBadgeVariant } from '@/components/common/StatusBadge'
 import { PageHeader } from '@/components/page'
 
 import { useDispatches } from '../data/dispatches'
-import type {
-  DispatchAction,
-  DispatchRequestStatus,
-  DispatchLineItem,
-  DispatchDocumentType,
+import {
+  DISPATCH_TYPE_LABELS,
+  type DispatchAction,
+  type DispatchRequestStatus,
+  type DispatchLineItem,
+  type DispatchDocumentType,
 } from '../types'
 
 const STATUS_VARIANT: Record<DispatchRequestStatus, StatusBadgeVariant> = {
@@ -180,21 +182,6 @@ function DispatchDetailPage() {
             <span>
               For SO <Link to={`/crm/sales-orders/${dispatch.salesOrderId}`} className="wms-link">{dispatch.salesOrderNumber}</Link>
             </span>
-            {dispatch.outwardNumber && (
-              <>
-                <span>·</span>
-                <span>
-                  Outward{' '}
-                  {dispatch.outwardId ? (
-                    <Link to={`/wms/outward/${dispatch.outwardId}`} className="wms-link">
-                      {dispatch.outwardNumber}
-                    </Link>
-                  ) : (
-                    <span className="font-mono">{dispatch.outwardNumber}</span>
-                  )}
-                </span>
-              </>
-            )}
             <span>·</span>
             <span>{dispatch.accountName}</span>
           </div>
@@ -241,21 +228,11 @@ function DispatchDetailPage() {
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <Truck className="mt-0.5 size-4 text-muted-foreground" />
+              <Tag className="mt-0.5 size-4 text-muted-foreground" />
               <div>
-                <dt className="text-xs text-muted-foreground">Outward</dt>
+                <dt className="text-xs text-muted-foreground">Dispatch Type</dt>
                 <dd className="text-sm font-medium">
-                  {dispatch.outwardNumber ? (
-                    dispatch.outwardId ? (
-                      <Link to={`/wms/outward/${dispatch.outwardId}`} className="wms-link">
-                        {dispatch.outwardNumber}
-                      </Link>
-                    ) : (
-                      <span className="font-mono">{dispatch.outwardNumber}</span>
-                    )
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
+                  {DISPATCH_TYPE_LABELS[dispatch.dispatchType]}
                 </dd>
               </div>
             </div>

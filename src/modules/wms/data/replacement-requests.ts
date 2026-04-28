@@ -15,7 +15,7 @@ export type ReplacementReason =
 
 export type ReplacementPriority = 'Low' | 'Medium' | 'High' | 'Critical'
 
-// "Same Part" → outward dispatch path (no pricing change).
+// "Same Part" → dispatch path (no pricing change).
 // "Different Part" → pricing update path (rate may differ; SO line is amended).
 export type ReplacementType = 'Same Part' | 'Different Part'
 
@@ -23,7 +23,7 @@ export type ReplacementType = 'Same Part' | 'Different Part'
 // "Advance" → we ship the replacement first; customer returns the original later.
 export type ReplacementMode = 'Normal' | 'Advance'
 
-export type ReplacementNextStep = 'Outward Dispatch' | 'Pricing Update' | 'Pending Decision'
+export type ReplacementNextStep = 'Dispatch' | 'Pricing Update' | 'Pending Decision'
 
 export interface ReplacementRequest {
   id: string
@@ -76,7 +76,7 @@ export interface ReplacementRequest {
 }
 
 export const mockReplacementRequests: ReplacementRequest[] = [
-  // Same part → straight to outward dispatch
+  // Same part → straight to dispatch
   {
     id: 'rpl-001',
     requestNumber: 'RPL-2026-001',
@@ -97,7 +97,7 @@ export const mockReplacementRequests: ReplacementRequest[] = [
     replacementPartSku: 'DL-LAT-5540',
     replacementRate: 45000,
     priceDelta: 0,
-    nextStep: 'Outward Dispatch',
+    nextStep: 'Dispatch',
     reason: 'DOA',
     description: 'Device failed to boot on first power-on at customer site. No display output.',
     priority: 'Critical',
@@ -158,7 +158,7 @@ export const mockReplacementRequests: ReplacementRequest[] = [
     replacementPartSku: 'DL-MON-P2422H',
     replacementRate: 12000,
     priceDelta: 0,
-    nextStep: 'Outward Dispatch',
+    nextStep: 'Dispatch',
     reason: 'Damaged in Transit',
     description: 'Screen cracked. Visible damage on receipt; transporter handover signed with remarks.',
     priority: 'Medium',
@@ -253,7 +253,7 @@ export const mockReplacementRequests: ReplacementRequest[] = [
     replacementPartSku: 'DL-LAT-5540',
     replacementRate: 45000,
     priceDelta: 0,
-    nextStep: 'Outward Dispatch',
+    nextStep: 'Dispatch',
     reason: 'Failed Customer QC',
     description: 'Battery health reported at 78% on customer-side QC; below 90% acceptance threshold.',
     priority: 'Medium',

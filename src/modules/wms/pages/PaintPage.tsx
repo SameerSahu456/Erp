@@ -217,7 +217,8 @@ function PaintPage() {
           id: g.deviceId,
           _deviceId: g.deviceId,
           barcode: g.deviceBarcode,
-          partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
+          partNo: device?.model ?? '-',
+          serialNo: device?.serialNumber ?? '-',
           panels: g.panels.map((p) => PANEL_LABELS[p]).join(', '),
           status: g.status,
           vendor: g.vendor ?? '-',
@@ -231,7 +232,8 @@ function PaintPage() {
 
   const columns = [
     { key: 'barcode', label: 'Device Barcode', sortable: true },
-    { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+    { key: 'partNo', label: 'Part No', sortable: true },
+    { key: 'serialNo', label: 'Serial No', sortable: true },
     { key: 'panels', label: 'Panels' },
     { key: 'status', label: 'Status' },
     { key: 'vendor', label: 'Vendor' },
@@ -275,15 +277,14 @@ function PaintPage() {
       if (key === 'barcode') {
         return { display: <span className="font-medium">{String(value)}</span> }
       }
-      if (key === 'partSerial') {
-        const [part, serial] = String(value).split('\n')
+      if (key === 'partNo') {
         return {
-          display: (
-            <div className="flex flex-col leading-tight">
-              <span className="font-medium">{part}</span>
-              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
-            </div>
-          ),
+          display: <span className="font-medium">{String(value)}</span>,
+        }
+      }
+      if (key === 'serialNo') {
+        return {
+          display: <span className="text-sm">{String(value)}</span>,
         }
       }
       if (key === 'status') {

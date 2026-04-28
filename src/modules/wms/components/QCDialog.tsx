@@ -25,11 +25,7 @@ import {
   INSPECTION_CHECKLIST_ITEMS,
   type Device,
   type InspectionResult,
-  type OutwardDevice,
-  type OutwardRecord,
 } from '../types'
-
-export type QCDialogType = 'INWARD' | 'OUTWARD'
 
 type ChecklistState = Record<string, { result: InspectionResult; notes: string }>
 
@@ -48,11 +44,8 @@ const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024
 export interface QCDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  qcType: QCDialogType
   device: Device | null
-  outwardCtx?: { outward: OutwardRecord; device: OutwardDevice } | null
   onSubmit?: (result: {
-    qcType: QCDialogType
     result: 'PASSED' | 'FAILED'
     grade?: 'A' | 'B'
     notes: string
@@ -61,7 +54,7 @@ export interface QCDialogProps {
   }) => void
 }
 
-export function QCDialog({ open, onOpenChange, qcType, device, outwardCtx, onSubmit }: QCDialogProps) {
+export function QCDialog({ open, onOpenChange, device, onSubmit }: QCDialogProps) {
   const [checklist, setChecklist] = useState<ChecklistState>({})
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [qcResult, setQcResult] = useState<'PASSED' | 'FAILED' | null>(null)
@@ -78,7 +71,7 @@ export function QCDialog({ open, onOpenChange, qcType, device, outwardCtx, onSub
       setAdditionalNotes('')
       setAttachments([])
     }
-  }, [open, device?.id, outwardCtx?.device.deviceId])
+  }, [open, device?.id])
 
   const checkedCount = Object.keys(checklist).length
   const passCount = Object.values(checklist).filter((i) => i.result === 'PASS').length
@@ -134,42 +127,28 @@ export function QCDialog({ open, onOpenChange, qcType, device, outwardCtx, onSub
       toast.error('Please select a QC result (Pass/Fail).')
       return
     }
-    if (qcType === 'INWARD' && qcResult === 'PASSED' && !grade) {
+    if (qcResult === 'PASSED' && !grade) {
       toast.error('Please select a grade.')
       return
     }
 
     onSubmit?.({
-      qcType,
       result: qcResult,
-      grade: qcType === 'INWARD' && grade ? (grade as 'A' | 'B') : undefined,
+      grade: grade ? (grade as 'A' | 'B') : undefined,
       notes: additionalNotes,
       checklist,
       attachments,
     })
 
-    if (qcType === 'INWARD') {
-      toast.success(
-        qcResult === 'PASSED'
-          ? `Inward QC passed for ${device?.barcode} - Grade ${grade} (${grade === 'A' ? 'Excellent' : 'Good'}) — ready for rack assignment`
-          : `Inward QC failed for ${device?.barcode} - sent back to repair`,
-      )
-    } else {
-      const deviceBarcode = outwardCtx?.device.barcode ?? device?.barcode
-      const outwardNumber = outwardCtx?.outward.outwardNumber ?? ''
-      toast.success(
-        qcResult === 'PASSED'
-          ? `Outward QC passed for ${deviceBarcode}${outwardNumber ? ` (${outwardNumber})` : ''} - eligible for dispatch`
-          : `Outward QC failed for ${deviceBarcode}${outwardNumber ? ` (${outwardNumber})` : ''} - sent back to repair`,
-      )
-    }
+    toast.success(
+      qcResult === 'PASSED'
+        ? `Inward QC passed for ${device?.barcode} - Grade ${grade} (${grade === 'A' ? 'Excellent' : 'Good'}) — ready for rack assignment`
+        : `Inward QC failed for ${device?.barcode} - sent back to repair`,
+    )
     onOpenChange(false)
   }
 
-  const dialogTitle =
-    qcType === 'INWARD'
-      ? `Inward QC: ${device?.barcode ?? ''}`
-      : `Outward QC: ${outwardCtx?.device.barcode ?? device?.barcode ?? ''}`
+  const dialogTitle = `Inward QC: ${device?.barcode ?? ''}`
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -177,7 +156,7 @@ export function QCDialog({ open, onOpenChange, qcType, device, outwardCtx, onSub
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle className="text-lg">{dialogTitle}</DialogTitle>
-            {qcType === 'INWARD' && device && (
+            {device && (
               <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground mt-1">
                 <span>
                   <span className="font-medium text-foreground">Model:</span> {device.model}
@@ -189,35 +168,6 @@ export function QCDialog({ open, onOpenChange, qcType, device, outwardCtx, onSub
                   <span className="font-medium text-foreground">Serial:</span> {device.serialNumber}
                 </span>
                 {device.biosNo && (
-                  <span>
-                    <span className="font-medium text-foreground">BIOS:</span> {device.biosNo}
-                  </span>
-                )}
-              </div>
-            )}
-            {qcType === 'OUTWARD' && (outwardCtx || device) && (
-              <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground mt-1">
-                {outwardCtx && (
-                  <>
-                    <span>
-                      <span className="font-medium text-foreground">Outward:</span>{' '}
-                      {outwardCtx.outward.outwardNumber}
-                    </span>
-                    <span>
-                      <span className="font-medium text-foreground">Customer:</span>{' '}
-                      {outwardCtx.outward.customerName}
-                    </span>
-                  </>
-                )}
-                <span>
-                  <span className="font-medium text-foreground">Model:</span>{' '}
-                  {outwardCtx?.device.model ?? device?.model}
-                </span>
-                <span>
-                  <span className="font-medium text-foreground">Serial:</span>{' '}
-                  {outwardCtx?.device.serialNumber ?? device?.serialNumber}
-                </span>
-                {device?.biosNo && (
                   <span>
                     <span className="font-medium text-foreground">BIOS:</span> {device.biosNo}
                   </span>
@@ -397,7 +347,7 @@ export function QCDialog({ open, onOpenChange, qcType, device, outwardCtx, onSub
             </div>
           </div>
 
-          {qcType === 'INWARD' && qcResult === 'PASSED' && (
+          {qcResult === 'PASSED' && (
             <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30 p-4">
               <Label className="text-sm font-semibold">Grade</Label>
               <div className="flex gap-3">
@@ -425,18 +375,8 @@ export function QCDialog({ open, onOpenChange, qcType, device, outwardCtx, onSub
             <Alert variant="destructive">
               <AlertTriangle className="size-4" />
               <AlertDescription>
-                {qcType === 'INWARD' ? (
-                  <>
-                    Device will be sent back to repair. Current inward QC fail count:{' '}
-                    <span className="font-bold">{device?.qcFailCount ?? 0}</span>
-                  </>
-                ) : (
-                  <>
-                    Device will be sent back to repair — not eligible for outward until Outward QC passes.
-                    Current outward QC fail count:{' '}
-                    <span className="font-bold">{device?.outwardQcFailCount ?? 0}</span>
-                  </>
-                )}
+                Device will be sent back to repair. Current inward QC fail count:{' '}
+                <span className="font-bold">{device?.qcFailCount ?? 0}</span>
               </AlertDescription>
             </Alert>
           )}

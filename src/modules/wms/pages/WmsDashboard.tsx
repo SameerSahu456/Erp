@@ -63,8 +63,6 @@ const STATUS_TO_STAGE: Record<DeviceStatus, string> = {
   UNDER_QC: 'qc',
   READY_FOR_STOCK: 'inventory',
   IN_STOCK: 'inventory',
-  AWAITING_OUTWARD_QC: 'outward-qc',
-  UNDER_OUTWARD_QC: 'outward-qc',
   READY_FOR_DISPATCH: 'dispatch',
   DISPATCHED: 'dispatch',
   SCRAPPED: 'inventory',

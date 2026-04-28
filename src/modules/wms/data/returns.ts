@@ -1,19 +1,17 @@
 import type { ReturnRecord } from '../types'
 
 export const mockReturnRecords: ReturnRecord[] = [
-  // RET-2026-001: QC_FAILED from OUT-2026-003, 1 device, action: Repair, status: Received
+  // RET-2026-001: QC_FAILED, 1 device, action: Repair, status: Received
   {
     id: 'ret-001',
     returnNumber: 'RET-2026-001',
-    outwardId: 'out-003',
-    outwardNumber: 'OUT-2026-003',
     reason: 'QC_FAILED',
     devices: [
       {
         deviceId: 'dev-025',
         barcode: 'L-HP-2008',
         model: 'EliteBook 840 G8',
-        reason: 'Battery health below threshold during outward QC',
+        reason: 'Battery health below threshold during dispatch QC',
         action: 'Repair',
       },
     ],
@@ -21,15 +19,13 @@ export const mockReturnRecords: ReturnRecord[] = [
     returnedBy: 'Amit Patel',
     receivedBy: 'Rajesh Kumar',
     createdAt: '2026-04-02T14:00:00Z',
-    notes: 'Device failed outward QC. Sent to battery replacement queue.',
+    notes: 'Device failed dispatch QC. Sent to battery replacement queue.',
   },
 
-  // RET-2026-002: CUSTOMER_RETURN from OUT-2026-008, 1 device, action: Pending, status: Initiated
+  // RET-2026-002: CUSTOMER_RETURN, 1 device, action: Pending, status: Initiated
   {
     id: 'ret-002',
     returnNumber: 'RET-2026-002',
-    outwardId: 'out-008',
-    outwardNumber: 'OUT-2026-008',
     reason: 'CUSTOMER_RETURN',
     devices: [
       {
@@ -46,12 +42,10 @@ export const mockReturnRecords: ReturnRecord[] = [
     notes: 'Customer reported display flickering within 5 days of delivery. Return pickup scheduled.',
   },
 
-  // RET-2026-003: DAMAGE_IN_TRANSIT from old outward, 2 devices, action: Repair+Scrap, status: Resolved
+  // RET-2026-003: DAMAGE_IN_TRANSIT, 2 devices, action: Repair+Scrap, status: Resolved
   {
     id: 'ret-003',
     returnNumber: 'RET-2026-003',
-    outwardId: 'out-old-099',
-    outwardNumber: 'OUT-2025-099',
     reason: 'DAMAGE_IN_TRANSIT',
     devices: [
       {

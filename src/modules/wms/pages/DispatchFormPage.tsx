@@ -1,11 +1,11 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect, useRef, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useNavigateBack } from '@/hooks/use-navigate-back'
 import { toast } from 'sonner'
 import {
   Save,
   Plus,
-  Trash2,
   Ticket,
   X as XIcon,
   ClipboardList,
@@ -22,6 +22,8 @@ import {
   ArrowLeftRight,
   RotateCcw,
   MapPin,
+  Minus,
+  ChevronsUpDown,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -57,11 +59,10 @@ import {
   getDispatchById,
   upsertDispatch,
   nextDispatchNumber,
-  nextOutwardNumber,
 } from '../data/dispatches'
 import { mockBOMs } from '../data/boms'
 import { mockReplacementRequests } from '../data/replacement-requests'
-import { AssignRackDialog, type RackAssignment } from '../components/AssignRackDialog'
+import { mockWarehouses } from '../data/warehouses'
 import type {
   Dispatch,
   DispatchAction,
@@ -126,6 +127,8 @@ type BomComponentState = {
   // Optional rack location for picking the component during assembly,
   // e.g. "Mumbai · Row1 · A · Bin2".
   rackLocation?: string
+  // Comma-separated serial numbers entered manually by the picker.
+  serialNumbers?: string
 }
 
 const DOC_TYPE_OPTIONS: DispatchDocumentType[] = [
@@ -140,7 +143,7 @@ const DOC_TYPE_HINTS: Partial<Record<DispatchDocumentType, string>> = {
   'Delivery Challan': 'Goods movement challan',
 }
 
-// ── Layout helpers (mirror OutwardFormPage styling) ─────────────────────────
+// ── Layout helpers ─────────────────────────
 
 function SectionHeader({
   step,
@@ -201,6 +204,49 @@ function parseSerials(text: string): string[] {
 }
 
 // ── Source-type tile config ─────────────────────────────────────────────────
+// Search-and-select options for the BOM Part Number combobox. We expand parts
+// across their variant conditions (New / Refurbished / New Pull) so the picker
+// shows one row per (part × condition), with the condition rendered as a badge
+// on the right side of each row.
+type ComboOption = {
+  value: string
+  label: string
+  subtitle?: string
+  trailing?: string
+  keywords?: string[]
+}
+
+type PartOption = ComboOption & {
+  partSku: string
+  partName: string
+  partId: string
+  variantId: string
+  variantSku: string
+  condition: VariantCondition
+}
+
+const PART_OPTIONS: PartOption[] = mockVariants.flatMap((v) => {
+  const part = mockParts.find((p) => p.id === v.partId)
+  if (!part) return []
+  return [
+    {
+      value: v.variantSku,
+      label: part.sku,
+      subtitle: part.name,
+      trailing: v.condition,
+      keywords: [v.variantSku, part.sku, part.name, part.brand, v.condition].filter(
+        Boolean,
+      ) as string[],
+      partSku: part.sku,
+      partName: part.name,
+      partId: part.id,
+      variantId: v.id,
+      variantSku: v.variantSku,
+      condition: v.condition,
+    },
+  ]
+})
+
 type DispatchSourceType =
   | 'SALES'
   | 'RENTAL'
@@ -272,25 +318,31 @@ function buildPlannedLinesFromDemo(demoRequestId: string): EditorLine[] {
 function buildPlannedLinesFromSO(salesOrderId: string): EditorLine[] {
   const so = salesOrders.find((o) => o.id === salesOrderId)
   if (!so) return []
-  return so.lineItems.map((li) => ({
-    id: genId('EL'),
-    soLineItemId: li.id,
-    variantId: li.variantId,
-    condition: li.condition,
-    variantSku: li.variantSku,
-    partId: li.partId,
-    partName: li.partName,
-    partSku: li.partSku,
-    category: li.category,
-    brand: li.brand,
-    action: 'PLANNED' as DispatchAction,
-    plannedQty: li.qty,
-    fittedQty: li.qty,
-    serialNumbersText: '',
-    replacedSerialNumbersText: '',
-    notes: '',
-    rate: li.rate,
-  }))
+  return so.lineItems.map((li) => {
+    // Synthesize a single sample serial number per line so the dispatch UI
+    // shows realistic inventory data. Format mirrors the inventory pattern
+    // (`{partSku}-SN-001`).
+    const serial = `${li.partSku}-SN-001`
+    return {
+      id: genId('EL'),
+      soLineItemId: li.id,
+      variantId: li.variantId,
+      condition: li.condition,
+      variantSku: li.variantSku,
+      partId: li.partId,
+      partName: li.partName,
+      partSku: li.partSku,
+      category: li.category,
+      brand: li.brand,
+      action: 'PLANNED' as DispatchAction,
+      plannedQty: li.qty,
+      fittedQty: li.qty,
+      serialNumbersText: serial,
+      replacedSerialNumbersText: '',
+      notes: '',
+      rate: li.rate,
+    }
+  })
 }
 
 // Find the assembly BOM tied to a planned line. Prefer the SO line's explicit
@@ -305,44 +357,6 @@ function findBOMForPlannedLine(
     if (byId) return byId
   }
   return mockBOMs.find((b) => b.parentPartId === line.partId && b.type === 'ASSEMBLY')
-}
-
-// Convert a BOM definition into the editable per-line component state used by
-// the dispatch form. Used to auto-populate components when a server line with
-// an assembled BOM is added.
-function bomItemsToComponentState(bom: BillOfMaterials): BomComponentState[] {
-  return bom.items.map((item) => {
-    const variant = mockVariants.find((v) => v.id === item.variantId)
-    return {
-      bomItemId: item.id,
-      partName: item.partName,
-      partSku: item.partSku,
-      partId: item.partId,
-      variantId: item.variantId,
-      variantSku: item.variantSku,
-      condition: item.condition,
-      qty: item.quantity,
-      rate: variant?.sellPrice ?? 0,
-    }
-  })
-}
-
-// Walk a freshly-built set of planned lines and pre-populate the per-line BOM
-// component state for any line whose part has an assembled BOM. The breakdown
-// stays collapsed by default — the user opens it via the "View BOM" toggle —
-// but the components are ready to render the moment they do.
-function buildBomStateForLines(
-  lines: EditorLine[],
-  so: ReturnType<typeof salesOrders.find>,
-): { expanded: Record<string, boolean>; state: Record<string, BomComponentState[]> } {
-  const expanded: Record<string, boolean> = {}
-  const state: Record<string, BomComponentState[]> = {}
-  lines.forEach((line) => {
-    const bom = findBOMForPlannedLine(line, so)
-    if (!bom) return
-    state[line.id] = bomItemsToComponentState(bom)
-  })
-  return { expanded, state }
 }
 
 function dispatchLineToEditor(li: DispatchLineItem): EditorLine {
@@ -575,10 +589,8 @@ function DispatchFormPage() {
   const isEditMode = !!existing
 
   // ── Source type ──
-  // Dispatches can ship against a Sales Order (default) or a Demo Request.
-  // Stored only on the form for now — saved Dispatch records don't yet carry
-  // a sourceType field, so re-opening a Demo dispatch currently lands on SALES.
-  const [sourceType, setSourceType] = useState<DispatchSourceType>('SALES')
+  // Dispatches can ship against a Sales Order (default), Rental, Demo, etc.
+  const [sourceType, setSourceType] = useState<DispatchSourceType>(existing?.dispatchType ?? 'SALES')
   const [demoRequestId, setDemoRequestId] = useState<string>('')
   const [rentalSalesOrderId, setRentalSalesOrderId] = useState<string>('')
   const [employeeName, setEmployeeName] = useState<string>('')
@@ -606,20 +618,11 @@ function DispatchFormPage() {
   })
 
   // ── BOM breakdown state (per parent line id) ──
-  // When an SO is selected, components are pre-filled for any line whose part
-  // has an ASSEMBLY BOM, but the breakdown stays collapsed — the user opens it
-  // via "View BOM". Once open, they can remove components (which prompts for a
-  // return rack) and add new ones. Adds emit ADDED dispatch lines and removals
-  // emit REMOVED dispatch lines at save time.
-  const initialBomState = useMemo(() => {
-    if (existing || !initialSO) return { expanded: {}, state: {} }
-    const so = salesOrders.find((o) => o.id === initialSO)
-    return buildBomStateForLines(lines, so)
-    // Only run for the initial mount — subsequent changes go through handleSOChange.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  const [bomExpanded, setBomExpanded] = useState<Record<string, boolean>>(initialBomState.expanded)
-  const [bomState, setBomState] = useState<Record<string, BomComponentState[]>>(initialBomState.state)
+  // The breakdown stays collapsed until the user opens "View BOM". Once open,
+  // they enter Add and Remove rows manually — Adds emit ADDED dispatch lines
+  // and Removes emit REMOVED dispatch lines at save time.
+  const [bomExpanded, setBomExpanded] = useState<Record<string, boolean>>({})
+  const [bomState, setBomState] = useState<Record<string, BomComponentState[]>>({})
 
   // Components the user has removed from a BOM. Kept around so we can emit
   // REMOVED dispatch lines at save time with the return-rack location captured
@@ -627,17 +630,6 @@ function DispatchFormPage() {
   const [removedBomComponents, setRemovedBomComponents] = useState<
     Record<string, BomComponentState[]>
   >({})
-
-  // ── Rack picker (per BOM component) ──
-  // Opened by clicking the X on a BOM component row. After the user picks a
-  // rack, the component is removed from the active list and recorded with the
-  // chosen return location.
-  const [rackTarget, setRackTarget] = useState<{
-    lineId: string
-    bomItemId: string
-    title: string
-    subtitle: string
-  } | null>(null)
 
   // ── Documents ──
   const [documents, setDocuments] = useState<EditorDocument[]>(() =>
@@ -672,18 +664,9 @@ function DispatchFormPage() {
     const next = value ?? ''
     setSalesOrderId(next)
     setRemovedBomComponents({})
-    if (!next) {
-      setLines([])
-      setBomExpanded({})
-      setBomState({})
-      return
-    }
-    const so = salesOrders.find((o) => o.id === next)
-    const newLines = buildPlannedLinesFromSO(next)
-    setLines(newLines)
-    const { expanded, state } = buildBomStateForLines(newLines, so)
-    setBomExpanded(expanded)
-    setBomState(state)
+    setBomExpanded({})
+    setBomState({})
+    setLines(next ? buildPlannedLinesFromSO(next) : [])
   }
 
   function handleDemoChange(value: string | null) {
@@ -742,23 +725,10 @@ function DispatchFormPage() {
     setBomExpanded((prev) => ({ ...prev, [line.id]: !prev[line.id] }))
     setBomState((prev) => {
       if (prev[line.id]) return prev
-      // First time the BOM is opened — pre-populate from the BOM definition so
-      // the user sees what the assembly contains and can edit from there.
-      return { ...prev, [line.id]: bomItemsToComponentState(bom) }
+      // Always start empty — the picker adds components manually via the Add
+      // button below. No auto-fetch from the BOM definition.
+      return { ...prev, [line.id]: [] }
     })
-  }
-
-  function updateBomComponent(
-    lineId: string,
-    bomItemId: string,
-    patch: Partial<BomComponentState>,
-  ) {
-    setBomState((prev) => ({
-      ...prev,
-      [lineId]: (prev[lineId] ?? []).map((c) =>
-        c.bomItemId === bomItemId ? { ...c, ...patch } : c,
-      ),
-    }))
   }
 
   function removeBomComponent(lineId: string, bomItemId: string) {
@@ -768,32 +738,84 @@ function DispatchFormPage() {
     }))
   }
 
-  function addBomComponent(lineId: string, variantId: string) {
-    const variant = mockVariants.find((v) => v.id === variantId)
-    if (!variant) return
-    const part = mockParts.find((p) => p.id === variant.partId)
-    if (!part) return
+  function addBomComponent(
+    lineId: string,
+    input: {
+      partNumber: string
+      partName?: string
+      partId?: string
+      variantId?: string
+      variantSku?: string
+      condition?: VariantCondition
+      serialNumber: string
+      qty: number
+    },
+  ) {
     setBomState((prev) => {
       const existing = prev[lineId] ?? []
-      if (existing.some((c) => c.variantId === variantId)) return prev
       return {
         ...prev,
         [lineId]: [
           ...existing,
           {
             bomItemId: genId('BC'),
-            partName: part.name,
-            partSku: part.sku,
-            partId: part.id,
-            variantId: variant.id,
-            variantSku: variant.variantSku,
-            condition: variant.condition,
-            qty: 1,
-            rate: variant.sellPrice,
+            partName: input.partName ?? input.partNumber,
+            partSku: input.partNumber,
+            partId: input.partId ?? '',
+            variantId: input.variantId ?? '',
+            variantSku: input.variantSku ?? input.serialNumber,
+            condition: input.condition ?? 'New',
+            qty: input.qty,
+            rate: 0,
+            serialNumbers: input.serialNumber || undefined,
           },
         ],
       }
     })
+  }
+
+  function recordRemovedBomComponent(
+    lineId: string,
+    input: {
+      partNumber: string
+      partName?: string
+      partId?: string
+      variantId?: string
+      variantSku?: string
+      condition?: VariantCondition
+      serialNumber: string
+      qty: number
+      rack: string
+      bin: string
+    },
+  ) {
+    const location = [input.rack, input.bin].filter(Boolean).join(' · ')
+    setRemovedBomComponents((prev) => ({
+      ...prev,
+      [lineId]: [
+        ...(prev[lineId] ?? []),
+        {
+          bomItemId: genId('BC'),
+          partName: input.partName ?? input.partNumber,
+          partSku: input.partNumber,
+          partId: input.partId ?? '',
+          variantId: input.variantId ?? '',
+          variantSku: input.variantSku ?? input.serialNumber,
+          condition: input.condition ?? 'New',
+          qty: input.qty,
+          rate: 0,
+          rackLocation: location || undefined,
+          serialNumbers: input.serialNumber || undefined,
+        },
+      ],
+    }))
+  }
+
+  function undoRemovedBomComponent(lineId: string, bomItemId: string) {
+    setRemovedBomComponents((prev) => ({
+      ...prev,
+      [lineId]: (prev[lineId] ?? []).filter((c) => c.bomItemId !== bomItemId),
+    }))
   }
 
   function addDocumentsFromFiles(fileList: FileList | File[], type?: DispatchDocumentType) {
@@ -856,16 +878,7 @@ function DispatchFormPage() {
       ? { id: ids.id, dispatchNumber: ids.dispatchNumber }
       : nextDispatchNumber()
 
-    // Every dispatch request is linked to an outward — allocate one on create if absent.
-    const outward = isEditMode
-      ? { id: existing?.outwardId, number: existing?.outwardNumber }
-      : (() => {
-          const n = nextOutwardNumber()
-          return { id: n.id, number: n.outwardNumber }
-        })()
-
-    // Source-derived header fields. Demo dispatches reuse salesOrderNumber as
-    // the visible source label until the Dispatch model gains a sourceType field.
+    // Demo dispatches reuse salesOrderNumber as the visible source label.
     const sourceHeader = so
       ? {
           salesOrderId: so.id,
@@ -883,9 +896,8 @@ function DispatchFormPage() {
     const next: Dispatch = {
       id,
       dispatchNumber,
+      dispatchType: sourceType,
       ...sourceHeader,
-      outwardId: outward.id,
-      outwardNumber: outward.number,
       shippingAddress: shippingAddress || dr?.shippingAddress || undefined,
       status,
       externalTicketNumber: externalTicketNumber || undefined,
@@ -908,24 +920,28 @@ function DispatchFormPage() {
         ...lines.flatMap((line) => {
           const components = bomState[line.id]
           if (!components) return []
-          return components.map<DispatchLineItem>((c) => ({
-            id: `${line.id}-${c.bomItemId}`,
-            soLineItemId: line.soLineItemId,
-            variantId: c.variantId,
-            condition: c.condition,
-            variantSku: c.variantSku,
-            partId: c.partId,
-            partName: c.partName,
-            partSku: c.partSku,
-            category: line.category,
-            brand: line.brand,
-            action: 'ADDED' as DispatchAction,
-            plannedQty: 0,
-            fittedQty: c.qty,
-            rate: c.rate,
-            amount: c.qty * c.rate,
-            notes: c.rackLocation ? `Pick from ${c.rackLocation}` : undefined,
-          }))
+          return components.map<DispatchLineItem>((c) => {
+            const serials = parseSerials(c.serialNumbers ?? '')
+            return {
+              id: `${line.id}-${c.bomItemId}`,
+              soLineItemId: line.soLineItemId,
+              variantId: c.variantId,
+              condition: c.condition,
+              variantSku: c.variantSku,
+              partId: c.partId,
+              partName: c.partName,
+              partSku: c.partSku,
+              category: line.category,
+              brand: line.brand,
+              action: 'ADDED' as DispatchAction,
+              plannedQty: 0,
+              fittedQty: c.qty,
+              serialNumbers: serials.length > 0 ? serials : undefined,
+              rate: c.rate,
+              amount: c.qty * c.rate,
+              notes: c.rackLocation ? `Pick from ${c.rackLocation}` : undefined,
+            }
+          })
         }),
         // Emit components the user removed from the BOM as REMOVED dispatch
         // lines. The rack picked at remove-time is recorded in notes so the
@@ -1293,6 +1309,7 @@ function DispatchFormPage() {
                 <thead>
                   <tr className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
                     <th className="px-3 py-2 text-left font-medium">Variant</th>
+                    <th className="px-3 py-2 text-left font-medium">Serial Number</th>
                     <th className="px-3 py-2 text-right font-medium">Qty</th>
                     <th className="w-10 px-1 py-2" />
                   </tr>
@@ -1319,17 +1336,16 @@ function DispatchFormPage() {
                             bomName={bom.name}
                             bomNumber={bom.bomNumber}
                             components={components}
-                            onUpdateComponent={(bomItemId, patch) =>
-                              updateBomComponent(line.id, bomItemId, patch)
+                            removedComponents={removedBomComponents[line.id] ?? []}
+                            onAddComponent={(input) => addBomComponent(line.id, input)}
+                            onRemoveAddedComponent={(bomItemId) =>
+                              removeBomComponent(line.id, bomItemId)
                             }
-                            onAddComponent={(variantId) => addBomComponent(line.id, variantId)}
-                            onAssignRack={(component) =>
-                              setRackTarget({
-                                lineId: line.id,
-                                bomItemId: component.bomItemId,
-                                title: component.partName,
-                                subtitle: component.variantSku,
-                              })
+                            onRecordRemoval={(input) =>
+                              recordRemovedBomComponent(line.id, input)
+                            }
+                            onUndoRemoval={(bomItemId) =>
+                              undoRemovedBomComponent(line.id, bomItemId)
                             }
                           />
                         )}
@@ -1414,34 +1430,6 @@ function DispatchFormPage() {
         </div>
       </div>
 
-      <AssignRackDialog
-        open={!!rackTarget}
-        onOpenChange={(open) => {
-          if (!open) setRackTarget(null)
-        }}
-        subject={
-          rackTarget
-            ? { title: rackTarget.title, subtitle: rackTarget.subtitle, badge: 'Return to rack' }
-            : undefined
-        }
-        resetKey={rackTarget ? `${rackTarget.lineId}-${rackTarget.bomItemId}` : undefined}
-        onAssigned={(assignment: RackAssignment) => {
-          if (!rackTarget) return
-          const { lineId, bomItemId } = rackTarget
-          const location = `${assignment.warehouse} · ${assignment.row} · ${assignment.rack} · ${assignment.bin}`
-          // Record the removed component with its return location, then drop it
-          // from the active list so the BOM reflects what's actually shipping.
-          const removed = bomState[lineId]?.find((c) => c.bomItemId === bomItemId)
-          if (removed) {
-            setRemovedBomComponents((prev) => ({
-              ...prev,
-              [lineId]: [...(prev[lineId] ?? []), { ...removed, rackLocation: location }],
-            }))
-          }
-          removeBomComponent(lineId, bomItemId)
-          setRackTarget(null)
-        }}
-      />
     </div>
   )
 }
@@ -1496,6 +1484,15 @@ function LineEditorRow({
         )}
       </td>
       <td className="px-3 py-2">
+        {line.serialNumbersText.trim() ? (
+          <span className="font-mono text-xs text-foreground">
+            {line.serialNumbersText}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </td>
+      <td className="px-3 py-2">
         <Input
           type="number"
           min={0}
@@ -1512,7 +1509,7 @@ function LineEditorRow({
     </tr>
     {children && (
       <tr>
-        <td colSpan={3} className="bg-muted/20 p-0">
+        <td colSpan={4} className="bg-muted/20 p-0">
           {children}
         </td>
       </tr>
@@ -1526,187 +1523,571 @@ function BomBreakdown({
   bomName,
   bomNumber,
   components,
-  onUpdateComponent,
+  removedComponents,
   onAddComponent,
-  onAssignRack,
+  onRemoveAddedComponent,
+  onRecordRemoval,
+  onUndoRemoval,
 }: {
   lineId: string
   bomName: string
   bomNumber: string
   components: BomComponentState[]
-  onUpdateComponent: (bomItemId: string, patch: Partial<BomComponentState>) => void
-  onAddComponent: (variantId: string) => void
-  onAssignRack: (component: BomComponentState) => void
+  removedComponents: BomComponentState[]
+  onAddComponent: (input: {
+    partNumber: string
+    partName?: string
+    partId?: string
+    variantId?: string
+    variantSku?: string
+    condition?: VariantCondition
+    serialNumber: string
+    qty: number
+  }) => void
+  onRemoveAddedComponent: (bomItemId: string) => void
+  onRecordRemoval: (input: {
+    partNumber: string
+    partName?: string
+    partId?: string
+    variantId?: string
+    variantSku?: string
+    condition?: VariantCondition
+    serialNumber: string
+    qty: number
+    rack: string
+    bin: string
+  }) => void
+  onUndoRemoval: (bomItemId: string) => void
 }) {
-  const selectedVariantIds = useMemo(
-    () => new Set(components.map((c) => c.variantId)),
-    [components],
-  )
+  const locationOptions = useMemo(() => {
+    const out: Array<{ id: string; label: string; bins: { id: string; name: string }[] }> = []
+    for (const wh of mockWarehouses) {
+      for (const row of wh.rows) {
+        for (const rack of row.racks) {
+          out.push({
+            id: `${wh.id}/${row.id}/${rack.id}`,
+            label: `${wh.name} · ${row.name} · ${rack.name}`,
+            bins: rack.bins.map((b) => ({ id: b.id, name: b.name })),
+          })
+        }
+      }
+    }
+    return out
+  }, [])
+
+  const [addPartNumber, setAddPartNumber] = useState('')
+  const [addSerialNumber, setAddSerialNumber] = useState('')
+  const [addQty, setAddQty] = useState('')
+
+  const [removePartNumber, setRemovePartNumber] = useState('')
+  const [removeSerialNumber, setRemoveSerialNumber] = useState('')
+  const [removeQty, setRemoveQty] = useState('')
+  const [removeLocationId, setRemoveLocationId] = useState('')
+  const [removeBinId, setRemoveBinId] = useState('')
+
+  const selectedLocation = locationOptions.find((l) => l.id === removeLocationId)
+
+  function submitAdd() {
+    if (!addPartNumber.trim()) return
+    const opt = PART_OPTIONS.find((o) => o.value === addPartNumber)
+    onAddComponent({
+      partNumber: opt?.partSku ?? addPartNumber.trim(),
+      partName: opt?.partName,
+      partId: opt?.partId,
+      variantId: opt?.variantId,
+      variantSku: opt?.variantSku,
+      condition: opt?.condition,
+      serialNumber: addSerialNumber.trim(),
+      qty: Number(addQty) || 0,
+    })
+    setAddPartNumber('')
+    setAddSerialNumber('')
+    setAddQty('')
+  }
+
+  function submitRemove() {
+    if (!removePartNumber.trim()) return
+    const opt = PART_OPTIONS.find((o) => o.value === removePartNumber)
+    const loc = locationOptions.find((l) => l.id === removeLocationId)
+    const bin = loc?.bins.find((b) => b.id === removeBinId)
+    onRecordRemoval({
+      partNumber: opt?.partSku ?? removePartNumber.trim(),
+      partName: opt?.partName,
+      partId: opt?.partId,
+      variantId: opt?.variantId,
+      variantSku: opt?.variantSku,
+      condition: opt?.condition,
+      serialNumber: removeSerialNumber.trim(),
+      qty: Number(removeQty) || 0,
+      rack: loc?.label ?? '',
+      bin: bin?.name ?? '',
+    })
+    setRemovePartNumber('')
+    setRemoveSerialNumber('')
+    setRemoveQty('')
+    setRemoveLocationId('')
+    setRemoveBinId('')
+  }
+
+  const canSubmitRemove =
+    removePartNumber.trim().length > 0 && !!removeLocationId && !!removeBinId
+
   return (
-    <div className="border-t bg-muted/10 px-4 py-4">
-      <div className="mb-3 flex items-center gap-2">
-        <span className="inline-flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+    <div className="border-t bg-muted/30 px-4 py-4 space-y-3">
+      {/* BOM identifier strip */}
+      <div className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2">
+        <span className="inline-flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary">
           <Layers className="size-3.5" />
         </span>
-        <div>
-          <div className="text-sm font-semibold text-foreground">{bomName}</div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-semibold text-foreground">{bomName}</div>
           <div className="text-[11px] text-muted-foreground">
-            <span className="font-mono">{bomNumber}</span> · {components.length} component
-            {components.length === 1 ? '' : 's'}
+            <span className="font-mono">{bomNumber}</span>
           </div>
         </div>
-      </div>
-
-      <div className="w-full">
-        <BomComponentSearch
-          excludeVariantIds={selectedVariantIds}
-          onPick={(variantId) => onAddComponent(variantId)}
-          isEmpty={components.length === 0}
-        />
-      </div>
-
-      {components.length > 0 && (
-        <div className="mt-4 overflow-hidden rounded-md border bg-background">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-3 py-2 text-left font-medium">Component</th>
-                <th className="px-3 py-2 text-right font-medium">Qty</th>
-                <th className="w-10 px-1 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {components.map((c) => (
-                <tr key={`${lineId}-${c.bomItemId}`}>
-                  <td className="px-3 py-2">
-                    <div className="text-[13px] font-medium">{c.partName}</div>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      <span className="font-mono">{c.variantSku}</span>
-                      <Badge variant="outline" className="text-[10px]">{c.condition}</Badge>
-                      {c.rackLocation && (
-                        <Badge variant="secondary" className="gap-1 text-[10px] font-normal">
-                          <MapPin className="size-3" />
-                          {c.rackLocation}
-                        </Badge>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-3 py-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      className="h-8 w-16 ml-auto text-right text-xs"
-                      value={c.qty}
-                      onChange={(e) =>
-                        onUpdateComponent(c.bomItemId, { qty: Number(e.target.value) || 0 })
-                      }
-                    />
-                  </td>
-                  <td className="px-1 py-2">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => onAssignRack(c)}
-                      className="text-muted-foreground hover:text-destructive"
-                      aria-label="Remove component"
-                      title="Remove component (assign return rack)"
-                    >
-                      <XIcon className="size-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-1.5 text-[11px]">
+          <Badge variant="outline" className="border-emerald-300/60 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <Plus className="mr-0.5 size-2.5" />
+            {components.length} added
+          </Badge>
+          <Badge variant="outline" className="border-rose-300/60 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300">
+            <Minus className="mr-0.5 size-2.5" />
+            {removedComponents.length} removed
+          </Badge>
         </div>
-      )}
+      </div>
+
+      <div className="grid gap-3 xl:grid-cols-2">
+        {/* ── Add Card (left) ─────────────────────────────────── */}
+        <Card className="overflow-hidden border-emerald-200/70 dark:border-emerald-900/40">
+          <CardHeader className="border-b bg-emerald-50/60 px-3 py-2 dark:bg-emerald-950/20">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex size-7 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                  <Plus className="size-3.5" />
+                </span>
+                <CardTitle className="text-[13px] leading-tight">Add Components</CardTitle>
+              </div>
+              <Badge variant="secondary" className="font-mono text-[11px]">
+                {components.length}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 px-3 py-3">
+            <div className="grid gap-2 sm:grid-cols-[1fr_1fr_90px]">
+              <div className="space-y-1">
+                <Label className="text-[11px] font-medium">Part Number</Label>
+                <SearchSelect
+                  value={addPartNumber}
+                  onChange={setAddPartNumber}
+                  options={PART_OPTIONS}
+                  placeholder="Search part number…"
+                  searchPlaceholder="Search by SKU, name, brand…"
+                  emptyText="No matching parts."
+                  triggerClassName="h-9 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] font-medium">Serial Number</Label>
+                <Input
+                  placeholder="e.g. SN-AB1234"
+                  className="h-9 font-mono text-xs"
+                  value={addSerialNumber}
+                  onChange={(e) => setAddSerialNumber(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] font-medium">Qty</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  className="h-9 text-xs"
+                  value={addQty}
+                  onChange={(e) => setAddQty(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                onClick={submitAdd}
+                disabled={!addPartNumber.trim()}
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                <Plus className="mr-1 size-3.5" />
+                Save Add
+              </Button>
+            </div>
+
+            <div className="overflow-hidden rounded-md border bg-background">
+              {components.length === 0 ? (
+                <div className="flex flex-col items-center gap-1 px-3 py-6 text-center">
+                  <Plus className="size-4 text-muted-foreground/50" />
+                  <p className="text-[11px] text-muted-foreground">No components added yet</p>
+                </div>
+              ) : (
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
+                      <th className="px-3 py-1.5 text-left font-medium">Part Number</th>
+                      <th className="px-3 py-1.5 text-left font-medium">Serial Number</th>
+                      <th className="w-16 px-3 py-1.5 text-right font-medium">Qty</th>
+                      <th className="w-9 px-1 py-1.5" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {components.map((c) => (
+                      <tr key={`${lineId}-${c.bomItemId}`} className="hover:bg-muted/30">
+                        <td className="px-3 py-1.5 font-medium">{c.partName}</td>
+                        <td className="px-3 py-1.5 font-mono text-muted-foreground">
+                          {c.serialNumbers || '—'}
+                        </td>
+                        <td className="px-3 py-1.5 text-right tabular-nums">{c.qty}</td>
+                        <td className="px-1 py-1.5">
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => onRemoveAddedComponent(c.bomItemId)}
+                            className="text-muted-foreground hover:text-destructive"
+                            aria-label="Delete added row"
+                          >
+                            <XIcon className="size-3.5" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Remove Card (right) ─────────────────────────────── */}
+        <Card className="overflow-hidden border-rose-200/70 dark:border-rose-900/40">
+          <CardHeader className="border-b bg-rose-50/60 px-3 py-2 dark:bg-rose-950/20">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex size-7 items-center justify-center rounded-md bg-rose-500/15 text-rose-700 dark:text-rose-300">
+                  <Minus className="size-3.5" />
+                </span>
+                <CardTitle className="text-[13px] leading-tight">Remove Components</CardTitle>
+              </div>
+              <Badge variant="secondary" className="font-mono text-[11px]">
+                {removedComponents.length}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 px-3 py-3">
+            <div className="space-y-2">
+              <div className="grid gap-2 sm:grid-cols-[1fr_1fr_80px]">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-medium">Part Number</Label>
+                  <SearchSelect
+                    value={removePartNumber}
+                    onChange={setRemovePartNumber}
+                    options={PART_OPTIONS}
+                    placeholder="Search part number…"
+                    searchPlaceholder="Search by SKU, name, brand…"
+                    emptyText="No matching parts."
+                    triggerClassName="h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-medium">Serial Number</Label>
+                  <Input
+                    placeholder="e.g. SN-AB1234"
+                    className="h-9 font-mono text-xs"
+                    value={removeSerialNumber}
+                    onChange={(e) => setRemoveSerialNumber(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-medium">Qty</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    className="h-9 text-xs"
+                    value={removeQty}
+                    onChange={(e) => setRemoveQty(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-medium">Location</Label>
+                  <Select
+                    value={removeLocationId || undefined}
+                    onValueChange={(v) => {
+                      setRemoveLocationId(v ?? '')
+                      setRemoveBinId('')
+                    }}
+                  >
+                    <SelectTrigger className="h-9 w-full text-xs">
+                      <SelectValue placeholder="Pick warehouse · row · rack" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {locationOptions.map((opt) => (
+                        <SelectItem key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-medium">Bin</Label>
+                  <Select
+                    value={removeBinId || undefined}
+                    onValueChange={(v) => setRemoveBinId(v ?? '')}
+                    disabled={!selectedLocation}
+                  >
+                    <SelectTrigger className="h-9 w-full text-xs">
+                      <SelectValue
+                        placeholder={selectedLocation ? 'Pick bin' : 'Select location first'}
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {selectedLocation?.bins.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                onClick={submitRemove}
+                disabled={!canSubmitRemove}
+                className="bg-rose-600 text-white hover:bg-rose-700"
+              >
+                <Minus className="mr-1 size-3.5" />
+                Save Remove
+              </Button>
+            </div>
+
+            <div className="overflow-hidden rounded-md border bg-background">
+              {removedComponents.length === 0 ? (
+                <div className="flex flex-col items-center gap-1 px-3 py-6 text-center">
+                  <Minus className="size-4 text-muted-foreground/50" />
+                  <p className="text-[11px] text-muted-foreground">No components removed yet</p>
+                </div>
+              ) : (
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
+                      <th className="px-3 py-1.5 text-left font-medium">Part Number</th>
+                      <th className="px-3 py-1.5 text-left font-medium">Serial Number</th>
+                      <th className="w-14 px-3 py-1.5 text-right font-medium">Qty</th>
+                      <th className="px-3 py-1.5 text-left font-medium">Location · Bin</th>
+                      <th className="w-9 px-1 py-1.5" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {removedComponents.map((c) => (
+                      <tr key={`${lineId}-rm-${c.bomItemId}`} className="hover:bg-muted/30">
+                        <td className="px-3 py-1.5 font-medium">{c.partName}</td>
+                        <td className="px-3 py-1.5 font-mono text-muted-foreground">
+                          {c.serialNumbers || '—'}
+                        </td>
+                        <td className="px-3 py-1.5 text-right tabular-nums">{c.qty}</td>
+                        <td className="px-3 py-1.5 text-muted-foreground">
+                          {c.rackLocation ? (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="size-3" />
+                              {c.rackLocation}
+                            </span>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                        <td className="px-1 py-1.5">
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => onUndoRemoval(c.bomItemId)}
+                            className="text-muted-foreground hover:text-destructive"
+                            aria-label="Delete removed row"
+                          >
+                            <XIcon className="size-3.5" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
 
-function BomComponentSearch({
-  excludeVariantIds,
-  onPick,
-  isEmpty,
+function SearchSelect({
+  value,
+  onChange,
+  options,
+  placeholder = 'Select…',
+  searchPlaceholder = 'Search…',
+  emptyText = 'No matches.',
+  triggerClassName,
 }: {
-  excludeVariantIds: Set<string>
-  onPick: (variantId: string) => void
-  isEmpty: boolean
+  value: string
+  onChange: (v: string) => void
+  options: ComboOption[]
+  placeholder?: string
+  searchPlaceholder?: string
+  emptyText?: string
+  triggerClassName?: string
 }) {
-  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null)
+  const selected = options.find((o) => o.value === value)
 
-  const options = useMemo(() => {
-    const partMap = new Map(mockParts.map((p) => [p.id, p]))
-    return mockVariants
-      .map((v) => {
-        const part = partMap.get(v.partId)
-        if (!part) return null
-        return {
-          variantId: v.id,
-          variantSku: v.variantSku,
-          partName: part.name,
-          partSku: part.sku,
-          condition: v.condition,
-          category: part.categoryName,
-          brand: part.brand,
-        }
-      })
-      .filter((o): o is NonNullable<typeof o> => o !== null)
-  }, [])
+  // Position the floating dropdown below the trigger using viewport coords.
+  // Recomputes on open, scroll, and resize so the panel stays anchored.
+  useLayoutEffect(() => {
+    if (!open) return
+    function update() {
+      const el = triggerRef.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, left: r.left, width: r.width })
+    }
+    const raf = requestAnimationFrame(update)
+    window.addEventListener('scroll', update, true)
+    window.addEventListener('resize', update)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', update, true)
+      window.removeEventListener('resize', update)
+    }
+  }, [open])
+
+  // Close on outside click and Escape.
+  useEffect(() => {
+    if (!open) return
+    function onDocPointerDown(e: PointerEvent) {
+      const t = e.target as Node
+      if (triggerRef.current?.contains(t)) return
+      if (popupRef.current?.contains(t)) return
+      setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onDocPointerDown, true)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDocPointerDown, true)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   return (
-    <div className="rounded-lg border bg-background shadow-sm">
-      <Command shouldFilter={true}>
-        <CommandInput
-          value={query}
-          onValueChange={setQuery}
-          placeholder={
-            isEmpty ? 'Search parts to add to this BOM…' : 'Search to add another component…'
-          }
-        />
-        {query.length > 0 && (
-          <CommandList className="max-h-64">
-            <CommandEmpty>No matching parts.</CommandEmpty>
-            <CommandGroup>
-              {options.map((o) => {
-                const isSelected = excludeVariantIds.has(o.variantId)
-                return (
-                  <CommandItem
-                    key={o.variantId}
-                    value={`${o.partName} ${o.partSku} ${o.variantSku} ${o.brand} ${o.category}`}
-                    disabled={isSelected}
-                    onSelect={() => {
-                      if (isSelected) return
-                      onPick(o.variantId)
-                      setQuery('')
-                    }}
-                  >
-                    <div className={cn('flex w-full min-w-0 items-center gap-2', isSelected && 'opacity-50')}>
+    <>
+      <Button
+        ref={triggerRef}
+        type="button"
+        variant="outline"
+        className={cn('w-full justify-between font-normal', triggerClassName)}
+        onClick={() => {
+          setPos(null)
+          setOpen((o) => !o)
+        }}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          <span
+            className={cn(
+              'truncate text-left',
+              !selected && 'text-muted-foreground',
+            )}
+          >
+            {selected ? selected.label : placeholder}
+          </span>
+          {selected?.trailing && (
+            <Badge
+              variant="outline"
+              className="ml-auto shrink-0 px-1.5 py-0 text-[10px] font-medium"
+            >
+              {selected.trailing}
+            </Badge>
+          )}
+        </span>
+        <ChevronsUpDown className="ml-2 size-3.5 shrink-0 opacity-50" />
+      </Button>
+      {open && pos &&
+        createPortal(
+          <div
+            ref={popupRef}
+            style={{
+              position: 'fixed',
+              top: pos.top,
+              left: pos.left,
+              width: pos.width,
+              minWidth: 260,
+              zIndex: 50,
+            }}
+            className="overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10"
+          >
+            <Command>
+              <CommandInput placeholder={searchPlaceholder} />
+              <CommandList>
+                <CommandEmpty>{emptyText}</CommandEmpty>
+                <CommandGroup>
+                  {options.map((o) => (
+                    <CommandItem
+                      key={o.value}
+                      value={o.value}
+                      keywords={o.keywords ?? [o.label, o.subtitle ?? '']}
+                      onSelect={() => {
+                        onChange(o.value)
+                        setOpen(false)
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 size-3.5 shrink-0',
+                          value === o.value ? 'opacity-100' : 'opacity-0',
+                        )}
+                      />
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-[13px] font-medium">{o.partName}</div>
-                        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <span className="font-mono">{o.variantSku}</span>
-                          <span>·</span>
-                          <span>{o.condition}</span>
-                          <span>·</span>
-                          <span className="truncate">{o.brand}</span>
-                        </div>
+                        <div className="truncate text-sm font-medium">{o.label}</div>
+                        {o.subtitle && (
+                          <div className="truncate text-xs text-muted-foreground">{o.subtitle}</div>
+                        )}
                       </div>
-                      {isSelected && <Check className="size-3.5 shrink-0 text-primary" />}
-                    </div>
-                  </CommandItem>
-                )
-              })}
-            </CommandGroup>
-          </CommandList>
+                      {o.trailing && (
+                        <Badge
+                          variant="outline"
+                          className="ml-2 shrink-0 px-1.5 py-0 text-[10px] font-medium"
+                        >
+                          {o.trailing}
+                        </Badge>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </div>,
+          document.body,
         )}
-      </Command>
-      {isEmpty && query.length === 0 && (
-        <div className="border-t px-3 py-2 text-center text-[11px] text-muted-foreground">
-          No components yet. Type above to search and add parts.
-        </div>
-      )}
-    </div>
+    </>
   )
 }
 

@@ -143,7 +143,8 @@ function SparesPage() {
           id: r.id,
           _deviceId: r.deviceId,
           barcode: r.deviceBarcode,
-          partSerial: `${r.model}\n${device?.serialNumber ?? '-'}`,
+          partNo: r.model,
+          serialNo: device?.serialNumber ?? '-',
           biosNo: device?.biosNo ?? '-',
           category: device?.category ?? '-',
           spare: r.spareName,
@@ -164,7 +165,8 @@ function SparesPage() {
         label: `Pending (${requests.filter((r) => r.status !== 'Fulfilled').length})`,
         columns: [
           { key: 'barcode', label: 'Device', sortable: true },
-          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'partNo', label: 'Part No', sortable: true },
+          { key: 'serialNo', label: 'Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'category', label: 'Category', sortable: true },
           { key: 'spare', label: 'Spare Part', sortable: true },
@@ -181,7 +183,8 @@ function SparesPage() {
         label: `Fulfilled (${requests.filter((r) => r.status === 'Fulfilled').length})`,
         columns: [
           { key: 'barcode', label: 'Device', sortable: true },
-          { key: 'partSerial', label: 'Part No / Serial No' },
+          { key: 'partNo', label: 'Part No' },
+          { key: 'serialNo', label: 'Serial No' },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'category', label: 'Category', sortable: true },
           { key: 'spare', label: 'Spare Part' },
@@ -200,15 +203,14 @@ function SparesPage() {
       if (key === 'barcode') {
         return { display: <span className="font-medium">{String(value)}</span> }
       }
-      if (key === 'partSerial') {
-        const [part, serial] = String(value).split('\n')
+      if (key === 'partNo') {
         return {
-          display: (
-            <div className="flex flex-col leading-tight">
-              <span className="font-medium">{part}</span>
-              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
-            </div>
-          ),
+          display: <span className="font-medium">{String(value)}</span>,
+        }
+      }
+      if (key === 'serialNo') {
+        return {
+          display: <span className="text-sm">{String(value)}</span>,
         }
       }
       if (key === 'status') {

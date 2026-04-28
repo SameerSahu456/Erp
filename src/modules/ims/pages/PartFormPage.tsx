@@ -81,7 +81,6 @@ export default function PartFormPage() {
     return items
   })
   const [inwardChecklistId, setInwardChecklistId] = useState(existing?.inwardChecklistId ?? 'none')
-  const [outwardChecklistId, setOutwardChecklistId] = useState(existing?.outwardChecklistId ?? 'none')
   const [inspectionChecklistId, setInspectionChecklistId] = useState(existing?.inspectionChecklistId ?? 'none')
 
   const allCategories = useMemo(() => flattenCategories(mockCategories), [])
@@ -104,7 +103,6 @@ export default function PartFormPage() {
   }, [categoryId])
 
   const inwardTemplates = mockChecklistTemplates.filter((t) => t.type === 'INWARD' && t.isActive)
-  const outwardTemplates = mockChecklistTemplates.filter((t) => t.type === 'OUTWARD' && t.isActive)
   const inspectionTemplates = mockChecklistTemplates.filter((t) => t.type === 'INSPECTION' && t.isActive)
 
   const backHref = isEdit ? `/ims/parts/${id}` : '/ims/parts'
@@ -401,21 +399,6 @@ export default function PartFormPage() {
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
                     {inwardTemplates.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Outward Checklist</Label>
-                <Select value={outwardChecklistId} onValueChange={(v) => setOutwardChecklistId(v ?? 'none')}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {outwardTemplates.map((t) => (
                       <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                     ))}
                   </SelectContent>

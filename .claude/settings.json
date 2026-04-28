@@ -68,7 +68,8 @@
       "Bash(npx -y vercel@latest deploy --prod --yes)",
       "Bash(npx vercel *)",
       "Bash(git ls-remote *)",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "Bash(git rev-list *)"
     ]
   }
 }

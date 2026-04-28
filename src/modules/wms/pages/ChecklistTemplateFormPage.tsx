@@ -25,7 +25,6 @@ import type { ChecklistType, ChecklistTemplateItem, IMSCategory } from '../types
 
 const CHECKLIST_TYPES: { value: ChecklistType; label: string }[] = [
   { value: 'INWARD', label: 'Inward' },
-  { value: 'OUTWARD', label: 'Outward' },
   { value: 'INSPECTION', label: 'Inspection' },
   { value: 'QC', label: 'QC' },
 ]

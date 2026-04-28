@@ -15,7 +15,6 @@ import type { ChecklistType } from '../types'
 
 const TYPE_LABELS: Record<ChecklistType, string> = {
   INWARD: 'Inward',
-  OUTWARD: 'Outward',
   INSPECTION: 'Inspection',
   QC: 'QC',
 }
@@ -23,7 +22,6 @@ const TYPE_LABELS: Record<ChecklistType, string> = {
 const TYPE_VARIANT: Record<ChecklistType, 'success' | 'warning' | 'info' | 'neutral'> = {
   INWARD: 'info',
   INSPECTION: 'warning',
-  OUTWARD: 'success',
   QC: 'neutral',
 }
 
@@ -61,7 +59,6 @@ function ChecklistTemplatesPage() {
       { id: 'all', label: `All (${rows.length})`, columns, data: rows },
       { id: 'inward', label: `Inward (${filterByType('INWARD').length})`, columns, data: filterByType('INWARD') },
       { id: 'inspection', label: `Inspection (${filterByType('INSPECTION').length})`, columns, data: filterByType('INSPECTION') },
-      { id: 'outward', label: `Outward (${filterByType('OUTWARD').length})`, columns, data: filterByType('OUTWARD') },
       { id: 'qc', label: `QC (${filterByType('QC').length})`, columns, data: filterByType('QC') },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps

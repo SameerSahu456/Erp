@@ -228,8 +228,6 @@ function InspectionPage() {
       'UNDER_QC',
       'READY_FOR_STOCK',
       'IN_STOCK',
-      'AWAITING_OUTWARD_QC',
-      'UNDER_OUTWARD_QC',
       'READY_FOR_DISPATCH',
       'DISPATCHED',
       'SCRAPPED',
@@ -242,7 +240,8 @@ function InspectionPage() {
       pendingDevices.map((d) => ({
         id: d.id,
         barcode: d.barcode,
-        partSerial: `${d.model}\n${d.serialNumber}`,
+        partNo: d.model,
+        serialNo: d.serialNumber,
         biosNo: d.biosNo ?? '-',
         category: d.category,
         brand: d.brand,
@@ -261,7 +260,8 @@ function InspectionPage() {
         return {
           id: d.id,
           barcode: d.barcode,
-          partSerial: `${d.model}\n${d.serialNumber}`,
+          partNo: d.model,
+          serialNo: d.serialNumber,
           biosNo: d.biosNo ?? '-',
           category: d.category,
           result: insp
@@ -285,7 +285,8 @@ function InspectionPage() {
         label: `Pending (${pendingRows.length})`,
         columns: [
           { key: 'barcode', label: 'Barcode', sortable: true },
-          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'partNo', label: 'Part No', sortable: true },
+          { key: 'serialNo', label: 'Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'category', label: 'Category', sortable: true },
           { key: 'brand', label: 'Brand', sortable: true },
@@ -301,7 +302,8 @@ function InspectionPage() {
         label: `Completed (${completedRows.length})`,
         columns: [
           { key: 'barcode', label: 'Barcode', sortable: true },
-          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'partNo', label: 'Part No', sortable: true },
+          { key: 'serialNo', label: 'Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'category', label: 'Category', sortable: true },
           { key: 'result', label: 'Result' },
@@ -354,24 +356,23 @@ function InspectionPage() {
           display: <span className="font-medium">{String(value)}</span>,
         }
       }
-      if (key === 'partSerial') {
-        const [part, serial] = String(value).split('\n')
+      if (key === 'partNo') {
         const device = mockDevices.find((d) => d.id === row.id)
         const isAssemblyRow = device?.deviceKind === 'ASSEMBLY'
         return {
           display: (
-            <div className="flex flex-col leading-tight">
-              <span className="flex items-center gap-1.5 font-medium">
-                {isAssemblyRow && (
-                  <Server className="size-3.5 text-primary" aria-label="Assembly" />
-                )}
-                {part}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                S/N: {serial}
-              </span>
-            </div>
+            <span className="flex items-center gap-1.5 font-medium">
+              {isAssemblyRow && (
+                <Server className="size-3.5 text-primary" aria-label="Assembly" />
+              )}
+              {String(value)}
+            </span>
           ),
+        }
+      }
+      if (key === 'serialNo') {
+        return {
+          display: <span className="text-sm">{String(value)}</span>,
         }
       }
       if (key === 'actions') {

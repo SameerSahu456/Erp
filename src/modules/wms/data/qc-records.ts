@@ -71,50 +71,6 @@ export const mockQCRecords: QCRecord[] = [
     inspectedAt: '2026-03-14T15:00:00Z',
     notes: 'Passed on first attempt.',
   },
-  // Outward QC — passed
-  {
-    id: 'qc-007',
-    deviceId: 'dev-027',
-    deviceBarcode: 'L-DEL-1011',
-    qcType: 'OUTWARD',
-    result: 'PASSED',
-    inspectedBy: 'Priya Sharma',
-    inspectedAt: '2026-03-25T10:00:00Z',
-    notes: 'Packaging verified. OS image validated. Ready for dispatch.',
-  },
-  {
-    id: 'qc-008',
-    deviceId: 'dev-029',
-    deviceBarcode: 'L-DEL-1012',
-    qcType: 'OUTWARD',
-    result: 'PASSED',
-    inspectedBy: 'Priya Sharma',
-    inspectedAt: '2026-03-05T16:00:00Z',
-    notes: 'All accessories included. Label verified.',
-  },
-  // Outward QC — failed
-  {
-    id: 'qc-009',
-    deviceId: 'dev-025',
-    deviceBarcode: 'L-HP-2007',
-    qcType: 'OUTWARD',
-    result: 'FAILED',
-    failureReasons: ['Charger not included', 'OS activation issue'],
-    inspectedBy: 'Priya Sharma',
-    inspectedAt: '2026-04-02T14:00:00Z',
-    notes: 'Missing charger and Windows not activated. Sent back for correction.',
-  },
-  // Outward QC — under review
-  {
-    id: 'qc-010',
-    deviceId: 'dev-026',
-    deviceBarcode: 'L-APP-4003',
-    qcType: 'OUTWARD',
-    result: 'PASSED',
-    inspectedBy: 'Priya Sharma',
-    inspectedAt: '2026-04-10T09:30:00Z',
-    notes: 'MacBook verified — charger, box, and documentation included.',
-  },
   // ── Server (ASSEMBLY) inward QC ──
   // dev-srv-005: passed QC, awaiting rack assignment (READY_FOR_STOCK).
   {

@@ -15,21 +15,17 @@ import type { InwardType } from '../types'
 
 const INWARD_TYPE_LABELS: Record<InwardType, string> = {
   PURCHASE_ORDER: 'Purchase Order',
-  RENTAL_RETURN: 'Rental Return',
   DEMO_RETURN: 'Demo Return',
   INTERNAL_TRANSFER: 'Internal Transfer',
   ADVANCE_RETURN: 'Return',
-  REFURB_PURCHASE: 'Refurb Purchase',
   REPLACEMENT: 'Replacement',
 }
 
 const INWARD_TYPE_VARIANT: Record<InwardType, 'success' | 'warning' | 'info' | 'neutral'> = {
   PURCHASE_ORDER: 'info',
-  RENTAL_RETURN: 'warning',
   DEMO_RETURN: 'neutral',
   INTERNAL_TRANSFER: 'success',
   ADVANCE_RETURN: 'success',
-  REFURB_PURCHASE: 'info',
   REPLACEMENT: 'warning',
 }
 

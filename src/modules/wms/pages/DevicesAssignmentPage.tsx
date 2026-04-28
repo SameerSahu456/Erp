@@ -127,7 +127,8 @@ function DevicesAssignmentPage() {
           _deviceId: job.deviceId,
           _repairTab: tab,
           barcode: job.deviceBarcode,
-          partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
+          partNo: device?.model ?? '-',
+          serialNo: device?.serialNumber ?? '-',
           category: device?.category ?? '-',
           brand: device?.brand ?? '-',
           batch: device?.batchNumber ?? '-',
@@ -160,7 +161,8 @@ function DevicesAssignmentPage() {
           _deviceId: d.id,
           _allTab: true as const,
           barcode: d.barcode,
-          partSerial: `${d.model}\n${d.serialNumber}`,
+          partNo: d.model,
+          serialNo: d.serialNumber,
           category: d.category,
           brand: d.brand,
           batch: d.batchNumber,
@@ -187,7 +189,8 @@ function DevicesAssignmentPage() {
 
   const repairColumns = [
     { key: 'barcode', label: 'Barcode', sortable: true },
-    { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+    { key: 'partNo', label: 'Part No', sortable: true },
+    { key: 'serialNo', label: 'Serial No', sortable: true },
     { key: 'category', label: 'Category', sortable: true },
     { key: 'brand', label: 'Brand', sortable: true },
     { key: 'batch', label: 'Batch' },
@@ -198,7 +201,8 @@ function DevicesAssignmentPage() {
 
   const allColumns = [
     { key: 'barcode', label: 'Barcode', sortable: true },
-    { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+    { key: 'partNo', label: 'Part No', sortable: true },
+    { key: 'serialNo', label: 'Serial No', sortable: true },
     { key: 'category', label: 'Category', sortable: true },
     { key: 'brand', label: 'Brand', sortable: true },
     { key: 'batch', label: 'Batch' },
@@ -245,15 +249,14 @@ function DevicesAssignmentPage() {
       if (key === 'barcode') {
         return { display: <span className="font-medium">{String(value)}</span> }
       }
-      if (key === 'partSerial') {
-        const [part, serial] = String(value).split('\n')
+      if (key === 'partNo') {
         return {
-          display: (
-            <div className="flex flex-col leading-tight">
-              <span className="font-medium">{part}</span>
-              <span className="text-xs text-muted-foreground">S/N: {serial}</span>
-            </div>
-          ),
+          display: <span className="font-medium">{String(value)}</span>,
+        }
+      }
+      if (key === 'serialNo') {
+        return {
+          display: <span className="text-sm">{String(value)}</span>,
         }
       }
       if (key === 'status') {

@@ -21,13 +21,7 @@ import { PageHeader } from '@/components/page'
 
 import { mockDevices } from '../data/devices'
 import { mockQCRecords } from '../data/qc-records'
-import { mockOutwardRecords } from '../data/outward'
-import {
-  type Device,
-  type QCRecord,
-  type OutwardDevice,
-  type OutwardRecord,
-} from '../types'
+import { type Device, type QCRecord } from '../types'
 
 const QC_ENGINEERS = ['Deepak Verma', 'Anita Sharma']
 
@@ -39,15 +33,11 @@ function formatDate(dateStr: string) {
   })
 }
 
-type QCType = 'INWARD' | 'OUTWARD'
-
 function QCPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [qcDialogOpen, setQcDialogOpen] = useState(false)
-  const [qcType, setQcType] = useState<QCType>('INWARD')
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
-  const [selectedOutwardCtx, setSelectedOutwardCtx] = useState<{ outward: OutwardRecord; device: OutwardDevice } | null>(null)
   const [qcAssignments, setQcAssignments] = useState<Record<string, string>>({})
 
   const handleAssignQCEngineer = (deviceId: string, engineer: string) => {
@@ -71,9 +61,9 @@ function QCPage() {
       inwardPendingDevices.map((d) => ({
         id: d.id,
         _deviceId: d.id,
-        _qcType: 'INWARD' as const,
         barcode: d.barcode,
-        partSerial: `${d.model}\n${d.serialNumber}`,
+        partNo: d.model,
+        serialNo: d.serialNumber,
         biosNo: d.biosNo ?? '-',
         category: d.category,
         brand: d.brand,
@@ -92,7 +82,8 @@ function QCPage() {
           id: r.id,
           _deviceId: r.deviceId,
           barcode: r.deviceBarcode,
-          partSerial: `${device?.model ?? '-'}\n${device?.serialNumber ?? '-'}`,
+          partNo: device?.model ?? '-',
+          serialNo: device?.serialNumber ?? '-',
           biosNo: device?.biosNo ?? '-',
           category: device?.category ?? '-',
           result: r.result,
@@ -112,7 +103,8 @@ function QCPage() {
         label: `Pending (${inwardPendingRows.length})`,
         columns: [
           { key: 'barcode', label: 'Barcode', sortable: true },
-          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'partNo', label: 'Part No', sortable: true },
+          { key: 'serialNo', label: 'Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'category', label: 'Category', sortable: true },
           { key: 'brand', label: 'Brand', sortable: true },
@@ -127,7 +119,8 @@ function QCPage() {
         label: `Completed (${inwardCompletedRows.length})`,
         columns: [
           { key: 'barcode', label: 'Device Barcode', sortable: true },
-          { key: 'partSerial', label: 'Part No / Serial No', sortable: true },
+          { key: 'partNo', label: 'Part No', sortable: true },
+          { key: 'serialNo', label: 'Serial No', sortable: true },
           { key: 'biosNo', label: 'BIOS No', sortable: true },
           { key: 'category', label: 'Category', sortable: true },
           { key: 'result', label: 'Result' },
@@ -143,20 +136,7 @@ function QCPage() {
   )
 
   const handleStartInwardQC = (device: Device) => {
-    setQcType('INWARD')
     setSelectedDevice(device)
-    setSelectedOutwardCtx(null)
-    setQcDialogOpen(true)
-  }
-
-  const handleStartOutwardQC = (outwardId: string, deviceId: string) => {
-    const outward = mockOutwardRecords.find((o) => o.id === outwardId)
-    const device = outward?.devices.find((d) => d.deviceId === deviceId)
-    if (!outward || !device) return
-    const base = mockDevices.find((x) => x.id === deviceId) ?? null
-    setQcType('OUTWARD')
-    setSelectedDevice(base)
-    setSelectedOutwardCtx({ outward, device })
     setQcDialogOpen(true)
   }
 
@@ -167,21 +147,8 @@ function QCPage() {
     const openId = searchParams.get('open')
     if (!openId) return
     const device = mockDevices.find((d) => d.id === openId)
-    if (device) {
-      if (device.status === 'AWAITING_QC' || device.status === 'UNDER_QC') {
-        handleStartInwardQC(device)
-      } else {
-        // Outward QC path: find the outward record the device is part of.
-        const outward = mockOutwardRecords.find((o) =>
-          o.devices.some((d) => d.deviceId === openId),
-        )
-        if (outward) {
-          handleStartOutwardQC(outward.id, openId)
-        } else {
-          // Fall back to inward form if no outward record is linked yet.
-          handleStartInwardQC(device)
-        }
-      }
+    if (device && (device.status === 'AWAITING_QC' || device.status === 'UNDER_QC')) {
+      handleStartInwardQC(device)
     }
     const next = new URLSearchParams(searchParams)
     next.delete('open')
@@ -196,66 +163,48 @@ function QCPage() {
           display: <span className="font-medium">{String(value)}</span>,
         }
       }
-      if (key === 'partSerial') {
-        const [part, serial] = String(value).split('\n')
+      if (key === 'partNo') {
         const deviceId = (row._deviceId ?? row.id) as string
         const device = mockDevices.find((d) => d.id === deviceId)
         const isAssembly = device?.deviceKind === 'ASSEMBLY'
         return {
           display: (
-            <div className="flex flex-col leading-tight">
-              <span className="flex items-center gap-1.5 font-medium">
-                {isAssembly && (
-                  <Server className="size-3.5 text-primary" aria-label="Assembly" />
-                )}
-                {part}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                S/N: {serial}
-              </span>
-            </div>
+            <span className="flex items-center gap-1.5 font-medium">
+              {isAssembly && (
+                <Server className="size-3.5 text-primary" aria-label="Assembly" />
+              )}
+              {String(value)}
+            </span>
           ),
         }
       }
-      if (key === 'outwardNumber') {
+      if (key === 'serialNo') {
         return {
-          display: <span className="font-medium text-muted-foreground">{String(value)}</span>,
+          display: <span className="text-sm">{String(value)}</span>,
         }
       }
       if (key === 'actions') {
-        const type = row._qcType as QCType | undefined
         return {
           display: (
             <div
               className="flex items-center gap-3"
               onClick={(e) => e.stopPropagation()}
             >
-              {type === 'INWARD' && (
-                <button
-                  type="button"
-                  className="wms-link-btn text-sm"
-                  onClick={() => {
-                    const device = mockDevices.find((d) => d.id === row._deviceId)
-                    if (device) handleStartInwardQC(device)
-                  }}
-                >
-                  Start Inward QC
-                </button>
-              )}
-              {type === 'OUTWARD' && (
-                <button
-                  type="button"
-                  className="wms-link-btn text-sm"
-                  onClick={() => handleStartOutwardQC(row._outwardId as string, row._deviceId as string)}
-                >
-                  Start Outward QC
-                </button>
-              )}
+              <button
+                type="button"
+                className="wms-link-btn text-sm"
+                onClick={() => {
+                  const device = mockDevices.find((d) => d.id === row._deviceId)
+                  if (device) handleStartInwardQC(device)
+                }}
+              >
+                Start Inward QC
+              </button>
             </div>
           ),
         }
       }
-      if (key === 'assignedTo' && row._qcType === 'INWARD') {
+      if (key === 'assignedTo') {
         const deviceId = row.id as string
         const currentValue = value as string
         return {
@@ -312,7 +261,6 @@ function QCPage() {
         breadcrumbs={[{ label: 'WMS' }, { label: 'QC' }]}
       />
 
-      {/* Inward QC — gates rack assignment */}
       <section className="space-y-3">
         <div>
           <h2 className="text-lg font-semibold">Inward QC</h2>
@@ -332,13 +280,10 @@ function QCPage() {
         />
       </section>
 
-      {/* Shared QC dialog — same popup used from the device detail page. */}
       <QCDialog
         open={qcDialogOpen}
         onOpenChange={setQcDialogOpen}
-        qcType={qcType}
         device={selectedDevice}
-        outwardCtx={selectedOutwardCtx}
       />
     </div>
   )
