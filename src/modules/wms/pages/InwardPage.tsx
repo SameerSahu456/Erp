@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { AlertTriangle, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -89,15 +89,27 @@ function InwardPage() {
 
   const cellFormatter: CellFormatter = (value, key, row) => {
     if (key === 'batchNumber') {
+      const needsItems = (row.deviceCount as number) === 0
       return {
         display: (
-          <Link
-            to={`/wms/inward/${row.id}/devices`}
-            onClick={(e) => e.stopPropagation()}
-            className="font-medium wms-link"
-          >
-            {value as string}
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              to={`/wms/inward/${row.id}/devices`}
+              onClick={(e) => e.stopPropagation()}
+              className="font-medium wms-link"
+            >
+              {value as string}
+            </Link>
+            {needsItems && (
+              <span
+                title="No line items — click batch to add"
+                className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300"
+              >
+                <AlertTriangle className="size-3" />
+                Needs items
+              </span>
+            )}
+          </div>
         ),
       }
     }

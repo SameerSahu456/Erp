@@ -1,6 +1,6 @@
 import { Fragment, useState, useCallback, useLayoutEffect, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeftRight,
   ArchiveRestore,
@@ -814,9 +814,11 @@ function BomInlineEditor({
 
 function InwardFormPage() {
   const navigate = useNavigate()
+  const { id: existingBatchId } = useParams<{ id?: string }>()
+  const isAddItemsMode = Boolean(existingBatchId)
 
   /* --- Basic info state --- */
-  const [batchNumber] = useState(generateBatchNumber)
+  const [batchNumber] = useState(() => existingBatchId ?? generateBatchNumber())
   const [inwardType, setInwardType] = useState<InwardType>('PURCHASE_ORDER')
   const [purchaseOrigin, setPurchaseOrigin] = useState<PurchaseOriginType>('New')
   const [notes, setNotes] = useState('')
@@ -841,6 +843,9 @@ function InwardFormPage() {
 
   /* --- Items --- */
   const [items, setItems] = useState<InwardItem[]>([])
+
+  /* --- Two-step wizard (skip to step 2 when adding items to an existing batch) --- */
+  const [currentStep, setCurrentStep] = useState<1 | 2>(isAddItemsMode ? 2 : 1)
 
   /* --- BOM expansion state (per item id). When an item has a BOM linked,
          users can click the row's "View BOM" toggle to reveal the captured
@@ -1208,25 +1213,44 @@ function InwardFormPage() {
   const sourceSelected =
     !!poNumber || !!sourceRef || !!salesOrderNumber || !!replacementRequestNumber || !!sourceName || !!sourceDept
 
-  const missingPieces: string[] = []
-  if (showVendorPoFields && !poNumber.trim()) missingPieces.push('PO number')
+  const step1Missing: string[] = []
+  if (showVendorPoFields && !poNumber.trim()) step1Missing.push('PO number')
   if (showReturnFields && !sourceName) {
-    missingPieces.push('Customer name')
+    step1Missing.push('Customer name')
   }
-  if (showInternalTransferFields && !sourceDept) missingPieces.push('Source department')
-  if (showInternalTransferFields && !employeeName.trim()) missingPieces.push('Employee name')
-  if (validItemCount === 0) missingPieces.push('At least one item')
+  if (showInternalTransferFields && !sourceDept) step1Missing.push('Source department')
+  if (showInternalTransferFields && !employeeName.trim()) step1Missing.push('Employee name')
 
-  const canSubmit = missingPieces.length === 0
+  const step2Missing: string[] = []
+  if (validItemCount === 0) step2Missing.push('At least one item')
+
+  const missingPieces = currentStep === 1 ? step1Missing : step2Missing
+  const canAdvance = step1Missing.length === 0
+  const canSubmit = step1Missing.length === 0 && step2Missing.length === 0
 
   /* --- Submit --- */
-  const handleSaveDraft = () => {
-    toast.success(`Batch ${batchNumber} saved as draft.`)
+  const handleNext = () => {
+    if (!canAdvance) {
+      toast.error(`Missing: ${step1Missing.join(', ')}`)
+      return
+    }
+    setCurrentStep(2)
   }
 
   const handleCreate = () => {
+    if (isAddItemsMode) {
+      if (step2Missing.length > 0) {
+        toast.error(`Missing: ${step2Missing.join(', ')}`)
+        return
+      }
+      toast.success('Line items added', {
+        description: `${validItemCount} item${validItemCount > 1 ? 's' : ''} added to ${batchNumber}`,
+      })
+      navigate(`/wms/inward/${existingBatchId}/devices`)
+      return
+    }
     if (!canSubmit) {
-      toast.error(`Missing: ${missingPieces.join(', ')}`)
+      toast.error(`Missing: ${[...step1Missing, ...step2Missing].join(', ')}`)
       return
     }
     toast.success('Batch created successfully', {
@@ -1235,25 +1259,33 @@ function InwardFormPage() {
     navigate(`/wms/inward/batch-new/devices`)
   }
 
-  /* --- Dynamic step numbering --- */
-  let step = 1
-  const stepInwardInfo = step++
-  const stepItems = step++
-  const stepChallan = step++
-  const stepNotes = step++
+  /* --- Dynamic step numbering (within each wizard step) --- */
+  const stepInwardInfo = 1
+  const stepChallan = 2
+  const stepNotes = 3
+  const stepItems = 1
 
   /* --- Render --- */
   return (
     <div className="space-y-6 pb-24">
       <PageHeader
-        title="Create Inward Batch"
-        subtitle="Fill each section below. Required fields are marked with an asterisk (*)."
+        title={isAddItemsMode ? 'Add Line Items' : 'Create Inward Batch'}
+        subtitle={
+          isAddItemsMode
+            ? `Add line items to batch ${batchNumber}.`
+            : currentStep === 1
+              ? 'Step 1 of 2 — Inward details. Required fields are marked with an asterisk (*).'
+              : 'Step 2 of 2 — Add line items.'
+        }
         breadcrumbs={[
           { label: 'WMS' },
           { label: 'Inward', href: '/wms/inward' },
-          { label: 'New Batch' },
+          isAddItemsMode
+            ? { label: batchNumber, href: `/wms/inward/${existingBatchId}/devices` }
+            : { label: 'New Batch' },
+          ...(isAddItemsMode ? [{ label: 'Add Line Items' }] : []),
         ]}
-        backHref="/wms/inward"
+        backHref={isAddItemsMode ? `/wms/inward/${existingBatchId}/devices` : '/wms/inward'}
         actions={
           <div className="hidden sm:flex flex-col items-end gap-1">
             <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -1264,6 +1296,49 @@ function InwardFormPage() {
         }
       />
 
+      {/* Wizard step indicator (hidden in add-items mode) */}
+      {!isAddItemsMode && (
+      <div className="flex items-center gap-2 text-sm">
+        {[1, 2].map((s) => {
+          const isActive = currentStep === s
+          const isDone = currentStep > s
+          return (
+            <Fragment key={s}>
+              <div
+                className={cn(
+                  'flex items-center gap-2 rounded-full border px-3 py-1',
+                  isActive
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : isDone
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                    : 'border-border bg-muted/30 text-muted-foreground',
+                )}
+              >
+                <span
+                  className={cn(
+                    'flex size-5 items-center justify-center rounded-full text-[11px] font-semibold',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : isDone
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  {isDone ? <Check className="size-3" /> : s}
+                </span>
+                <span className="text-xs font-medium">
+                  {s === 1 ? 'Inward Details' : 'Line Items'}
+                </span>
+              </div>
+              {s === 1 && <div className="h-px flex-1 bg-border sm:max-w-16" />}
+            </Fragment>
+          )
+        })}
+      </div>
+      )}
+
+      {currentStep === 1 && (
+      <>
       {/* 1. Inward Info */}
       <Card>
         <CardHeader>
@@ -1375,23 +1450,41 @@ function InwardFormPage() {
                 </div>
 
                 {selectedPO && (
-                  <SourceDetailsCard
-                    kind="po"
-                    title={selectedPO.vendorName}
-                    badge={selectedPO.status}
-                    rows={
-                      <>
-                        <DetailPair label="PO #" value={selectedPO.poNumber} icon={FileText} mono />
-                        <DetailPair label="Contact" value={selectedPO.vendorContact} icon={User} />
-                        <DetailPair label="Email" value={selectedPO.vendorEmail} icon={Mail} />
-                        <DetailPair label="Address" value={selectedPO.vendorAddress} icon={MapPin} />
-                        <DetailPair label="Expected Delivery" value={selectedPO.expectedDelivery} icon={Calendar} />
-                        <DetailPair label="Grand Total" value={formatINR(selectedPO.grandTotal)} icon={Receipt} />
-                        <DetailPair label="Payment Terms" value={selectedPO.paymentTerms} />
-                        <DetailPair label="Line Items" value={`${selectedPO.items.length} lines · ${selectedPO.items.reduce((n, li) => n + li.qtyOrdered, 0)} units`} icon={Package} />
-                      </>
-                    }
-                  />
+                  <div className="mt-3 rounded-lg border bg-card p-3">
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <FileText className="size-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Purchase Order #
+                        </p>
+                        <p className="truncate font-mono text-sm font-semibold">{selectedPO.poNumber}</p>
+                      </div>
+                    </div>
+                    <div className="overflow-hidden rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-medium">Part</th>
+                            <th className="px-3 py-2 text-left font-medium">SKU</th>
+                            <th className="px-3 py-2 text-right font-medium">Ordered</th>
+                            <th className="px-3 py-2 text-right font-medium">Received</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedPO.items.map((li) => (
+                            <tr key={li.id} className="border-t">
+                              <td className="px-3 py-2">{li.partName}</td>
+                              <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{li.partSku}</td>
+                              <td className="px-3 py-2 text-right tabular-nums">{li.qtyOrdered}</td>
+                              <td className="px-3 py-2 text-right tabular-nums">{li.qtyReceived}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -1763,7 +1856,115 @@ function InwardFormPage() {
         </CardContent>
       </Card>
 
-      {/* 2. Line Items */}
+      {/* 2. Delivery Challan */}
+      <Card>
+        <CardHeader className="pb-3">
+          <SectionHeader
+            step={stepChallan}
+            title="Delivery Challan"
+            description="Attach the DC received with this batch. PDF or image."
+            trailing={dcFile ? (
+              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                Attached
+              </span>
+            ) : (
+              <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                Optional
+              </span>
+            )}
+          />
+        </CardHeader>
+        <CardContent className="pt-0">
+          <input
+            ref={dcFileInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={handleDcFileChange}
+          />
+          {dcFile ? (
+            <div className="flex items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
+              <FileText className="size-4 shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-foreground">{dcFile.name}</p>
+                <p className="text-[11px] text-muted-foreground">{formatFileSize(dcFile.size)}</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => dcFileInputRef.current?.click()}
+              >
+                Replace
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground hover:text-destructive"
+                onClick={() => {
+                  setDcFile(null)
+                  if (dcFileInputRef.current) dcFileInputRef.current.value = ''
+                }}
+                aria-label="Remove file"
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => dcFileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault()
+                setIsDraggingDc(true)
+              }}
+              onDragLeave={() => setIsDraggingDc(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setIsDraggingDc(false)
+                const file = e.dataTransfer.files?.[0]
+                if (file) setDcFile(file)
+              }}
+              className={cn(
+                'flex w-full items-center gap-3 rounded-md border border-dashed px-3 py-2.5 text-left transition-colors',
+                isDraggingDc
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/30',
+              )}
+            >
+              <UploadCloud className="size-4 shrink-0 text-muted-foreground" />
+              <span className="flex-1 text-sm text-muted-foreground">
+                Click to upload or drag and drop · PDF, PNG, JPG
+              </span>
+              <span className="text-[11px] font-medium text-primary">Browse</span>
+            </button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 3. Notes */}
+      <Card>
+        <CardHeader>
+          <SectionHeader
+            step={stepNotes}
+            title="Notes"
+            description="Optional. Anything the inspection team should know."
+          />
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Additional notes…"
+            rows={3}
+          />
+        </CardContent>
+      </Card>
+      </>
+      )}
+
+      {currentStep === 2 && (
       <Card>
         <CardHeader>
           <SectionHeader
@@ -1931,120 +2132,20 @@ function InwardFormPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* 3. Delivery Challan */}
-      <Card>
-        <CardHeader className="pb-3">
-          <SectionHeader
-            step={stepChallan}
-            title="Delivery Challan"
-            description="Attach the DC received with this batch. PDF or image."
-            trailing={dcFile ? (
-              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                Attached
-              </span>
-            ) : (
-              <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                Optional
-              </span>
-            )}
-          />
-        </CardHeader>
-        <CardContent className="pt-0">
-          <input
-            ref={dcFileInputRef}
-            type="file"
-            accept="image/*,application/pdf"
-            className="hidden"
-            onChange={handleDcFileChange}
-          />
-          {dcFile ? (
-            <div className="flex items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
-              <FileText className="size-4 shrink-0 text-primary" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">{dcFile.name}</p>
-                <p className="text-[11px] text-muted-foreground">{formatFileSize(dcFile.size)}</p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => dcFileInputRef.current?.click()}
-              >
-                Replace
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                className="text-muted-foreground hover:text-destructive"
-                onClick={() => {
-                  setDcFile(null)
-                  if (dcFileInputRef.current) dcFileInputRef.current.value = ''
-                }}
-                aria-label="Remove file"
-              >
-                <X className="size-4" />
-              </Button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => dcFileInputRef.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault()
-                setIsDraggingDc(true)
-              }}
-              onDragLeave={() => setIsDraggingDc(false)}
-              onDrop={(e) => {
-                e.preventDefault()
-                setIsDraggingDc(false)
-                const file = e.dataTransfer.files?.[0]
-                if (file) setDcFile(file)
-              }}
-              className={cn(
-                'flex w-full items-center gap-3 rounded-md border border-dashed px-3 py-2.5 text-left transition-colors',
-                isDraggingDc
-                  ? 'border-primary bg-primary/5'
-                  : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/30',
-              )}
-            >
-              <UploadCloud className="size-4 shrink-0 text-muted-foreground" />
-              <span className="flex-1 text-sm text-muted-foreground">
-                Click to upload or drag and drop · PDF, PNG, JPG
-              </span>
-              <span className="text-[11px] font-medium text-primary">Browse</span>
-            </button>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 4. Notes */}
-      <Card>
-        <CardHeader>
-          <SectionHeader
-            step={stepNotes}
-            title="Notes"
-            description="Optional. Anything the inspection team should know."
-          />
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Additional notes…"
-            rows={3}
-          />
-        </CardContent>
-      </Card>
+      )}
 
       {/* Sticky footer */}
       <div className="sticky bottom-0 -mx-4 sm:-mx-6 border-t bg-background/95 px-4 sm:px-6 py-3 backdrop-blur-sm">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-muted-foreground">
-            {canSubmit ? (
+            {missingPieces.length === 0 ? (
               <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                <Check className="size-3.5" /> Ready to submit
+                <Check className="size-3.5" />
+                {isAddItemsMode
+                  ? 'Ready to save'
+                  : currentStep === 1
+                    ? 'Ready for line items'
+                    : 'Ready to submit'}
               </span>
             ) : (
               <span>
@@ -2054,15 +2155,37 @@ function InwardFormPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" render={<Link to="/wms/inward" />}>
-              Cancel
-            </Button>
-            <Button variant="outline" onClick={handleSaveDraft}>
-              Save Draft
-            </Button>
-            <Button onClick={handleCreate} disabled={!canSubmit}>
-              Create Batch
-            </Button>
+            {currentStep === 1 ? (
+              <>
+                <Button variant="outline" render={<Link to="/wms/inward" />}>
+                  Cancel
+                </Button>
+                <Button onClick={handleNext} disabled={!canAdvance}>
+                  Create Batch
+                </Button>
+              </>
+            ) : (
+              <>
+                {isAddItemsMode ? (
+                  <Button
+                    variant="outline"
+                    render={<Link to={`/wms/inward/${existingBatchId}/devices`} />}
+                  >
+                    Cancel
+                  </Button>
+                ) : (
+                  <Button variant="outline" onClick={() => setCurrentStep(1)}>
+                    Back
+                  </Button>
+                )}
+                <Button
+                  onClick={handleCreate}
+                  disabled={isAddItemsMode ? step2Missing.length > 0 : !canSubmit}
+                >
+                  {isAddItemsMode ? 'Save Items' : 'Create Batch'}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

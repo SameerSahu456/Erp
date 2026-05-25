@@ -243,6 +243,7 @@ export const router = createBrowserRouter([
       { path: '/wms/replacements/new', element: <LazyRoute><ReplacementRequestFormPage /></LazyRoute> },
       { path: '/wms/inward', element: <LazyRoute><InwardPage /></LazyRoute> },
       { path: '/wms/inward/new', element: <LazyRoute><InwardFormPage /></LazyRoute> },
+      { path: '/wms/inward/:id/add-items', element: <LazyRoute><InwardFormPage /></LazyRoute> },
       { path: '/wms/inward/:id/devices', element: <LazyRoute><BatchDevicesPage /></LazyRoute> },
       { path: '/wms/inspection', element: <LazyRoute><InspectionPage /></LazyRoute> },
       { path: '/wms/repair', element: <LazyRoute><RepairPage /></LazyRoute> },

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   CalendarDays,
   Package,
@@ -89,6 +89,7 @@ function formatDate(dateStr: string) {
 
 function BatchDevicesPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const goBack = useNavigateBack('/wms/inward')
 
   const batch = mockBatches.find((b) => b.id === id)
@@ -511,8 +512,13 @@ function BatchDevicesPage() {
         </Card>
       ) : (
         <EmptyState
-          title="No devices yet"
-          description="This batch has no devices associated with it."
+          icon={Package}
+          title="No line items yet"
+          description="This batch was created without any line items. Add them now to begin processing."
+          action={{
+            label: 'Add Line Items',
+            onClick: () => navigate(`/wms/inward/${id}/add-items`),
+          }}
         />
       )}
     </div>
