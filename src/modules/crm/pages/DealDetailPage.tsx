@@ -43,6 +43,7 @@ import { Badge } from '@/components/ui/badge'
 import { EntityHeader } from '../components/EntityHeader'
 import { DetailTabs } from '../components/DetailTabs'
 import { NotesSection } from '../components/NotesSection'
+import { EmailsSection } from '../components/EmailsSection'
 import { deals } from '../data/deals'
 import { leads } from '../data/leads'
 import { accounts } from '../data/accounts'
@@ -635,6 +636,21 @@ function DealDetailPage() {
         entityId: deal.id,
         metadata: { reason: lostReason.reason, notes: lostReason.notes },
       }] : []} />,
+    },
+    {
+      // Last tab by design: Outlook conversations about this deal, started
+      // here or from any of its quotes.
+      id: 'emails',
+      label: 'Emails',
+      content: (
+        <EmailsSection
+          entityType="deal"
+          entityId={deal.id}
+          contact={contactSpoc ? { name: contactSpoc.name, email: contactSpoc.email } : undefined}
+          accountName={deal.accountName}
+          quoteOptions={relatedQuotes}
+        />
+      ),
     },
   ]
 

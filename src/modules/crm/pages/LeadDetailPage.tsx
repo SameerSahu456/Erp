@@ -24,6 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { EntityHeader } from '../components/EntityHeader'
 import { DetailTabs } from '../components/DetailTabs'
 import { NotesSection } from '../components/NotesSection'
+import { EmailsSection } from '../components/EmailsSection'
 import { leads } from '../data/leads'
 import { quotes } from '../data/quotes'
 import { mockActivities } from '../data/activities'
@@ -594,6 +595,21 @@ function LeadDetailPage() {
         entityId: lead.id,
         metadata: { reason: lostReason.reason, notes: lostReason.notes },
       }] : []} />,
+    },
+    {
+      // Last tab by design: Outlook conversations about this lead, started
+      // here or from any of its quotes.
+      id: 'emails',
+      label: 'Emails',
+      content: (
+        <EmailsSection
+          entityType="lead"
+          entityId={lead.id}
+          contact={{ name: lead.name, email: lead.email }}
+          accountName={lead.company}
+          quoteOptions={relatedQuotes}
+        />
+      ),
     },
   ]
 

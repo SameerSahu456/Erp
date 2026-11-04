@@ -1,15 +1,17 @@
+import { useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   History,
   ArrowRight,
-  Copy,
-} from 'lucide-react'
+  Copy, Mail } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { FormPageShell } from '@/components/page'
 import { QuoteBuilderPanel } from '../components/QuoteBuilderPanel'
+import { EmailsSection } from '../components/EmailsSection'
+import { contacts } from '../data/contacts'
 import { quotes } from '../data/quotes'
 import { leads } from '../data/leads'
 import { deals } from '../data/deals'
@@ -79,6 +81,16 @@ function QuoteFormPage() {
     navigate('/crm/quotes/new')
   }
 
+  // "Send by Email" — the compose dialog lives in the EmailsSection below;
+  // the header button just opens it.
+  const [emailOpen, setEmailOpen] = useState(false)
+  const quoteContact = existingQuote
+    ? contacts.find((c) => c.accountId === existingQuote.accountId)
+    : undefined
+  const relatedQuotes = existingQuote
+    ? quotes.filter((q) => q.accountId === existingQuote.accountId)
+    : []
+
 
   return (
     <FormPageShell
@@ -108,6 +120,10 @@ function QuoteFormPage() {
         <div className="flex items-center gap-2">
           {isEdit && (
             <>
+              <Button variant="outline" size="sm" onClick={() => setEmailOpen(true)} aria-label="Send quote by email">
+                <Mail className="size-4 mr-1.5" />
+                Send by Email
+              </Button>
               <Button variant="outline" size="sm" onClick={handleDuplicateQuote}>
                 <Copy className="size-4 mr-1.5" />
                 Duplicate
@@ -161,6 +177,21 @@ function QuoteFormPage() {
         accountId={paramAccountId}
         accountName={resolvedAccountName}
       />
+
+      {/* Email conversation about this quote (existing quotes only). */}
+      {isEdit && existingQuote ? (
+        <EmailsSection
+          className="mt-6"
+          entityType="lead"
+          entityId={existingQuote.leadId}
+          quoteId={existingQuote.id}
+          contact={quoteContact ? { name: quoteContact.name, email: quoteContact.email } : undefined}
+          accountName={existingQuote.accountName}
+          quoteOptions={relatedQuotes}
+          composeOpen={emailOpen}
+          onComposeOpenChange={setEmailOpen}
+        />
+      ) : null}
     </FormPageShell>
   )
 }
