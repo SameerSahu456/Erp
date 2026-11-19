@@ -134,10 +134,6 @@ export const mockVariants: Variant[] = buildVariants()
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-export function getVariantById(id: string): Variant | undefined {
-  return mockVariants.find((v) => v.id === id)
-}
-
 export function getVariantsByPartId(partId: string): Variant[] {
   return mockVariants.filter((v) => v.partId === partId)
 }
@@ -145,16 +141,4 @@ export function getVariantsByPartId(partId: string): Variant[] {
 export function getDefaultVariantForPart(partId: string): Variant | undefined {
   const variants = getVariantsByPartId(partId)
   return variants.find((v) => v.condition === 'New') ?? variants[0]
-}
-
-export function formatVariantLabel(
-  variant: Variant,
-  opts: { withPrice?: boolean } = {},
-): string {
-  if (!opts.withPrice) return variant.displayName
-  return `${variant.displayName} — ₹${variant.sellPrice.toLocaleString('en-IN')}`
-}
-
-export function getPartIdForVariant(variantId: string): string | undefined {
-  return getVariantById(variantId)?.partId
 }

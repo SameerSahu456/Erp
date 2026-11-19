@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
 
 import { cn } from "@/lib/utils"
@@ -15,8 +16,38 @@ function TooltipProvider({
   )
 }
 
-function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+function Tooltip({
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
+  ...props
+}: TooltipPrimitive.Root.Props) {
+  const [openState, setOpenState] = useState(defaultOpen)
+  const controlled = openProp !== undefined
+  const open = controlled ? openProp : openState
+
+  // A tooltip is portalled out of every scroll container, so when the page or a
+  // board (kanban, tables) scrolls under a still-hovered pointer it stays put or
+  // trails its anchor across neighbouring UI such as the sidebar. Close it on any
+  // scroll; it reopens on the next hover. Controlled tooltips are left to their owner.
+  useEffect(() => {
+    if (controlled || !open) return
+    const close = () => setOpenState(false)
+    window.addEventListener("scroll", close, { capture: true, passive: true })
+    return () => window.removeEventListener("scroll", close, { capture: true })
+  }, [controlled, open])
+
+  return (
+    <TooltipPrimitive.Root
+      data-slot="tooltip"
+      open={open}
+      onOpenChange={(next, details) => {
+        if (!controlled) setOpenState(next)
+        onOpenChange?.(next, details)
+      }}
+      {...props}
+    />
+  )
 }
 
 function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
@@ -43,12 +74,16 @@ function TooltipContent({
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
-        className="isolate z-50"
+        // The tooltip is portalled out of any scroll container, so it keeps following
+        // its anchor after the anchor scrolls under a clipping edge (kanban board
+        // scrolled sideways) and would float over the sidebar. Base UI flags that
+        // state; hide the tooltip while it holds.
+        className="isolate z-50 data-anchor-hidden:invisible"
       >
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(
-            "z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background has-data-[slot=kbd]:pr-1.5 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-sm data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            "z-50 inline-flex w-fit max-w-[min(20rem,calc(100vw-1rem))] origin-(--transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background [overflow-wrap:anywhere] has-data-[slot=kbd]:pr-1.5 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-sm data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
             className
           )}
           {...props}

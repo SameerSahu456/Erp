@@ -1,0 +1,1 @@
+export { VendorsRoutes } from "./routes";

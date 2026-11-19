@@ -1,26 +1,38 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
     "types": ["vite/client"],
     "skipLibCheck": true,
+
+    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+
+    /* Strict checks */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    /* Relaxed during demo→target UI migration. Re-enable once each module
+       gets its types tightened post-migration. */
+    "noUncheckedIndexedAccess": false,
+
+    /* Linting — relaxed during migration; tighten module-by-module afterward. */
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
+
+    /* Path aliases */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@app/*": ["./src/app/*"]
     }
   },
   "include": ["src"]

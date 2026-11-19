@@ -24,12 +24,3 @@ export interface BankTransaction {
   matchStatus: 'Matched' | 'Unmatched' | 'Partial'
   matchedEntryId?: string
 }
-
-export interface ReconciliationSummary {
-  bankBalance: number
-  bookBalance: number
-  difference: number
-  matchedCount: number
-  unmatchedCount: number
-  lastReconciled?: string
-}

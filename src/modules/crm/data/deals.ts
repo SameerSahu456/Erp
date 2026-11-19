@@ -1,4 +1,4 @@
-import type { Deal, AccountAddress } from '../types'
+import type { Deal } from '../types'
 
 export const deals: Deal[] = [
   {
@@ -20,7 +20,7 @@ export const deals: Deal[] = [
     location: 'Pune',
     website: 'https://www.tcs.com',
     customerType: 'End Customer',
-    orderType: 'New',
+    tags: ['New'],
     createdAt: '2026-02-10',
     description: 'Complete data center infrastructure upgrade including 50 rack servers, storage arrays, and network switches for the Pune campus.',
     categories: ['Servers', 'Storage', 'Networking'],
@@ -49,7 +49,7 @@ export const deals: Deal[] = [
     location: 'Mumbai',
     website: 'https://www.reliancedigital.in',
     customerType: 'Channel Partner',
-    orderType: 'New',
+    tags: ['New'],
     createdAt: '2026-03-05',
     description: 'Networking overhaul across 5 branch offices with managed switches, firewalls, and structured cabling.',
     categories: ['Networking', 'Cables & Accessories'],

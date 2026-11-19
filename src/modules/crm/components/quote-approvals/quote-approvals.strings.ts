@@ -1,0 +1,88 @@
+// §16.12 — single source for user-facing copy on the Quote Approvals
+// surface. Imported by the PM Approvals "Quote" tab + any dialogs.
+
+export const QUOTE_APPROVALS_STRINGS = {
+  tab: {
+    label: "Quotes",
+  },
+  queue: {
+    loading: "Loading pending quotes…",
+    empty: "No quotes awaiting your approval.",
+    loadError: "Failed to load pending quotes.",
+  },
+  columns: {
+    hash: "#",
+    quote: "Quote",
+    account: "Source",
+    status: "Status",
+    items: "Items",
+    submittedBy: "Submitted By",
+    updatedAt: "Updated",
+    item: "Item",
+    qty: "Qty",
+    rate: "Rate",
+    amount: "Amount",
+    actions: "Actions",
+  },
+  actions: {
+    approve: "Approve",
+    reject: "Reject",
+    rejecting: "Rejecting…",
+    approving: "Approving…",
+    openQuote: "Open quote",
+  },
+  // Mirrors SALES_ORDERS_STRINGS.approval.dialogs (RejectLineDialog) so the
+  // quote-line and SO-line reject dialogs read as the same surface.
+  rejectDialog: {
+    title: "Reject line",
+    bodyBefore: "Reject ",
+    bodyMiddle: " on quote ",
+    bodyAfter: "? The sales team will see your reason when they revise the quote.",
+    reason: "Reason",
+    reasonPlaceholder: "Why is this line being rejected? The sales team will see this.",
+    charCount: (count: number, max: number) => `${count} / ${max}`,
+    cancel: "Cancel",
+    confirm: "Reject",
+    validation: {
+      reasonRequired: "Notes are required when rejecting a line.",
+      reasonTooLong: (max: number) => `Notes must be ${max} characters or less.`,
+      fixHighlighted: "Please fix the highlighted fields.",
+    },
+  },
+  submittedByLabel: "Submitted by",
+  sourceLabel: "Source",
+  stampedBadge: "assigned to me",
+  peerBadge: "peer-eligible",
+  panel: {
+    grandTotal: "GRAND TOTAL",
+    subtotal: "SUBTOTAL",
+    totalTax: "TOTAL TAX",
+    lineDiscount: "LINE DISCOUNT",
+    terms: "TERMS & CONDITIONS",
+    notes: "NOTES",
+    noLines: "This quote has no lines.",
+    noEligibleLines: "No lines on this quote are awaiting your approval.",
+    loadFailed: "Failed to load the quote.",
+    updatedPrefix: "Updated ",
+    inheritsParent: "Inherits parent decision",
+    descriptionTitle: "Description",
+    showMore: "Show more",
+    warrantyPrefix: "Warranty: ",
+    warrantyTitle: "Warranty",
+  },
+  lineCols: {
+    item: "Item",
+    category: "Category",
+    qty: "Qty",
+    rate: "Rate",
+    tax: "Tax %",
+    amount: "Amount",
+    statusActions: "Status / Actions",
+  },
+  lineStatus: {
+    draft: "Draft",
+    pending: "Pending Approval",
+    approved: "Approved",
+    rejected: "Rejected",
+  },
+} as const

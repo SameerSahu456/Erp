@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Drop-in replacement for useState that persists to sessionStorage under `key`.
@@ -13,40 +13,39 @@ export function usePersistedState<T>(
   initial: T | (() => T),
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
-    if (!key) return typeof initial === 'function' ? (initial as () => T)() : initial
+    if (!key) return typeof initial === "function" ? (initial as () => T)() : initial;
     try {
-      const raw = sessionStorage.getItem(key)
-      if (raw !== null) return JSON.parse(raw) as T
+      const raw = sessionStorage.getItem(key);
+      if (raw !== null) return JSON.parse(raw) as T;
     } catch {
       // corrupt storage — fall through to initial
     }
-    return typeof initial === 'function' ? (initial as () => T)() : initial
-  })
+    return typeof initial === "function" ? (initial as () => T)() : initial;
+  });
 
-  const firstRun = useRef(true)
+  const firstRun = useRef(true);
   useEffect(() => {
-    if (!key) return
+    if (!key) return;
     // Skip the first write — initial state was already loaded from storage (or is the default)
     if (firstRun.current) {
-      firstRun.current = false
-      return
+      firstRun.current = false;
+      return;
     }
     try {
-      sessionStorage.setItem(key, JSON.stringify(value))
+      sessionStorage.setItem(key, JSON.stringify(value));
     } catch {
       // storage quota exceeded — silently drop; this is non-critical
     }
-  }, [key, value])
+  }, [key, value]);
 
-  return [value, setValue]
+  return [value, setValue];
 }
 
 /** Clear a persisted-state key (e.g. after a successful form submit). */
 export function clearPersistedState(key: string) {
   try {
-    sessionStorage.removeItem(key)
+    sessionStorage.removeItem(key);
   } catch {
     /* noop */
   }
 }
-

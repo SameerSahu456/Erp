@@ -1,20 +1,41 @@
 export type Priority = 'High' | 'Medium' | 'Low'
-export type CustomerType = 'End Customer' | 'Channel Partner'
-export type OrderType = 'New' | 'Refurb' | 'Rental'
+export type CustomerType = 'End Customer' | 'Channel Partner' | 'Cloud / Data Center' | 'End User'
+export type CrmTag = 'New' | 'Refurb' | 'Rental'
+export const CRM_TAG_LIST: CrmTag[] = ['New', 'Refurb', 'Rental']
 
 export interface Lead {
   id: string
+  /** Human-readable lead number (e.g. LD-2026-…), server-generated. */
+  leadCode?: string
   name: string
   company: string
+  // Mention → view-only access (backend `access_level`): "view" = visible only
+  // because the viewer was @mentioned — render read-only. `isMentioned` is the
+  // detail-page flag (true for edit users too). Optional so legacy/mock Lead
+  // literals stay valid; the live mapper always sets both.
+  accessLevel?: "edit" | "view"
+  isMentioned?: boolean
+  // `name` / `company` fall back to a "-" display placeholder when blank, so
+  // the stage gate reads these instead.
+  // Optional so legacy/mock Lead literals stay valid; the live mapper sets them.
+  hasContactName?: boolean
+  hasCompanyName?: boolean
   email: string
   phone: string
   stage: 'New' | 'Contacted' | 'Qualified' | 'Procurement' | 'Cold' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost' | 'Rejected'
   value: number
+  // grand_total of the lead's latest quote (chain head, is_latest_quote=true);
+  // 0 when the lead has no quote yet. Mapped from CrmLeadListItem.latest_quote_value.
+  // Optional so legacy/mock Lead literals (data/leads.ts) stay valid; the live
+  // mapper always sets it. Table reads it as `?? 0`.
+  latestQuoteValue?: number
   source: string
+  closureDate?: string
   owner: string
   bde: string
   accountOwner?: string
   assignedTo?: string
+  assignedToId?: string
   presalesManager?: string
   priority: Priority
   companySize?: string
@@ -22,28 +43,47 @@ export interface Lead {
   location?: string
   website?: string
   customerType?: CustomerType
-  orderType?: OrderType
+  tags?: CrmTag[]
   lastContact: string
   createdAt: string
   notes?: string
   description: string
   categories: string[]
+  oems?: string[]
   rejectedAt?: string
   rejectedBy?: string
   rejectionReason?: string
   rejectionNotes?: string
+  // Free-text reason captured when the lead is moved to "Closed Lost"
+  // (reason — notes, folded). Cleared by the backend on reopen.
+  closedLostReason?: string
   addresses?: AccountAddress[]
 }
 
 export interface Deal {
   id: string
+  /** Human-readable deal number, server-generated. */
+  dealNumber?: string
   name: string
   accountId: string
   accountName: string
   stage: 'New' | 'Procurement' | 'Cold' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost'
   value: number
+  /** Whether this deal is a SALE or a RENTAL, derived server-side from its
+   *  live quotes and orders — never typed by a user. Rentals are quoted and
+   *  ordered separately from sales, so a deal is one or the other.
+   *
+   *  Optional so existing Deal literals stay valid; the live mapper sets it. */
+  sellableIntent?: 'sale' | 'rental'
+  /** Money actually INVOICED against this deal, as opposed to `value`,
+   *  which is what it was expected to be worth. They diverge on rentals by
+   *  design: a rental's worth accrues invoice by invoice and a contract or
+   *  a line can be terminated at any point, so the booked figure is only
+   *  ever a forecast until the invoices exist. */
+  realisedValue?: number
   probability: number
   closeDate: string
+  source?: string
   owner: string
   owners?: string[]
   assignedTo?: string
@@ -54,10 +94,11 @@ export interface Deal {
   location?: string
   website?: string
   customerType?: CustomerType
-  orderType?: OrderType
+  tags?: CrmTag[]
   createdAt: string
   description: string
   categories: string[]
+  oems?: string[]
   leadId?: string
   addresses?: AccountAddress[]
 }
@@ -66,13 +107,15 @@ export type AccountTag = 'Hunting' | 'Farming' | 'Cold'
 
 export interface AccountAddress {
   id: string
-  type: 'Billing' | 'Shipping'
+  type: 'Billing' | 'Shipping' | 'Both'
   label: string
   line1: string
   line2?: string
   city: string
   state: string
   pincode: string
+  /** GSTIN registered at this location; blank = the account's. */
+  gstin?: string
   isDefault?: boolean
 }
 
@@ -84,7 +127,7 @@ export interface Account {
   revenue: number
   owner: string
   owners?: string[]
-  status: 'Active' | 'Inactive' | 'Prospect'
+  status: 'Active' | 'Inactive'
   tag?: AccountTag
   categoriesInterested?: string[]
   categoriesBuyed?: string[]
@@ -120,7 +163,7 @@ export interface SalesOrderLineItem {
   // Canonical FK — introduced in Phase 2 of the Variant migration.
   // The Part-level fields below are kept for backwards-compat until Phase 3 refactors the pickers.
   variantId: string
-  condition: import('@/modules/wms/types').VariantCondition
+  condition: import('@modules/wms').VariantCondition
   variantSku: string
   partId: string
   partName: string
@@ -191,35 +234,6 @@ export interface SalesOrder {
   versionHistory?: SalesOrderVersionSnapshot[]
 }
 
-export interface QuoteLineItem {
-  id: string
-  item: string
-  description: string
-  category: string
-  qty: number
-  rate: number
-  amount: number
-}
-
-export type QuoteType = 'item-based' | 'description-based'
-
-export interface Quote {
-  id: string
-  quoteNumber: string
-  accountId: string
-  accountName: string
-  total: number
-  status: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Expired'
-  validUntil: string
-  createdAt: string
-  leadId: string
-  leadName: string
-  version: number
-  parentQuoteId?: string
-  quoteType: QuoteType
-  lineItems: QuoteLineItem[]
-}
-
 export interface Invoice {
   id: string
   invoiceNumber: string
@@ -242,16 +256,6 @@ export interface InvoiceLineItem {
   amount: number
 }
 
-export interface CrmNotification {
-  id: string
-  title: string
-  description: string
-  timestamp: string
-  read: boolean
-  type: 'lead' | 'deal' | 'order' | 'system'
-  module: string
-}
-
 export interface Activity {
   id: string
   type: 'call' | 'email' | 'meeting' | 'task' | 'note' | 'stage_change' | 'rejection' | 'reinstatement' | 'closed_lost' | 'account_created' | 'deal_created' | 'so_created' | 'owner_change'
@@ -259,19 +263,21 @@ export interface Activity {
   description?: string
   user: string
   timestamp: string
-  entityType: 'lead' | 'deal' | 'account' | 'contact'
+  // Widened past the four CRM entities: the audit timeline now renders
+  // for a sales order and a rental device too, and they carry the same
+  // Activity shape rather than a parallel one.
+  entityType: 'lead' | 'deal' | 'account' | 'contact' | 'rental_device' | 'sales_order'
   entityId: string
   metadata?: Record<string, string>
-}
-
-export interface Note {
-  id: string
-  content: string
-  user: string
-  createdAt: string
-  updatedAt?: string
-  entityType: 'lead' | 'deal' | 'account' | 'contact'
-  entityId: string
+  /**
+   * Raw pre-event snapshot from the backend audit log (redacted server-side).
+   * Populated by the audit-trail mapper so the timeline can render a
+   * "Show changes" expandable diff. Optional — local/mock activities don't
+   * carry this.
+   */
+  before?: Record<string, unknown> | null
+  /** Raw post-event snapshot — see `before`. */
+  after?: Record<string, unknown> | null
 }
 
 // ── Purchase Request with Multi-PM Approval ──
@@ -328,16 +334,19 @@ export type DemoRequestStatus =
   | 'PM Approved'
   | 'PM Rejected'
   | 'Dispatch Created'
+  | 'Partially Dispatched'
   | 'Dispatched'
   | 'With Customer'
   | 'Return Overdue'
   | 'Returned'
   | 'Closed'
+  | 'Account Approval Pending'
+  | 'Account Rejected'
 
 export interface DemoRequestItem {
   id: string
   variantId: string
-  condition: import('@/modules/wms/types').VariantCondition
+  condition: import('@modules/wms').VariantCondition
   variantSku: string
   partId: string
   partName: string
@@ -348,8 +357,16 @@ export interface DemoRequestItem {
   // PM-approved pricing — sell rate per unit if the demo converts to an SO.
   // Auto-seeded from mockPricing; PM can override during approval.
   unitPrice: number
+  /** GST % off the part's HSN code; display only. Absent when no HSN linked. */
+  taxRate?: number | null
   amount: number  // qty * unitPrice
   serialNumbers?: string[]  // assigned after dispatch
+  pmStatus?: 'Pending' | 'Approved' | 'Rejected'
+  pmRejectionReason?: string | null
+  // Viewer-scoped action gate from the backend (`can_approve`): true iff the
+  // current caller may approve/reject this line right now. Drives the per-line
+  // Approve/Reject buttons in the approval card.
+  canApprove?: boolean
 }
 
 export interface DemoRequest {
@@ -410,8 +427,33 @@ export const IMS_CATEGORIES = [
 ] as const
 
 export const LEAD_STAGES = ['New', 'Contacted', 'Qualified', 'Procurement', 'Cold', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const
-export const DEAL_STAGES = ['New', 'Procurement', 'Cold', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const
-export const ORDER_TYPES: OrderType[] = ['New', 'Refurb', 'Rental']
+
+// The early-funnel stages. A lead can only be moved to "Closed Won" once it has
+// progressed PAST these stages (i.e. Closed Won is blocked from New /
+// Contacted). Enforced in useLeadForm, the detail stage selector, the kanban
+// drag handler, and the close-won gate.
+export const LEAD_TYPE_OPTIONAL_STAGES: readonly Lead['stage'][] = ['New', 'Contacted']
+
+// Qualified and every stage ahead of it. At intake nothing is mandatory; on
+// these stages Name, Company, email-or-phone, Type, Categories and
+// Description (the requirement) become mandatory. 'Closed Lost' is deliberately NOT in
+// this set — a lead can be closed out without its details filled in.
+export const LEAD_DETAILS_REQUIRED_STAGES: readonly Lead['stage'][] = [
+  'Qualified',
+  'Procurement',
+  'Cold',
+  'Proposal',
+  'Negotiation',
+  'Closed Won',
+]
+
+// Stages that require a lead owner (Assigned To): every stage — a lead must
+// always have someone owning it, from intake (New) through Closed Lost.
+// Enforced in the lead form, the detail stage selector, the kanban drag
+// handler, and the close-won gate (see lib/lead-close-won-gate.ts).
+export const LEAD_OWNER_REQUIRED_STAGES: readonly Lead['stage'][] = [...LEAD_STAGES]
+
+export const DEAL_STAGES =['New', 'Procurement', 'Cold', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] as const
 
 // ── Material Inquiry ──
 

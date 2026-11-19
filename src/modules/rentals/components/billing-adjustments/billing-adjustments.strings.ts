@@ -1,0 +1,51 @@
+/** Billing adjustments copy — credit due after an approved serial swap (R11). */
+export const BILLING_ADJUSTMENT_STRINGS = {
+  title: "Adjustments to issue",
+  subtitle:
+    "Credit due because a swap moved billing to another order after it was invoiced. Issue it as a credit note.",
+  tabs: {
+    pending_accounts: "To issue",
+    issued: "Issued",
+    cancelled: "Cancelled",
+    all: "All",
+    credit_notes: "Credit notes",
+  },
+  // Every credit note — from a swap adjustment or recorded by hand on an invoice.
+  creditNotes: {
+    columns: {
+      cnNumber: "CN no.",
+      cnDate: "CN date",
+      invoice: "Invoice",
+      account: "Account",
+      amount: "Amount",
+      source: "Source",
+    },
+    notIssued: "Not issued",
+    source: { adjustment: "Swap adjustment", manual: "Recorded on invoice" },
+    empty: {
+      title: "No credit notes yet",
+      description: "Credit notes appear here when an adjustment is issued or accounts record one on an invoice.",
+    },
+    loadError: "Could not load credit notes.",
+  },
+  columns: { total: "Credit", lines: "Invoice lines", status: "Status", raised: "Raised" },
+  lines: (n: number) => `${n} ${n === 1 ? "line" : "lines"}`,
+  empty: { title: "Nothing to issue", description: "Adjustments appear when an approved swap needs a credit note." },
+  loadError: "Could not load adjustments.",
+  detailTitle: "Billing adjustment",
+  detailLoadError: "Could not load this adjustment.",
+  line: (invoice: string, serial: string) => `${invoice} · ${serial}`,
+  period: (from: string, to: string) => `${from} – ${to}`,
+  swap: "View swap",
+  issue: "Issue credit note",
+  cancel: "Cancel adjustment",
+  issueTitle: "Issue credit note",
+  issueDescription: "Raises the credit note against each invoice line below.",
+  cnDate: "Credit note date",
+  cnNumber: "Credit note number (optional)",
+  reasonDefault: "Serial swap — units re-bound between orders",
+  confirmIssue: "Issue",
+  cancelTitle: "Cancel this adjustment?",
+  cancelBody: "No credit note will be issued for it.",
+  confirmCancel: "Cancel adjustment",
+} as const

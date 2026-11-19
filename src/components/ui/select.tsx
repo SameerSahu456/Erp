@@ -2,9 +2,64 @@ import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 
 import { cn } from "@/lib/utils"
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
+import { ChevronDownIcon, CheckIcon, ChevronUpIcon, XIcon } from "lucide-react"
 
-const Select = SelectPrimitive.Root
+/**
+ * Lets `SelectTrigger` render a clear (×) affordance automatically — without
+ * every call site wiring `clearable`/`onClear` by hand. The `Select` wrapper
+ * publishes whether a value is currently set plus a `clear()` that resets it.
+ * Call sites that pass an explicit `onClear` (e.g. filter dropdowns that map
+ * to a `__all__` sentinel) opt out of this and keep full control.
+ */
+type SelectClearContextValue = {
+  hasValue: boolean
+  clear: () => void
+}
+
+const SelectClearContext = React.createContext<SelectClearContextValue | null>(
+  null
+)
+
+function Select<Value, Multiple extends boolean | undefined = false>({
+  children,
+  ...props
+}: SelectPrimitive.Root.Props<Value, Multiple>) {
+  const { value, onValueChange, multiple } = props
+  const hasValue =
+    multiple === true
+      ? Array.isArray(value) && value.length > 0
+      : value !== null &&
+        value !== undefined &&
+        value !== "" &&
+        // `__all__` is the project-wide "no filter" sentinel — a filter
+        // dropdown sitting on "All …" is conceptually empty, so it shows the
+        // chevron, not a ×.
+        value !== "__all__"
+
+  const clearCtx = React.useMemo<SelectClearContextValue>(
+    () => ({
+      hasValue,
+      clear: () => {
+        // Reset to the empty value for the mode. Only this wrapper ever calls
+        // the handler this way — never Base UI internals — so a bare event
+        // detail object is safe.
+        onValueChange?.(
+          (multiple === true ? [] : null) as Parameters<
+            NonNullable<typeof onValueChange>
+          >[0],
+          {} as Parameters<NonNullable<typeof onValueChange>>[1]
+        )
+      },
+    }),
+    [hasValue, multiple, onValueChange]
+  )
+
+  return (
+    <SelectClearContext.Provider value={clearCtx}>
+      <SelectPrimitive.Root {...props}>{children}</SelectPrimitive.Root>
+    </SelectClearContext.Provider>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
@@ -20,7 +75,10 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
-      className={cn("flex flex-1 text-left", className)}
+      // min-w-0 lets the trigger's line-clamp actually truncate — without it a
+      // flex-1 child stays at content width and overflows under the trailing
+      // clear/chevron icons instead of showing an ellipsis (§8.7).
+      className={cn("flex min-w-0 flex-1 text-left", className)}
       {...props}
     />
   )
@@ -30,26 +88,95 @@ function SelectTrigger({
   className,
   size = "default",
   children,
+  clearable,
+  onClear,
   ...props
 }: SelectPrimitive.Trigger.Props & {
   size?: "sm" | "default"
+  /**
+   * Controls the trigger's trailing affordance — a × (clear) vs. the down
+   * chevron.
+   *
+   * - With an explicit `onClear`: the × shows whenever `clearable` is truthy
+   *   and clicking it runs `onClear`. Used by filter dropdowns that reset to
+   *   a sentinel (e.g. `__all__`) rather than an empty value.
+   * - Without `onClear`: the × shows automatically whenever the parent
+   *   `Select` holds a value, and clicking it clears that value. Pass
+   *   `clearable={false}` to opt a dropdown out (a value that must never be
+   *   empty).
+   *
+   * Clicking the × never opens the listbox.
+   */
+  clearable?: boolean
+  onClear?: () => void
 }) {
+  const clearCtx = React.useContext(SelectClearContext)
+  const hasExplicitClear = onClear != null
+  const showClear = hasExplicitClear
+    ? Boolean(clearable)
+    : clearable !== false &&
+      (clearCtx?.hasValue ?? false) &&
+      !props.disabled
+  const handleClear = hasExplicitClear ? onClear : clearCtx?.clear
+
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        // `group/select-trigger` lets the chevron child rotate based on
+        // Base UI's `data-popup-open` attribute on this trigger (see the
+        // chevron's `group-data-[popup-open]/select-trigger:rotate-180`
+        // below). Named group so it doesn't collide with any outer group.
+        "group/select-trigger flex w-fit items-center justify-between gap-1.5 rounded-[7px] border border-input bg-card py-0 pr-[10px] pl-[10px] text-[13.5px] whitespace-nowrap transition-colors outline-none select-none focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-10 data-[size=sm]:h-8 data-[size=sm]:rounded-[5px] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
     >
       {children}
-      <SelectPrimitive.Icon
-        render={
-          <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
-        }
-      />
+      {/* Trailing affordance — the clear-× and the dropdown chevron are
+          MUTUALLY EXCLUSIVE: when a value is selected (and the dropdown is
+          clearable) only the × shows; clearing it brings the chevron back.
+          The × clears the value without opening the listbox. Dropdowns that
+          can't be cleared (e.g. pagination's rows-per-page passes
+          `clearable={false}`) never show the ×, so they stay chevron-only. */}
+      <span className="flex shrink-0 items-center gap-1">
+        {showClear && handleClear ? (
+          <span
+            role="button"
+            aria-label="Clear selection"
+            tabIndex={-1}
+            // PointerDown is what opens the listbox; stopping click alone
+            // is too late. Intercept here AND on click for safety in
+            // browsers that fall back to click-to-open.
+            onPointerDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleClear()
+            }}
+            className="pointer-events-auto inline-flex size-4 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <XIcon className="size-3" />
+          </span>
+        ) : (
+          <SelectPrimitive.Icon
+            render={
+              // Chevron flips 180° on open via the trigger's
+              // `data-popup-open` / `data-open` attribute (Base UI sets one
+              // or the other depending on the primitive). Both selectors
+              // are written without brackets — that's the boolean
+              // data-attribute syntax in Tailwind v4 (brackets are for
+              // value matches like `data-[state=open]`). Matches the
+              // navigation-menu trigger's pattern in this repo.
+              <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground transition-transform duration-200 group-data-popup-open/select-trigger:rotate-180 group-data-open/select-trigger:rotate-180" />
+            }
+          />
+        )}
+      </span>
     </SelectPrimitive.Trigger>
   )
 }
@@ -61,7 +188,11 @@ function SelectContent({
   sideOffset = 4,
   align = "center",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  // Default to false so the popup opens *below* the trigger (Linear/Stripe
+  // style field-expansion). The Base UI default `true` aligns the selected
+  // item with the trigger, which feels like a macOS popup menu floating on
+  // top of the field rather than the field growing into a list.
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
@@ -109,13 +240,20 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  hideIndicator = false,
   ...props
-}: SelectPrimitive.Item.Props) {
+}: SelectPrimitive.Item.Props & {
+  /** Drop the trailing check icon. Selection is already shown by the row's
+   *  highlighted background, and the check otherwise overlaps long labels in
+   *  width-constrained dropdowns (e.g. table filters). */
+  hideIndicator?: boolean
+}) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative flex w-full cursor-pointer items-center gap-1.5 rounded-md py-1 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        hideIndicator ? "pr-1.5" : "pr-8",
         className
       )}
       {...props}
@@ -123,13 +261,15 @@ function SelectItem({
       <SelectPrimitive.ItemText className="flex flex-1 shrink-0 gap-2 whitespace-nowrap">
         {children}
       </SelectPrimitive.ItemText>
-      <SelectPrimitive.ItemIndicator
-        render={
-          <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
-        }
-      >
-        <CheckIcon className="pointer-events-none" />
-      </SelectPrimitive.ItemIndicator>
+      {!hideIndicator && (
+        <SelectPrimitive.ItemIndicator
+          render={
+            <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
+          }
+        >
+          <CheckIcon className="pointer-events-none" />
+        </SelectPrimitive.ItemIndicator>
+      )}
     </SelectPrimitive.Item>
   )
 }

@@ -65,7 +65,7 @@ function AvatarFallback({
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
       className={cn(
-        "flex size-full items-center justify-center rounded-[inherit] bg-[#eef5ff] text-sm font-semibold text-[#1379f0]",
+        "flex size-full items-center justify-center rounded-[inherit] bg-info-soft text-sm font-semibold text-info",
         "group-data-[size='24']/avatar:text-[10px]",
         "group-data-[size=sm]/avatar:text-xs",
         "group-data-[size='28']/avatar:text-xs",
@@ -82,10 +82,10 @@ function AvatarBadge({ className, status, ...props }: React.ComponentProps<"span
   status?: "online" | "offline" | "busy" | "away"
 }) {
   const statusColors = {
-    online: "bg-[#50cd89]",
-    offline: "bg-[#a1a5b7]",
-    busy: "bg-[#f1416c]",
-    away: "bg-[#f6c000]",
+    online: "bg-success",
+    offline: "bg-muted-foreground",
+    busy: "bg-destructive",
+    away: "bg-warning",
   }
 
   return (

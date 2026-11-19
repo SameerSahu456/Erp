@@ -3,12 +3,12 @@ import { Progress as ProgressPrimitive } from "@base-ui/react/progress"
 import { cn } from "@/lib/utils"
 
 const progressColorClasses = {
-  primary: "bg-[#1379f0]",
-  success: "bg-[#50cd89]",
-  danger: "bg-[#f1416c]",
-  info: "bg-[#7239ea]",
-  warning: "bg-[#f6c000]",
-  dark: "bg-[#181c32]",
+  primary: "bg-info",
+  success: "bg-success",
+  danger: "bg-destructive",
+  info: "bg-info",
+  warning: "bg-warning",
+  dark: "bg-primary",
 } as const
 
 type ProgressColor = keyof typeof progressColorClasses
@@ -39,7 +39,7 @@ function ProgressTrack({ className, ...props }: ProgressPrimitive.Track.Props) {
   return (
     <ProgressPrimitive.Track
       className={cn(
-        "relative flex h-2 w-full items-center overflow-x-hidden rounded-full bg-[#f1f1f2] dark:bg-[#2d2d3f]",
+        "relative flex h-2 w-full items-center overflow-x-hidden rounded-full bg-secondary",
         className
       )}
       data-slot="progress-track"

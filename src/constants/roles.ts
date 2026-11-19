@@ -1,4 +1,4 @@
-import type { RoleConfig } from '@/types/auth'
+import type { RoleConfig } from '@shared/auth/roles'
 
 export const ROLE_HIERARCHY: Record<string, RoleConfig> = {
   SUPERADMIN: {

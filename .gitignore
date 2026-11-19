@@ -1,27 +1,66 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+dist-ssr/
+.vite/
+
+# Test artifacts
+tests/
+coverage/
+playwright-report/
+test-results/
+.playwright/
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
 # Logs
-logs
 *.log
+logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-*.tsbuildinfo
+# Local-only artefacts (impeccable skill output)
+# audit/
+DESIGN.md
+DESIGN.json
+PRODUCT.md
+RBAC-SETUP-PLAYBOOK.md
+qa/
+tests/ims-audit/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.vercel
-.env*
+# Agent / AI tooling (local only)
+.claude/
+.codex/
+.cursor/
+.gemini/
+.kiro/
+.graphifyignore
+.mcp.json
+AGENTS.md
+GEMINI.md
+opencode.jsonc
+graphify-out/
+
+*storybook.log
+storybook-static
+
+# Local PO-flow test artifacts (never committed)
+po-testing/
+
+# Local-only git workflow cheatsheet (never committed)
+GIT-WORKFLOW.md

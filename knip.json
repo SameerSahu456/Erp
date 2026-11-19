@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/**/*.stories.{ts,tsx}",
+    "tests/**/*.{ts,tsx}",
+    "src/modules/**/routes.tsx"
+  ],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": [
+    "src/shared/api/schema.gen.ts"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": []
+}

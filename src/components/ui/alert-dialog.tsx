@@ -143,12 +143,18 @@ function AlertDialogDescription({
 
 function AlertDialogAction({
   className,
+  throttleMs = 500,
   ...props
 }: React.ComponentProps<typeof Button>) {
+  // Default throttle on confirm actions: AlertDialog buttons almost always
+  // trigger a destructive / write-once mutation (delete, revoke, archive)
+  // where a stray second click is never desired. Callers can opt out by
+  // passing `throttleMs={0}`.
   return (
     <Button
       data-slot="alert-dialog-action"
       className={cn(className)}
+      throttleMs={throttleMs}
       {...props}
     />
   )

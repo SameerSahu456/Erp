@@ -1,49 +1,111 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap');
 @import 'tailwindcss';
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
+/* ── Comprint design tokens (load order matters) ──
+   1. Tier 1: raw colour ramps (the only file where hex lives)
+   2. Tier 2: semantic mode tokens (light + dark; references Tier 1)
+   3. Tier 3 (below): Tailwind bridge — maps `--color-*` to `var(--*)`
+   See DESIGN-SYSTEM.md for the full token reference.                       */
+@import './tokens/colors.css';
 @import './themes.css';
 @import './comprint.css';
 
 @custom-variant dark (&:is(.dark *));
 
+/* ══════════════════════════════════════════════════════════════════
+   Tier 3 — Tailwind bridge
+   --------------------------------------------------------------------
+   Maps `--color-X` aliases to the Tier 2 semantic tokens so Tailwind
+   utilities (`bg-primary`, `text-success`, `border-input`, …) resolve
+   to the right value in both light and dark modes.
+
+   Do not put hex here.  Add a Tier 2 token if a new alias is needed.
+   ══════════════════════════════════════════════════════════════════ */
 @theme inline {
+    /* Typography */
     --font-heading: var(--font-display);
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     --font-ui: 'Inter', system-ui, sans-serif;
     --font-display: 'Inter', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* Surface */
     --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    /* Primary */
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary-hover: var(--primary-hover);
+
+    /* Secondary / muted / accent */
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary-hover: var(--secondary-hover);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-label-foreground: var(--label-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    /* Semantic states (success / warning / info / destructive)
+       NEW — replaces the old `--color-itasm-*` and `--color-status-*`
+       blocks.  Use `bg-success`, `text-destructive`, `bg-warning-soft`
+       etc. instead of arbitrary `[#hex]` Tailwind classes. */
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-success-soft: var(--success-soft);
+    --color-success-hover: var(--success-hover);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-warning-soft: var(--warning-soft);
+    --color-warning-hover: var(--warning-hover);
+    --color-info: var(--info);
+    --color-info-foreground: var(--info-foreground);
+    --color-info-soft: var(--info-soft);
+    --color-info-hover: var(--info-hover);
+    --color-violet: var(--violet);
+    --color-violet-foreground: var(--violet-foreground);
+    --color-violet-soft: var(--violet-soft);
+    --color-violet-hover: var(--violet-hover);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-destructive-soft: var(--destructive-soft);
+    --color-destructive-hover: var(--destructive-hover);
+    --color-danger: var(--danger);
+    --color-danger-foreground: var(--danger-foreground);
+    --color-danger-soft: var(--danger-soft);
+    --color-danger-hover: var(--danger-hover);
+
+    /* Form chrome */
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    /* Sidebar */
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Chart */
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    /* Radius scale (derived from --radius) */
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -51,144 +113,221 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+
+    /* ── DEPRECATED — backward-compat aliases ──
+       Existing feature pages still use `text-status-success-text`,
+       `bg-status-error-bg`, `text-itasm-danger`, etc.  These aliases
+       keep them rendering correctly while the codebase migrates to
+       the semantic tokens above (`text-success`, `bg-destructive-soft`,
+       `text-destructive`, …).  Remove this block once `pnpm lint`
+       reports zero hits of the deprecated names. */
+    --color-status-success-text: var(--success);
+    --color-status-success-bg: var(--success-soft);
+    --color-status-warning-text: var(--warning);
+    --color-status-warning-bg: var(--warning-soft);
+    --color-status-error: var(--destructive);
+    --color-status-error-text: var(--destructive);
+    --color-status-error-bg: var(--destructive-soft);
+    --color-status-info-text: var(--info);
+    --color-status-info-bg: var(--info-soft);
+    --color-itasm-success: var(--success);
+    --color-itasm-success-light: var(--success-soft);
+    --color-itasm-danger: var(--destructive);
+    --color-itasm-danger-light: var(--destructive-soft);
+    --color-itasm-warning: var(--warning);
+    --color-itasm-warning-light: var(--warning-soft);
+    --color-itasm-info: var(--info);
+    --color-itasm-info-light: var(--info-soft);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
     }
+  /* Tailwind v4 dropped the pointer cursor on buttons, so every clickable
+     control showed the plain arrow. Restore the hand app-wide for anything
+     clickable; disabled controls show not-allowed. Base layer, so a
+     component's own `cursor-*` utility still wins. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="checkbox"]:not([aria-disabled="true"]):not([data-disabled]),
+  [role="radio"]:not([aria-disabled="true"]):not([data-disabled]),
+  [role="switch"]:not([aria-disabled="true"]):not([data-disabled]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]):not([data-disabled]),
+  [role="menuitem"]:not([aria-disabled="true"]):not([data-disabled]),
+  [role="combobox"]:not([aria-disabled="true"]):not([data-disabled]),
+  select:not(:disabled),
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"],
+  [role="checkbox"][data-disabled],
+  [role="option"][data-disabled] {
+    cursor: not-allowed;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "cv11","ss01";
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
     }
   html {
     @apply font-sans;
     scroll-behavior: smooth;
+    /* Always reserve the scrollbar gutter so opening a popover/dropdown
+       (which can lock body scroll, removing the scrollbar) never reflows
+       the page content wider — the "fields shift on dropdown open" bug. */
+    scrollbar-gutter: stable;
     }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight text-foreground;
+    @apply font-display tracking-tight;
   }
 
-  h1 { @apply text-[22px] font-[650] leading-tight; letter-spacing: -0.02em; }
-  h2 { @apply text-xl font-semibold; letter-spacing: -0.015em; }
-  h3 { @apply text-lg font-semibold; letter-spacing: -0.01em; }
+  h1 { @apply text-[22px] font-[650] leading-tight; letter-spacing: -0.015em; }
+  h2 { @apply text-xl font-semibold; }
+  h3 { @apply text-lg font-semibold; }
   h4 { @apply text-base font-semibold; }
   h5 { @apply text-sm font-medium; }
   h6 { @apply text-[13px] font-medium; }
 
-  p {
-    color: var(--foreground);
-  }
-
   ::selection {
-    background: rgba(15,27,45,0.15);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
   }
 }
 
-/* ── Comprint ERP Design Tokens ── */
-@theme {
-  /* Typography */
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-
-  /* Comprint Primary Slate Scale */
-  --color-primary-50: #EEF1F6;
-  --color-primary-100: #D0D5DD;
-  --color-primary-200: #98A2B3;
-  --color-primary-300: #667085;
-  --color-primary-400: #344054;
-  --color-primary-500: #0F1B2D;
-  --color-primary-600: #0D1726;
-  --color-primary-700: #0A1320;
-  --color-primary-800: #080F19;
-  --color-primary-900: #050A12;
-  --color-primary-950: #03060B;
-
-  /* Comprint Gray Scale */
-  --color-gray-50: #FAFBFC;
-  --color-gray-100: #F6F7F9;
-  --color-gray-200: #EEF0F3;
-  --color-gray-300: #E4E7EC;
-  --color-gray-400: #D0D5DD;
-  --color-gray-500: #98A2B3;
-  --color-gray-600: #667085;
-  --color-gray-700: #344054;
-  --color-gray-800: #0F1B2D;
-  --color-gray-900: #0A1320;
-
-  /* Comprint Semantic Colors */
-  --color-itasm-success: #067647;
-  --color-itasm-success-active: #055C38;
-  --color-itasm-success-dark: #044D2E;
-  --color-itasm-success-light: #ECFDF3;
-
-  --color-itasm-danger: #B42318;
-  --color-itasm-danger-active: #991B14;
-  --color-itasm-danger-dark: #7A1610;
-  --color-itasm-danger-light: #FEF3F2;
-
-  --color-itasm-warning: #B54708;
-  --color-itasm-warning-active: #9A3B06;
-  --color-itasm-warning-dark: #7F3005;
-  --color-itasm-warning-light: #FFFAEB;
-
-  --color-itasm-info: #175CD3;
-  --color-itasm-info-active: #1349A8;
-  --color-itasm-info-dark: #0F3A87;
-  --color-itasm-info-light: #EFF4FF;
-
-  /* Status Colors */
-  --color-status-error-text: #B42318;
-  --color-status-error-bg: #FEF3F2;
-  --color-status-success-text: #067647;
-  --color-status-success-bg: #ECFDF3;
-  --color-status-warning-text: #B54708;
-  --color-status-warning-bg: #FFFAEB;
-  --color-status-info-text: #175CD3;
-  --color-status-info-bg: #EFF4FF;
+/* Hide the visible scrollbar but keep the element scrollable. Used on
+   wide data tables (CrmDataTable's horizontal-scroll wrapper) so the
+   `<` `>` arrow at the bottom-edge of the table card doesn't show, while
+   the user can still scroll horizontally with trackpad / shift-wheel /
+   keyboard. Spelled out for every engine because Tailwind v4's preflight
+   doesn't ship a built-in `no-scrollbar` utility. */
+.no-scrollbar {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE 10+ / legacy Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;                /* Chrome / Safari / Opera */
 }
 
-/* ── Status Cell Utilities ── */
+/* RichTextEditor — contentEditable surface (src/components/ui/rich-text-editor.tsx).
+   Tailwind preflight strips list bullets and a contentEditable element has no
+   native placeholder, so both are restored here. */
+/* Long unbroken strings (URLs, part codes, IDs with no spaces) must wrap to the
+   next line instead of running off in a straight line — both while editing and
+   when the content is rendered read-only on a detail page. */
+.rte-content {
+  /* `white-space: normal` overrides an inherited `nowrap` (e.g. shadcn
+     TableCell sets `whitespace-nowrap`, which would otherwise keep the
+     editor's text on one straight line). Combined with overflow-wrap, long
+     unbroken strings wrap instead of running off. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.rte-content:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.rte-content ul { list-style: disc; padding-left: 1.25rem; margin: 0.25rem 0; }
+.rte-content ol { list-style: decimal; padding-left: 1.25rem; margin: 0.25rem 0; }
+.rte-content p { margin: 0.15rem 0; }
+.rte-content a { color: var(--primary); text-decoration: underline; }
+/* Pasted content (e.g. a copied quote) can carry tables — render them with a
+   visible grid. Inline styles on the pasted cells still win over these. */
+.rte-content table { border-collapse: collapse; margin: 0.35rem 0; max-width: 100%; }
+.rte-content th,
+.rte-content td { border: 1px solid var(--border); padding: 0.25rem 0.5rem; text-align: left; vertical-align: top; }
+.rte-content th { background: var(--muted); font-weight: 600; }
+
+/* ── Status cell utilities ──
+   Used in CrmDataTable / IMS tables to colour a cell by its semantic
+   state.  Reference the Tier 2 semantic vars so dark mode just works. */
 @layer utilities {
   .red-cell {
-    @apply text-status-error-text bg-status-error-bg;
+    color: var(--destructive);
+    background: var(--destructive-soft);
   }
   .success-cell {
-    @apply text-status-success-text bg-status-success-bg;
+    color: var(--success);
+    background: var(--success-soft);
   }
   .warning-cell {
-    @apply text-status-warning-text bg-status-warning-bg;
+    color: var(--warning);
+    background: var(--warning-soft);
   }
   .info-cell {
-    @apply text-status-info-text bg-status-info-bg;
+    color: var(--info);
+    background: var(--info-soft);
   }
 }
 
-/* ── Comprint Scrollbar ── */
+/* ── Comprint Scrollbar ──
+   Page-level scrollbar styling.  Thumb tracks the gray-400 ramp (same
+   as input borders) so the scrollbar reads as chrome, not branded. */
 @layer base {
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
+    width: 10px;
+    height: 10px;
   }
   ::-webkit-scrollbar-thumb {
-    background: #D0D5DD;
-    border-radius: 999px;
+    background: var(--color-gray-400);
+    border-radius: 10px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #98A2B3;
+    background: var(--color-gray-500);
     border: 2px solid transparent;
     background-clip: padding-box;
   }
-  ::-webkit-scrollbar-corner {
-    background: transparent;
-  }
+}
+
+/* Slim scrollbar variant for dense table scrollers (e.g. wide line-item
+ * tables that need horizontal scroll without a chunky 10px bar).
+ *
+ * Two-pronged approach because macOS Chrome ignores ::-webkit-scrollbar
+ * width/height when the OS is rendering overlay scrollbars (and inflates
+ * the bar on hover via the OS, not via CSS):
+ *
+ *   1. The CSS-standard `scrollbar-width: thin` + `scrollbar-color`
+ *      (Chrome 121+, Firefox, Edge). This wins on every modern browser
+ *      regardless of macOS overlay setting.
+ *   2. The legacy `::-webkit-scrollbar` rules as a fallback for older
+ *      Chromium builds + Safari classic mode.
+ *
+ * `!important` everywhere because the global `[data-module]` scrollbar
+ * rule in `comprint.css` ties on specificity and would otherwise win by
+ * source order. */
+.scrollbar-thin {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--color-gray-400) transparent !important;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
+}
+.scrollbar-thin::-webkit-scrollbar:hover,
+.scrollbar-thin::-webkit-scrollbar:active {
+  width: 4px !important;
+  height: 4px !important;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--color-gray-400) !important;
+  border-radius: 4px !important;
+  border: 0 !important;
+  background-clip: padding-box !important;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-500) !important;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
 /* ── Comprint Transitions ── */
@@ -197,8 +336,8 @@
   [data-slot="card"],
   [data-slot="button"] {
     transition-property: color, background-color, border-color, box-shadow, opacity, transform;
-    transition-timing-function: cubic-bezier(0.22, 0.68, 0, 1);
-    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 100ms;
   }
 }
 
@@ -209,16 +348,32 @@
   }
 }
 
+/* ── IMS list tables: 200px column cap, wrap on overflow ──
+   Per product call, every IMS table cell holds at most ~200px of text;
+   anything longer wraps to the next line in the same cell. Headers
+   stay single-line (they're short labels). `overflow-wrap: anywhere`
+   covers long unbroken strings (URLs, SKUs); `vertical-align: top`
+   keeps multi-line cells aligned with their single-line siblings. */
+@layer utilities {
+  .ims-table td {
+    max-width: 200px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    vertical-align: top;
+  }
+  .ims-table th {
+    white-space: nowrap;
+  }
+}
+
 /* ── Subtle Animations ── */
 @layer utilities {
   .animate-fade-in {
-    animation: fadeIn 0.25s cubic-bezier(0.22, 0.68, 0, 1);
+    animation: fadeIn 0.2s ease;
   }
   .animate-slide-up {
-    animation: slideUp 0.3s cubic-bezier(0.22, 0.68, 0, 1);
-  }
-  .animate-scale-in {
-    animation: scaleIn 0.2s cubic-bezier(0.22, 0.68, 0, 1);
+    animation: slideUp 0.2s ease;
   }
 }
 
@@ -228,32 +383,66 @@
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.97); }
-  to { opacity: 1; transform: scale(1); }
+/* Hide the up/down spinner buttons on <input type="number"> across every
+   form in the app. The form inputs (Qty, Rate, Tax, Disc, etc.) already
+   use `inputMode="decimal"` / `inputMode="numeric"` so the OS keyboard is
+   correct; the visual spinner just adds noise. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
-/* ── Modern Utilities ── */
-@layer utilities {
-  .glass {
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
+/* Kill Chrome's pale-yellow autofill background ("yellow line" on search /
+   login fields). The UA paints a non-overridable background, so we repaint it
+   with a card-coloured inset shadow and keep the foreground token for text —
+   both Tier-2 vars, so dark mode + palette swaps stay correct. The 9999s
+   transition defers any residual UA flash indefinitely. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--foreground);
+  -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
+  box-shadow: 0 0 0 1000px var(--card) inset;
+  caret-color: var(--foreground);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Shimmer sweep for loading placeholders — see `InsightShimmer`. A muted base
+   with a soft highlight travelling left→right. Both colours are Tier-2 tokens,
+   so dark mode and palette swaps stay correct. */
+.insight-shimmer {
+  background-color: var(--muted);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--card) 70%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: insight-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes insight-shimmer {
+  from {
+    background-position: 100% 0;
   }
-  .glass-subtle {
-    backdrop-filter: blur(8px) saturate(150%);
-    -webkit-backdrop-filter: blur(8px) saturate(150%);
+  to {
+    background-position: -100% 0;
   }
-  .shadow-card {
-    box-shadow: 0 1px 3px rgba(16,24,40,0.04), 0 1px 2px rgba(16,24,40,0.03);
-  }
-  .shadow-card-hover {
-    box-shadow: 0 4px 16px rgba(16,24,40,0.06), 0 2px 4px rgba(16,24,40,0.03);
-  }
-  .shadow-elevated {
-    box-shadow: 0 8px 24px rgba(16,24,40,0.08), 0 2px 8px rgba(16,24,40,0.04);
+}
+@media (prefers-reduced-motion: reduce) {
+  .insight-shimmer {
+    animation: none;
   }
 }

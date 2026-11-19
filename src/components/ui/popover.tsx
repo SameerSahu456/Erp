@@ -13,17 +13,22 @@ function PopoverTrigger({ ...props }: PopoverPrimitive.Trigger.Props) {
 
 function PopoverContent({
   className,
+  positionerClassName,
   align = "center",
   alignOffset = 0,
   side = "bottom",
   sideOffset = 4,
-  collisionAvoidance,
   ...props
 }: PopoverPrimitive.Popup.Props &
   Pick<
     PopoverPrimitive.Positioner.Props,
-    "align" | "alignOffset" | "side" | "sideOffset" | "collisionAvoidance"
-  >) {
+    "align" | "alignOffset" | "side" | "sideOffset"
+  > & {
+    /** Extra classes for the fixed positioner layer (not the popup). Use `z-40`
+     *  for a filter dropdown that must scroll UNDER the sticky app header
+     *  (`z-50`) instead of painting over it. Defaults leave `z-50`. */
+    positionerClassName?: string
+  }) {
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Positioner
@@ -31,8 +36,14 @@ function PopoverContent({
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
-        collisionAvoidance={collisionAvoidance}
-        className="isolate z-50"
+        // `fixed` (not the default `absolute`) keeps the portaled popup
+        // viewport-anchored so it never adds to the document's scroll
+        // height. With `absolute`, a dropdown opening near the bottom of a
+        // page grows the document, makes the scrollbar appear, steals
+        // ~15px of width, and re-wraps flex-wrap form rows — which pushes
+        // the fields below the trigger downward. `fixed` eliminates that.
+        positionMethod="fixed"
+        className={cn("isolate z-50", positionerClassName)}
       >
         <PopoverPrimitive.Popup
           data-slot="popover-content"

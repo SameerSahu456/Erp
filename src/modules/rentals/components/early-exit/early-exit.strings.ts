@@ -1,0 +1,130 @@
+/** Early exit, waivers, lost devices, return-policy copy (return-by-count §10–§12). */
+export const EARLY_EXIT_STRINGS = {
+  charges: {
+    title: "Early-exit charges",
+    description:
+      "Units returned before the contracted end owe a share of the remaining rent on the next invoice.",
+    empty: "No early-exit charges on this order.",
+    line: (serial: string, months: string, pct: string) =>
+      `${serial} · ${months} months left × ${pct}%`,
+    settled: (date: string) => `Returned ${date}`,
+    loadError: "Could not load this order's early-exit charges.",
+    requestWaiver: "Request waiver",
+  },
+  waiverDialog: {
+    title: "Request a waiver",
+    body: "A manager — not you — approves it. Until then the charge stays off the invoice.",
+    reasonLabel: "Reason",
+    reasonPlaceholder: "Why should the customer not pay this?",
+    confirm: "Send for approval",
+    dismiss: "Cancel",
+  },
+  terms: {
+    title: "Early-exit terms",
+    description: "Share of the remaining rent this customer pays when a unit comes back early.",
+    pct: "Charge",
+    pctValue: (pct: string) => `${pct}% of remaining rent`,
+    pctDefault: "System default",
+    exempt: "Exempt from early-exit charges",
+    notExempt: "Not exempt",
+    requestChange: "Request change",
+    dialogTitle: "Request a change to early-exit terms",
+    dialogBody: "A manager approves it; nothing changes until then.",
+    pctLabel: "Charge (% of remaining rent)",
+    pctPlaceholder: "Leave empty for the system default",
+    exemptLabel: "Exempt this customer",
+    reasonLabel: "Reason",
+    confirm: "Send for approval",
+    cancel: "Cancel",
+    loadError: "Could not load this customer's early-exit terms.",
+  },
+  // Approvals → Early exit: terminations and waivers, one queue (2026-11-15).
+  queue: {
+    subtitle:
+      "Early exit is the end of a contract: terminations with the charge they raise, waivers of early-exit charges and of a customer's terms, and returns that end a rental early.",
+    tabs: {
+      pending: "Awaiting decision",
+      scheduled: "Scheduled",
+      approved: "Approved",
+      rejected: "Rejected",
+      all: "All",
+    },
+    columns: {
+      kind: "Type",
+      order: "Order",
+      customer: "Customer",
+      what: "What",
+      charge: "Charge",
+      waiver: "Waiver",
+      requestedBy: "Requested by",
+      status: "Status",
+      raised: "Raised",
+    },
+    kinds: { termination: "Termination", charge_waiver: "Charge waiver", terms_waiver: "Terms change" },
+    terminationWhat: (date: string) => `End on ${date}`,
+    chargeWhat: "Waive one charge",
+    termsWhat: (pct: string | null, exempt: boolean | null) =>
+      exempt ? "Make exempt" : pct ? `${pct}% of remaining rent` : "System default",
+    waiver: { asked: "Asked", notAsked: "Not asked", waived: "Waived", stands: "Charge stands" },
+    status: {
+      pending: "Awaiting decision",
+      // An approved termination dated ahead, carried out on its date.
+      scheduled: "Scheduled",
+      approved: "Approved",
+      rejected: "Rejected",
+      cancelled: "Withdrawn",
+    },
+    empty: {
+      title: "Nothing waiting",
+      description: "Terminations and waiver requests appear here until they are decided.",
+    },
+    loadError: "Could not load requests.",
+  },
+  /** Rental returns with an early line waiting on the rental manager. */
+  returns: {
+    tab: "Early-exit returns",
+    columns: {
+      request: "Return",
+      order: "Sales order",
+      account: "Account",
+      units: "Units waiting",
+      estimate: "Est. early-exit",
+      status: "Status",
+      raised: "Raised",
+    },
+    empty: {
+      title: "No early-exit returns waiting",
+      description: "A return that ends a rental early waits here for approval before it can be received.",
+    },
+    loadError: "Could not load early-exit returns.",
+  },
+  loss: {
+    markLost: "Mark lost",
+    foundInUse: "Found in use",
+    lostTitle: "Mark this unit lost",
+    lostBody:
+      "Rent stops on the day the customer confirmed the loss in writing, and a device-not-returned charge goes to sales.",
+    confirmedOn: "Customer confirmed on",
+    evidence: "Written confirmation (reference)",
+    evidencePlaceholder: "e.g. email from customer, 12 Nov",
+    evidenceHelper: "Attach the file itself on the device's attachments.",
+    notes: "Notes",
+    confirmLost: "Mark lost",
+    foundTitle: "Found in use?",
+    foundBody:
+      "Puts the unit back on rent from the loss day and withdraws the charge — only while it has not been invoiced.",
+    foundReason: "What happened?",
+    foundPlaceholder: "e.g. seen at the customer's site",
+    confirmFound: "Back on rent",
+    cancel: "Cancel",
+  },
+  policy: {
+    title: "Rental returns",
+    description: "Defaults for return by count. Per-customer terms override the early-exit share.",
+    pct: "Early-exit charge (% of remaining rent)",
+    autoClose: "Close a return line after this many days with no receipt",
+    foreign: "Days to send back a box that is not ours",
+    reminder: "Remind accounts about an adjustment after (days)",
+    save: "Save",
+  },
+} as const

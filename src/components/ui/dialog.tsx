@@ -53,7 +53,13 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // `max-h-[calc(100vh-2rem)]` + `overflow-y-auto` is the global
+          // scroll guarantee — any dialog whose body grows past the
+          // viewport scrolls inside its own frame instead of leaking off
+          // the bottom of the screen. Per-dialog opt-outs can still pin
+          // the header/footer via flex + their own `overflow-y-auto` on
+          // the body (see CreateChecklistDialog).
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[calc(100vh-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
@@ -84,7 +90,9 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
+      // `pb-2` adds breathing room below the title row so the header isn't
+      // cramped against the body content (on top of the grid's `gap-4`).
+      className={cn("flex flex-col gap-2 pb-2", className)}
       {...props}
     />
   )

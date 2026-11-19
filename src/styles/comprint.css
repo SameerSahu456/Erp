@@ -5,8 +5,8 @@
 
 /* ── Table Wrap (card-wrapped table with toolbar) ── */
 .cpt-table-wrap {
-  background: var(--card, #fff);
-  border: 1px solid var(--border, #E4E7EC);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
   box-shadow:
@@ -20,25 +20,46 @@
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border, #E4E7EC);
+  /* Share the column-header zebra so the toolbar + thead read as one
+     continuous band. No bottom border — the thead's existing
+     border-bottom carries the band-to-data separator. */
+  background: color-mix(in srgb, var(--background) 70%, var(--card) 30%);
   flex-wrap: wrap;
+}
+/* The toolbar search box renders its own clear (X) button on the right; hide
+   the browser's native type="search" clear so it doesn't show a second, redundant
+   X to the left of ours. */
+.cpt-table-toolbar input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+/* Same intent, keyed to the shared TableSearchInput itself, so the native clear
+   is suppressed wherever that box is used — including OUTSIDE a table toolbar
+   (e.g. the work-assignment device picker). The box always renders its own X. */
+.cpt-search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
 }
 
 .cpt-search-field {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--background, #F6F7F9);
-  border: 1px solid var(--border, #E4E7EC);
+  /* Card-paper fill so the input lifts cleanly off the zebra toolbar
+     instead of disappearing into it. */
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 12px;
   font-size: 13px;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   min-width: 220px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .cpt-search-field:focus-within {
-  border-color: var(--primary, #0F1B2D);
+  border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(15,27,45,0.06);
 }
 .cpt-search-field input {
@@ -46,8 +67,11 @@
   outline: none;
   flex: 1;
   background: transparent;
-  color: var(--foreground, #0F1B2D);
+  color: var(--foreground);
   font-size: 13px;
+  /* Small left padding so the caret at position 0 isn't sheared by the input's
+     default `overflow: clip` (caret sits flush on the content-box edge). */
+  padding-left: 3px;
   font-family: inherit;
 }
 
@@ -62,9 +86,11 @@
   font-size: 14px;
 }
 
-/* Opt-in medium search field — a comfortable middle ground */
+/* Opt-in medium search field — WMS-only. h-10 (40px) to match the WMS list
+   filters and inputs (see the .wms-search-scope height rule above). */
 .bmt-search-md .cpt-search-field {
   min-width: 280px;
+  min-height: 40px;
   padding: 8px 12px;
   font-size: 13px;
 }
@@ -79,30 +105,372 @@
   max-width: 480px;
 }
 
+/* Opt-in narrower search: cap the toolbar search box so it doesn't stretch to
+   fill the toolbar (BMT hardcodes `flex-1` on TableSearchInput). */
+.wms-narrow-search .cpt-table-toolbar > div.relative {
+  flex: 0 1 20rem;
+  max-width: 20rem;
+}
+
+/* WMS-wide search width. `wms-search-scope` wraps the whole WMS route subtree
+   (see routes.tsx) and is display:contents, so it adds no box of its own but
+   still acts as a styling ancestor. Every WMS list/table search box renders at
+   one consistent width (20rem — the Material Issue reference) instead of
+   stretching to fill the toolbar. Targets only the search wrapper (the one
+   toolbar child holding the search input), never the filter/date controls. */
+/* `procurement-search-scope` (procurement/routes.tsx) opts the Procurement
+   module into the SAME WMS toolbar look — one set of rules, two scopes. */
+.wms-search-scope,
+.procurement-search-scope {
+  display: contents;
+}
+.wms-search-scope .cpt-table-toolbar > div.relative:has(input[type="search"]),
+.procurement-search-scope .cpt-table-toolbar > div.relative:has(input[type="search"]) {
+  flex: 0 1 20rem;
+  max-width: 20rem;
+}
+
+/* One-line toolbar on laptop-and-wider screens. A wrapping row picks its line
+   breaks from each control's FULL width before anything shrinks, so on
+   filter-heavy lists (Devices, Inspection, Assign to Rack) the date filter fell
+   onto a row of its own. From 1280px the toolbar stays on one line and the
+   search box and filter chips give up width instead (their labels ellipsize);
+   narrower screens still wrap. */
+@media (min-width: 1280px) {
+  .wms-search-scope .cpt-table-toolbar,
+  .procurement-search-scope .cpt-table-toolbar {
+    flex-wrap: nowrap;
+  }
+  /* `:not(:empty)` skips the empty margin-left:auto spacer. */
+  .wms-search-scope .cpt-table-toolbar > :not(:empty),
+  .procurement-search-scope .cpt-table-toolbar > :not(:empty) {
+    min-width: 7.5rem;
+  }
+  .wms-search-scope .cpt-table-toolbar > div.relative:has(input[type="search"]),
+  .procurement-search-scope .cpt-table-toolbar > div.relative:has(input[type="search"]) {
+    min-width: 12rem;
+  }
+  /* The date filter's hover-tooltip wrapper is `w-full`; in a one-line row it
+     must size to the picker, not claim the whole row: start at the date's
+     248px (DATE_RANGE_TOOLBAR_WIDTH) and shrink like the other chips, with the
+     picker inside filling it rather than keeping its fixed width.
+     Never the search box: a `w-full` TableSearchInput (the material-issue
+     component tabs) would otherwise stretch its icon to the box's width. */
+  .wms-search-scope .cpt-table-toolbar > .w-full:not(:has(input[type="search"])),
+  .procurement-search-scope .cpt-table-toolbar > .w-full:not(:has(input[type="search"])) {
+    width: auto;
+    flex: 0 1 248px;
+  }
+  .wms-search-scope .cpt-table-toolbar > .w-full:not(:has(input[type="search"])) > *,
+  .procurement-search-scope .cpt-table-toolbar > .w-full:not(:has(input[type="search"])) > * {
+    width: 100%;
+  }
+}
+
+/* WMS control height is centralised HERE (one knob for the whole module): every
+   in-page control — text inputs, select triggers, async / popover-select
+   triggers, the category / date pickers, and the toolbar search box — renders
+   at h-10 (40px) for one uniform look. `!important` overrides each primitive's
+   inline size WITHOUT editing the shared components, so CRM / IMS / procurement
+   keep their own height. Textareas are excluded (multi-line). Note: modal/dialog
+   content portals to <body>, outside this subtree, so those controls keep their
+   own height. */
+.wms-search-scope [data-slot="input"],
+.wms-search-scope [data-slot="select-trigger"],
+.wms-search-scope [data-slot="async-select-trigger"],
+.wms-search-scope [data-slot="category-picker-trigger"],
+.wms-search-scope [data-slot="category-multi-picker-trigger"],
+.wms-search-scope [data-slot="date-picker-trigger"],
+.wms-search-scope [data-slot="date-range-picker-trigger"],
+.procurement-search-scope [data-slot="input"],
+.procurement-search-scope [data-slot="select-trigger"],
+.procurement-search-scope [data-slot="async-select-trigger"],
+.procurement-search-scope [data-slot="category-picker-trigger"],
+.procurement-search-scope [data-slot="category-multi-picker-trigger"],
+.procurement-search-scope [data-slot="date-picker-trigger"],
+.procurement-search-scope [data-slot="date-range-picker-trigger"] {
+  height: 2.5rem !important;
+  min-height: 2.5rem !important;
+}
+
 .cpt-filter-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid var(--border, #E4E7EC);
-  background: var(--card, #fff);
+  border: 1px solid var(--border);
+  background: var(--card);
   font-size: 12.5px;
-  color: var(--foreground, #344054);
+  color: var(--foreground);
   cursor: pointer;
   font-weight: 500;
   font-family: inherit;
   transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 .cpt-filter-chip:hover {
-  background: var(--secondary, #EEF0F3);
-  border-color: var(--primary, #0F1B2D);
+  background: var(--secondary);
+  border-color: var(--primary);
 }
 .cpt-filter-chip.on {
-  background: var(--accent, #EEF1F6);
-  border-color: var(--primary, #0F1B2D);
-  color: var(--foreground, #0F1B2D);
+  background: var(--accent);
+  border-color: var(--primary);
+  color: var(--foreground);
   font-weight: 550;
+}
+
+/* IMS compact filter controls — matches PM Assignments filter trigger size. */
+.ims-bmt-compact-filters .cpt-table-toolbar {
+  gap: 8px;
+}
+.ims-bmt-compact-filters .cpt-filter-chip {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+/* Cap the BMT-internal search input wrapper so it reads as a control,
+   not a page-wide bar. BMT renders the search as a Tailwind-styled
+   `<div class="relative min-w-[260px] flex-1">`, so we override the
+   flex-1 stretch here. The same class is applied to OEMs / Parts. */
+.ims-bmt-compact-filters .cpt-table-toolbar > div.relative.flex-1 {
+  flex: 0 0 auto;
+  min-width: 480px;
+  max-width: 560px;
+}
+
+/* Dense CRM table toolbar — used by index pages with several server filters
+   (Accounts, Contacts) so the controls stay on one horizontal row. */
+.crm-data-table-toolbar-inline .cpt-table-toolbar {
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+}
+.crm-data-table-toolbar-inline .cpt-search-field {
+  flex: 0 1 280px;
+  min-width: 240px;
+  max-width: 320px;
+}
+.crm-data-table-toolbar-inline .cpt-table-toolbar [data-slot="select-trigger"] {
+  flex: 0 0 140px;
+  width: 140px;
+}
+@media (min-width: 1280px) {
+  .crm-data-table-toolbar-inline .cpt-search-field {
+    flex-basis: 340px;
+    min-width: 300px;
+    max-width: 360px;
+  }
+  .crm-data-table-toolbar-inline .cpt-table-toolbar [data-slot="select-trigger"] {
+    flex-basis: 150px;
+    width: 150px;
+  }
+}
+
+/* A select chip that sits inside a fixed-width wrapper (the `w-[Npx]` divs the CRM
+   tables put around their filter chips) fills that wrapper. Without this the
+   fixed 120–150px trigger rules above leave the chip narrower than its wrapper —
+   a visible gap before the next chip — and the chip overflows its wrapper (so it
+   touches its neighbour) when the filters sidebar opens and the row tightens.
+   Out-ranks the trigger rules above and below by specificity. */
+:is(.crm-data-table-toolbar-inline, .accounts-list-table) .cpt-table-toolbar > div [data-slot="select-trigger"] {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Filter-heavy lists (Accounts, Sales Orders): keep the whole toolbar on ONE line
+   with no sideways scroll by letting the search box and the filter chips shrink
+   (each chip is 96–170px, truncating its label with "…") instead of holding a
+   fixed width. Opt-in via `crm-toolbar-wrap`; the selectors out-rank the inline
+   rules above, so source order doesn't matter. */
+.crm-toolbar-wrap.crm-data-table-toolbar-inline .cpt-table-toolbar {
+  flex-wrap: nowrap;
+  overflow-x: visible;
+}
+.crm-toolbar-wrap.crm-data-table-toolbar-inline .cpt-table-toolbar .cpt-search-field {
+  flex: 1 1 200px;
+  min-width: 150px;
+  max-width: 320px;
+}
+.crm-toolbar-wrap.crm-data-table-toolbar-inline .cpt-table-toolbar > button {
+  flex: none;
+}
+.crm-toolbar-wrap.crm-data-table-toolbar-inline .cpt-table-toolbar > [data-slot="select-trigger"],
+.crm-toolbar-wrap.crm-data-table-toolbar-inline .cpt-table-toolbar > div:not(.cpt-search-field):not([style]) {
+  flex: 1 1 100px;
+  width: auto;
+  min-width: 96px;
+  max-width: 170px;
+}
+
+/* Accounts list: wider search box + narrower filter dropdowns / owner filter.
+   Scoped to the accounts table only (Contacts shares the inline toolbar rule
+   above and stays unchanged). Same specificity as the inline rule — these win
+   by source order, so they must stay below the block above. */
+.accounts-list-table .cpt-search-field {
+  flex: 0 1 280px;
+  min-width: 240px;
+  max-width: 300px;
+}
+/* Narrower filter dropdowns (Status / Size / Industry / Hierarchy) — overrides
+   the inline 140px select-trigger rule above by source order. */
+.accounts-list-table .cpt-table-toolbar [data-slot="select-trigger"] {
+  flex: 0 0 120px;
+  width: 120px;
+}
+/* Owner filter trigger matches the narrowed filter selects' width. */
+.accounts-list-table .account-owner-filter {
+  flex: 0 0 120px;
+  width: 120px;
+}
+/* Date-range (Created Date) chip: match the static filter selects' geometry
+   (h-8 / rounded-5px — the toolbar default is h-9 / rounded-7px) so it reads as
+   the same field family. */
+.accounts-list-table [data-slot="date-range-picker-trigger"] {
+  height: 2rem;
+  border-radius: 5px;
+}
+/* Fixed width so a selected range truncates instead of widening the chip; the
+   full range stays readable via the trigger's hover title. `:has()` targets the
+   DateRangePicker's wrapper div, overriding its inline w-[230px]. */
+.accounts-list-table .cpt-table-toolbar > :has([data-slot="date-range-picker-trigger"]) {
+  flex: 0 0 160px;
+  width: 160px;
+}
+@media (min-width: 1280px) {
+  .accounts-list-table .cpt-search-field {
+    flex-basis: 320px;
+    min-width: 280px;
+    max-width: 340px;
+  }
+  .accounts-list-table .cpt-table-toolbar [data-slot="select-trigger"] {
+    flex-basis: 128px;
+    width: 128px;
+  }
+  .accounts-list-table .account-owner-filter {
+    flex-basis: 128px;
+    width: 128px;
+  }
+  .accounts-list-table .cpt-table-toolbar > :has([data-slot="date-range-picker-trigger"]) {
+    flex-basis: 170px;
+    width: 170px;
+  }
+}
+
+.premium-table {
+  width: 100%;
+  table-layout: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.premium-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--card) 94%, transparent) 0%,
+      color-mix(in srgb, var(--background) 68%, var(--card)) 100%
+    );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  user-select: none;
+}
+
+.premium-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--background) 45%, transparent);
+}
+
+.premium-table tbody tr:hover {
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+/* `max-width: 0` is the standard trick that lets a `table-layout: auto` cell
+   honour `overflow: hidden` + `text-overflow: ellipsis` — without it a td sizes
+   to its content and never truncates. It belongs on `td` ONLY.
+
+   It used to include `th`, which silently clipped header labels: a th is
+   `white-space: nowrap` with no ellipsis, so instead of truncating it just got
+   sliced mid-word ("YEARLY TARGET" → "YEARLY TARGE", and sort indicators cut
+   off entirely). That also defeated the table's own sizing contract — see the
+   `min-w-full` comment in BusinessMetricsTable.tsx: headers are supposed to
+   drive each column's natural min-width, with the wrapper's `overflow-x-auto`
+   absorbing any excess, rather than columns compressing into each other. */
+.premium-table td {
+  max-width: 0;
+}
+
+.premium-table th,
+.premium-table td {
+  box-sizing: border-box;
+}
+
+/* `max-width: 0` lives on BODY cells only — paired with the overflow/ellipsis
+ * below it lets long data truncate gracefully. Headers must NOT be capped:
+ * with `table-layout: auto` + `white-space: nowrap`, an uncapped header sizes
+ * to its full label, so any column title renders in full regardless of length
+ * (and still sets the column's min width). */
+.premium-table tbody td {
+  max-width: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.premium-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.premium-table .index-col {
+  /* Shrink-to-fit in the auto-layout table, but never below a comfortable base
+   * and never capped — so a multi-digit Sr No (thousands+) shows in full instead
+   * of being clipped. `white-space: nowrap` keeps it on one line. The `max-width`
+   * + `overflow` overrides exempt this column from the `.premium-table tbody td`
+   * truncation rule (max-width: 0 / overflow: hidden / ellipsis) that was clipping
+   * the number. */
+  width: 1%;
+  min-width: 56px;
+  max-width: none;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.premium-table .summary-col {
+  width: 84px;
+  min-width: 84px;
+  max-width: 84px;
+}
+
+.premium-table .right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* Right-aligned cells in the last column hug the table edge — give them
+ * breathing room so numbers don't sit flush against the right border. */
+.premium-table th.right:last-child,
+.premium-table td.right:last-child {
+  padding-right: 20px;
+}
+
+.premium-table th .srt {
+  margin-left: 4px;
+  opacity: 0.4;
+  font-size: 10px;
+}
+
+@media (max-width: 767px) {
+  .premium-table thead th,
+  .premium-table tbody td {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
 }
 
 /* ── Table ── */
@@ -114,10 +482,10 @@
 .cpt-tbl thead th {
   text-align: left;
   font-weight: 550;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   padding: 11px 16px;
-  background: color-mix(in srgb, var(--background, #FAFBFC) 70%, var(--card, #fff) 30%);
-  border-bottom: 1px solid var(--border, #E4E7EC);
+  background: color-mix(in srgb, var(--background) 70%, var(--card) 30%);
+  border-bottom: 1px solid var(--border);
   font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -128,8 +496,8 @@
 }
 .cpt-tbl tbody td {
   padding: 12px 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border, #E4E7EC) 65%, transparent);
-  color: var(--foreground, #0F1B2D);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  color: var(--foreground);
   vertical-align: middle;
 }
 .cpt-tbl tbody tr:last-child td {
@@ -139,16 +507,33 @@
   transition: background 0.12s ease;
 }
 .cpt-tbl tbody tr:hover {
-  background: color-mix(in srgb, var(--accent, #EEF1F6) 55%, var(--card, #fff));
+  background: color-mix(in srgb, var(--accent) 55%, var(--card));
 }
 .cpt-tbl .right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+/* Right-aligned cells in the last column hug the table edge — give them
+ * breathing room so numbers don't sit flush against the right border. */
+.cpt-tbl th.right:last-child,
+.cpt-tbl td.right:last-child {
+  padding-right: 20px;
+}
 .cpt-tbl th .srt {
   margin-left: 4px;
   opacity: 0.4;
   font-size: 10px;
+}
+/* Truncating column — caps the cell at its `width` and ellipsizes a single
+ * line of overflow so a long value (e.g. a long account name) can't stretch
+ * the column and squeeze the other columns. `max-width` is set inline from
+ * the column's `width`. Wins over `.cpt-compact … td { white-space: nowrap }`
+ * since both set nowrap. */
+.cpt-tbl th.cpt-cell-truncate,
+.cpt-tbl td.cpt-cell-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Compact density variant — for wide list views with many columns */
@@ -179,11 +564,11 @@
   height: 10px;
 }
 .cpt-compact .cpt-table-wrap > div[style*="overflow"]::-webkit-scrollbar-thumb {
-  background: var(--border, #E4E7EC);
+  background: var(--border);
   border-radius: 5px;
 }
 .cpt-compact .cpt-table-wrap > div[style*="overflow"]::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground, #525C6F);
+  background: var(--muted-foreground);
 }
 
 .cpt-table-footer {
@@ -191,9 +576,148 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  border-top: 1px solid var(--border, #E4E7EC);
+  border-top: 1px solid var(--border);
   font-size: 12.5px;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
+}
+
+/* ── Editable line-item grid (Quote / Sales Order builder) ─────────────────
+ * Same chrome as .cpt-tbl (uppercase hairline header, hairline rows, accent
+ * hover, card surface via .cpt-table-wrap) at compact density, plus
+ * zero-padding "field" cells so the inline editors fill the cell edge to
+ * edge like a spreadsheet. Every colour is a Tier-2 token mixed with
+ * color-mix, so dark mode and palette swaps follow themes.css. */
+.cpt-edit-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.cpt-edit-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 9px 10px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--background) 65%, var(--card));
+  border-bottom: 1px solid var(--border);
+}
+.cpt-edit-grid tbody td {
+  padding: 6px 10px;
+  vertical-align: middle;
+  color: var(--foreground);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+}
+.cpt-edit-grid thead th + th,
+.cpt-edit-grid tbody td + td {
+  border-left: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+}
+.cpt-edit-grid td.cell-field { padding: 0; }
+.cpt-edit-grid .right { text-align: right; font-variant-numeric: tabular-nums; }
+.cpt-edit-grid .center { text-align: center; }
+.cpt-edit-grid tbody tr { transition: background 120ms ease; }
+.cpt-edit-grid tbody tr:hover { background: color-mix(in srgb, var(--accent) 40%, var(--card)); }
+.cpt-edit-grid tbody tr.is-component { background: color-mix(in srgb, var(--muted) 55%, var(--card)); }
+.cpt-edit-grid tbody tr.is-component:hover { background: color-mix(in srgb, var(--accent) 45%, var(--card)); }
+.cpt-edit-grid tbody tr.is-error { box-shadow: inset 2px 0 0 var(--destructive); }
+.cpt-edit-grid tbody tr.is-add-row td {
+  /* Left pad clears the "#" and "P/C" columns so "+ Add component" lines
+   * up under the Part Number content of the BOM child rows above it.
+   * Set here (not via a Tailwind `pl-*` utility on the <td>) because the
+   * broader `.cpt-edit-grid tbody td { padding: ... }` rule outranks a
+   * single-class utility on specificity and silently clobbers it. */
+  padding: 3px 10px 3px 72px;
+  background: color-mix(in srgb, var(--muted) 30%, var(--card));
+}
+.cpt-edit-grid tfoot td {
+  padding: 9px 10px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--muted) 55%, var(--card));
+}
+/* In-cell editors — borderless until focused, then the same primary ring the
+ * form inputs use; invalid cells pick up the destructive tint. */
+.cpt-edit-grid .cell-input {
+  height: 34px;
+  width: 100%;
+  min-width: 0;
+  padding: 0 10px;
+  background: transparent;
+  font-size: 12.5px;
+  color: var(--foreground);
+  outline: none;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+.cpt-edit-grid .cell-input.compact { height: 28px; }
+.cpt-edit-grid .cell-input::placeholder { color: var(--muted-foreground); opacity: 0.8; }
+.cpt-edit-grid .cell-input:hover:not(:disabled):not(:focus) {
+  background: color-mix(in srgb, var(--primary) 3%, transparent);
+}
+.cpt-edit-grid .cell-input:focus,
+.cpt-edit-grid .cell-input:focus-visible,
+.cpt-edit-grid .cell-input[data-open="true"] {
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--primary) 45%, transparent);
+}
+.cpt-edit-grid .cell-input[aria-invalid="true"] {
+  background: color-mix(in srgb, var(--destructive) 5%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--destructive) 45%, transparent);
+}
+.cpt-edit-grid .cell-input[data-warn="true"] {
+  background: color-mix(in srgb, var(--warning) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning) 45%, transparent);
+}
+.cpt-edit-grid .cell-input:disabled { cursor: not-allowed; opacity: 0.6; }
+
+/* Read-only grid (Quote view, SO detail): every cell opens a full-value popup
+   on hover / click (see CellHoverPopup). Disabled controls swallow pointer
+   events in Chromium, so they are made transparent to the pointer and the
+   wrapping .cell-hover receives it instead. */
+.cpt-edit-grid.is-readonly :disabled { pointer-events: none; opacity: 1; }
+.cpt-edit-grid.is-readonly .cell-input:disabled { color: var(--foreground); }
+.cpt-edit-grid.is-readonly .cell-hover { cursor: pointer; min-height: 100%; }
+.cpt-edit-grid.is-readonly td:has(> .cell-hover:hover) {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+/* Dropdown panels opened from a cell (category / OEM / condition / part). */
+.cpt-cell-menu { font-size: 12.5px; }
+/* Scroll container for the editable grid — the bar is ALWAYS rendered (not
+ * the macOS overlay style that only appears mid-scroll) so users can see at
+ * a glance that more columns sit off-screen. Same approach as the
+ * .cpt-compact wide-table rule above. */
+.cpt-edit-grid-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+/* Firefox only. Chrome 121+ ignores ::-webkit-scrollbar as soon as
+ * `scrollbar-width` is set, and on macOS that leaves the OS overlay bar,
+ * which hides until the user scrolls — exactly what we're avoiding. */
+@supports not selector(::-webkit-scrollbar) {
+  .cpt-edit-grid-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--muted-foreground) 60%, transparent) color-mix(in srgb, var(--muted) 80%, transparent);
+  }
+}
+/* Chromium / Safari: a custom ::-webkit-scrollbar is a classic (non-overlay)
+ * bar, so it stays painted the whole time — small, but never hidden. Do NOT
+ * set `scrollbar-width` outside the @supports block above: Chrome drops these
+ * rules the moment that property is set and falls back to the overlay bar. */
+.cpt-edit-grid-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.cpt-edit-grid-scroll::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+.cpt-edit-grid-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted-foreground) 38%, transparent);
+  border-radius: 6px;
+}
+.cpt-edit-grid-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted-foreground) 65%, transparent);
 }
 
 /* Pagination buttons */
@@ -205,9 +729,9 @@
   height: 32px;
   padding: 0 8px;
   border-radius: 8px;
-  border: 1px solid var(--border, #E4E7EC);
-  background: var(--card, #fff);
-  color: var(--foreground, #344054);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
   font-size: 13px;
   font-weight: 500;
   font-family: inherit;
@@ -215,13 +739,13 @@
   transition: all 0.15s;
 }
 .cpt-pg-btn:hover:not(:disabled):not(.active) {
-  background: var(--secondary, #EEF0F3);
-  border-color: var(--primary, #0F1B2D);
+  background: var(--secondary);
+  border-color: var(--primary);
 }
 .cpt-pg-btn.active {
-  background: var(--primary, #0F1B2D);
-  color: var(--primary-foreground, #fff);
-  border-color: var(--primary, #0F1B2D);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
   font-weight: 600;
 }
 .cpt-pg-btn:disabled {
@@ -239,8 +763,8 @@
   font-size: 11.5px;
   font-weight: 550;
   line-height: 1.6;
-  background: var(--secondary, #EEF0F3);
-  color: var(--foreground, #344054);
+  background: var(--secondary);
+  color: var(--foreground);
   border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
   white-space: nowrap;
   letter-spacing: 0.005em;
@@ -253,10 +777,10 @@
   flex-shrink: 0;
   box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 18%, transparent);
 }
-.cpt-badge.ok { background: #ECFDF3; color: #067647; }
-.cpt-badge.warn { background: #FFFAEB; color: #B54708; }
-.cpt-badge.err { background: #FEF3F2; color: #B42318; }
-.cpt-badge.info { background: #EFF4FF; color: #175CD3; }
+.cpt-badge.ok { background: var(--success-soft); color: var(--success); }
+.cpt-badge.warn { background: var(--warning-soft); color: var(--warning); }
+.cpt-badge.err { background: var(--destructive-soft); color: var(--destructive); }
+.cpt-badge.info { background: var(--info-soft); color: var(--info); }
 
 /* Dark mode — softer, deep-tinted backgrounds with light text for readability */
 .dark .cpt-badge { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.9); }
@@ -274,9 +798,22 @@
   padding-bottom: 8px;
 }
 
+/* Per-column vertical scroller — scrollbar hidden, scroll still works.
+   Cards still scroll on wheel / touch / keyboard; the visible scrollbar
+   is suppressed across all engines. */
+.cpt-kcol-scroll {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE / legacy Edge */
+}
+.cpt-kcol-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;                  /* Chromium / WebKit */
+}
+
 .cpt-kcol {
-  background: color-mix(in srgb, var(--background, #F6F7F9) 65%, var(--card, #fff));
-  border: 1px solid var(--border, #E4E7EC);
+  background: color-mix(in srgb, var(--background) 65%, var(--card));
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px 12px 14px;
   min-height: 400px;
@@ -289,7 +826,7 @@
   inset: 0 0 auto 0;
   height: 3px;
   border-radius: 14px 14px 0 0;
-  background: var(--cpt-col-accent, color-mix(in srgb, var(--primary, #0F1B2D) 35%, transparent));
+  background: var(--cpt-col-accent, color-mix(in srgb, var(--primary) 35%, transparent));
   opacity: 0.85;
 }
 
@@ -300,24 +837,24 @@
   padding: 8px 6px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--foreground, #344054);
+  color: var(--foreground);
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 .cpt-kcol-h .count {
-  background: var(--card, #fff);
-  color: var(--muted-foreground, #525C6F);
+  background: var(--card);
+  color: var(--muted-foreground);
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 999px;
   font-weight: 600;
-  border: 1px solid var(--border, #E4E7EC);
+  border: 1px solid var(--border);
   letter-spacing: 0;
 }
 
 .cpt-kcard {
-  background: var(--card, #fff);
-  border: 1px solid var(--border, #E4E7EC);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 14px;
   margin-bottom: 8px;
@@ -330,26 +867,109 @@
     0 1px 0 rgba(16,24,40,0.02),
     0 8px 20px -6px rgba(16,24,40,0.10),
     0 4px 10px -4px rgba(16,24,40,0.06);
-  border-color: color-mix(in srgb, var(--primary, #0F1B2D) 18%, var(--border, #E4E7EC));
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
   transform: translateY(-1px);
 }
 .cpt-kcard .cname {
   font-weight: 600;
   font-size: 13px;
   margin-bottom: 4px;
-  color: var(--foreground, #0F1B2D);
+  color: var(--foreground);
 }
 .cpt-kcard .cmeta {
   font-size: 12px;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   display: flex;
   justify-content: space-between;
   margin-top: 8px;
 }
 .cpt-kcard .cval {
   font-weight: 600;
-  color: var(--foreground, #0F1B2D);
+  color: var(--foreground);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Category x Brand pivot: scroll affordances ──
+ *
+ * The pivot hides its scrollbar (`.no-scrollbar`), which removed the only two
+ * cues that the matrix is wider than the card: that there is more to the RIGHT,
+ * and that something is now hidden to the LEFT behind the frozen category
+ * column. These put both back WITHOUT a permanent rule — each appears only
+ * while it is actually true, so a table that fits looks exactly as it did.
+ *
+ * Left cue: the frozen column casts an edge only once content has scrolled
+ * under it (columns snap, so nothing is left half-visible against it). Right cue: a short fade over the trailing edge, gone at the end.
+ * Both are `pointer-events: none` so neither eats a click or a wheel event. */
+.cpt-pivot-scroll {
+  position: relative;
+}
+.cpt-pivot-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 36px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 20;
+}
+.cpt-pivot-fade[data-on="true"] {
+  opacity: 1;
+}
+.cpt-pivot-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--card), transparent);
+}
+/* The frozen column's edge — only while scrolled. One absolutely-positioned
+ * line over the whole scroller (`left` set inline to the column's width), not
+ * a per-cell inset shadow: per-cell edges stop at each cell box and leave a gap
+ * at every row hairline, so the rule never reached top to bottom. */
+.cpt-pivot-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 30;
+}
+.cpt-pivot-divider[data-on="true"] {
+  opacity: 1;
+}
+/* Column snapping: the scroller always comes to rest on a whole brand column
+ * (`scroll-padding-left` is set inline to the frozen column's width), so no
+ * figure is left sliced in half against the category column. Only the brand
+ * headers are snap points — the frozen corner cell never moves. */
+.cpt-pivot-snap {
+  scroll-snap-type: x mandatory;
+  /* No rubber-band at either end: macOS elastic overscroll drags the sticky
+   * category column along with the matrix, so it slid left ("TEGORY",
+   * "ble Mobiles") whenever a trackpad swipe ran past the last column. Also
+   * stops the swipe chaining into browser back/forward navigation. */
+  overscroll-behavior-x: none;
+}
+.cpt-pivot thead th:not(.cpt-pivot-frozen) {
+  scroll-snap-align: start;
+}
+/* ── Category x Brand pivot ──
+ *
+ * Row hover for the pivot on the CRM dashboard and the Account 360 tab.
+ *
+ * Written here rather than as a Tailwind arbitrary value because the frozen
+ * first column makes the requirement unusual: the fill must be OPAQUE. A
+ * half-alpha hover (shadcn's default is `bg-muted/50`) lets the scrolling
+ * brand numbers read straight through the sticky category names. So the tint
+ * is composited ONTO the card instead of laid over it -- the same formula
+ * `.cpt-tbl tbody tr:hover` uses, so the pivot highlights like every CRM list
+ * page while staying solid. */
+.cpt-pivot-row {
+  background: var(--card);
+  transition: background 0.12s ease;
+}
+.cpt-pivot-row:hover {
+  background: color-mix(in srgb, var(--accent) 70%, var(--card));
 }
 
 /* ── KPI Cards ── */
@@ -362,8 +982,8 @@
 
 .cpt-kpi {
   position: relative;
-  background: var(--card, #fff);
-  border: 1px solid var(--border, #E4E7EC);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 18px 20px;
   box-shadow:
@@ -382,8 +1002,8 @@
   height: 2px;
   background: linear-gradient(
     90deg,
-    var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 0%,
-    color-mix(in srgb, var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 60%, transparent) 100%
+    var(--cpt-kpi-accent, var(--primary)) 0%,
+    color-mix(in srgb, var(--cpt-kpi-accent, var(--primary)) 60%, transparent) 100%
   );
   opacity: 0;
   transition: opacity 0.2s ease;
@@ -395,7 +1015,7 @@
     0 1px 0 rgba(16,24,40,0.02),
     0 8px 20px -6px rgba(16,24,40,0.10),
     0 4px 10px -4px rgba(16,24,40,0.06);
-  border-color: color-mix(in srgb, var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 22%, var(--border, #E4E7EC));
+  border-color: color-mix(in srgb, var(--cpt-kpi-accent, var(--primary)) 22%, var(--border));
   transform: translateY(-1px);
 }
 .cpt-kpi:hover::before { opacity: 1; }
@@ -414,7 +1034,7 @@
   height: 34px;
   border-radius: 10px;
   background: var(--cpt-kpi-icon-bg, rgba(15,27,45,0.06));
-  color: var(--cpt-kpi-icon-fg, var(--primary, #0F1B2D));
+  color: var(--cpt-kpi-icon-fg, var(--primary));
   flex-shrink: 0;
   transition: transform 0.2s ease;
 }
@@ -422,7 +1042,7 @@
 
 .cpt-kpi-label {
   font-size: 12px;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   font-weight: 500;
   margin: 0;
   letter-spacing: 0.01em;
@@ -434,26 +1054,60 @@
   letter-spacing: -0.025em;
   margin: 8px 0 6px;
   font-variant-numeric: tabular-nums;
-  color: var(--foreground, #0F1B2D);
+  color: var(--foreground);
   line-height: 1.15;
+  /* Keep the value on ONE clean line: a long value (a crore-scale amount, a big
+     count) truncates with an ellipsis instead of overrunning its column and
+     sliding under the icon. The paired `min-w-0` wrapper lets this box
+     shrink so the ellipsis engages, and DataCard sets a title so the full value
+     is available on hover. Numbers have no natural break, so wrapping them looks
+     worse than a trailing ellipsis. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+/* Insights KPI strip (the 4-tile row on every /crm/insights/* page).
+   Scoped override rather than a change to `.cpt-kpi-value` itself, because
+   that class backs every DataCard in the app — accounting, rentals, WMS,
+   invoices — and this is a request about one strip, not a global restyle.
+
+   24px is tuned for a short numeric KPI. These four tiles include a TEXT value
+   (the top account's NAME), which at 24px wraps onto a second line and towers
+   over the 12px label above it. 18px keeps the figure clearly dominant while
+   letting a long name sit on one line at most breakpoints. */
+.cpt-kpi-strip .cpt-kpi-value {
+  font-size: 18px;
+  /* 600 / 1.4 = the dashboard's `kpi-value-sm` Typography role, so these tiles
+     match the compact KPI tiles on the board itself. */
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 6px 0 4px;
+}
+/* Label in the dashboard `label` tone (--label-foreground: between body text
+   and muted), matching `kpi-label` on the board. Scoped to the strip like the
+   value above — the global `.cpt-kpi-label` backs every module's DataCard.
+   Plan: comprint-erp-docs/modules/crm/dashboard/DASHBOARD_TYPOGRAPHY_PLAN.md */
+[data-module] .cpt-kpi-strip .cpt-kpi-label {
+  color: var(--label-foreground);
+}
+
 .cpt-kpi-delta {
   font-size: 12px;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   display: flex;
   align-items: center;
   gap: 6px;
   font-weight: 500;
 }
-.cpt-kpi-delta .up { color: #067647; font-weight: 600; }
-.cpt-kpi-delta .down { color: #B42318; font-weight: 600; }
+.cpt-kpi-delta .up { color: var(--success); font-weight: 600; }
+.cpt-kpi-delta .down { color: var(--destructive); font-weight: 600; }
 
 /* KPI accent palette — opt-in via data-accent on the card */
-.cpt-kpi[data-accent="primary"] { --cpt-kpi-accent: var(--primary, #0F1B2D); --cpt-kpi-icon-bg: color-mix(in srgb, var(--primary, #0F1B2D) 8%, transparent); --cpt-kpi-icon-fg: var(--primary, #0F1B2D); }
-.cpt-kpi[data-accent="success"] { --cpt-kpi-accent: #067647; --cpt-kpi-icon-bg: #ECFDF3; --cpt-kpi-icon-fg: #067647; }
-.cpt-kpi[data-accent="info"]    { --cpt-kpi-accent: #175CD3; --cpt-kpi-icon-bg: #EFF4FF; --cpt-kpi-icon-fg: #175CD3; }
-.cpt-kpi[data-accent="warning"] { --cpt-kpi-accent: #B54708; --cpt-kpi-icon-bg: #FFFAEB; --cpt-kpi-icon-fg: #B54708; }
-.cpt-kpi[data-accent="danger"]  { --cpt-kpi-accent: #B42318; --cpt-kpi-icon-bg: #FEF3F2; --cpt-kpi-icon-fg: #B42318; }
+.cpt-kpi[data-accent="primary"] { --cpt-kpi-accent: var(--primary); --cpt-kpi-icon-bg: color-mix(in srgb, var(--primary) 8%, transparent); --cpt-kpi-icon-fg: var(--primary); }
+.cpt-kpi[data-accent="success"] { --cpt-kpi-accent: var(--success); --cpt-kpi-icon-bg: var(--success-soft); --cpt-kpi-icon-fg: var(--success); }
+.cpt-kpi[data-accent="info"]    { --cpt-kpi-accent: var(--info); --cpt-kpi-icon-bg: var(--info-soft); --cpt-kpi-icon-fg: var(--info); }
+.cpt-kpi[data-accent="warning"] { --cpt-kpi-accent: var(--warning); --cpt-kpi-icon-bg: var(--warning-soft); --cpt-kpi-icon-fg: var(--warning); }
+.cpt-kpi[data-accent="danger"]  { --cpt-kpi-accent: var(--destructive); --cpt-kpi-icon-bg: var(--destructive-soft); --cpt-kpi-icon-fg: var(--destructive); }
 .cpt-kpi[data-accent="violet"]  { --cpt-kpi-accent: #6938EF; --cpt-kpi-icon-bg: #F4F0FF; --cpt-kpi-icon-fg: #6938EF; }
 .cpt-kpi[data-accent="teal"]    { --cpt-kpi-accent: #0E9384; --cpt-kpi-icon-bg: #E6FAF6; --cpt-kpi-icon-fg: #0E9384; }
 
@@ -465,14 +1119,47 @@
 .dark .cpt-kpi[data-accent="violet"]  { --cpt-kpi-icon-bg: rgba(147,108,239,0.20); --cpt-kpi-icon-fg: #C7B6FF; --cpt-kpi-accent: #A78BFA; }
 .dark .cpt-kpi[data-accent="teal"]    { --cpt-kpi-icon-bg: rgba(14,147,132,0.20); --cpt-kpi-icon-fg: #5EEAD4; --cpt-kpi-accent: #14B8A6; }
 
+/* Compact density modifier — pages still set their own grid-template-columns
+   (via Tailwind grid-cols-* utilities) on top of this. Replaces a long
+   arbitrary-property utility chain that was duplicated across CRM dashboards. */
+.cpt-kpi-grid--compact {
+  gap: 12px;
+  margin-bottom: 0;
+}
+.cpt-kpi-grid--compact > .cpt-kpi {
+  border-radius: 16px;
+  padding: 16px;
+}
+.cpt-kpi-grid--compact > .cpt-kpi .cpt-kpi-row { gap: 12px; }
+.cpt-kpi-grid--compact > .cpt-kpi .cpt-kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+.cpt-kpi-grid--compact > .cpt-kpi .cpt-kpi-label {
+  font-size: 12px;
+  line-height: 1rem;
+}
+.cpt-kpi-grid--compact > .cpt-kpi .cpt-kpi-value {
+  font-size: 24px;
+  line-height: 2rem;
+  font-weight: 700;
+}
+
 /* ── Tabs ── */
 .cpt-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 0;
-  border-bottom: 1px solid var(--border, #E4E7EC);
+  /* The baseline is an inset shadow, not a border: a border sits outside the
+   * scroll box, so the active tab had to hang 1px into it (margin-bottom:-1px)
+   * — which made the strip 1px taller than its box and, with overflow-x:auto,
+   * scrollable up/down. The inset shadow paints UNDER the tabs, so the active
+   * underline still covers it, with no overflow. */
+  box-shadow: inset 0 -1px 0 var(--border);
   margin-bottom: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -485,9 +1172,8 @@
   gap: 6px;
   padding: 10px 14px;
   font-size: 13px;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
   cursor: pointer;
   font-weight: 500;
   background: none;
@@ -499,33 +1185,37 @@
   white-space: nowrap;
 }
 .cpt-tab.active {
-  color: var(--foreground, #0F1B2D);
-  border-bottom-color: var(--primary, #0F1B2D);
+  color: var(--foreground);
+  border-bottom-color: var(--primary);
   font-weight: 600;
 }
 .cpt-tab:hover {
-  color: var(--foreground, #344054);
+  color: var(--foreground);
 }
 .cpt-tab-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
+  /* Wide enough for a 2-digit count so a 1→2 digit change (e.g. 4 → 21) does not
+     resize the pill and shift the neighbouring tabs. tabular-nums keeps digits
+     equal-width; only 3-digit+ counts (rare per tab) grow past this. */
+  min-width: 26px;
   height: 18px;
   padding: 0 6px;
   border-radius: 9px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: var(--muted-foreground, #667085);
-  background: transparent;
-  border: 1px solid var(--border, #E4E7EC);
-  transition: color 0.15s, border-color 0.15s;
+  color: var(--muted-foreground);
+  /* Filled grey pill — a tint of the muted-foreground so it stays visible on
+     the card (a plain --muted fill blends into it). */
+  background: color-mix(in srgb, var(--muted-foreground) 16%, transparent);
+  transition: color 0.15s, background-color 0.15s;
 }
 .cpt-tab-count.active {
-  color: var(--foreground, #0F1B2D);
-  border-color: var(--foreground, #0F1B2D);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 12%, transparent);
 }
 
 /* ── Page Header ── */
@@ -541,10 +1231,10 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0;
-  color: var(--foreground, #0F1B2D);
+  color: var(--foreground);
 }
 .cpt-page-sub {
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   font-size: 14px;
   margin-top: 4px;
   line-height: 1.5;
@@ -559,31 +1249,31 @@
   border-radius: 8px;
   font-size: 13px;
   font-weight: 550;
-  border: 1px solid var(--border, #D0D5DD);
-  background: var(--card, #fff);
-  color: var(--foreground, #0F1B2D);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
 }
-.cpt-btn:hover { background: var(--secondary, #EEF0F3); }
+.cpt-btn:hover { background: var(--secondary); }
 .cpt-btn:active { transform: scale(0.98); }
 .cpt-btn-primary {
-  background: var(--primary, #0F1B2D);
-  color: var(--primary-foreground, #fff);
-  border-color: var(--primary, #0F1B2D);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
 }
 .cpt-btn-primary:hover { background: #1E2A3D; }
 .cpt-btn-sm { padding: 5px 10px; font-size: 12.5px; }
 .cpt-btn-ghost { border-color: transparent; background: transparent; }
-.cpt-btn-ghost:hover { background: var(--secondary, #EEF0F3); }
-.cpt-btn-danger { color: #B42318; border-color: var(--border, #D0D5DD); }
-.cpt-btn-danger:hover { background: #FEF3F2; }
+.cpt-btn-ghost:hover { background: var(--secondary); }
+.cpt-btn-danger { color: var(--destructive); border-color: var(--border); }
+.cpt-btn-danger:hover { background: var(--destructive-soft); }
 
 /* ── Segmented Control ── */
 .cpt-seg {
   display: inline-flex;
-  background: var(--secondary, #EEF0F3);
+  background: var(--secondary);
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
@@ -592,7 +1282,7 @@
   padding: 6px 12px;
   font-size: 12.5px;
   border-radius: 7px;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   font-weight: 550;
   border: none;
   background: none;
@@ -601,8 +1291,8 @@
   transition: all 0.15s;
 }
 .cpt-seg button.on {
-  background: var(--card, #fff);
-  color: var(--foreground, #0F1B2D);
+  background: var(--card);
+  color: var(--foreground);
   box-shadow: 0 1px 3px rgba(16,24,40,0.06), 0 1px 2px rgba(16,24,40,0.03);
 }
 
@@ -612,13 +1302,13 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   margin-bottom: 10px;
 }
 .cpt-breadcrumb a {
   transition: color 0.15s;
 }
-.cpt-breadcrumb a:hover { color: var(--foreground, #344054); }
+.cpt-breadcrumb a:hover { color: var(--foreground); }
 .cpt-breadcrumb .sep { opacity: 0.4; }
 
 /* ── Card header / sub ── */
@@ -627,17 +1317,17 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--border, #E4E7EC);
+  border-bottom: 1px solid var(--border);
 }
 .cpt-card-title {
   font-size: 14px;
   font-weight: 600;
   margin: 0;
-  color: var(--foreground, #0F1B2D);
+  color: var(--foreground);
 }
 .cpt-card-sub {
   font-size: 13px;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   margin: 3px 0 0;
 }
 
@@ -646,8 +1336,8 @@
   display: inline-block;
   padding: 2px 8px;
   border-radius: 6px;
-  background: var(--secondary, #EEF0F3);
-  color: var(--foreground, #344054);
+  background: var(--secondary);
+  color: var(--foreground);
   font-size: 11px;
   font-weight: 550;
 }
@@ -659,7 +1349,7 @@
   height: 8px;
   border-radius: 999px;
   overflow: hidden;
-  background: var(--secondary, #EEF0F3);
+  background: var(--secondary);
 }
 .cpt-pipe-bar span {
   display: block;
@@ -672,7 +1362,7 @@
   display: flex;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border, #E4E7EC);
+  border-bottom: 1px solid var(--border);
   align-items: flex-start;
 }
 .cpt-alert-row:last-child {
@@ -687,9 +1377,9 @@
   justify-content: center;
   flex-shrink: 0;
 }
-.cpt-alert-ico.err { background: #FEF3F2; color: #B42318; }
-.cpt-alert-ico.warn { background: #FFFAEB; color: #B54708; }
-.cpt-alert-ico.info { background: #EFF4FF; color: #175CD3; }
+.cpt-alert-ico.err { background: var(--destructive-soft); color: var(--destructive); }
+.cpt-alert-ico.warn { background: var(--warning-soft); color: var(--warning); }
+.cpt-alert-ico.info { background: var(--info-soft); color: var(--info); }
 
 .dark .cpt-alert-ico.err { background: rgba(239,68,68,0.18); color: #FCA5A5; }
 .dark .cpt-alert-ico.warn { background: rgba(245,158,11,0.18); color: #FBC56C; }
@@ -706,8 +1396,8 @@
   width: 52px;
   height: 52px;
   border-radius: 12px;
-  background: var(--accent, #EEF1F6);
-  color: var(--foreground, #0F1B2D);
+  background: var(--accent);
+  color: var(--foreground);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -731,7 +1421,7 @@
 }
 
 /* ── Utility ── */
-.cpt-muted { color: var(--muted-foreground, #525C6F); }
+.cpt-muted { color: var(--muted-foreground); }
 .cpt-tiny { font-size: 11.5px; }
 .cpt-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -755,10 +1445,10 @@
   color: var(--muted-foreground); flex-shrink: 0;
   transition: background 0.15s;
 }
-.bom-tog:hover { background: var(--secondary, #EEF0F3); }
-.bom-parent td { background: var(--accent, #EEF1F6); font-weight: 600; }
+.bom-tog:hover { background: var(--secondary); }
+.bom-parent td { background: var(--accent); font-weight: 600; }
 .bom-group-head td {
-  background: var(--secondary, #EEF0F3);
+  background: var(--secondary);
   font-size: 11px; text-transform: uppercase;
   letter-spacing: 0.06em; color: var(--muted-foreground);
   font-weight: 650; padding: 8px 16px !important;
@@ -770,9 +1460,9 @@
   padding: 2px 8px; border-radius: 999px;
   font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums;
 }
-.margin-pill.hi { background: #ECFDF3; color: #067647; }
-.margin-pill.mid { background: #FFFAEB; color: #B54708; }
-.margin-pill.lo { background: #FEF3F2; color: #B42318; }
+.margin-pill.hi { background: var(--success-soft); color: var(--success); }
+.margin-pill.mid { background: var(--warning-soft); color: var(--warning); }
+.margin-pill.lo { background: var(--destructive-soft); color: var(--destructive); }
 
 /* Condition badge */
 .cond-badge {
@@ -780,14 +1470,14 @@
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.04em; vertical-align: middle;
 }
-.cond-badge.new { background: #ECFDF3; color: #067647; }
+.cond-badge.new { background: var(--success-soft); color: var(--success); }
 .cond-badge.refurb { background: #FEF4E6; color: #C4700A; }
 
 /* Inline Qty pill */
 .qty-inline {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 2px 8px; background: var(--card, #fff);
-  border: 1px solid var(--border, #E4E7EC); border-radius: 6px;
+  padding: 2px 8px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 6px;
 }
 .qty-inp {
   width: 44px !important; text-align: center !important;
@@ -797,7 +1487,7 @@
 }
 .qty-inp:focus {
   box-shadow: none !important;
-  outline: 1px solid var(--primary, #0F1B2D);
+  outline: 1px solid var(--primary);
   border-radius: 4px;
 }
 
@@ -808,7 +1498,7 @@
   font-size: 10.5px; font-weight: 600;
   letter-spacing: 0.01em; white-space: nowrap;
 }
-.stock-pill.ok { background: var(--secondary, #EEF0F3); color: var(--muted-foreground); border: 1px solid var(--border, #E4E7EC); }
+.stock-pill.ok { background: var(--secondary); color: var(--muted-foreground); border: 1px solid var(--border); }
 .stock-pill.low { background: #FEF4E6; color: #C4700A; border: 1px solid rgba(196,112,10,0.2); }
 .stock-pill.short { background: rgba(220,38,38,0.08); color: #B91C1C; border: 1px solid rgba(220,38,38,0.2); }
 .stock-pill.oos { background: rgba(220,38,38,0.12); color: #B91C1C; border: 1px solid rgba(220,38,38,0.3); font-weight: 700; }
@@ -816,20 +1506,20 @@
 /* Change link (inline swap trigger) */
 .change-link {
   font-size: 11px; font-weight: 600;
-  color: var(--primary, #0F1B2D); background: var(--accent, #EEF1F6);
+  color: var(--primary); background: var(--accent);
   padding: 2px 8px; border-radius: 6px;
   display: inline-flex; align-items: center; gap: 3px;
   cursor: pointer; border: none; font-family: inherit;
   opacity: 0; transition: opacity 0.15s;
 }
 .bom-row:hover .change-link { opacity: 1; }
-.change-link:hover { background: var(--primary, #0F1B2D); color: var(--primary-foreground, #fff); }
+.change-link:hover { background: var(--primary); color: var(--primary-foreground); }
 
 /* Spec chip */
 .spec-chip {
   display: inline-block; margin-left: 6px;
   padding: 1px 7px; border-radius: 4px;
-  background: var(--secondary, #EEF0F3); color: var(--muted-foreground);
+  background: var(--secondary); color: var(--muted-foreground);
   font-size: 10.5px; font-weight: 600; font-family: inherit;
   vertical-align: middle;
 }
@@ -839,14 +1529,14 @@
 .swap-pop {
   position: fixed; z-index: 90;
   width: 460px; max-height: 440px; overflow: hidden;
-  background: var(--card, #fff); border: 1px solid var(--border, #E4E7EC);
+  background: var(--card); border: 1px solid var(--border);
   border-radius: 12px; box-shadow: 0 18px 48px rgba(16,24,40,0.12);
   display: flex; flex-direction: column;
   animation: bomFadeIn 0.15s ease;
 }
 @keyframes bomFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .swap-pop-head {
-  padding: 14px 16px; border-bottom: 1px solid var(--border, #E4E7EC);
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
   display: flex; align-items: flex-start; gap: 10px;
 }
 .swap-pop-body { padding: 6px; overflow: auto; flex: 1; }
@@ -855,55 +1545,57 @@
   border-radius: 10px; cursor: pointer; border: 1px solid transparent;
   transition: all 0.15s;
 }
-.swap-opt:hover { background: var(--accent, #EEF1F6); border-color: var(--primary, #0F1B2D); }
+.swap-opt:hover { background: var(--accent); border-color: var(--primary); }
 
 /* Catalog drawer */
 .bom-drawer-bg { position: fixed; inset: 0; background: rgba(15,27,45,0.4); z-index: 60; }
 .bom-drawer {
   position: fixed; top: 0; right: 0; bottom: 0;
   width: 640px; max-width: 90vw;
-  background: var(--card, #fff); z-index: 70;
+  background: var(--card); z-index: 70;
   box-shadow: 0 18px 48px rgba(16,24,40,0.12);
   display: flex; flex-direction: column;
   animation: bomSlideIn 0.22s ease;
 }
 @keyframes bomSlideIn { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 .bom-drawer-head {
-  padding: 18px 22px; border-bottom: 1px solid var(--border, #E4E7EC);
+  padding: 18px 22px; border-bottom: 1px solid var(--border);
   display: flex; align-items: center; gap: 12px;
 }
 .bom-drawer-body { flex: 1; overflow: auto; padding: 22px; }
 
 /* Catalog option card */
 .cfg-option {
-  border: 1.5px solid var(--border, #E4E7EC); border-radius: 12px;
+  border: 1.5px solid var(--border); border-radius: 12px;
   padding: 16px; cursor: pointer; transition: all 0.15s;
 }
-.cfg-option:hover { border-color: var(--primary, #0F1B2D); }
+.cfg-option:hover { border-color: var(--primary); }
 .cfg-option .nm { font-weight: 600; font-size: 13.5px; }
 .cfg-option .sp { color: var(--muted-foreground); font-size: 12px; margin-top: 4px; line-height: 1.4; }
 .cfg-option .pr { margin-top: 8px; font-weight: 650; font-variant-numeric: tabular-nums; }
 
 /* Progress bar */
-.bom-prog { height: 6px; background: var(--secondary, #EEF0F3); border-radius: 3px; overflow: hidden; }
+.bom-prog { height: 6px; background: var(--secondary); border-radius: 3px; overflow: hidden; }
 .bom-prog > span { display: block; height: 100%; border-radius: 3px; transition: width 0.3s; }
 
-/* WMS hyperlink — blue accent used across warehouse pages (tasks 11 & 12). */
+/* WMS hyperlink — blue accent used across warehouse pages (tasks 11 & 12).
+   §8.5 — colours come only from semantic tokens: base/hover use the info
+   ramp's designated pair, disabled uses muted-foreground (dark-mode safe). */
 .wms-link {
-  color: #175CD3;
+  color: var(--info);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.12s ease;
 }
-.wms-link:hover { color: #0F46A6; text-decoration: underline; }
-.wms-link:focus-visible { outline: 2px solid #175CD3; outline-offset: 2px; border-radius: 2px; }
+.wms-link:hover { color: var(--info-hover); text-decoration: underline; }
+.wms-link:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; border-radius: 2px; }
 .wms-link-btn {
   background: none; border: 0; padding: 0; cursor: pointer;
-  color: #175CD3; font-weight: 500;
+  color: var(--info); font-weight: 500;
   transition: color 0.12s ease;
 }
-.wms-link-btn:hover { color: #0F46A6; text-decoration: underline; }
-.wms-link-btn:disabled { color: #98A2B3; cursor: not-allowed; text-decoration: none; }
+.wms-link-btn:hover { color: var(--info-hover); text-decoration: underline; }
+.wms-link-btn:disabled { color: var(--muted-foreground); cursor: not-allowed; text-decoration: none; }
 
 /* ═══════════════════════════════════════════════════════════
    Premium Polish — applied to every module
@@ -916,9 +1608,9 @@
 
 [data-module] {
   --crm-ease: cubic-bezier(0.22, 0.68, 0, 1);
-  --crm-hairline: color-mix(in srgb, var(--border, #E4E7EC) 70%, transparent);
-  --crm-accent: color-mix(in srgb, var(--primary, #0F1B2D) 22%, var(--border, #E4E7EC));
-  --crm-accent-soft: color-mix(in srgb, var(--primary, #0F1B2D) 9%, transparent);
+  --crm-hairline: color-mix(in srgb, var(--border) 70%, transparent);
+  --crm-accent: color-mix(in srgb, var(--primary) 22%, var(--border));
+  --crm-accent-soft: color-mix(in srgb, var(--primary) 9%, transparent);
   --crm-shadow-rest:
     0 1px 0 rgba(16,24,40,0.02),
     0 1px 3px rgba(16,24,40,0.04),
@@ -927,7 +1619,7 @@
     0 1px 0 rgba(16,24,40,0.02),
     0 12px 28px -10px rgba(16,24,40,0.14),
     0 6px 14px -6px rgba(16,24,40,0.08);
-  --crm-ring: 0 0 0 1px color-mix(in srgb, var(--primary, #0F1B2D) 10%, transparent);
+  --crm-ring: 0 0 0 1px color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 /* ── Shared <Card> primitive: gentle hover lift + accent ring ── */
@@ -939,7 +1631,9 @@
     border-color 220ms var(--crm-ease),
     transform 220ms var(--crm-ease);
 }
-[data-module]:not([data-page-type="detail"]) [data-slot="card"]:hover {
+/* `.cpt-table-wrap` is excluded — a data-table shell is a container, not an
+   interactive card, so it must not lift / accent-ring on hover. */
+[data-module]:not([data-page-type="detail"]) [data-slot="card"]:not(.cpt-table-wrap):hover {
   border-color: var(--crm-accent);
   box-shadow: var(--crm-shadow-hover), var(--crm-ring);
   transform: translateY(-1px);
@@ -952,8 +1646,8 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--card, #fff) 85%, var(--background, #FAFBFC)) 0%,
-      var(--background, #FAFBFC) 100%
+      color-mix(in srgb, var(--card) 85%, var(--background)) 0%,
+      var(--background) 100%
     );
 }
 
@@ -968,8 +1662,8 @@
   height: 3px;
   background: linear-gradient(
     90deg,
-    var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 0%,
-    color-mix(in srgb, var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 50%, transparent) 60%,
+    var(--cpt-kpi-accent, var(--primary)) 0%,
+    color-mix(in srgb, var(--cpt-kpi-accent, var(--primary)) 50%, transparent) 60%,
     transparent 100%
   );
   opacity: 0.18;
@@ -977,7 +1671,7 @@
 [data-module]:not([data-page-type="detail"]) .cpt-kpi:hover {
   box-shadow:
     0 1px 0 rgba(16,24,40,0.02),
-    0 14px 32px -10px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 22%, rgba(16,24,40,0.10)),
+    0 14px 32px -10px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary)) 22%, rgba(16,24,40,0.10)),
     0 6px 14px -6px rgba(16,24,40,0.07);
   transform: translateY(-2px);
 }
@@ -986,7 +1680,7 @@
 }
 [data-module] .cpt-kpi:hover .cpt-kpi-icon {
   transform: scale(1.06);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--cpt-kpi-icon-fg, var(--primary, #0F1B2D)) 8%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--cpt-kpi-icon-fg, var(--primary)) 8%, transparent);
 }
 [data-module] .cpt-kpi-icon {
   transition:
@@ -999,15 +1693,15 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--card, #fff) 92%, var(--cpt-col-accent, var(--primary, #0F1B2D))) 0%,
-      color-mix(in srgb, var(--background, #F6F7F9) 70%, var(--card, #fff)) 100%
+      color-mix(in srgb, var(--card) 92%, var(--cpt-col-accent, var(--primary))) 0%,
+      color-mix(in srgb, var(--background) 70%, var(--card)) 100%
     );
   border-color: var(--crm-hairline);
 }
 [data-module] .cpt-kcol::before {
   height: 3px;
   opacity: 0.95;
-  box-shadow: 0 6px 14px -6px var(--cpt-col-accent, color-mix(in srgb, var(--primary, #0F1B2D) 35%, transparent));
+  box-shadow: 0 6px 14px -6px var(--cpt-col-accent, color-mix(in srgb, var(--primary) 35%, transparent));
 }
 
 /* ── Kanban card: deeper lift with accent ring on hover ── */
@@ -1022,7 +1716,7 @@
     0 1px 0 rgba(16,24,40,0.02),
     0 12px 26px -8px rgba(16,24,40,0.14),
     0 4px 10px -4px rgba(16,24,40,0.06),
-    inset 0 0 0 1px color-mix(in srgb, var(--primary, #0F1B2D) 8%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--primary) 8%, transparent);
   border-color: var(--crm-accent);
   transform: translateY(-2px);
 }
@@ -1045,11 +1739,12 @@
     transform 200ms var(--crm-ease),
     background-color 200ms var(--crm-ease);
 }
-[data-module]:not([data-page-type="detail"]) .rounded-lg.border.bg-card:hover,
-[data-module]:not([data-page-type="detail"]) .rounded-md.border.bg-card:hover,
-[data-module]:not([data-page-type="detail"]) .rounded-xl.border.bg-card:hover,
-[data-module]:not([data-page-type="detail"]) .rounded-\[12px\].border.bg-card:hover,
-[data-module]:not([data-page-type="detail"]) .rounded-\[14px\].border.bg-card:hover {
+/* `.cpt-table-wrap` excluded — see note on the [data-slot="card"] rule above. */
+[data-module]:not([data-page-type="detail"]) .rounded-lg.border.bg-card:not(.cpt-table-wrap):hover,
+[data-module]:not([data-page-type="detail"]) .rounded-md.border.bg-card:not(.cpt-table-wrap):hover,
+[data-module]:not([data-page-type="detail"]) .rounded-xl.border.bg-card:not(.cpt-table-wrap):hover,
+[data-module]:not([data-page-type="detail"]) .rounded-\[12px\].border.bg-card:not(.cpt-table-wrap):hover,
+[data-module]:not([data-page-type="detail"]) .rounded-\[14px\].border.bg-card:not(.cpt-table-wrap):hover {
   border-color: var(--crm-accent);
   box-shadow: 0 8px 18px -8px rgba(16,24,40,0.10), 0 2px 6px -2px rgba(16,24,40,0.05);
   transform: translateY(-1px);
@@ -1070,8 +1765,8 @@
   background:
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--accent, #EEF1F6) 70%, var(--card, #fff)) 0%,
-      color-mix(in srgb, var(--accent, #EEF1F6) 35%, var(--card, #fff)) 100%
+      color-mix(in srgb, var(--accent) 70%, var(--card)) 0%,
+      color-mix(in srgb, var(--accent) 35%, var(--card)) 100%
     );
 }
 [data-module] .cpt-table-wrap {
@@ -1096,7 +1791,7 @@
   box-shadow: inset 0 1px 2px rgba(16,24,40,0.08);
 }
 [data-module] .cpt-btn-primary {
-  background: linear-gradient(180deg, #1E2A3D 0%, var(--primary, #0F1B2D) 100%);
+  background: linear-gradient(180deg, #1E2A3D 0%, var(--primary) 100%);
   box-shadow:
     0 1px 2px rgba(16,24,40,0.18),
     inset 0 1px 0 rgba(255,255,255,0.10);
@@ -1147,14 +1842,14 @@
   border-radius: 6px 6px 0 0;
 }
 [data-module] .cpt-tab:hover:not(.active) {
-  background: color-mix(in srgb, var(--accent, #EEF1F6) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 /* ── Inputs / search: focus ring with primary tint ── */
 [data-module] .cpt-search-field:focus-within {
-  border-color: var(--primary, #0F1B2D);
+  border-color: var(--primary);
   box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--primary, #0F1B2D) 8%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--primary) 8%, transparent),
     0 1px 2px rgba(16,24,40,0.04);
 }
 
@@ -1171,11 +1866,11 @@
   height: 6px;
 }
 [data-module] ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--muted-foreground, #525C6F) 30%, transparent);
+  background: color-mix(in srgb, var(--muted-foreground) 30%, transparent);
   border-radius: 999px;
 }
 [data-module] ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--muted-foreground, #525C6F) 55%, transparent);
+  background: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
 }
 
 /* ── Reduce motion: honor user preference ── */
@@ -1194,8 +1889,8 @@
 
 /* ── Dark mode tweaks for premium polish ── */
 .dark [data-module] {
-  --crm-hairline: color-mix(in srgb, var(--border, #252A38) 80%, transparent);
-  --crm-accent: color-mix(in srgb, var(--primary, #D0D5DD) 28%, var(--border, #252A38));
+  --crm-hairline: color-mix(in srgb, var(--border) 80%, transparent);
+  --crm-accent: color-mix(in srgb, var(--primary) 28%, var(--border));
   --crm-shadow-rest:
     0 1px 0 rgba(0,0,0,0.30),
     0 1px 3px rgba(0,0,0,0.25);
@@ -1203,14 +1898,14 @@
     0 1px 0 rgba(0,0,0,0.30),
     0 14px 30px -10px rgba(0,0,0,0.55),
     0 6px 14px -6px rgba(0,0,0,0.35);
-  --crm-ring: 0 0 0 1px color-mix(in srgb, var(--primary, #D0D5DD) 16%, transparent);
+  --crm-ring: 0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent);
 }
 .dark [data-module] .cpt-kcol {
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--card, #141820) 92%, var(--cpt-col-accent, var(--primary, #D0D5DD))) 0%,
-      color-mix(in srgb, var(--background, #0A0D14) 70%, var(--card, #141820)) 100%
+      color-mix(in srgb, var(--card) 92%, var(--cpt-col-accent, var(--primary))) 0%,
+      color-mix(in srgb, var(--background) 70%, var(--card)) 100%
     );
 }
 .dark [data-module] .cpt-btn-primary {
@@ -1223,8 +1918,8 @@
   background:
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--accent, #1E2535) 80%, transparent) 0%,
-      color-mix(in srgb, var(--accent, #1E2535) 30%, transparent) 100%
+      color-mix(in srgb, var(--accent) 80%, transparent) 0%,
+      color-mix(in srgb, var(--accent) 30%, transparent) 100%
     );
 }
 
@@ -1242,12 +1937,15 @@
 [data-module] {
   /* Premium decel — eases cleanly from any starting velocity */
   --crm-ease-lux: cubic-bezier(0.16, 1, 0.3, 1);
-  /* Warm "gold thread" — used as a 1px accent on active/hovered surfaces */
-  --crm-thread: rgba(184, 154, 82, 0.55);
-  --crm-thread-soft: rgba(184, 154, 82, 0.18);
+  /* Accent "thread" — the 1px hairline on focused/active surfaces. Brand
+     PRIMARY (navy), matching the `.cpt-search-field` focus hairline, so every
+     focused input/card reads like the CRM search. (Was a warm gold rgba —
+     removed per product call: no golden accent anywhere.) */
+  --crm-thread: color-mix(in srgb, var(--primary) 70%, transparent);
+  --crm-thread-soft: color-mix(in srgb, var(--primary) 12%, transparent);
   /* Layered shadows for true depth perception */
   --crm-lux-rest:
-    0 0 0 1px color-mix(in srgb, var(--border, #E4E7EC) 80%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--border) 80%, transparent),
     0 1px 0 rgba(255,255,255,0.7) inset,
     0 1px 1px rgba(16,24,40,0.02),
     0 2px 6px -2px rgba(16,24,40,0.05);
@@ -1274,7 +1972,7 @@
   background:
     radial-gradient(
       80% 60% at 50% -10%,
-      color-mix(in srgb, var(--primary, #0F1B2D) 4%, transparent) 0%,
+      color-mix(in srgb, var(--primary) 4%, transparent) 0%,
       transparent 60%
     ),
     radial-gradient(
@@ -1291,13 +1989,15 @@
 [data-module] [data-slot="card"] {
   position: relative;
   border-color: transparent;
-  background-color: var(--card, #fff);
+  background-color: var(--card);
   box-shadow: var(--crm-lux-rest);
   transition:
     box-shadow 360ms var(--crm-ease-lux),
     transform 360ms var(--crm-ease-lux);
 }
-[data-module]:not([data-page-type="detail"]) [data-slot="card"]:hover {
+/* `.cpt-table-wrap` excluded — a data-table shell is a container, not an
+   interactive card, so it must not lift on hover. */
+[data-module]:not([data-page-type="detail"]) [data-slot="card"]:not(.cpt-table-wrap):hover {
   box-shadow: var(--crm-lux-hover);
   transform: translateY(-2px);
 }
@@ -1308,14 +2008,14 @@
 [data-module][data-page-type="detail"] .rounded-lg.border.bg-card,
 [data-module][data-page-type="detail"] .rounded-md.border.bg-card,
 [data-module][data-page-type="detail"] .rounded-xl.border.bg-card {
-  border-color: var(--border, #E4E7EC);
+  border-color: var(--border);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.7),
     0 1px 2px rgba(16,24,40,0.03);
 }
 [data-module][data-page-type="detail"] [data-slot="card"]:hover,
 [data-module][data-page-type="detail"] .cpt-kpi:hover {
-  border-color: var(--border, #E4E7EC);
+  border-color: var(--border);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.7),
     0 1px 2px rgba(16,24,40,0.03);
@@ -1325,7 +2025,7 @@
 /* ── KPI cards — pure white body, accent halo around card on hover ── */
 [data-module] .cpt-kpi {
   border-color: transparent;
-  background-color: var(--card, #fff);
+  background-color: var(--card);
   box-shadow: var(--crm-lux-rest);
   transition:
     box-shadow 380ms var(--crm-ease-lux),
@@ -1334,9 +2034,9 @@
 [data-module]:not([data-page-type="detail"]) .cpt-kpi:hover {
   transform: translateY(-3px);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 28%, var(--border, #E4E7EC)),
+    0 0 0 1px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary)) 28%, var(--border)),
     0 1px 0 rgba(255,255,255,0.9) inset,
-    0 18px 36px -12px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary, #0F1B2D)) 28%, rgba(16,24,40,0.14)),
+    0 18px 36px -12px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary)) 28%, rgba(16,24,40,0.14)),
     0 8px 16px -8px rgba(16,24,40,0.10);
 }
 [data-module][data-page-type="detail"] .cpt-kpi:hover {
@@ -1352,13 +2052,13 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 600;
-  color: color-mix(in srgb, var(--muted-foreground, #525C6F) 90%, var(--foreground, #0F1B2D));
+  color: color-mix(in srgb, var(--muted-foreground) 90%, var(--foreground));
 }
 
 /* ── Kanban card — pure white body, lift on hover ── */
 [data-module] .cpt-kcard {
   position: relative;
-  background-color: var(--card, #fff);
+  background-color: var(--card);
   box-shadow: var(--crm-lux-rest);
   transition:
     box-shadow 320ms var(--crm-ease-lux),
@@ -1374,8 +2074,8 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--card, #fff) 96%, var(--cpt-col-accent, var(--primary, #0F1B2D))) 0%,
-      color-mix(in srgb, var(--background, #F6F7F9) 80%, var(--card, #fff)) 100%
+      color-mix(in srgb, var(--card) 96%, var(--cpt-col-accent, var(--primary))) 0%,
+      color-mix(in srgb, var(--background) 80%, var(--card)) 100%
     );
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.7),
@@ -1385,14 +2085,14 @@
   height: 2px;
   border-radius: 14px 14px 0 0;
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--cpt-col-accent, var(--primary, #0F1B2D)) 30%, transparent),
-    0 8px 18px -8px var(--cpt-col-accent, color-mix(in srgb, var(--primary, #0F1B2D) 35%, transparent));
+    0 0 0 1px color-mix(in srgb, var(--cpt-col-accent, var(--primary)) 30%, transparent),
+    0 8px 18px -8px var(--cpt-col-accent, color-mix(in srgb, var(--primary) 35%, transparent));
 }
 
 /* ── Premium primary CTA — richer gradient, soft glow on hover ── */
 [data-module] .cpt-btn-primary {
   background:
-    linear-gradient(180deg, #243248 0%, var(--primary, #0F1B2D) 100%);
+    linear-gradient(180deg, var(--color-slate-650) 0%, var(--primary) 100%);
   border-color: transparent;
   box-shadow:
     0 0 0 1px rgba(15,27,45,0.95),
@@ -1445,8 +2145,8 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--card, #fff) 100%, transparent) 0%,
-      color-mix(in srgb, var(--background, #FAFBFC) 65%, var(--card, #fff)) 100%
+      color-mix(in srgb, var(--card) 100%, transparent) 0%,
+      color-mix(in srgb, var(--background) 65%, var(--card)) 100%
     );
   font-weight: 600;
   letter-spacing: 0.075em;
@@ -1458,8 +2158,8 @@
   background:
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--accent, #EEF1F6) 75%, var(--card, #fff)) 0%,
-      color-mix(in srgb, var(--accent, #EEF1F6) 25%, var(--card, #fff)) 100%
+      color-mix(in srgb, var(--accent) 75%, var(--card)) 0%,
+      color-mix(in srgb, var(--accent) 25%, var(--card)) 100%
     );
   box-shadow: inset 2px 0 0 var(--crm-accent);
 }
@@ -1500,21 +2200,87 @@
   font-feature-settings: "tnum", "ss01", "cv11";
 }
 
-/* ── Gold-thread focus accent — appears only on keyboard focus,
-   marking the interactive surface with a luxurious 1px warm hairline. ── */
+/* ── Thread focus accent — appears only on keyboard focus, marking the
+   interactive surface with a 1px primary hairline.
+   NO `border-radius: inherit` here: `inherit` takes the PARENT's radius
+   (usually 0), squaring off rounded inputs on focus — a box-shadow ring
+   already follows the element's own radius by itself. ── */
 [data-module] :focus-visible {
   outline: none;
   box-shadow:
     0 0 0 1px var(--crm-thread),
     0 0 0 4px var(--crm-thread-soft) !important;
-  border-radius: inherit;
 }
-[data-module] [data-slot="card"]:focus-within,
-[data-module] .cpt-kcard:focus-within,
-[data-module] .cpt-kpi:focus-within {
+
+/* Non-keyboard focus must not paint the UA black outline. A dialog restores
+   focus programmatically on close, which lands on a container (a card, a
+   scrollable region) and showed a stray black border; keyboard focus still
+   gets the accent ring above via :focus-visible. */
+[data-module] :focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* CRM data-table search box opts out of the gold-thread focus ring — the field
+   already signals focus via its wrapper border. Scoped to .crm-data-table (set
+   by modules/crm/components/CrmDataTable.tsx) so the shared
+   BusinessMetricsTable keeps the ring. */
+[data-module] .crm-data-table .cpt-search-field input:focus-visible,
+[data-module] .crm-tasks-toolbar .cpt-search-field input:focus-visible {
+  box-shadow: none !important;
+}
+/* Settings plain search fields (Roles & Permissions, etc.) opt out of the
+   gold-thread focus ring too — same neutral in-table `.cpt-search-field` look
+   as CRM: a primary hairline on the wrapper, no warm gold halo on the input. */
+[data-module] .settings-list-search.cpt-search-field input:focus-visible {
+  box-shadow: none !important;
+}
+/* CRM list-page toolbar search (leads / deals / rejected-leads) opts out of the
+   gold-thread focus too, matching the in-table `.cpt-search-field` look: a
+   neutral primary hairline instead of the warm gold ring. The extra `.crm-list-
+   search` class out-specifies the generic `[data-slot="input"]:focus` rule below
+   (both use !important, so specificity decides). */
+[data-module] [data-slot="input"].crm-list-search:focus,
+[data-module] [data-slot="input"].crm-list-search:focus-visible {
+  border-color: var(--primary) !important;
+  /* Keep the input's own 7px radius on focus — the global :focus-visible rule
+     forces `border-radius: inherit` (→ the wrapper's 0), which squares off the
+     focus ring. Restore it so the ring follows the rounded input. */
+  border-radius: 7px !important;
+  /* Just the dark border on focus — no outer glow/halo ring. */
+  box-shadow: inset 0 1px 2px rgba(16,24,40,0.04) !important;
+  outline: none !important;
+}
+/* Quote clause builder inputs opt out of the gold-thread focus ring — a
+   neutral slate focus border matches the "no golden accent" preference. The
+   inputs are the shared ui/Input + ui/Textarea; this only swaps the warm ring
+   for the component's own quiet focus border. */
+[data-module] .quote-clause-section input:focus-visible {
+  box-shadow: inset 0 1px 2px rgba(16, 24, 40, 0.04) !important;
+  border-color: var(--primary) !important;
+  border-radius: 7px !important;
+  outline: none !important;
+}
+[data-module] .quote-clause-section textarea:focus-visible {
+  box-shadow: inset 0 1px 2px rgba(16, 24, 40, 0.04) !important;
+  border-color: var(--primary) !important;
+  border-radius: 0.5rem !important;
+  outline: none !important;
+}
+
+/* `.cpt-table-wrap` excluded — a table holds search inputs / sort headers /
+   row buttons, so `:focus-within` would ring the whole table on every
+   interaction. */
+/* Hairline only — the 4px soft halo made a card read double-bordered the
+   moment its search input took focus. */
+/* `:has(:focus-visible)` not `:focus-within`: the card accent should mark
+   KEYBOARD navigation, not light up whenever a dialog restores focus to a
+   button inside the card (mouse / programmatic focus), which rang the whole
+   card with a stray border across the app. */
+[data-module] [data-slot="card"]:not(.cpt-table-wrap):has(:focus-visible),
+[data-module] .cpt-kcard:has(:focus-visible),
+[data-module] .cpt-kpi:has(:focus-visible) {
   box-shadow:
     0 0 0 1px var(--crm-thread),
-    0 0 0 4px var(--crm-thread-soft),
     var(--crm-lux-hover);
 }
 
@@ -1522,7 +2288,7 @@
 [data-module] .sticky.top-14 {
   backdrop-filter: blur(14px) saturate(180%);
   -webkit-backdrop-filter: blur(14px) saturate(180%);
-  border-bottom-color: color-mix(in srgb, var(--border, #E4E7EC) 80%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--border) 80%, transparent);
   box-shadow:
     0 1px 0 rgba(255,255,255,0.7) inset,
     0 1px 0 rgba(16,24,40,0.04),
@@ -1573,7 +2339,7 @@
 /* ── Dark mode — adapt satin highlights and atmospheric backdrop ── */
 .dark [data-module] {
   --crm-lux-rest:
-    0 0 0 1px color-mix(in srgb, var(--border, #252A38) 90%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--border) 90%, transparent),
     0 1px 0 rgba(255,255,255,0.04) inset,
     0 1px 2px rgba(0,0,0,0.30),
     0 4px 12px -4px rgba(0,0,0,0.25);
@@ -1582,8 +2348,9 @@
     0 1px 0 rgba(255,255,255,0.06) inset,
     0 16px 36px -12px rgba(0,0,0,0.65),
     0 6px 14px -6px rgba(0,0,0,0.40);
-  --crm-thread: rgba(212, 184, 116, 0.45);
-  --crm-thread-soft: rgba(212, 184, 116, 0.15);
+  /* Dark mode: primary is near-white here — same no-gold rule as light. */
+  --crm-thread: color-mix(in srgb, var(--primary) 55%, transparent);
+  --crm-thread-soft: color-mix(in srgb, var(--primary) 14%, transparent);
 }
 .dark [data-module]::before {
   background:
@@ -1613,8 +2380,8 @@
   background:
     linear-gradient(
       180deg,
-      var(--card, #141820) 0%,
-      color-mix(in srgb, var(--background, #0A0D14) 60%, var(--card, #141820)) 100%
+      var(--card) 0%,
+      color-mix(in srgb, var(--background) 60%, var(--card)) 100%
     );
 }
 .dark [data-module] .cpt-btn-primary {
@@ -1631,6 +2398,30 @@
     0 1px 0 rgba(255,255,255,0.10) inset,
     0 2px 6px rgba(0,0,0,0.45),
     0 12px 24px -6px rgba(0,0,0,0.55);
+}
+.dark [data-module]:not([data-page-type="detail"]) [data-slot="card"]:not(.cpt-table-wrap):hover,
+.dark [data-module]:not([data-page-type="detail"]) .cpt-kcard:hover,
+.dark [data-module]:not([data-page-type="detail"]) .rounded-lg.border.bg-card:not(.cpt-table-wrap):hover,
+.dark [data-module]:not([data-page-type="detail"]) .rounded-md.border.bg-card:not(.cpt-table-wrap):hover,
+.dark [data-module]:not([data-page-type="detail"]) .rounded-xl.border.bg-card:not(.cpt-table-wrap):hover {
+  background-color: color-mix(in srgb, var(--card) 94%, var(--accent));
+}
+.dark [data-module]:not([data-page-type="detail"]) .cpt-kpi:hover {
+  background-color: color-mix(in srgb, var(--card) 93%, var(--accent));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary)) 24%, var(--border)),
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 16px 32px -14px rgba(0,0,0,0.62),
+    0 8px 16px -10px color-mix(in srgb, var(--cpt-kpi-accent, var(--primary)) 18%, rgba(0,0,0,0.45));
+}
+.dark [data-module]:not([data-page-type="detail"]) .rounded-lg.border.bg-card:hover,
+.dark [data-module]:not([data-page-type="detail"]) .rounded-md.border.bg-card:hover,
+.dark [data-module]:not([data-page-type="detail"]) .rounded-xl.border.bg-card:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 0 0 1px var(--crm-accent),
+    0 12px 24px -12px rgba(0,0,0,0.52),
+    0 4px 10px -6px rgba(0,0,0,0.34);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1667,15 +2458,15 @@
 }
 
 /* Default (slate primary) — glossy gradient */
-[data-module] [data-slot="button"].bg-\[\#0F1B2D\] {
-  background: linear-gradient(180deg, #243248 0%, #0F1B2D 100%) !important;
+[data-module] [data-slot="button"].bg-\[\var(--foreground)\] {
+  background: linear-gradient(180deg, var(--color-slate-650) 0%, var(--primary) 100%) !important;
   box-shadow:
     0 0 0 1px rgba(15,27,45,0.95),
     inset 0 1px 0 rgba(255,255,255,0.14),
     0 1px 2px rgba(16,24,40,0.20),
     0 4px 10px -4px rgba(15,27,45,0.30);
 }
-[data-module] [data-slot="button"].bg-\[\#0F1B2D\]:hover:not(:disabled) {
+[data-module] [data-slot="button"].bg-\[\var(--foreground)\]:hover:not(:disabled) {
   background: linear-gradient(180deg, #2C3B53 0%, #16243A 100%) !important;
   box-shadow:
     0 0 0 1px rgba(15,27,45,0.95),
@@ -1685,15 +2476,15 @@
 }
 
 /* Outline / secondary / destructive (light-bg variants) — satin top */
-[data-module] [data-slot="button"].border-\[\#D0D5DD\],
-[data-module] [data-slot="button"].bg-\[\#EEF0F3\] {
+[data-module] [data-slot="button"].border-\[\var(--input)\],
+[data-module] [data-slot="button"].bg-\[\var(--muted)\] {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.7),
     0 1px 1px rgba(16,24,40,0.03),
     0 1px 2px rgba(16,24,40,0.04);
 }
-[data-module] [data-slot="button"].border-\[\#D0D5DD\]:hover:not(:disabled),
-[data-module] [data-slot="button"].bg-\[\#EEF0F3\]:hover:not(:disabled) {
+[data-module] [data-slot="button"].border-\[\var(--input)\]:hover:not(:disabled),
+[data-module] [data-slot="button"].bg-\[\var(--muted)\]:hover:not(:disabled) {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.85),
     0 0 0 1px var(--crm-accent),
@@ -1702,40 +2493,40 @@
 }
 
 /* Semantic solid buttons — gradient + matching halo on hover */
-[data-module] [data-slot="button"].bg-\[\#067647\] {
+[data-module] [data-slot="button"].bg-\[\var(--success)\] {
   background: linear-gradient(180deg, #0A8B53 0%, #056338 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.18),
     0 1px 2px rgba(6,118,71,0.30),
     0 4px 10px -4px rgba(6,118,71,0.30);
 }
-[data-module] [data-slot="button"].bg-\[\#067647\]:hover:not(:disabled) {
+[data-module] [data-slot="button"].bg-\[\var(--success)\]:hover:not(:disabled) {
   background: linear-gradient(180deg, #0CA060 0%, #066E3F 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.22),
     0 12px 24px -6px rgba(6,118,71,0.45);
 }
-[data-module] [data-slot="button"].bg-\[\#175CD3\] {
+[data-module] [data-slot="button"].bg-\[\var(--info)\] {
   background: linear-gradient(180deg, #2A72E8 0%, #134AA8 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.18),
     0 1px 2px rgba(23,92,211,0.30),
     0 4px 10px -4px rgba(23,92,211,0.30);
 }
-[data-module] [data-slot="button"].bg-\[\#175CD3\]:hover:not(:disabled) {
+[data-module] [data-slot="button"].bg-\[\var(--info)\]:hover:not(:disabled) {
   background: linear-gradient(180deg, #3A86FF 0%, #1654BF 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.22),
     0 12px 24px -6px rgba(23,92,211,0.45);
 }
-[data-module] [data-slot="button"].bg-\[\#B54708\] {
+[data-module] [data-slot="button"].bg-\[\var(--warning)\] {
   background: linear-gradient(180deg, #D2570B 0%, #9F3D06 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.18),
     0 1px 2px rgba(181,71,8,0.30),
     0 4px 10px -4px rgba(181,71,8,0.30);
 }
-[data-module] [data-slot="button"].bg-\[\#B54708\]:hover:not(:disabled) {
+[data-module] [data-slot="button"].bg-\[\var(--warning)\]:hover:not(:disabled) {
   background: linear-gradient(180deg, #E96612 0%, #B54708 100%) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.22),
@@ -1743,11 +2534,11 @@
 }
 
 /* Tinted-light variants — subtle halo on hover */
-[data-module] [data-slot="button"][class*="bg-[#EEF1F6]"]:hover:not(:disabled),
-[data-module] [data-slot="button"][class*="bg-[#ECFDF3]"]:hover:not(:disabled),
-[data-module] [data-slot="button"][class*="bg-[#FEF3F2]"]:hover:not(:disabled),
-[data-module] [data-slot="button"][class*="bg-[#FFFAEB]"]:hover:not(:disabled),
-[data-module] [data-slot="button"][class*="bg-[#EFF4FF]"]:hover:not(:disabled) {
+[data-module] [data-slot="button"][class*="bg-[var(--accent)]"]:hover:not(:disabled),
+[data-module] [data-slot="button"][class*="bg-[var(--success-soft)]"]:hover:not(:disabled),
+[data-module] [data-slot="button"][class*="bg-[var(--destructive-soft)]"]:hover:not(:disabled),
+[data-module] [data-slot="button"][class*="bg-[var(--warning-soft)]"]:hover:not(:disabled),
+[data-module] [data-slot="button"][class*="bg-[var(--info-soft)]"]:hover:not(:disabled) {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.7),
     0 0 0 1px color-mix(in srgb, currentColor 18%, transparent),
@@ -1756,7 +2547,7 @@
 
 /* Ghost / link — refined hover bg */
 [data-module] [data-slot="button"].border-transparent.bg-transparent:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent, #EEF1F6) 60%, transparent) !important;
+  background: color-mix(in srgb, var(--accent) 60%, transparent) !important;
 }
 
 /* ── Inputs / Textarea / Select-trigger ──
@@ -1776,26 +2567,38 @@
 [data-module] [data-slot="input"]:hover:not(:disabled):not(:focus),
 [data-module] [data-slot="textarea"]:hover:not(:disabled):not(:focus),
 [data-module] [data-slot="select-trigger"]:hover:not(:disabled):not([data-state="open"]) {
-  border-color: color-mix(in srgb, var(--primary, #0F1B2D) 18%, var(--input, #D0D5DD));
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--input));
 }
+/* Focus = the `.cpt-search-field` look (the CRM list search): ONE crisp
+   primary hairline via border-color alone — no ring, no halo. The old
+   1px + 4px thread shadows read as a heavy double border. */
 [data-module] [data-slot="input"]:focus,
 [data-module] [data-slot="input"]:focus-visible,
 [data-module] [data-slot="textarea"]:focus,
 [data-module] [data-slot="textarea"]:focus-visible,
 [data-module] [data-slot="select-trigger"][data-state="open"],
 [data-module] [data-slot="select-trigger"]:focus-visible {
-  border-color: var(--crm-thread) !important;
-  box-shadow:
-    inset 0 1px 2px rgba(16,24,40,0.04),
-    0 0 0 1px var(--crm-thread),
-    0 0 0 4px var(--crm-thread-soft) !important;
+  border-color: var(--primary) !important;
+  box-shadow: inset 0 1px 2px rgba(16,24,40,0.04) !important;
+  outline: none !important;
+}
+/* Opt-out of the gold-thread focus for plain search boxes (e.g. Settings ›
+   User Management) — a clean dark hairline like the in-table `.cpt-search-field`
+   search, no gold halo. The extra `.input-outline-dark` class out-specifies the
+   generic `[data-slot="input"]:focus` rule above (both !important → the more
+   specific selector wins). `primary` is the darkest brand colour (near-black). */
+[data-module] [data-slot="input"].input-outline-dark:focus,
+[data-module] [data-slot="input"].input-outline-dark:focus-visible {
+  border-color: var(--primary) !important;
+  border-radius: 7px !important;
+  box-shadow: inset 0 1px 2px rgba(16,24,40,0.04) !important;
   outline: none !important;
 }
 
 /* ── Tabs (shadcn) — luxe underline + smooth transition ── */
 [data-module] [data-slot="tabs-list"] {
   position: relative;
-  border-bottom: 1px solid var(--border, #E4E7EC);
+  border-bottom: 1px solid var(--border);
   background: transparent;
   border-radius: 0;
   padding: 0;
@@ -1810,17 +2613,17 @@
   margin-bottom: -1px;
   font-size: 13px;
   font-weight: 550;
-  color: var(--muted-foreground, #525C6F);
+  color: var(--muted-foreground);
   transition:
     color 180ms var(--crm-ease-lux),
     background-color 180ms var(--crm-ease-lux);
 }
 [data-module] [data-slot="tabs-trigger"]:hover:not([data-state="active"]) {
-  color: var(--foreground, #0F1B2D);
-  background: color-mix(in srgb, var(--accent, #EEF1F6) 55%, transparent);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 [data-module] [data-slot="tabs-trigger"][data-state="active"] {
-  color: var(--foreground, #0F1B2D);
+  color: var(--foreground);
   font-weight: 650;
   background: transparent;
   box-shadow: none;
@@ -1831,7 +2634,7 @@
   inset: auto 8px 0 8px;
   height: 2px;
   border-radius: 2px 2px 0 0;
-  background: linear-gradient(90deg, var(--crm-thread), var(--primary, #0F1B2D));
+  background: linear-gradient(90deg, var(--crm-thread), var(--primary));
   box-shadow: 0 -1px 6px var(--crm-thread-soft);
 }
 
@@ -1843,7 +2646,7 @@
   transition: background-color 220ms var(--crm-ease-lux), box-shadow 220ms var(--crm-ease-lux);
 }
 [data-module] [data-slot="switch"][data-state="checked"] {
-  background: linear-gradient(180deg, #243248 0%, var(--primary, #0F1B2D) 100%);
+  background: linear-gradient(180deg, var(--color-slate-650) 0%, var(--primary) 100%);
   box-shadow:
     inset 0 1px 2px rgba(0,0,0,0.30),
     0 0 0 1px rgba(15,27,45,0.95),
@@ -1864,8 +2667,8 @@
     box-shadow 220ms var(--crm-ease-lux);
 }
 [data-module] [data-slot="checkbox"][data-state="checked"] {
-  background: linear-gradient(180deg, #243248 0%, var(--primary, #0F1B2D) 100%);
-  border-color: var(--primary, #0F1B2D);
+  background: linear-gradient(180deg, var(--color-slate-650) 0%, var(--primary) 100%);
+  border-color: var(--primary);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.18),
     0 0 0 1px rgba(15,27,45,0.95),
@@ -1881,8 +2684,8 @@
   background-image:
     linear-gradient(
       180deg,
-      color-mix(in srgb, currentColor 4%, var(--card, #fff)) 0%,
-      var(--card, #fff) 100%
+      color-mix(in srgb, currentColor 4%, var(--card)) 0%,
+      var(--card) 100%
     );
 }
 
@@ -1914,13 +2717,13 @@
   inset: 12px auto 12px 0;
   width: 2px;
   border-radius: 2px;
-  background: var(--cpt-card-accent, var(--primary, #0F1B2D));
+  background: var(--cpt-card-accent, var(--primary));
   opacity: 0.7;
 }
-[data-module] [data-slot="card"][data-accent="success"] { --cpt-card-accent: #067647; }
-[data-module] [data-slot="card"][data-accent="info"]    { --cpt-card-accent: #175CD3; }
-[data-module] [data-slot="card"][data-accent="warning"] { --cpt-card-accent: #B54708; }
-[data-module] [data-slot="card"][data-accent="danger"]  { --cpt-card-accent: #B42318; }
+[data-module] [data-slot="card"][data-accent="success"] { --cpt-card-accent: var(--success); }
+[data-module] [data-slot="card"][data-accent="info"]    { --cpt-card-accent: var(--info); }
+[data-module] [data-slot="card"][data-accent="warning"] { --cpt-card-accent: var(--warning); }
+[data-module] [data-slot="card"][data-accent="danger"]  { --cpt-card-accent: var(--destructive); }
 [data-module] [data-slot="card"][data-accent="violet"]  { --cpt-card-accent: #6938EF; }
 [data-module] [data-slot="card"][data-accent="teal"]    { --cpt-card-accent: #0E9384; }
 
@@ -1938,42 +2741,94 @@
 [data-slot="sheet-content"] {
   box-shadow:
     0 1px 0 rgba(255,255,255,0.7) inset,
-    0 0 0 1px color-mix(in srgb, var(--border, #E4E7EC) 80%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--border) 80%, transparent),
     0 24px 48px -16px rgba(16,24,40,0.20),
     0 12px 24px -8px rgba(16,24,40,0.12) !important;
 }
 [data-slot="dialog-overlay"],
 [data-slot="sheet-overlay"] {
-  background: color-mix(in srgb, var(--background, #0F1B2D) 60%, transparent) !important;
+  background: color-mix(in srgb, var(--background) 60%, transparent) !important;
   backdrop-filter: blur(6px) saturate(140%);
   -webkit-backdrop-filter: blur(6px) saturate(140%);
 }
 [data-slot="dialog-header"],
 [data-slot="sheet-header"] {
-  border-bottom: 1px solid color-mix(in srgb, var(--border, #E4E7EC) 70%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 [data-slot="dialog-footer"],
 [data-slot="sheet-footer"] {
-  border-top: 1px solid color-mix(in srgb, var(--border, #E4E7EC) 70%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   background:
     linear-gradient(
       180deg,
-      var(--card, #fff) 0%,
-      color-mix(in srgb, var(--background, #FAFBFC) 70%, var(--card, #fff)) 100%
+      var(--card) 0%,
+      color-mix(in srgb, var(--background) 70%, var(--card)) 100%
     );
 }
 
-/* Popover, DropdownMenu, HoverCard content — soft floating */
+/* Popover, DropdownMenu, HoverCard, Select content — soft floating */
 [data-slot="popover-content"],
 [data-slot="dropdown-menu-content"],
 [data-slot="dropdown-menu-sub-content"],
-[data-slot="hover-card-content"] {
+[data-slot="hover-card-content"],
+[data-slot="select-content"] {
   box-shadow:
     0 1px 0 rgba(255,255,255,0.7) inset,
-    0 0 0 1px color-mix(in srgb, var(--border, #E4E7EC) 80%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--border) 80%, transparent),
     0 16px 32px -10px rgba(16,24,40,0.16),
     0 6px 14px -4px rgba(16,24,40,0.08) !important;
   border-radius: 10px;
+}
+
+/* Select popup polish — match the trigger's interior padding so an open
+   dropdown reads as a continuation of the field, not a stray panel.
+   Capped at 5 visible rows; the rest scroll. Each row is ~32px (7+18+7),
+   plus 10px container padding = 170px, plus a 4px buffer so the 5th row
+   doesn't graze the bottom edge. */
+[data-slot="select-content"] {
+  padding: 5px;
+  max-height: 174px !important;
+}
+
+/* Trigger reacts when the popup is open — darker border + flipped chevron
+   so the field reads as actively engaged, not just sitting next to a panel. */
+[data-slot="select-trigger"][aria-expanded="true"] {
+  border-color: var(--foreground);
+}
+/* Chevron-rotate-on-open and the transition timing now live on the
+   ChevronDownIcon's Tailwind classes in select.tsx
+   (`transition-transform duration-200
+    group-data-popup-open/select-trigger:rotate-180`). A second rule here
+   double-composed with the Tailwind transform → the icon spun a full
+   360° instead of flipping 180°. */
+
+/* Selected option gets a tonal background — the right-anchored checkmark
+   is easy to miss against a row of identical-tinted hover states; a soft
+   slate-tint pill gives the eye a stronger "this is the current value" cue. */
+[data-slot="select-item"][data-selected],
+[data-slot="select-item"][aria-selected="true"] {
+  background: color-mix(in srgb, #EEF1F6 70%, #FFFFFF);
+  color: var(--foreground);
+  font-weight: 500;
+}
+.dark [data-slot="select-item"][data-selected],
+.dark [data-slot="select-item"][aria-selected="true"] {
+  background: rgba(255,255,255,0.06);
+  color: var(--foreground);
+}
+
+/* Select items — same baseline as the trigger (13.5px body), comfortable
+   vertical rhythm, and symmetric horizontal padding so unselected rows
+   don't look truncated next to selected ones. The component's default
+   `pl-1.5 pr-8 py-1` reads as a context-menu item, not a field option. */
+[data-slot="select-item"] {
+  padding: 7px 10px 7px 10px !important;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+[data-slot="select-item"] [data-slot="select-item-indicator"],
+[data-slot="select-item"] > span:last-child:not(:only-child) {
+  right: 10px !important;
 }
 
 /* Dropdown / Select items — polished hover */
@@ -1986,13 +2841,13 @@
 [data-slot="dropdown-menu-item"][data-highlighted],
 [data-slot="select-item"]:hover,
 [data-slot="select-item"][data-highlighted] {
-  background: color-mix(in srgb, var(--accent, #EEF1F6) 70%, var(--card, #fff));
+  background: color-mix(in srgb, var(--accent) 70%, var(--card));
 }
 
 /* Tooltip — refined dark pill */
 [data-slot="tooltip-content"] {
-  background: linear-gradient(180deg, #243248 0%, #0F1B2D 100%) !important;
-  color: #FAFBFC !important;
+  background: linear-gradient(180deg, var(--color-slate-650) 0%, var(--primary) 100%) !important;
+  color: var(--color-gray-50) !important;
   box-shadow:
     0 1px 0 rgba(255,255,255,0.10) inset,
     0 0 0 1px rgba(15,27,45,0.95),
@@ -2008,17 +2863,48 @@
 [data-sonner-toaster] [data-sonner-toast] {
   box-shadow:
     0 1px 0 rgba(255,255,255,0.7) inset,
-    0 0 0 1px color-mix(in srgb, var(--border, #E4E7EC) 80%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--border) 80%, transparent),
     0 16px 36px -10px rgba(16,24,40,0.18),
     0 6px 14px -4px rgba(16,24,40,0.10) !important;
+  padding-right: 36px !important;
+}
+
+/* Close button — always visible, positioned on the right */
+[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  opacity: 1 !important;
+  left: auto !important;
+  right: 8px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--popover) 92%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent) !important;
+  color: var(--popover-foreground) !important;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-close-button]:hover {
+  background: color-mix(in srgb, var(--accent) 85%, transparent) !important;
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border)) !important;
+}
+.dark [data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  background: color-mix(in srgb, var(--popover) 85%, transparent) !important;
+  border-color: rgba(255,255,255,0.14) !important;
+  color: var(--popover-foreground) !important;
+}
+.dark [data-sonner-toaster] [data-sonner-toast] [data-close-button]:hover {
+  background: color-mix(in srgb, var(--accent) 70%, transparent) !important;
+  border-color: rgba(255,255,255,0.22) !important;
 }
 
 /* Calendar — focused day uses gold thread, range looks luxe */
 [data-slot="calendar"] [data-day]:hover:not([data-disabled]) {
-  background: color-mix(in srgb, var(--accent, #EEF1F6) 70%, var(--card, #fff));
+  background: color-mix(in srgb, var(--accent) 70%, var(--card));
 }
 [data-slot="calendar"] [data-day][data-selected="true"] {
-  background: linear-gradient(180deg, #243248 0%, var(--primary, #0F1B2D) 100%) !important;
+  background: linear-gradient(180deg, var(--color-slate-650) 0%, var(--primary) 100%) !important;
   color: #fff !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.18),
@@ -2032,6 +2918,7 @@
 .dark [data-slot="dropdown-menu-content"],
 .dark [data-slot="dropdown-menu-sub-content"],
 .dark [data-slot="hover-card-content"],
+.dark [data-slot="select-content"],
 .dark [data-sonner-toaster] [data-sonner-toast] {
   box-shadow:
     0 1px 0 rgba(255,255,255,0.05) inset,
@@ -2049,4 +2936,84 @@
     0 1px 0 rgba(255,255,255,0.06) inset,
     0 0 0 1px rgba(255,255,255,0.10),
     0 8px 18px -4px rgba(0,0,0,0.55) !important;
+}
+.dark [data-module] .cpt-btn:not(.cpt-btn-primary):not(.cpt-btn-ghost):hover,
+.dark [data-module] [data-slot="button"].border-\[\var(--input)\]:hover:not(:disabled),
+.dark [data-module] [data-slot="button"].bg-\[\var(--muted)\]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 58%, transparent) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 0 0 1px color-mix(in srgb, var(--primary) 18%, transparent),
+    0 8px 16px -10px rgba(0,0,0,0.42);
+}
+.dark [data-module] [data-slot="button"].border-transparent.bg-transparent:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 68%, transparent) !important;
+}
+.dark [data-module] [data-slot="input"]:hover:not(:disabled):not(:focus),
+.dark [data-module] [data-slot="textarea"]:hover:not(:disabled):not(:focus),
+.dark [data-module] [data-slot="select-trigger"]:hover:not(:disabled):not([data-state="open"]) {
+  background: color-mix(in srgb, var(--accent) 18%, var(--background));
+  border-color: color-mix(in srgb, var(--primary) 22%, var(--border));
+}
+.dark [data-module] [data-slot="tabs-trigger"]:hover:not([data-state="active"]) {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--accent) 72%, transparent);
+}
+.dark [data-module] .cpt-badge:hover,
+.dark [data-module] [data-slot="badge"]:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 0 0 1px color-mix(in srgb, currentColor 18%, transparent),
+    0 0 0 4px color-mix(in srgb, currentColor 6%, transparent);
+}
+.dark [data-slot="dropdown-menu-item"]:hover,
+.dark [data-slot="dropdown-menu-item"][data-highlighted],
+.dark [data-slot="select-item"]:hover,
+.dark [data-slot="select-item"][data-highlighted] {
+  background: color-mix(in srgb, var(--accent) 78%, transparent);
+}
+.dark [data-slot="calendar"] [data-day]:hover:not([data-disabled]) {
+  background: color-mix(in srgb, var(--accent) 74%, transparent);
+}
+
+/* PM Approvals queues (PmQueueTable) — every tab renders the same table:
+ * fixed layout (no content-driven column jumps), Sr-No pinned narrow. Each
+ * tab keeps its own columns + data. */
+.pm-queue-table .premium-table {
+  table-layout: fixed;
+  width: 100%;
+  /* Floor of ~150px per data column (+ Sr No). Wide screens still spread the
+   * columns evenly; narrow ones scroll horizontally in the table wrapper
+   * instead of crushing every cell to an ellipsis. `--pm-cols` is set by
+   * PmQueueTable. */
+  min-width: calc(64px + var(--pm-cols, 6) * 150px);
+}
+.pm-queue-table .premium-table th:first-child {
+  width: 64px;
+}
+/* No per-column widths: with the fixed layout every data column gets an
+ * equal share of the table, so spacing between columns is even within each
+ * tab's table and there's no dead space trailing the last column. */
+/* Toolbar: the WMS look comes from the module-wide `.procurement-search-scope`
+ * (20rem search box, 40px controls) plus `bmt-search-md` / `filterSize="default"`
+ * on PmQueueTable. Only widths the shared rules don't set live here: the
+ * multi-select filters get the WMS account-filter width (its AsyncSelect is
+ * `w-[248px]`), and the date-range chip is wider than BMT's 190px so a picked
+ * range ("01 Sept 2026 – 30 Sept 2026") shows in full. */
+.pm-queue-table .pm-queue-filter {
+  flex: 0 0 248px;
+  width: 248px;
+}
+.pm-queue-table [data-slot="date-range-picker-trigger"] {
+  flex: 0 0 270px;
+  width: 270px;
+}
+/* Same row height on every tab — rows holding a badge or buttons would
+ * otherwise sit taller than plain-text rows. */
+.pm-queue-table .premium-table tbody tr {
+  height: 44px;
+}
+.pm-queue-table .premium-table tbody td {
+  padding-top: 0;
+  padding-bottom: 0;
 }

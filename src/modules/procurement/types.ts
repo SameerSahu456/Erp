@@ -1,4 +1,4 @@
-import type { VariantCondition, PurchaseType } from '@/modules/wms/types'
+import type { VariantCondition, PurchaseType } from '@modules/wms'
 
 // ── Purchase Request ──
 export type PRStatus = 'Draft' | 'Submitted' | 'Under Review' | 'Approved' | 'Partially Approved' | 'Rejected' | 'Converted to PO'

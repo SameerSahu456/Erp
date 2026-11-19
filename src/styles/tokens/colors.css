@@ -1,0 +1,109 @@
+/* ══════════════════════════════════════════════════════════════════
+   Comprint ERP — Tier 1: Primitive palette ramps
+   --------------------------------------------------------------------
+   THIS IS THE ONLY FILE WHERE HEX VALUES MAY APPEAR.
+
+   - Each ramp is a sequence of neutral steps (50 → 950) and exists as
+     raw colour data.  No semantic meaning lives here.
+   - Higher tiers (`themes.css` → semantic tokens; `index.css` → the
+     Tailwind bridge) point at THESE values via `var(--color-…)`.
+   - Stops were chosen by what the codebase actually uses today, then
+     filled out for ramp continuity.  Do not invent new stops without
+     a real call-site.
+
+   See DESIGN-SYSTEM.md → "Token reference" for the semantic tokens that
+   reference these ramps, and the "Migration table" for legacy hex
+   values that should be retired in favour of a semantic token.
+   ══════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Slate ───────────────────────────────────────────────────────
+     Comprint brand neutral — cool navy.  Used for foreground text,
+     primary surfaces, and brand chrome.  Anchor stop is 700 (the
+     "Comprint navy" everyone has seen) — that's the historical
+     `--color-primary-500` value, renumbered to fit a 50-950 scale. */
+  --color-slate-50:  #EEF1F6;
+  --color-slate-100: #D0D5DD;
+  --color-slate-200: #98A2B3;
+  --color-slate-300: #667085;
+  --color-slate-350: #A8B1C0;  /* dark-mode muted-foreground (extension) */
+  --color-slate-400: #344054;
+  --color-slate-500: #525C6F;  /* light-mode muted-foreground */
+  --color-slate-600: #1E2A3D;  /* primary-hover */
+  --color-slate-650: #243248;  /* detail-head gradient top stop */
+  --color-slate-700: #0F1B2D;  /* brand navy — foreground / primary */
+  --color-slate-800: #0A1320;
+  --color-slate-900: #050A12;
+  --color-slate-950: #03060B;
+
+  /* ── Gray ────────────────────────────────────────────────────────
+     Pure neutral surface ramp.  Used for backgrounds, borders, inputs.
+     Anchor stops: 100 (page background), 200 (muted surface),
+     300 (border), 400 (input border). */
+  --color-gray-50:  #FAFBFC;
+  --color-gray-100: #F6F7F9;  /* light-mode background */
+  --color-gray-150: #E8EAEF;  /* dark-mode foreground/card-foreground (extension) */
+  --color-gray-200: #EEF0F3;  /* light-mode secondary / muted */
+  --color-gray-300: #E4E7EC;  /* light-mode border */
+  --color-gray-400: #D0D5DD;  /* light-mode input */
+  --color-gray-500: #98A2B3;
+  --color-gray-600: #667085;
+  --color-gray-700: #344054;
+  --color-gray-800: #1A1F2B;  /* dark-mode muted / secondary */
+  --color-gray-850: #1E2535;  /* dark-mode accent (extension) */
+  --color-gray-870: #252A38;  /* dark-mode border / input (extension) */
+  --color-gray-880: #10141C;  /* dark-mode sidebar (extension) */
+  --color-gray-900: #141820;  /* dark-mode card / popover */
+  --color-gray-950: #0A0D14;  /* dark-mode background */
+
+  /* ── Green — success ─────────────────────────────────────────────
+     50/100/200 = soft fills; 600 = solid; 700/800 = hover / dark. */
+  --color-green-50:  #ECFDF3;
+  --color-green-100: #D1FAE5;
+  --color-green-200: #A7F3D0;
+  --color-green-600: #067647;
+  --color-green-700: #055C38;
+  --color-green-800: #044D2E;
+
+  /* ── Red — danger / destructive ─────────────────────────────────
+     `red-dark-1` is the brighter shade used to keep the destructive
+     button readable on dark surfaces. */
+  --color-red-50:       #FEF3F2;
+  --color-red-100:      #FEE2E2;
+  --color-red-200:      #FECACA;
+  --color-red-600:      #B42318;
+  --color-red-700:      #991B14;
+  --color-red-800:      #7A1610;
+  --color-red-dark-1:   #E05252;
+
+  /* ── Amber — warning ────────────────────────────────────────────*/
+  --color-amber-50:  #FFFAEB;
+  --color-amber-100: #FEF3C7;
+  --color-amber-200: #FDE68A;
+  --color-amber-600: #B54708;
+  --color-amber-700: #9A3B06;
+  --color-amber-800: #7F3005;
+
+  /* ── Blue — info ─────────────────────────────────────────────────*/
+  --color-blue-50:  #EFF4FF;
+  --color-blue-100: #DBEAFE;
+  --color-blue-200: #BFDBFE;
+  --color-blue-600: #175CD3;
+  --color-blue-700: #1349A8;
+  --color-blue-800: #0F3A87;
+
+  /* ── Violet — accent (audit event types; a distinct non-state hue).
+     NAMED stops (not 50/600/…) on purpose: numbered names would override
+     Tailwind's default violet-N scale that some dashboards use decoratively.
+     Only the semantic `--violet` token (Tier 2) consumes these. */
+  --color-violet-tint:   #F4F1FF;
+  --color-violet-base:   #7239EA;
+  --color-violet-strong: #5B24C4;
+
+  /* ── White / black ──────────────────────────────────────────────
+     Used only by primary-foreground, card, popover, sidebar, and the
+     ::selection state.  Prefer `--color-white` over `#FFFFFF` even
+     here so that future inverse-theme experiments stay token-clean. */
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+}

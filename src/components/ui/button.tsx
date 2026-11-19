@@ -1,50 +1,55 @@
+import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-/* Comprint ERP button variants — matches cpt-btn from design prototype */
+/* Comprint ERP button variants — matches cpt-btn from design prototype.
+ * All colour decisions route through Tier 2 semantic tokens
+ * (`bg-primary`, `text-success`, `bg-destructive-soft`, …).  Never use
+ * arbitrary `bg-[#hex]` here — see DESIGN-SYSTEM.md § "Token reference". */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent text-[13px] font-[550] whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-[7px] border border-transparent text-[13px] font-[550] whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-[#0F1B2D] text-white border-[#0F1B2D] hover:bg-[#1E2A3D]",
+        default:
+          "bg-primary text-primary-foreground border-primary hover:bg-primary-hover",
         outline:
-          "border-[#D0D5DD] bg-[var(--card,#fff)] text-[var(--foreground,#0F1B2D)] hover:bg-[#EEF0F3]",
+          "border-input bg-card text-foreground hover:bg-muted",
         secondary:
-          "bg-[#EEF0F3] text-[#344054] hover:bg-[#E4E7EC]",
+          "bg-secondary text-secondary-foreground hover:bg-secondary-hover",
         ghost:
-          "border-transparent bg-transparent hover:bg-[#EEF0F3] text-[var(--foreground,#0F1B2D)]",
+          "border-transparent bg-transparent text-foreground hover:bg-muted dark:hover:bg-white/8",
         destructive:
-          "text-[#B42318] border-[#D0D5DD] bg-[var(--card,#fff)] hover:bg-[#FEF3F2]",
+          "text-destructive border-input bg-card hover:bg-destructive-soft",
         link: "text-primary underline-offset-4 hover:underline",
         success:
-          "bg-[#067647] text-white hover:bg-[#055C38]",
+          "bg-success text-success-foreground hover:bg-success-hover",
         warning:
-          "bg-[#B54708] text-white hover:bg-[#9A3B06]",
+          "bg-warning text-warning-foreground hover:bg-warning-hover",
         info:
-          "bg-[#175CD3] text-white hover:bg-[#1349A8]",
+          "bg-info text-info-foreground hover:bg-info-hover",
         "primary-light":
-          "bg-[#EEF1F6] text-[#0F1B2D] hover:bg-[#E4E7EC]",
+          "bg-accent text-accent-foreground hover:bg-border",
         "success-light":
-          "bg-[#ECFDF3] text-[#067647] hover:bg-[#D1FAE5]",
+          "bg-success-soft text-success hover:bg-[var(--color-green-100)]",
         "danger-light":
-          "bg-[#FEF3F2] text-[#B42318] hover:bg-[#FEE2E2]",
+          "bg-destructive-soft text-destructive hover:bg-[var(--color-red-100)]",
         "warning-light":
-          "bg-[#FFFAEB] text-[#B54708] hover:bg-[#FEF3C7]",
+          "bg-warning-soft text-warning hover:bg-[var(--color-amber-100)]",
         "info-light":
-          "bg-[#EFF4FF] text-[#175CD3] hover:bg-[#DBEAFE]",
+          "bg-info-soft text-info hover:bg-[var(--color-blue-100)]",
         "primary-tertiary":
-          "text-[#0F1B2D] hover:bg-[#EEF1F6]",
+          "text-foreground hover:bg-accent",
         "success-tertiary":
-          "text-[#067647] hover:bg-[#ECFDF3]",
+          "text-success hover:bg-success-soft",
         "danger-tertiary":
-          "text-[#B42318] hover:bg-[#FEF3F2]",
+          "text-destructive hover:bg-destructive-soft",
         "warning-tertiary":
-          "text-[#B54708] hover:bg-[#FFFAEB]",
+          "text-warning hover:bg-warning-soft",
         "info-tertiary":
-          "text-[#175CD3] hover:bg-[#EFF4FF]",
+          "text-info hover:bg-info-soft",
       },
       size: {
         default:
@@ -72,20 +77,69 @@ const buttonVariants = cva(
   }
 )
 
+type ButtonProps = ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & {
+    /** Leading-edge throttle window (ms) for onClick. The first click fires
+     *  immediately; further clicks within `throttleMs` are silently ignored.
+     *  Use on action buttons (Save / Create / Delete / Confirm) to suppress
+     *  accidental double-clicks before the mutation flips `isPending`. Not
+     *  applied to form submits — those should set `disabled={isPending}`. */
+    throttleMs?: number
+  }
+
 function Button({
   className,
   variant = "default",
   size = "default",
   shape = "default",
+  throttleMs,
+  onClick,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonProps) {
+  // Base UI's <Button> defaults `nativeButton: true` so it forces a real
+  // <button> element. The moment a caller passes `render={<Link>}` (or any
+  // non-button element) Base UI logs:
+  //   "A component that acts as a button expected a native <button> because
+  //    the `nativeButton` prop is true."
+  //
+  // Every router-link button in the app needs `nativeButton: false`. Doing
+  // it once here means every call site stays clean — `<Button render={<Link/>}>`
+  // just works. Callers that explicitly pass `nativeButton` keep their
+  // override.
+  const nativeButton =
+    props.nativeButton !== undefined
+      ? props.nativeButton
+      : props.render === undefined
+        ? true
+        : false
+
+  // Leading-edge click throttle. First click fires the handler immediately
+  // and (for type=submit buttons) lets the form submit normally; subsequent
+  // clicks within `throttleMs` get preventDefault + stopPropagation so the
+  // browser's form-submit pipeline doesn't fire a duplicate request.
+  const lockedUntil = React.useRef(0)
+  const handleClick: NonNullable<ButtonPrimitive.Props["onClick"]> = (event) => {
+    if (throttleMs && throttleMs > 0) {
+      const now = Date.now()
+      if (now < lockedUntil.current) {
+        event.preventDefault()
+        event.stopPropagation()
+        return
+      }
+      lockedUntil.current = now + throttleMs
+    }
+    onClick?.(event)
+  }
+
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, shape, className }))}
       {...props}
+      nativeButton={nativeButton}
+      onClick={handleClick}
     />
   )
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants, type ButtonProps }

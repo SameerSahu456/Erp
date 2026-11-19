@@ -1,0 +1,23 @@
+// Barrel for the CRM API layer. Split by domain from the former monolithic
+// api.ts; every existing `from "../../api"` import resolves here unchanged.
+
+export * from "./_shared"
+export * from "./leads"
+export * from "./accounts"
+export * from "./contacts"
+export * from "./deals"
+export * from "./quotes"
+export * from "./verticals"
+export * from "./material-inquiries"
+export * from "./activities"
+export * from "./notes"
+export * from "./comments"
+export * from "./tasks"
+export * from "./meetings"
+export * from "./sales-orders"
+export * from "./demo-requests"
+export * from "./replacement-requests"
+export * from "./rental-return-requests"
+export * from "./customer-deficiencies"
+export * from "./sales-return-requests"
+export * from "./user-targets"

@@ -1,4 +1,4 @@
-import type { Lead, AccountAddress } from '../types'
+import type { Lead } from '../types'
 
 export const leads: Lead[] = [
   {
@@ -20,7 +20,7 @@ export const leads: Lead[] = [
     location: 'Mumbai',
     website: 'https://www.tcs.com',
     customerType: 'End Customer',
-    orderType: 'New',
+    tags: ['New'],
     lastContact: '2026-04-14',
     createdAt: '2026-04-12',
     notes: 'Interested in server infrastructure upgrade',
@@ -51,7 +51,7 @@ export const leads: Lead[] = [
     location: 'Mumbai',
     website: 'https://www.reliancedigital.in',
     customerType: 'Channel Partner',
-    orderType: 'New',
+    tags: ['New'],
     lastContact: '2026-04-13',
     createdAt: '2026-04-01',
     description: 'Requirement for complete networking overhaul across 5 branch offices. Need managed switches and firewalls.',

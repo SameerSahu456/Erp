@@ -1,8 +1,8 @@
 "use client"
 
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { useTheme } from "@/contexts/ThemeContext"
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { useTheme } from "@/contexts/use-theme"
+import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, CircleAlertIcon, Loader2Icon } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { isDark } = useTheme()
@@ -11,6 +11,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={isDark ? "dark" : "light"}
       className="toaster group"
+      closeButton
+      duration={4000}
       icons={{
         success: (
           <CircleCheckIcon className="size-4" />
@@ -22,7 +24,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           <TriangleAlertIcon className="size-4" />
         ),
         error: (
-          <OctagonXIcon className="size-4" />
+          <CircleAlertIcon className="size-4" />
         ),
         loading: (
           <Loader2Icon className="size-4 animate-spin" />
@@ -39,6 +41,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast: "cn-toast",
+          closeButton: "cn-toast-close",
         },
       }}
       {...props}

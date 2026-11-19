@@ -160,7 +160,7 @@ export const accounts: Account[] = [
     type: 'SMB',
     revenue: 40000000,
     owner: 'Sneha Desai',
-    status: 'Prospect',
+    status: 'Active',
     tag: 'Hunting',
     categoriesInterested: ['Networking', 'Servers', 'UPS & Power'],
     categoriesBuyed: [],
