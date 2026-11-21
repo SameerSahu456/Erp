@@ -14,8 +14,13 @@ export function fetchFeatureFlags(): Promise<FeatureFlags> {
 }
 
 /** Used when the backend can't be reached: the build-time
- *  `VITE_SHOW_BOM_AND_ALL_ROUTES` switch, for every feature at once. */
+ *  `VITE_SHOW_BOM_AND_ALL_ROUTES` switch, for every feature at once.
+ *  In demo mode (no `VITE_API_BASE_URL`, so no backend to read flags from)
+ *  every feature is shown, otherwise the whole app would have no Warehouse,
+ *  Procurement or Dashboard section. */
+const DEMO_MODE = !import.meta.env.VITE_API_BASE_URL
 const BUILD_TIME_ON =
+  DEMO_MODE ||
   import.meta.env.VITE_SHOW_BOM_AND_ALL_ROUTES === "true" ||
   import.meta.env.VITE_SHOW_BOM_AND_ALL_ROUTES === "1"
 
