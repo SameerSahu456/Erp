@@ -74,11 +74,38 @@ function loadStoredSession(): { token: string | null; user: CurrentUser | null }
   }
 }
 
+// Demo mode: when no backend is configured (VITE_API_BASE_URL is empty), the
+// app has no API to authenticate against, so it opens directly as a read-only
+// superadmin instead of blocking on a login it can never complete. A real
+// build (VITE_API_BASE_URL set to a backend) keeps the normal login flow.
+const DEMO_MODE = !import.meta.env.VITE_API_BASE_URL;
+const DEMO_TOKEN = "demo-session";
+const DEMO_USER: CurrentUser = {
+  id: "00000000-0000-0000-0000-000000000000",
+  email: "demo@comprint.local",
+  first_name: "Demo",
+  last_name: "Admin",
+  phone: null,
+  employee_id: null,
+  department: null,
+  designation: null,
+  location: null,
+  branch: null,
+  last_login_at: null,
+  roles: ["superadmin", "admin"],
+  permissions: [],
+  is_active: true,
+  is_superuser: true,
+  channel_tags: null,
+  data_scope: "all",
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const stored = loadStoredSession();
 
-  const [user, setUser] = useState<CurrentUser | null>(stored.user);
+  const [user, setUser] = useState<CurrentUser | null>(DEMO_MODE ? DEMO_USER : stored.user);
   const [token, setTokenState] = useState<string | null>(() => {
+    if (DEMO_MODE) return DEMO_TOKEN;
     if (stored.token) {
       setAccessToken(stored.token);
     }
@@ -129,6 +156,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    if (DEMO_MODE) {
+      // No backend to log out of — keep the demo session so the user is not
+      // bounced to a login page they cannot complete.
+      setUser(DEMO_USER);
+      setTokenState(DEMO_TOKEN);
+      return;
+    }
     setAccessToken(null);
     setTokenState(null);
     setUser(null);
@@ -191,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // calls if a navigation lands while a refresh is still in flight.
   const { pathname } = useLocation();
   useEffect(() => {
-    if (!token) return;
+    if (DEMO_MODE || !token) return;
     void refreshUser();
   }, [pathname, token, refreshUser]);
 
@@ -199,7 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // they return to the tab. Covers the "left dashboard open, admin changed my
   // perms, came back" case without resurrecting the 30s polling loop.
   useEffect(() => {
-    if (!token) return;
+    if (DEMO_MODE || !token) return;
     const onVisible = () => {
       if (document.visibilityState === "visible") void refreshUser();
     };
