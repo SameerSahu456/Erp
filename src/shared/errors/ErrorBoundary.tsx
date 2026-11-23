@@ -16,11 +16,23 @@ export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false, isChunkError: false };
 
   static getDerivedStateFromError(error: Error): State {
+    // A lazy route chunk that fails to load after a redeploy (the hashed file
+    // the cached index.html points at is gone, so the host serves index.html
+    // in its place) surfaces with wildly different messages across browsers.
+    // Match them broadly so a stale chunk auto-reloads instead of showing a
+    // dead "module failed to load" screen.
+    const msg = (error.message ?? "").toLowerCase();
     const isChunkError =
       error.name === "ChunkLoadError" ||
-      error.message?.includes("Failed to fetch dynamically imported module") ||
-      error.message?.includes("Failed to load module script") ||
-      error.message?.includes("Loading chunk");
+      msg.includes("dynamically imported module") || // Chrome/Vite (fetch + load variants)
+      msg.includes("error loading dynamically imported module") ||
+      msg.includes("importing a module script failed") || // Safari
+      msg.includes("failed to load module script") ||
+      msg.includes("loading chunk") ||
+      msg.includes("loading css chunk") ||
+      // The host returned index.html (HTML) for a missing .js chunk.
+      (msg.includes("module") &&
+        (msg.includes("mime type") || msg.includes("text/html")));
     return { hasError: true, isChunkError };
   }
 
